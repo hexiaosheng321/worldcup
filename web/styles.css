@@ -8458,8 +8458,9 @@ body::before {
   }
 
   .home-hero {
+    min-height: auto;
     margin: 0;
-    padding: 18px 14px 14px;
+    padding: 16px 14px 20px;
     border-radius: 0 0 24px 24px;
     background:
       radial-gradient(circle at 100% 0%, rgba(217, 154, 22, 0.18), transparent 34%),
@@ -8469,6 +8470,7 @@ body::before {
 
   .home-hero-inner {
     gap: 14px;
+    align-items: start;
   }
 
   .home-badge {
@@ -8524,6 +8526,10 @@ body::before {
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.72),
       0 14px 28px rgba(8, 32, 82, 0.16);
+  }
+
+  .home-countdown-card::after {
+    display: none;
   }
 
   .home-countdown-kicker {
