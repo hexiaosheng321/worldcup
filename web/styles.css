@@ -8386,8 +8386,20 @@ body::before {
     backdrop-filter: blur(14px);
   }
 
+  .home-screen .home-topbar {
+    background: rgba(255, 255, 255, 0.98);
+    color: #082052;
+    box-shadow: 0 10px 28px rgba(8, 32, 82, 0.08);
+  }
+
   .home-logo {
     min-width: 0;
+  }
+
+  .home-logo span,
+  .home-logo strong {
+    color: #082052;
+    -webkit-text-fill-color: #082052;
   }
 
   .home-logo strong {
@@ -8424,6 +8436,18 @@ body::before {
     letter-spacing: 0;
   }
 
+  .home-screen .home-topbar nav button {
+    background: #eef4fb;
+    color: #10233e;
+    -webkit-text-fill-color: #10233e;
+  }
+
+  .home-screen .home-topbar nav button.active {
+    background: #0b4c9c;
+    color: #fff;
+    -webkit-text-fill-color: #fff;
+  }
+
   .home-screen {
     padding: 0 0 24px;
   }
@@ -8453,10 +8477,15 @@ body::before {
     max-width: 11em;
     font-size: clamp(28px, 9vw, 38px);
     color: #fff;
+    -webkit-text-fill-color: #fff;
+    background: none;
+    animation: none;
   }
 
   .home-copy h1 strong {
     color: #f9c74f;
+    -webkit-text-fill-color: #f9c74f;
+    background: none;
   }
 
   .home-copy p {
@@ -8488,9 +8517,24 @@ body::before {
     box-shadow: none;
   }
 
+  .home-countdown-kicker {
+    color: #31506f;
+    -webkit-text-fill-color: #31506f;
+  }
+
   .home-countdown-card strong {
+    color: #082052;
+    -webkit-text-fill-color: #082052;
+    background: none;
+    animation: none;
     font-size: 16px;
     line-height: 1.25;
+  }
+
+  .home-countdown-card strong small,
+  .home-countdown-card .team-flag {
+    color: #4b647f;
+    -webkit-text-fill-color: #4b647f;
   }
 
   .home-countdown-grid {
@@ -8503,7 +8547,15 @@ body::before {
   }
 
   .home-countdown-grid b {
+    color: #fff;
+    -webkit-text-fill-color: #fff;
+    background: none;
     font-size: 26px;
+  }
+
+  .home-countdown-grid small {
+    color: rgba(255, 255, 255, 0.82);
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.82);
   }
 
   .home-upcoming,
