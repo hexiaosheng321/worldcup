@@ -1,0 +1,8 @@
+.DS_Store
+.tools/
+node_modules/
+local-server/*.log
+local-server/*.out.log
+local-server/*.err.log
+outputs/
+*.inspect.ndjson

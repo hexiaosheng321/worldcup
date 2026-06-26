@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>体彩足彩模型中心</title>
-    <link rel="stylesheet" href="./styles.css?v=202606250008" />
+    <link rel="stylesheet" href="./styles.css?v=202606260001" />
   </head>
   <body class="home-mode page-loading">
     <header class="home-topbar">
@@ -21,9 +21,6 @@
         <button type="button" data-model-stats>统计和回测研究</button>
         <button type="button" data-about-site>关于本站</button>
       </nav>
-      <div class="home-top-actions">
-        <button type="button" class="login">登录</button>
-      </div>
     </header>
 
     <section class="home-screen" aria-label="体彩足彩模型中心首页">
@@ -112,7 +109,7 @@
             <span>今日焦点</span>
             <strong id="today-count">0 场</strong>
             <small id="today-date">北京时间</small>
-            <small id="hero-model-version">当前模型 V3</small>
+            <small id="hero-model-version">当前模型 V4</small>
           </div>
         </section>
 
@@ -214,14 +211,14 @@
             <p class="eyebrow">Model System</p>
             <h2>模型介绍</h2>
             <p>
-              这套模型不是单纯预测胜负，而是把赛程、盘口、比分形态、小组动机和赛后复盘放在同一条链路里。
-              目前正式使用 V3；V1、V2 会作为历史阶段保留，用来分段比较命中率，后续模型也会继续在这里更新。
+              这套模型不是单纯预测胜负，而是把赛程、盘口、比分形态、赛事动机和赛后复盘放在同一条链路里。
+              目前正式使用 V4；V1、V2、V3 会作为历史阶段保留，用来分段比较命中率，后续模型也会继续在这里更新。
             </p>
           </div>
           <aside>
             <span>当前版本</span>
-            <strong>V3</strong>
-            <em>Filter-first · 可跳过低质量场次</em>
+            <strong>V4</strong>
+            <em>通用体彩 · 按赛事类型切换权重</em>
           </aside>
         </div>
 
@@ -248,15 +245,31 @@
               <li>剔除排名、旧交锋、明星叙事等弱信号</li>
             </ul>
           </article>
-          <article class="current">
+          <article>
             <span>V3</span>
             <h3>完整 Filter-first 系统</h3>
-            <p>当前正式版本。重点不再是每场都给答案，而是识别哪些比赛值得打，哪些比赛应该降级或跳过。</p>
+            <p>世界杯专题版本。重点不再是每场都给答案，而是识别哪些比赛值得打，哪些比赛应该降级或跳过。</p>
             <ul>
               <li>区分主打、可选、谨慎、跳过</li>
               <li>加入弱队先进球路径、首球时间和净胜球动机</li>
+              <li>半场 0-0 / 60 分钟触发器参与最终胜平负和让球决策</li>
+              <li>让球卡盘闸门独立判断深盘走盘风险</li>
+              <li>主脚本、触发脚本和盘口保护冲突时必须改判或降级</li>
               <li>分类闷局、常规局、开放局、打花局</li>
               <li>锁定胜平负、让球、总进球双选和两个最可能比分</li>
+            </ul>
+          </article>
+          <article class="current">
+            <span>V4</span>
+            <h3>通用体彩决策模型</h3>
+            <p>在 V3 之上抽象成全赛事框架，世界杯、联赛和杯赛淘汰赛按不同权重进入同一套锁版流程。</p>
+            <ul>
+              <li>先识别赛事类型，再切换战意、赛程、路径和轮换权重</li>
+              <li>四剧本推演参与最终概率判断，不只作为赛后解释</li>
+              <li>路径动机用于杯赛，赛程密度和伤停轮换用于联赛</li>
+              <li>跨市场一致性统一校验胜平负、让球、总进球、比分和半全场</li>
+              <li>数据质量不足时自动降低置信，不能给高等级主打</li>
+              <li>赛后复盘按错误类型归因，进入下一轮模型修正</li>
             </ul>
           </article>
         </div>
@@ -265,17 +278,17 @@
           <section>
             <span>输出结构</span>
             <strong>锁版前必须完整</strong>
-            <p>每场最终输出包含胜平负、让球胜平负、总进球双选、两个比分、比赛类型和置信建议。</p>
+            <p>每场最终输出包含胜平负、让球胜平负、总进球双选、两个比分、比赛类型、四剧本摘要、半场变化脚本、数据质量和置信建议；半场分支若能推翻主选，必须改判或降级。</p>
           </section>
           <section>
             <span>复盘纪律</span>
             <strong>赛前锁版才算数</strong>
-            <p>赛后只检查逻辑漏洞，不用结果倒推修改旧判断。V1、V2、V3 命中率会分阶段统计。</p>
+            <p>赛后只检查逻辑漏洞，不用结果倒推修改旧判断。V1、V2、V3、V4 命中率会分阶段统计。</p>
           </section>
           <section>
             <span>后续迭代</span>
             <strong>继续优化模型</strong>
-            <p>后续会继续接入更多赛事池数据、赔率漂移、阵容伤停和回测指标，形成 V4 之后的新版本。</p>
+            <p>后续会继续接入更多赛事池数据、赔率漂移、阵容伤停和回测指标，在 V4 基础上迭代不同赛事模板。</p>
           </section>
         </div>
 
@@ -288,10 +301,12 @@
             <article><span>01</span><strong>实时赛程</strong><p>来自体彩官方开盘快照，作为比赛池、开赛时间和玩法状态的基础。</p></article>
             <article><span>02</span><strong>SP 历史</strong><p>记录胜平负、让球、总进球的开盘到最新变化，用于识别压热、压冷和冲突。</p></article>
             <article><span>03</span><strong>赛果回填</strong><p>比赛结束后回填官方比分，复盘方向、让球、总进球和比分覆盖。</p></article>
-            <article><span>04</span><strong>小组路径</strong><p>世界杯模块实时计算积分榜、最佳第三线和后续晋级压力。</p></article>
+            <article><span>04</span><strong>赛事动机</strong><p>世界杯读取小组路径，联赛读取争冠、欧战、保级、赛程密度和轮换压力。</p></article>
             <article><span>05</span><strong>模型输入清单</strong><p>每场详情页会显示盘口、SP、积分动机、近期状态、伤停阵容等输入完整度。</p></article>
             <article><span>06</span><strong>赔率数学</strong><p>把 SP 转成去水后的隐含概率、返还率和公允赔率，用来校验模型概率是否偏离市场。</p></article>
             <article><span>07</span><strong>回测指标</strong><p>盘口图谱会持续记录低进球、大球、让球冲突和强异动样本，后续进入模型版本迭代。</p></article>
+            <article><span>08</span><strong>四剧本库</strong><p>强势压制、开放对攻、冷门反转和僵局消耗会参与最终选择。</p></article>
+            <article><span>09</span><strong>数据质量</strong><p>阵容、战意、盘口和赛程证据不足时，自动降低置信或跳过。</p></article>
           </div>
         </div>
       </section>
@@ -380,16 +395,16 @@
           </section>
           <section>
             <span>模型机制</span>
-            <h3>保留 V1 到 V3 的演进</h3>
+            <h3>保留 V1 到 V4 的演进</h3>
             <p>
-              V1 建立基础概率和比赛脚本，V2 加入比分校准、小组形势和噪音过滤，V3 进一步强调赛前筛选和低质量场次降级。
-              后续模型会继续更新，但旧版本命中率会单独保留。
+              V1 建立基础概率和比赛脚本，V2 加入比分校准、小组形势和噪音过滤，V3 进一步强调赛前筛选、半场变化触发器和低质量场次降级。
+              V4 把框架升级为通用体彩模型，按世界杯、联赛和杯赛淘汰赛切换权重；旧版本命中率会单独保留。
             </p>
             <div class="about-version-row">
               <b>V1</b>
               <b>V2</b>
               <b>V3</b>
-              <b>Next</b>
+              <b>V4</b>
             </div>
           </section>
         </div>
@@ -519,7 +534,7 @@
             <p class="eyebrow">Model Room</p>
             <h2>赛前锁版室</h2>
           </div>
-          <span id="model-current-version" class="pill">当前 V3</span>
+          <span id="model-current-version" class="pill">当前 V4</span>
         </div>
         <div id="model-list" class="model-list"></div>
       </section>
@@ -537,12 +552,13 @@
       </section>
     </main>
 
-    <script src="./live-sporttery-data.js?v=202606250008"></script>
-    <script src="./live-sporttery-results.js?v=202606250008"></script>
-    <script src="./live-sporttery-sp-history.js?v=202606250008"></script>
-    <script src="./odds-data.js?v=202606250008"></script>
-    <script src="./data.js?v=202606250008"></script>
-    <script src="./app.js?v=202606250008"></script>
+    <script src="./live-sporttery-data.js?v=202606260001"></script>
+    <script src="./live-sporttery-results.js?v=202606260001"></script>
+    <script src="./live-sporttery-sp-history.js?v=202606260001"></script>
+    <script src="./odds-data.js?v=202606260001"></script>
+    <script src="./data.js?v=202606260001"></script>
+    <script src="./sporttery-math.js?v=202606260001"></script>
+    <script src="./app.js?v=202606260001"></script>
 <button type="button" class="back-to-top" id="back-to-top" aria-label="返回顶部">&#8593;</button>
   </body>
 </html>

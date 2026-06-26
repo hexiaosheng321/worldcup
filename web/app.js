@@ -404,12 +404,14 @@ function predictionVersionRank(pred) {
   if (version === "V1") return 1;
   if (version === "V2") return 2;
   if (version === "V3") return 3;
+  if (version === "V4") return 4;
   return 0;
 }
 
 function predictionModelVersion(pred) {
   if (!pred) return "";
   if (pred.modelVersion) return pred.modelVersion;
+  if ((pred.type || "").includes("V4")) return "V4";
   if ((pred.type || "").includes("V3")) return "V3";
   if ((pred.type || "").includes("V2")) return "V2";
   if ((pred.type || "").includes("V1")) return "V1";
@@ -1269,7 +1271,7 @@ function renderSignals() {
   document.querySelector("#signal-predicted").textContent = uniquePredictionCount();
   document.querySelector("#signal-goals").textContent = finished.length ? (totalGoals / finished.length).toFixed(2) : "0.00";
   const heroVersion = document.querySelector("#hero-model-version");
-  if (heroVersion) heroVersion.textContent = `当前模型 ${data.currentModelVersion || "V3"}`;
+  if (heroVersion) heroVersion.textContent = `当前模型 ${data.currentModelVersion || "V4"}`;
 }
 
 function renderToday() {
@@ -1592,6 +1594,8 @@ function renderMatchDetail(no) {
               <div><b>错层风险：</b>${filter.keyFailureRisk}</div>
             </div>
           </section>
+          ${renderFinalDecisionGatePanel(pred)}
+          ${renderUniversalModelPanel(pred)}
           ${renderDecisionGatePanel(no, pred)}
           ${renderSpRadarPanel(no, "detail")}
           ${renderModelTriadPanel(no, pred)}
@@ -1607,6 +1611,7 @@ function renderMatchDetail(no) {
               <span>总进球 ${pred.totalGoalsPick || "暂无"}</span>
               <span>比分预测 ${pred.mainScore} / ${pred.counterScore}</span>
             </div>
+            ${finalDecisionActionText(pred) ? `<p class="final-action-line"><b>最终动作：</b>${displayModelText(finalDecisionActionText(pred))}</p>` : ""}
           </section>
           ${pred.groupSituation ? `<section class="match-page-section"><span>小组形势</span><p>${displayModelText(pred.groupSituation)}</p></section>` : ""}
           ${pred.recentAnalysis ? `<section class="match-page-section"><span>近况与推演思路</span><p>${displayModelText(pred.recentAnalysis)}</p></section>` : ""}
@@ -2230,7 +2235,7 @@ function renderPath() {
 
 function renderModel() {
   const versionPill = document.querySelector("#model-current-version");
-  if (versionPill) versionPill.textContent = `当前 ${data.currentModelVersion || "V3"}`;
+  if (versionPill) versionPill.textContent = `当前 ${data.currentModelVersion || "V4"}`;
   document.querySelector("#model-list").innerHTML = groupedPredictions()
     .map(({ match, predictions }) => {
       const actual = match?.score || "未完赛";
@@ -2863,7 +2868,7 @@ function renderReview() {
   const attributionRows = verifiedRows.map((row) => ({ ...row, attribution: reviewAttribution(row.pred, row.match, row) }));
   const missAttributions = attributionRows.filter((row) => row.attribution.severity !== "good");
   const attributionSummary = calibrationStats(attributionRows, (row) => row.attribution.type).slice(0, 4);
-  const versionStats = ["V1", "V2", "V3"]
+  const versionStats = ["V1", "V2", "V3", "V4"]
     .map((version) => {
       const subset = verifiedRows.filter((row) => predictionModelVersion(row.pred) === version);
       if (!subset.length) return null;
@@ -2915,8 +2920,8 @@ function renderReview() {
         )
         .join("")}
       <article class="current-version-note">
-        <strong>${data.currentModelVersion || "V3"}</strong>
-        <span>当前启用版本。之后新锁版归入 ${data.currentModelVersion || "V3"}，旧结果不回填改判。</span>
+        <strong>${data.currentModelVersion || "V4"}</strong>
+        <span>当前启用版本。之后新锁版归入 ${data.currentModelVersion || "V4"}，旧结果不回填改判。</span>
       </article>
     </div>
     <div class="attribution-strip">
@@ -3114,7 +3119,7 @@ function renderGlobalStats() {
   const attributionRows = verifiedRows.map((row) => ({ ...row, attribution: reviewAttribution(row.pred, row.match, row) }));
   const missAttributions = attributionRows.filter((row) => row.attribution.severity !== "good");
   const competitions = new Set(allRows.map((row) => row.competition));
-  const versionStats = ["V1", "V2", "V3"]
+  const versionStats = ["V1", "V2", "V3", "V4"]
     .map((version) => {
       const subset = verifiedRows.filter((row) => predictionModelVersion(row.pred) === version);
       if (!subset.length) return null;
@@ -3451,12 +3456,26 @@ function oddsMathForMatch(no, pred) {
   const selected = normal.entries.find((item) => item.code === pickCode);
   const modelProb = model[pickCode];
   const probGap = Number.isFinite(modelProb) && selected ? modelProb - selected.probability : null;
-  const valueIndex =
-    selected && Number.isFinite(modelProb) ? ((modelProb * selected.odd - 1) / (selected.odd - 1)) * 100 : null;
+  const valueIndex = selected && Number.isFinite(modelProb) ? ((modelProb * selected.odd - 1) / (selected.odd - 1)) * 100 : null;
+  const kelly = selected && Number.isFinite(modelProb) && typeof SportteryMath !== "undefined" ? {
+    kellyIndex: SportteryMath.kellyIndex(selected.odd, modelProb),
+    ev: SportteryMath.expectedValue(selected.odd, modelProb),
+    kellyFraction: SportteryMath.kellyFraction(selected.odd, modelProb),
+  } : null;
   const spread = normal.entries.length
     ? Math.max(...normal.entries.map((item) => item.probability)) - Math.min(...normal.entries.map((item) => item.probability))
     : null;
-  return { odds, normal, handicap, totalGoals, selected, modelProb, probGap, valueIndex, spread };
+  const marketDerived = normal.entries.length >= 3 && typeof SportteryMath !== "undefined"
+    ? SportteryMath.deriveOdds(normal.entries.map((e) => e.odd))
+    : null;
+  const valueCompare = selected && Number.isFinite(modelProb) && typeof SportteryMath !== "undefined"
+    ? SportteryMath.compareValue(
+        normal.entries.map((e) => e.odd),
+        [model.H || 0, model.D || 0, model.A || 0],
+        normal.entries.map((e) => e.label)
+      )
+    : null;
+  return { odds, normal, handicap, totalGoals, selected, modelProb, probGap, valueIndex, spread, kelly, marketDerived, valueCompare };
 }
 
 function totalGoalsPickSet(pick = "") {
@@ -3473,10 +3492,24 @@ function renderOddsMathPanel(no, pred) {
           <span>${item.label}</span>
           <strong>${probabilityPercent(item.probability)}</strong>
           <em>SP ${item.odd} / 公允 ${item.fairOdd.toFixed(2)}</em>
+          ${math.valueCompare ? (function(){
+            const v = math.valueCompare.find(c => c.label === item.label);
+            if (!v) return "";
+            return `<b class="${v.isStrongValue ? "value-strong" : v.isValue ? "value-weak" : "value-none"}">${v.isValue ? "价值" : "无价值"} ${v.kellyIndex.toFixed(3)}</b>`;
+          })() : ""}
         </article>
       `
     )
     .join("");
+  const valueLine = math.kelly && typeof SportteryMath !== "undefined"
+    ? `<div class="odds-math-value">
+        <span>凯利指数 <strong>${math.kelly.kellyIndex.toFixed(3)}</strong>
+        ${math.kelly.kellyIndex > 1 ? "✓" : "✗"}</span>
+        <span>期望值 <strong>${SportteryMath.pct(math.kelly.ev)}</strong></span>
+        <span>凯利比例 <strong>${math.kelly.kellyFraction <= 0 ? "不投注" : (math.kelly.kellyFraction * 100).toFixed(1) + "%"}</strong></span>
+        ${math.kelly.kellyIndex > 1.05 ? '<span class="value-badge-strong">强价值信号</span>' : math.kelly.kellyIndex > 1 ? '<span class="value-badge-weak">弱价值信号</span>' : '<span class="value-badge-none">无明显价值</span>'}
+      </div>`
+    : "";
   return `
     <section class="match-page-section odds-math-panel">
       <span>赔率数学</span>
@@ -3484,9 +3517,10 @@ function renderOddsMathPanel(no, pred) {
         <strong>${probabilityPercent(math.normal.returnRate)}</strong>
         <em>胜平负返还率</em>
         <b>概率缺口 ${Number.isFinite(math.probGap) ? deltaText(math.probGap, 1) : "-"}</b>
-        <b>凯利观察 ${Number.isFinite(math.valueIndex) ? `${math.valueIndex.toFixed(1)}%` : "-"}</b>
+        <b>凯利分数 ${Number.isFinite(math.valueIndex) ? `${math.valueIndex.toFixed(1)}%` : "-"}</b>
       </div>
       <div class="odds-math-grid">${mainRows}</div>
+      ${valueLine}
       <p>这里把 SP 转成去水后的隐含概率，再和模型概率对照，只作为研究指标，不作为决策建议。</p>
     </section>
   `;
@@ -3522,11 +3556,15 @@ function modelEvidenceChecks(no, pred) {
   return [
     ["体彩开盘", Boolean(oddsMatch(no)), "实时赛事池 / SP 当前值"],
     ["SP 历史", Boolean(row?.strongest), "开盘到最新变化"],
-    ["小组动机", Boolean(pred?.groupSituation), "积分和晋级收益"],
+    ["赛事权重", Boolean(pred?.competitionModel || pred?.eventWeighting || pred?.competitionType), "世界杯 / 联赛 / 杯赛模板"],
+    ["动机路径", Boolean(pred?.groupSituation || pred?.pathMotive || pred?.scheduleMotive), "出线、争冠、欧战、保级或轮换压力"],
     ["近期状态", Boolean(pred?.recentAnalysis), "风格、对位和场景推演"],
+    ["四剧本", Boolean(pred?.scriptSet || pred?.scenarioSet || pred?.fourScripts), "压制、开放、冷门、僵局分支"],
+    ["半场触发", Boolean(pred?.halftimeDecision || pred?.halftimeTrigger || pred?.timeTriggerDecision), "0-0 / 60 分钟变化"],
+    ["数据质量", Boolean(pred?.dataQuality || pred?.dataQualityGate), "证据不足时降级"],
     ["机构视角", Boolean(pred?.institutionLine), "自建盘口 vs 体彩盘口"],
     ["赛果回填", Boolean(parseScore(match?.score)), "赛后复盘使用"],
-    ["阵容伤停", false, "后续接入阵容/伤停源"],
+    ["阵容伤停", Boolean(pred?.recentAnalysis || pred?.keyJudgement || pred?.changeNote) && /伤|缺阵|停赛|复出|回归|伤愈|伤病|缺席/.test([pred.recentAnalysis, pred.keyJudgement, pred.script, pred.noiseFilter, pred.changeNote].filter(Boolean).join(' ')), "阵容/伤停信息（来自推演文本扫描）"],
   ];
 }
 
@@ -3594,39 +3632,42 @@ function autoDecisionGate(no, pred) {
   }
   const row = spRadarForMatch(no);
   const hasCurrentOdds = Boolean(oddsMatch(no));
-  const checks = [
-    ["锁版结果", Boolean(pred.pick && pred.totalGoalsPick && (pred.mainScore || pred.score1))],
-    ["比赛脚本", Boolean(pred.script)],
-    ["小组动机", Boolean(pred.groupSituation)],
-    ["近期风格", Boolean(pred.recentAnalysis)],
-    ["机构视角", Boolean(pred.institutionLine)],
-    ["盘口偏差", Boolean(pred.marketGap)],
-    ["体彩当前盘", hasCurrentOdds],
+  const weightedChecks = [
+    ["锁版结果", Boolean(pred.pick && pred.totalGoalsPick && (pred.mainScore || pred.score1)), 25],
+    ["体彩当前盘", hasCurrentOdds, 20],
+    ["盘口偏差", Boolean(pred.marketGap), 15],
+    ["比赛脚本", Boolean(pred.script), 12],
+    ["小组动机", Boolean(pred.groupSituation), 10],
+    ["机构视角", Boolean(pred.institutionLine), 9],
+    ["近期风格", Boolean(pred.recentAnalysis), 9],
   ];
-  const readyCount = checks.filter(([, ok]) => ok).length;
-  const score = Math.round((readyCount / checks.length) * 100);
+  const earned = weightedChecks.reduce((sum, [, ok, weight]) => sum + (ok ? weight : 0), 0);
+  const score = earned;
   const modelGrade = confidenceGrade(pred);
   const marketStatus = row?.strongest ? "盘口动态有效" : hasCurrentOdds ? "SP历史缺失，动态无效" : "盘口数据缺失";
-  const missingNotes = checks
+  const missingNotes = weightedChecks
     .filter(([, ok]) => !ok)
     .map(([label]) => `${label}缺失`)
     .slice(0, 3);
   const level = score >= 86 ? "A" : score >= 72 ? "B" : score >= 58 ? "C" : "D";
+  const crossConflict = score < 72 && ["A", "A-"].includes(modelGrade);
+  const effectiveLevel = crossConflict ? (level === "C" ? "C~" : level) : level;
   return {
     score,
-    level,
-    tone: level === "A" ? "hot" : level === "B" ? "warm" : level === "C" ? "watch" : "cold",
+    level: effectiveLevel,
+    tone: effectiveLevel === "A" ? "hot" : effectiveLevel.startsWith("B") ? "warm" : effectiveLevel === "C~" || effectiveLevel.startsWith("C") ? "watch" : "cold",
     notes: [
       `模型置信 ${modelGrade}`,
       marketStatus,
+      crossConflict ? "闸门与置信等级不一致：在场证据偏少，建议调低预期" : "",
       missingNotes.length ? missingNotes.join(" / ") : "核心字段完整",
     ],
     action:
-      level === "A"
+      effectiveLevel === "A"
         ? "证据完整，可正常复核"
-        : level === "B"
+        : effectiveLevel.startsWith("B")
           ? "证据较完整，缺失项不扣比赛判断"
-          : level === "C"
+          : effectiveLevel === "C~" || effectiveLevel.startsWith("C")
             ? "证据部分缺失，只降低数据可信度"
             : "证据不足，不等于比赛风险",
   };
@@ -3646,6 +3687,137 @@ function renderDecisionGatePanel(no, pred) {
       <div class="decision-gate-notes">
         ${gate.notes.map((item) => `<span>${item}</span>`).join("")}
       </div>
+    </section>
+  `;
+}
+
+function finalDecisionGateItems(pred) {
+  if (!pred) return [];
+  return [
+    ["赛事权重", pred.eventWeighting || pred.competitionWeight || pred.weightProfile],
+    ["半场触发", pred.halftimeDecision || pred.halftimeTrigger || pred.timeTriggerDecision],
+    ["让球卡盘", pred.handicapGate || pred.letBallGate || pred.handicapDecisionGate],
+    ["跨市场", pred.crossMarketConsistency || pred.marketConsistencyGate],
+    ["数据质量", pred.dataQuality || pred.dataQualityGate],
+    ["决策冲突", pred.decisionConflict || pred.conflictResolution || pred.decisionGateConflict],
+    ["最终动作", pred.finalDecisionAction || pred.decisionAction || pred.valueFilterAction],
+  ].filter(([, value]) => Boolean(value));
+}
+
+function renderFinalDecisionGatePanel(pred) {
+  const items = finalDecisionGateItems(pred);
+  if (!items.length) return "";
+  return `
+    <section class="match-page-section final-decision-gate">
+      <span>最终决策闸门</span>
+      <div class="final-decision-grid">
+        ${items
+          .map(
+            ([label, value]) => `
+              <article>
+                <small>${label}</small>
+                <p>${displayModelText(value)}</p>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function finalDecisionActionText(pred) {
+  return pred?.finalDecisionAction || pred?.decisionAction || pred?.valueFilterAction || "";
+}
+
+function normalizeScriptSet(scriptSet, fallbackText) {
+  if (!scriptSet) {
+    if (fallbackText) {
+      const parts = fallbackText.split(/[。；；]/).filter(Boolean);
+      if (parts.length >= 2) {
+        return [
+          { label: "主剧本", text: parts[0].trim() },
+          { label: "变化分支", text: parts.slice(1).join("；").trim() },
+        ];
+      }
+      return [{ label: "剧本", text: fallbackText }];
+    }
+    return [];
+  }
+  if (Array.isArray(scriptSet)) {
+    return scriptSet
+      .map((item) => {
+        if (typeof item === "string") return { label: "剧本", text: item };
+        return {
+          label: item.label || item.name || item.type || "剧本",
+          probability: item.probability || item.weight || item.chance || "",
+          score: item.score || item.scores || "",
+          text: item.text || item.script || item.trigger || item.detail || "",
+        };
+      })
+      .filter((item) => item.text || item.score || item.probability);
+  }
+  return Object.entries(scriptSet)
+    .map(([key, value]) => {
+      const labels = {
+        dominance: "强势压制",
+        open: "开放对攻",
+        upset: "冷门反转",
+        stalemate: "僵局消耗",
+      };
+      if (typeof value === "string") return { label: labels[key] || key, text: value };
+      return {
+        label: value.label || labels[key] || key,
+        probability: value.probability || value.weight || value.chance || "",
+        score: value.score || value.scores || "",
+        text: value.text || value.script || value.trigger || value.detail || "",
+      };
+    })
+    .filter((item) => item.text || item.score || item.probability);
+}
+
+function renderUniversalModelPanel(pred) {
+  if (!pred) return "";
+  const motiveItems = [
+    ["赛事模板", pred.competitionModel || pred.eventModel || pred.competitionType],
+    ["路径动机", pred.pathMotive || pred.pathAdvantage || pred.strategicMotive],
+    ["赛程动机", pred.scheduleMotive || pred.schedulePressure || pred.rotationRisk],
+    ["复盘错因", pred.reviewErrorType || pred.errorType || pred.learningTag],
+  ].filter(([, value]) => Boolean(value));
+  const scripts = normalizeScriptSet(pred.scriptSet || pred.scenarioSet || pred.fourScripts, pred.script);
+  if (!motiveItems.length && !scripts.length) return "";
+  return `
+    <section class="match-page-section universal-model-panel">
+      <span>V4 通用模型</span>
+      ${
+        motiveItems.length
+          ? `<div class="universal-model-grid">${motiveItems
+              .map(
+                ([label, value]) => `
+                  <article>
+                    <small>${label}</small>
+                    <p>${displayModelText(value)}</p>
+                  </article>
+                `
+              )
+              .join("")}</div>`
+          : ""
+      }
+      ${
+        scripts.length
+          ? `<div class="script-set-grid">${scripts
+              .map(
+                (item) => `
+                  <article>
+                    <strong>${item.label}</strong>
+                    <em>${[item.probability, item.score].filter(Boolean).join(" · ")}</em>
+                    <p>${displayModelText(item.text)}</p>
+                  </article>
+                `
+              )
+              .join("")}</div>`
+          : ""
+      }
     </section>
   `;
 }
