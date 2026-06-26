@@ -5,6 +5,8 @@ const SPORTTERY_CLOUD_API_URL = "";
 const SPORTTERY_API_URL = "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c";
 const SPORTTERY_RESULTS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
+const SPORTTERY_FIXED_BONUS_API_URL =
+  "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
 let oddsData = window.LIVE_SPORTTERY_ODDS?.matches?.length
   ? window.LIVE_SPORTTERY_ODDS
   : window.OKOOO_ODDS || { matches: [] };
@@ -268,6 +270,43 @@ function normalizeSportteryPayload(raw, capturedAt = new Date().toISOString()) {
     lastUpdateTime: raw?.value?.lastUpdateTime || "",
     matchDates: days.map((day) => day.businessDate).filter(Boolean),
     matches: items,
+  };
+}
+
+function normalizeSportteryHistory(match, value = {}) {
+  const oddsHistory = value.oddsHistory || {};
+  const updatedAt = [
+    ...(oddsHistory.hadList || []),
+    ...(oddsHistory.hhadList || []),
+    ...(oddsHistory.ttgList || []),
+    ...(oddsHistory.crsList || []),
+    ...(oddsHistory.hafuList || []),
+  ]
+    .map((item) => `${item.updateDate || ""} ${item.updateTime || ""}`.trim())
+    .filter(Boolean)
+    .sort()
+    .at(-1) || "";
+
+  return {
+    orderId: match.orderId || "",
+    issue: match.issue || "",
+    no: match.no || "",
+    ticaiDate: match.ticaiDate || "",
+    matchDate: match.matchDate || "",
+    kickoffTime: match.kickoffTime || "",
+    league: match.league || "竞彩",
+    matchId: match.matchId || "",
+    home: match.home || "",
+    away: match.away || "",
+    handicap: match.handicap || "0",
+    updatedAt,
+    history: {
+      had: oddsHistory.hadList || [],
+      hhad: oddsHistory.hhadList || [],
+      ttg: oddsHistory.ttgList || [],
+      crs: oddsHistory.crsList || [],
+      hafu: oddsHistory.hafuList || [],
+    },
   };
 }
 
@@ -1220,9 +1259,45 @@ async function refreshSportteryResultsData() {
   }
 }
 
+async function refreshSportterySpHistoryData(sourceMatches = oddsData.matches || []) {
+  const matchesForHistory = sourceMatches.filter((match) => match.matchId).slice(0, 30);
+  if (!matchesForHistory.length) return;
+  const capturedAt = new Date().toISOString();
+  const settled = await Promise.allSettled(
+    matchesForHistory.map(async (match) => {
+      const url = `${SPORTTERY_FIXED_BONUS_API_URL}?clientCode=3001&matchId=${encodeURIComponent(match.matchId)}`;
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`${match.matchId} ${response.status}`);
+      const raw = await response.json();
+      if (!raw.success) throw new Error(raw.errorMessage || `${match.matchId} API error`);
+      return normalizeSportteryHistory(match, raw.value || {});
+    })
+  );
+  const histories = settled
+    .filter((item) => item.status === "fulfilled")
+    .map((item) => item.value);
+  if (!histories.length) return;
+  spHistoryData = {
+    source: "中国体育彩票官方 SP 历史接口",
+    apiEndpoint: SPORTTERY_FIXED_BONUS_API_URL,
+    importedAt: capturedAt,
+    isLiveSnapshot: true,
+    totalCount: histories.length,
+    errors: settled
+      .map((item, index) => item.status === "rejected"
+        ? { matchId: String(matchesForHistory[index]?.matchId || ""), message: item.reason?.message || "unknown" }
+        : null)
+      .filter(Boolean),
+    matches: histories,
+  };
+  window.LIVE_SPORTTERY_SP_HISTORY = spHistoryData;
+}
+
 async function refreshSportteryCloudData() {
   if (!SPORTTERY_CLOUD_API_URL) {
     await Promise.allSettled([refreshSportteryLiveData(), refreshSportteryResultsData()]);
+    await refreshSportterySpHistoryData();
+    rerenderOddsSurfaces();
     return;
   }
   try {
