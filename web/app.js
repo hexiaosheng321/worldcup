@@ -1584,25 +1584,15 @@ function renderMatchDetail(no) {
         <p>${pred?.keyJudgement || pred?.marketGap || "这场还没有模型锁版，先保留赛程和盘口入口。"}</p>
       </div>
       <div class="match-page-summary">
-        <span>${pred ? "模型摘要" : "赛程摘要"}</span>
-        <div class="summary-lock">
-          <strong>${pred ? `单选 ${pred.pick}` : finished ? "已完赛" : "待锁版"}</strong>
-          <em>${finished ? `赛果 ${match.score}` : `${formatDate(match.date)} · ${match.group}组`}</em>
-        </div>
+        <span>${ticaiIssue(match)}</span>
         <div class="summary-grid">
+          <div><small>单选</small><b>${pred ? pred.pick : finished ? "已完赛" : "待锁版"}</b></div>
           <div><small>让球</small><b>${pred ? handicapPick(pred) || "暂无" : hLabel || "暂无"}</b></div>
           <div><small>总进球</small><b>${pred?.totalGoalsPick || "暂无"}</b></div>
           <div><small>比分预测</small><b>${pred ? `${pred.mainScore} / ${pred.counterScore}` : "待推演"}</b></div>
-          <div><small>体彩期号</small><b>${ticaiIssue(match)}</b></div>
         </div>
       </div>
     </section>
-    <div class="match-page-grid">
-      <div class="match-page-tile"><span>状态</span><strong>${finished ? "已完赛" : "待赛"}</strong></div>
-      <div class="match-page-tile"><span>体彩期号</span><strong>${ticaiIssue(match)}</strong></div>
-      <div class="match-page-tile"><span>盘口</span><strong>${hLabel || "暂无"}</strong></div>
-      <div class="match-page-tile"><span>模型单选</span><strong>${pred ? pred.pick : "待锁版"}</strong></div>
-    </div>
     <div class="match-mode-switch" role="tablist" aria-label="单场详情模式">
       <button type="button" class="active" data-match-mode="quick">快速判断</button>
       <button type="button" data-match-mode="full">完整推演</button>
@@ -1669,8 +1659,6 @@ function renderMatchDetail(no) {
               <div><b>错层风险：</b>${filter.keyFailureRisk}</div>
             </div>
           </section>
-          ${renderFinalDecisionGatePanel(pred)}
-          ${renderUniversalModelPanel(pred)}
           ${renderDecisionGatePanel(no, pred)}
           ${renderSpRadarPanel(no, "detail")}
           ${renderModelTriadPanel(no, pred)}
@@ -1686,7 +1674,6 @@ function renderMatchDetail(no) {
               <span>总进球 ${pred.totalGoalsPick || "暂无"}</span>
               <span>比分预测 ${pred.mainScore} / ${pred.counterScore}</span>
             </div>
-            ${finalDecisionActionText(pred) ? `<p class="final-action-line"><b>最终动作：</b>${displayModelText(finalDecisionActionText(pred))}</p>` : ""}
           </section>
           ${pred.groupSituation ? `<section class="match-page-section"><span>小组形势</span><p>${displayModelText(pred.groupSituation)}</p></section>` : ""}
           ${pred.recentAnalysis ? `<section class="match-page-section"><span>近况与推演思路</span><p>${displayModelText(pred.recentAnalysis)}</p></section>` : ""}
@@ -1712,6 +1699,8 @@ function renderMatchDetail(no) {
         `
         : ""
     }
+    ${pred ? renderUniversalModelPanel(pred) : ""}
+    ${pred ? renderFinalDecisionGatePanel(pred) : ""}
     </div>
     <div class="match-page-actions">
       <button type="button" data-detail-model="${match.no}">锁版室</button>
@@ -3782,11 +3771,19 @@ function finalDecisionGateItems(pred) {
 function renderFinalDecisionGatePanel(pred) {
   const items = finalDecisionGateItems(pred);
   if (!items.length) return "";
+  const action = finalDecisionActionText(pred) || "等待最终动作锁定";
+  const supportingItems = items.filter(([label]) => label !== "最终动作");
   return `
     <section class="match-page-section final-decision-gate">
-      <span>最终决策闸门</span>
-      <div class="final-decision-grid">
-        ${items
+      <div class="final-decision-head">
+        <span>最终决策闸门</span>
+        <strong>${displayModelText(action)}</strong>
+        <em>所有数据、盘口、比赛脚本和风险项在这里收口，只作为赛前决策过滤依据。</em>
+      </div>
+      ${
+        supportingItems.length
+          ? `<div class="final-decision-grid">
+        ${supportingItems
           .map(
             ([label, value]) => `
               <article>
@@ -3796,7 +3793,9 @@ function renderFinalDecisionGatePanel(pred) {
             `
           )
           .join("")}
-      </div>
+      </div>`
+          : ""
+      }
     </section>
   `;
 }
@@ -3853,17 +3852,21 @@ function normalizeScriptSet(scriptSet, fallbackText) {
 
 function renderUniversalModelPanel(pred) {
   if (!pred) return "";
+  const modelTemplate = pred.competitionModel || pred.eventModel || pred.competitionType || "通用赛前模板";
   const motiveItems = [
-    ["赛事模板", pred.competitionModel || pred.eventModel || pred.competitionType],
     ["路径动机", pred.pathMotive || pred.pathAdvantage || pred.strategicMotive],
     ["赛程动机", pred.scheduleMotive || pred.schedulePressure || pred.rotationRisk],
     ["复盘错因", pred.reviewErrorType || pred.errorType || pred.learningTag],
   ].filter(([, value]) => Boolean(value));
   const scripts = normalizeScriptSet(pred.scriptSet || pred.scenarioSet || pred.fourScripts, pred.script);
-  if (!motiveItems.length && !scripts.length) return "";
+  if (!modelTemplate && !motiveItems.length && !scripts.length) return "";
   return `
     <section class="match-page-section universal-model-panel">
-      <span>V4 通用模型</span>
+      <div class="universal-model-head">
+        <span>V4 通用模型</span>
+        <strong>${displayModelText(modelTemplate)}</strong>
+        <em>把赛事模板、路径收益、赛程压力和比赛脚本先归类，再交给最后的决策闸门收口。</em>
+      </div>
       ${
         motiveItems.length
           ? `<div class="universal-model-grid">${motiveItems
@@ -3880,7 +3883,9 @@ function renderUniversalModelPanel(pred) {
       }
       ${
         scripts.length
-          ? `<div class="script-set-grid">${scripts
+          ? `<div class="script-set-block">
+              <span>脚本分布</span>
+              <div class="script-set-grid">${scripts
               .map(
                 (item) => `
                   <article>
@@ -3890,7 +3895,8 @@ function renderUniversalModelPanel(pred) {
                   </article>
                 `
               )
-              .join("")}</div>`
+              .join("")}</div>
+            </div>`
           : ""
       }
     </section>
