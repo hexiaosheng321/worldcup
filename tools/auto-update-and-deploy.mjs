@@ -102,18 +102,14 @@ async function main() {
     }
   }
   if (!changed.length && !process.argv.includes("--force")) {
-    await log("no meaningful live data change; skipped CI deploy");
+    await log("no meaningful live data change; skipped deploy");
     return;
   }
 
-  if (!process.env.GITHUB_ACTIONS) {
-    await log("local run: data fetched but deploy skipped (CI-only). Run 'npm run cloudflare:deploy' to push manually.");
-    return;
-  }
-  await log(`changed: ${changed.join(", ") || "forced deploy"}`);
+  const runtime = process.env.GITHUB_ACTIONS ? "ci" : "local";
+  await log(`${runtime} changed: ${changed.join(", ") || "forced deploy"}`);
   await runCommand("npx", ["wrangler", "pages", "deploy", "web", "--project-name", "worldcup-dashboard"], "cloudflare deploy");
   await log("deploy complete");
-
 }
 
 main().catch(async (error) => {

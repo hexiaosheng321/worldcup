@@ -2,10 +2,10 @@ window.LIVE_SPORTTERY_ODDS = {
   "source": "中国体育彩票官方接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c",
   "lotterNo": "2026-06-26",
-  "importedAt": "2026-06-27T00:22:00.147Z",
+  "importedAt": "2026-06-27T00:41:07.352Z",
   "isLiveSnapshot": true,
   "totalCount": 9,
-  "lastUpdateTime": "2026-06-26 21:51:45",
+  "lastUpdateTime": "2026-06-26 21:51:15",
   "matchDates": [
     "2026-06-26",
     "2026-06-27",
