@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>体彩足彩模型中心</title>
-    <link rel="stylesheet" href="./styles.css?v=202606260005" />
+    <link rel="stylesheet" href="./styles.css?v=202606270003" />
   </head>
   <body class="home-mode page-loading">
     <header class="home-topbar">
@@ -15,6 +15,7 @@
       <nav aria-label="总站模块">
         <button type="button" class="active" data-site-home>首页</button>
         <button type="button" data-sporttery-pool>赛事池</button>
+        <button type="button" data-site-locks>赛事推演锁版</button>
         <button type="button" data-home-enter>世界杯</button>
         <button type="button" data-model-intro>模型介绍</button>
         <button type="button" data-odds-map>盘口图谱</button>
@@ -184,6 +185,25 @@
         <div id="sporttery-pool-grid"></div>
       </section>
 
+      <section id="site-locks" class="panel site-locks-panel">
+        <div class="model-stats-hero site-locks-hero">
+          <div>
+            <p class="eyebrow">Locked Models</p>
+            <h2>赛事推演锁版</h2>
+            <p>
+              这里集中展示全站所有赛前锁版推演。世界杯、芬超和后续新增联赛会放在同一个入口，
+              但每条记录保留自己的赛事模型版本，方便后续按联赛独立升级。
+            </p>
+          </div>
+          <aside>
+            <span>排序方式</span>
+            <strong>最新在前</strong>
+            <em>按锁版日期和场次倒序</em>
+          </aside>
+        </div>
+        <div id="site-locks-list" class="site-locks-list"></div>
+      </section>
+
       <section id="odds-map" class="panel odds-map-panel">
         <div class="odds-map-hero">
           <div>
@@ -212,13 +232,13 @@
             <h2>模型介绍</h2>
             <p>
               这套模型不是单纯预测胜负，而是把赛程、盘口、比分形态、赛事动机和赛后复盘放在同一条链路里。
-              目前正式使用 V4；V1、V2、V3 会作为历史阶段保留，用来分段比较命中率，后续模型也会继续在这里更新。
+              世界杯专题当前已经迭代到 V4；每个新接入联赛都从 V1 开始，积累样本后再按联赛单独升级。
             </p>
           </div>
           <aside>
             <span>当前版本</span>
-            <strong>V4</strong>
-            <em>通用体彩 · 按赛事类型切换权重</em>
+            <strong>世界杯 V4</strong>
+            <em>新联赛从 V1 起步</em>
           </aside>
         </div>
 
@@ -287,8 +307,26 @@
           </section>
           <section>
             <span>后续迭代</span>
-            <strong>继续优化模型</strong>
-            <p>后续会继续接入更多赛事池数据、赔率漂移、阵容伤停和回测指标，在 V4 基础上迭代不同赛事模板。</p>
+            <strong>分联赛升级</strong>
+            <p>后续会继续接入更多赛事池数据、赔率漂移、阵容伤停和回测指标。新联赛先用 V1 记录样本，再根据复盘表现升级到 V2、V3、V4。</p>
+          </section>
+        </div>
+
+        <div class="model-contract-grid league-model-rule">
+          <section>
+            <span>联赛模型原则</span>
+            <strong>同结构，不同版本</strong>
+            <p>模型结构保持一致：概率底盘、盘口偏差、比赛脚本、过滤闸门、锁版结论和赛后复盘。但不同联赛不会共用成熟度，新联赛一律从 V1 开始。</p>
+          </section>
+          <section>
+            <span>升级条件</span>
+            <strong>靠复盘样本升级</strong>
+            <p>同一联赛积累足够样本后，才根据方向、让球、总进球、比分覆盖和错因归因升级版本，避免把世界杯经验硬套到所有赛事。</p>
+          </section>
+          <section>
+            <span>当前状态</span>
+            <strong>世界杯 V4 / 芬超 V1</strong>
+            <p>世界杯是当前成熟专题；芬超是今天第一天接入的联赛样本，因此作为芬超 V1 开始记录，后续单独优化。</p>
           </section>
         </div>
 
@@ -442,6 +480,7 @@
           </aside>
         </div>
         <div id="global-stats-cards" class="review-cards global-stats-cards"></div>
+        <div id="global-stats-league-filter" class="review-table global-stats-league-filter"></div>
         <div id="global-stats-table" class="review-table global-stats-table"></div>
       </section>
 
@@ -557,9 +596,10 @@
     <script src="./live-sporttery-sp-history.js?v=202606260001"></script>
     <script src="./live-football-scores.js?v=202606270001"></script>
     <script src="./odds-data.js?v=202606260001"></script>
-    <script src="./data.js?v=202606270002"></script>
+    <script src="./data.js?v=202606270003"></script>
+    <script src="./auto-sporttery-predictions.js?v=202606270002"></script>
     <script src="./sporttery-math.js?v=202606260001"></script>
-    <script src="./app.js?v=202606270002"></script>
+    <script src="./app.js?v=202606270003"></script>
 <button type="button" class="back-to-top" id="back-to-top" aria-label="返回顶部">&#8593;</button>
   </body>
 </html>

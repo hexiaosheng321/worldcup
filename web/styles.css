@@ -3026,6 +3026,10 @@ body::before {
   padding-top: 22px;
 }
 
+.site-locks-mode .shell {
+  padding-top: 22px;
+}
+
 .model-intro-mode .shell {
   padding-top: 22px;
 }
@@ -3047,6 +3051,10 @@ body::before {
 }
 
 .sporttery-mode #sporttery-pool {
+  margin-top: 0;
+}
+
+.site-locks-mode #site-locks {
   margin-top: 0;
 }
 
@@ -6315,6 +6323,12 @@ body::before {
   background: rgba(255, 255, 255, 0.96);
 }
 
+.site-locks-panel {
+  overflow: hidden;
+  padding: 0 0 22px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
 .model-intro-hero {
   position: relative;
   display: grid;
@@ -6339,6 +6353,98 @@ body::before {
     linear-gradient(115deg, rgba(8, 32, 82, 0.98), rgba(7, 60, 135, 0.94)),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 78px);
   color: white;
+}
+
+.site-locks-hero {
+  margin-bottom: 22px;
+}
+
+.site-locks-list {
+  display: grid;
+  gap: 14px;
+  padding: 0 22px 22px;
+}
+
+.site-lock-card {
+  cursor: pointer;
+  border: 1px solid rgba(7, 60, 135, 0.18);
+  border-radius: 8px;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(238, 245, 253, 0.92)),
+    repeating-linear-gradient(90deg, rgba(7, 60, 135, 0.06) 0 1px, transparent 1px 46px);
+  box-shadow: 0 14px 34px rgba(8, 32, 82, 0.08);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.site-lock-card:hover {
+  border-color: rgba(217, 154, 22, 0.72);
+  box-shadow: 0 18px 42px rgba(8, 32, 82, 0.14);
+  transform: translateY(-2px) rotate(-0.25deg);
+}
+
+.site-lock-head,
+.site-lock-meta,
+.site-lock-picks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.site-lock-head span,
+.site-lock-meta span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.site-lock-head h3 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 24px;
+}
+
+.site-lock-head b {
+  border: 1px solid rgba(7, 60, 135, 0.35);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--blue);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.site-lock-meta {
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+
+.site-lock-meta span {
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(7, 60, 135, 0.08);
+}
+
+.site-lock-picks {
+  justify-content: flex-start;
+  margin-top: 14px;
+}
+
+.site-lock-picks strong,
+.site-lock-picks span {
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--ink);
+  font-weight: 950;
+  background: rgba(255, 244, 211, 0.9);
+}
+
+.site-lock-card p {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.7;
 }
 
 .model-stats-hero::after {
@@ -7282,6 +7388,7 @@ body::before {
 @media (max-width: 960px) {
   .model-intro-hero,
   .model-stats-hero,
+  .site-locks-hero,
   .odds-map-hero,
   .about-site-hero,
   .model-version-timeline,
@@ -7302,6 +7409,7 @@ body::before {
 
   .model-intro-hero h2,
   .model-stats-hero h2,
+  .site-locks-hero h2,
   .odds-map-hero h2,
   .about-site-hero h2 {
     font-size: 36px;
@@ -8468,6 +8576,7 @@ body::before {
 
   /* ── 模型介绍 ── */
   .model-intro-hero,
+  .site-locks-hero,
   .about-site-hero .about-site-hero-inner,
   .about-split,
   .about-mission-grid { grid-template-columns: 1fr; }

@@ -1,4 +1,9 @@
 const data = window.WC_DATA;
+const manualSportteryKeys = new Set((data.sportteryPredictions || []).map((item) => item.sportteryKey || item.no));
+const autoSportteryPredictions = (window.AUTO_SPORTTERY_PREDICTIONS || []).filter(
+  (item) => !manualSportteryKeys.has(item.sportteryKey || item.no)
+);
+data.sportteryPredictions = [...(data.sportteryPredictions || []), ...autoSportteryPredictions];
 const matches = data.matches;
 const predictionMap = new Map(data.predictions.map((item) => [item.no, item]));
 const SPORTTERY_CLOUD_API_URL = "";
@@ -28,6 +33,7 @@ const resetButton = document.querySelector("#reset");
 const homeEnters = document.querySelectorAll("[data-home-enter]");
 const siteHome = document.querySelector("[data-site-home]");
 const sportteryPoolButtons = document.querySelectorAll("[data-sporttery-pool]");
+const siteLocksButtons = document.querySelectorAll("[data-site-locks]");
 const modelIntroButtons = document.querySelectorAll("[data-model-intro]");
 const modelStatsButtons = document.querySelectorAll("[data-model-stats]");
 const oddsMapButtons = document.querySelectorAll("[data-odds-map]");
@@ -39,6 +45,7 @@ let modelNoticeTimer;
 let activeReviewView = "ticket";
 let activeReviewDate = "all";
 let activeGlobalStatsDate = "all";
+let activeGlobalStatsLeague = "all";
 let activeSportteryPoolView = "open";
 let matchDetailReturnTarget = "today";
 let homeCountdownTimer;
@@ -89,6 +96,7 @@ function showHome() {
     "is-detail-page",
     "sporttery-detail-mode",
     "sporttery-mode",
+    "site-locks-mode",
     "model-intro-mode",
     "model-stats-mode",
     "odds-map-mode",
@@ -105,6 +113,8 @@ function showDashboard() {
   const active =
     window.location.hash === "#sporttery" || window.location.hash.startsWith("#sporttery-match-")
       ? "[data-sporttery-pool]"
+      : window.location.hash === "#locks"
+        ? "[data-site-locks]"
       : window.location.hash === "#model-intro"
         ? "[data-model-intro]"
         : window.location.hash === "#model-stats"
@@ -180,6 +190,36 @@ function compactSportteryNo(matchNumStr = "", matchNum = "") {
   const text = String(matchNumStr || matchNum || "");
   const found = text.match(/(\d{3})$/);
   return found ? found[1] : text.slice(-3).padStart(3, "0");
+}
+
+const teamAliases = {
+  坦山猫: ["Ilves", "Tampereen Ilves", "Ilves Tampere"],
+  塞伊奈: ["SJK", "Seinajoen JK", "Seinäjoen JK", "SJK Seinajoki"],
+  赫尔辛基: ["HJK", "HJK Helsinki"],
+  库奥皮奥: ["KuPS", "Kuopion Palloseura"],
+  玛丽港: ["Mariehamn", "IFK Mariehamn"],
+  国际图尔: ["Inter Turku", "FC Inter Turku"],
+  TPS图尔: ["TPS", "TPS Turku"],
+  雅罗: ["Jaro", "FF Jaro"],
+  赫尔火花: ["Haka", "FC Haka"],
+  瓦萨: ["VPS", "Vaasa VPS"],
+  AC奥卢: ["AC Oulu", "Oulu"],
+  拉赫蒂: ["Lahti", "FC Lahti"],
+};
+
+function normalizeTeamName(name = "") {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/[\s·.'’\-()（）]/g, "");
+}
+
+function teamSearchNames(name = "") {
+  const direct = String(name || "").trim();
+  const aliases = teamAliases[direct] || [];
+  const reverseAliases = Object.entries(teamAliases)
+    .filter(([, values]) => values.some((item) => normalizeTeamName(item) === normalizeTeamName(direct)))
+    .map(([key]) => key);
+  return [...new Set([direct, ...aliases, ...reverseAliases].filter(Boolean).map(normalizeTeamName))];
 }
 
 function normalizeSportteryHandicap(goalLine = "") {
@@ -316,7 +356,9 @@ function normalizeSportteryHistory(match, value = {}) {
 
 function looseTeamMatch(fullName = "", sourceName = "") {
   if (!fullName || !sourceName) return false;
-  return fullName.includes(sourceName) || sourceName.includes(fullName);
+  const fullSet = teamSearchNames(fullName);
+  const sourceSet = teamSearchNames(sourceName);
+  return fullSet.some((left) => sourceSet.some((right) => left.includes(right) || right.includes(left)));
 }
 
 function matchFromOddsItem(item) {
@@ -1172,8 +1214,12 @@ function sportteryPoolCard(item) {
     : item.sourceType === "live"
       ? item.liveScore
         ? `半场 ${item.liveHalfScore || "-"} · ${item.liveSource || "实时比分源"}`
-        : item.liveNote || "等待官方比分回填"
-    : normalText;
+        : item.liveNote || "实时源未匹配，等待官方比分回填"
+      : isLive
+        ? item.liveScore
+          ? `半场 ${item.liveHalfScore || "-"} · ${item.liveSource || "实时比分源"}`
+          : "实时源未匹配，等待官方比分回填"
+        : normalText;
   return `
     <article class="match-card sporttery-card ${score ? "finished" : ""} ${isLive ? "is-live" : ""}" data-sporttery-match-key="${item.sportteryKey || sportteryItemKey(item)}" ${linked ? `data-pool-match-no="${item.linkedNo}"` : ""}>
       <div class="match-meta">
@@ -1550,6 +1596,7 @@ function activateTab(tabName) {
   document.body.classList.toggle("is-detail-page", tabName === "match-detail");
   if (tabName !== "match-detail") document.body.classList.remove("sporttery-detail-mode");
   document.body.classList.toggle("sporttery-mode", tabName === "sporttery-pool");
+  document.body.classList.toggle("site-locks-mode", tabName === "site-locks");
   document.body.classList.toggle("model-intro-mode", tabName === "model-intro");
   document.body.classList.toggle("model-stats-mode", tabName === "model-stats");
   document.body.classList.toggle("odds-map-mode", tabName === "odds-map");
@@ -1677,6 +1724,8 @@ function renderMatchDetail(no) {
   const backLabel =
     matchDetailReturnTarget === "review"
       ? "← 复盘验票台"
+      : matchDetailReturnTarget === "locks"
+        ? "← 赛事推演锁版"
       : matchDetailReturnTarget === "model-stats"
         ? "← 统计和回测"
         : "← 比赛流";
@@ -1945,6 +1994,8 @@ function renderSportteryMatchDetail(key) {
   const backLabel =
     matchDetailReturnTarget === "review"
       ? "← 复盘验票台"
+      : matchDetailReturnTarget === "locks"
+        ? "← 赛事推演锁版"
       : matchDetailReturnTarget === "model-stats"
         ? "← 统计和回测"
         : "← 赛事池";
@@ -2064,10 +2115,10 @@ function openSportteryMatchPage(key, returnTarget = "sporttery") {
 
 function closeMatchPage() {
   if (window.location.hash.startsWith("#match-") || window.location.hash.startsWith("#sporttery-match-")) {
-    const hash = matchDetailReturnTarget === "review" ? "#worldcup-review" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : "#worldcup";
+    const hash = matchDetailReturnTarget === "review" ? "#worldcup-review" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : "#worldcup";
     history.pushState("", document.title, `${window.location.pathname}${window.location.search}${hash}`);
   }
-  activateTab(matchDetailReturnTarget === "review" ? "review" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : "today");
+  activateTab(matchDetailReturnTarget === "review" ? "review" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : "today");
 }
 
 function handleRouteFromHash() {
@@ -2095,6 +2146,9 @@ function handleRouteFromHash() {
   }
   if (window.location.hash === "#sporttery") {
     activateTab("sporttery-pool");
+  }
+  if (window.location.hash === "#locks") {
+    activateTab("site-locks");
   }
   if (window.location.hash === "#model-intro") {
     activateTab("model-intro");
@@ -2727,6 +2781,51 @@ function renderModel() {
       `;
     })
     .join("");
+}
+
+function renderSiteLocks() {
+  const target = document.querySelector("#site-locks-list");
+  if (!target) return;
+  const rows = modelAuditRows()
+    .slice()
+    .sort((a, b) => {
+      const dateCompare = String(b.match.date || "").localeCompare(String(a.match.date || ""));
+      if (dateCompare !== 0) return dateCompare;
+      return Number(b.match.no || 0) - Number(a.match.no || 0);
+    });
+  target.innerHTML = rows.length
+    ? rows
+        .map(({ match, pred, competition, review }) => {
+          const keyAttr = match.sportteryKey
+            ? `data-lock-sporttery="${match.sportteryKey}"`
+            : `data-lock-worldcup="${match.no}"`;
+          return `
+            <article class="site-lock-card" ${keyAttr}>
+              <div class="site-lock-head">
+                <div>
+                  <span>${dash(competition)} · ${dash(pred.issue || match.no)}</span>
+                  <h3>${match.home} vs ${match.away}</h3>
+                </div>
+                <b>${predictionVersionLabel(pred)}</b>
+              </div>
+              <div class="site-lock-meta">
+                <span>${formatDate(pred.date || match.date)}</span>
+                <span>${pred.matchType || "待分类"}</span>
+                <span>${confidenceGrade(pred)}</span>
+                <span>${pred.advice || confidenceAdvice(confidenceGrade(pred))}</span>
+              </div>
+              <div class="site-lock-picks">
+                <strong>胜平负 ${dash(pred.pick)}</strong>
+                <span>让球 ${dash(review.hPick)}</span>
+                <span>总进球 ${dash(pred.totalGoalsPick)}</span>
+                <span>比分 ${dash(pred.mainScore)} / ${dash(pred.counterScore)}</span>
+              </div>
+              <p>${displayModelText(pred.keyJudgement || pred.marketGap || pred.script || "已锁版，等待复盘。")}</p>
+            </article>
+          `;
+        })
+        .join("")
+    : "<p class='empty'>暂无赛事推演锁版记录</p>";
 }
 
 function renderOdds() {
@@ -3537,15 +3636,24 @@ function modelAuditRows() {
 function renderGlobalStats() {
   const cards = document.querySelector("#global-stats-cards");
   const table = document.querySelector("#global-stats-table");
+  const leagueFilter = document.querySelector("#global-stats-league-filter");
   if (!cards || !table) return;
 
   const allRows = modelAuditRows();
   const dates = [...new Set(allRows.map(({ match }) => match.date))];
+  const leagues = [...new Set(allRows.map((row) => row.competition).filter(Boolean))];
   if (activeGlobalStatsDate !== "all" && !dates.includes(activeGlobalStatsDate)) {
     activeGlobalStatsDate = "all";
   }
+  if (activeGlobalStatsLeague !== "all" && !leagues.includes(activeGlobalStatsLeague)) {
+    activeGlobalStatsLeague = "all";
+  }
   const visibleRows =
-    activeGlobalStatsDate === "all" ? allRows : allRows.filter(({ match }) => match.date === activeGlobalStatsDate);
+    allRows.filter(({ match, competition }) => {
+      const dateOk = activeGlobalStatsDate === "all" || match.date === activeGlobalStatsDate;
+      const leagueOk = activeGlobalStatsLeague === "all" || competition === activeGlobalStatsLeague;
+      return dateOk && leagueOk;
+    });
   const rows = visibleRows.map((row) => ({ ...row, ...row.review }));
 
   const verifiedRows = rows.filter((row) => row.actualDirection);
@@ -3616,6 +3724,24 @@ function renderGlobalStats() {
   ].join("");
   const dateScopeLabel =
     activeGlobalStatsDate === "all" ? "全部体彩模型记录" : `${formatDate(activeGlobalStatsDate)} 模型记录`;
+  if (leagueFilter) {
+    const leagueOptions = [
+      `<option value="all"${activeGlobalStatsLeague === "all" ? " selected" : ""}>全部联赛 / 专题</option>`,
+      ...leagues.map(
+        (league) => `<option value="${league}"${activeGlobalStatsLeague === league ? " selected" : ""}>${league}</option>`
+      ),
+    ].join("");
+    leagueFilter.innerHTML = `
+      <div class="review-filterbar global-stats-filterbar league-filterbar">
+        <div>
+          <span>按联赛回测</span>
+          <strong>${activeGlobalStatsLeague === "all" ? "全部联赛 / 专题" : activeGlobalStatsLeague}</strong>
+          <em>${visibleRows.length}/${allRows.length} 场</em>
+        </div>
+        <select data-global-stats-league aria-label="选择联赛或专题">${leagueOptions}</select>
+      </div>
+    `;
+  }
   const tableRows = visibleRows
     .map(({ match, pred, review, competition, playType }) => {
       const attribution = reviewAttribution(pred, match, review);
@@ -4633,6 +4759,7 @@ function renderAll() {
   renderHome();
   renderSignals();
   renderSportteryPool();
+  renderSiteLocks();
   renderGlobalStats();
   renderOddsMap();
   renderToday();
@@ -4676,6 +4803,16 @@ sportteryPoolButtons.forEach((button) => {
       return;
     }
     activateTab("sporttery-pool");
+  });
+});
+
+siteLocksButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (window.location.hash !== "#locks") {
+      window.location.hash = "locks";
+      return;
+    }
+    activateTab("site-locks");
   });
 });
 
@@ -4737,6 +4874,18 @@ document.querySelector("#sporttery-pool")?.addEventListener("click", (event) => 
   openSportteryMatchPage(card.dataset.sportteryMatchKey);
 });
 
+document.querySelector("#site-locks")?.addEventListener("click", (event) => {
+  const sportteryCard = event.target.closest("[data-lock-sporttery]");
+  if (sportteryCard) {
+    openSportteryMatchPage(sportteryCard.dataset.lockSporttery, "locks");
+    return;
+  }
+  const worldCupCard = event.target.closest("[data-lock-worldcup]");
+  if (worldCupCard) {
+    openMatchPage(worldCupCard.dataset.lockWorldcup, "locks");
+  }
+});
+
 document.querySelector("#review-table")?.addEventListener("click", (event) => {
   const sportteryButton = event.target.closest("[data-review-open-sporttery]");
   if (sportteryButton) {
@@ -4765,6 +4914,13 @@ document.querySelector("#global-stats-table")?.addEventListener("change", (event
   const select = event.target.closest("[data-global-stats-date]");
   if (!select) return;
   activeGlobalStatsDate = select.value;
+  renderGlobalStats();
+});
+
+document.querySelector("#global-stats-league-filter")?.addEventListener("change", (event) => {
+  const select = event.target.closest("[data-global-stats-league]");
+  if (!select) return;
+  activeGlobalStatsLeague = select.value;
   renderGlobalStats();
 });
 
@@ -5165,6 +5321,7 @@ function renderGoalTrendChart(goalData, label) {
       ".model-evidence-grid article, " +
       ".model-intro-hero, " +
       ".model-stats-hero, " +
+      ".site-lock-card, " +
       ".odds-map-hero, " +
       ".odds-radar-summary article, " +
       ".odds-spotlight-card, " +

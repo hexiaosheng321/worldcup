@@ -113,7 +113,6 @@ async function fetchDay(date) {
   url.searchParams.set("action", "get_events");
   url.searchParams.set("from", date);
   url.searchParams.set("to", date);
-  url.searchParams.set("match_live", "1");
   url.searchParams.set("APIkey", API_KEY);
   const response = await fetch(url);
   if (!response.ok) throw new Error(`APIfootball ${response.status}`);
@@ -143,6 +142,7 @@ const data = {
   apiEndpoint: API_URL,
   importedAt: capturedAt,
   isLiveSnapshot: true,
+  scope: "events_with_live_status",
   totalCount: unique.length,
   matchDates: dates,
   errors,
