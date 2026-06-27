@@ -393,6 +393,45 @@ function findSportteryItemByKey(key = "") {
   return rows.find((item) => sportteryItemKey(item) === key);
 }
 
+function sportteryPredictionForItem(item = {}) {
+  const key = sportteryItemKey(item);
+  const rows = data.sportteryPredictions || [];
+  return rows.find((pred) => pred.sportteryKey && pred.sportteryKey === key)
+    || rows.find((pred) => pred.matchId && item.matchId && pred.matchId === item.matchId)
+    || rows.find(
+      (pred) =>
+        pred.no &&
+        item.no &&
+        pred.no === item.no &&
+        [item.ticaiDate, item.matchDate].includes(pred.matchDate || pred.date)
+    )
+    || rows.find(
+      (pred) =>
+        [item.ticaiDate, item.matchDate].includes(pred.matchDate || pred.date) &&
+        looseTeamMatch(pred.home, item.home) &&
+        looseTeamMatch(pred.away, item.away)
+    );
+}
+
+function findSportteryItemForPrediction(pred = {}) {
+  const rows = [...(oddsData.matches || []), ...(resultsData.results || [])];
+  return rows.find((item) => pred.sportteryKey && sportteryItemKey(item) === pred.sportteryKey)
+    || rows.find((item) => pred.matchId && item.matchId && pred.matchId === item.matchId)
+    || rows.find(
+      (item) =>
+        pred.no &&
+        item.no &&
+        pred.no === item.no &&
+        [item.ticaiDate, item.matchDate].includes(pred.matchDate || pred.date)
+    )
+    || rows.find(
+      (item) =>
+        [item.ticaiDate, item.matchDate].includes(pred.matchDate || pred.date) &&
+        looseTeamMatch(pred.home, item.home) &&
+        looseTeamMatch(pred.away, item.away)
+    );
+}
+
 function resultForWorldCupMatch(match) {
   const results = resultsData.results || [];
   return results.find(
@@ -432,11 +471,13 @@ function handicapLine(no) {
 function handicapLineFromPrediction(pred) {
   const text = `${pred?.handicap || ""} ${pred?.marketGap || ""}`;
   const match = matches.find((item) => item.no === pred?.no);
-  if (!match) return "";
-  const escapedHome = match.home.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const homePattern = new RegExp(`${escapedHome}\\s*([+-]\\d+(?:\\.\\d+)?)`);
-  const homeMatch = text.match(homePattern);
-  if (homeMatch) return homeMatch[1];
+  const home = match?.home || pred?.home || "";
+  if (home) {
+    const escapedHome = home.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const homePattern = new RegExp(`${escapedHome}\\s*([+-]\\d+(?:\\.\\d+)?)`);
+    const homeMatch = text.match(homePattern);
+    if (homeMatch) return homeMatch[1];
+  }
   const generalMatch = text.match(/([+-]\d+(?:\.\d+)?)/);
   return generalMatch ? generalMatch[1] : "";
 }
@@ -470,11 +511,15 @@ function displayModelText(value) {
 function handicapLabel(pred) {
   const match = matches.find((item) => item.no === pred.no);
   const line = reviewHandicapLine(pred);
-  return match && line ? `${match.home}${line}` : "";
+  const home = match?.home || pred?.home || "";
+  return home && line ? `${home}${line}` : "";
 }
 
 function uniquePredictionCount() {
-  return new Set(data.predictions.map((item) => item.no)).size;
+  return new Set([
+    ...data.predictions.map((item) => `wc-${item.no}`),
+    ...(data.sportteryPredictions || []).map((item) => `sp-${item.sportteryKey || item.no}`),
+  ]).size;
 }
 
 function predictionVersionRank(pred) {
@@ -1547,6 +1592,13 @@ function openReviewForMatch(no) {
 }
 
 function reviewMatchButton(match) {
+  if (match.sportteryKey) {
+    return `
+      <button type="button" class="review-match-link" data-review-open-sporttery="${match.sportteryKey}" title="进入体彩推演页">
+        ${match.home} vs ${match.away}
+      </button>
+    `;
+  }
   return `
     <button type="button" class="review-match-link" data-review-open-match="${match.no}" title="进入模型推演页">
       ${match.home} vs ${match.away}
@@ -1826,7 +1878,31 @@ function sportteryOddsLeader(odds = {}, labels = [["胜", "win"], ["平", "draw"
     .sort((a, b) => a.odd - b.odd)[0] || null;
 }
 
-function sportteryResearchSnapshot(item) {
+function sportteryResearchSnapshot(item, modelPred) {
+  const score = normalizeResultScore(item.score);
+  if (modelPred) {
+    const actualTotal = parseScore(score)?.total;
+    const riskNotes = [
+      modelPred.decisionConflict,
+      modelPred.keyFailureRisk,
+      modelPred.eventRisk,
+      modelPred.dataQuality,
+    ].filter(Boolean);
+    return {
+      statusLabel: score ? "赛后复盘" : `${modelPred.competitionModel || "联赛V4模型"}锁版`,
+      action: modelPred.advice || "已锁版",
+      directionPick: modelPred.pick || "-",
+      handicapPick: handicapPick(modelPred) || "-",
+      totalPick: modelPred.totalGoalsPick || "-",
+      scorePick: [modelPred.mainScore, modelPred.counterScore].filter(Boolean).join(" / ") || "-",
+      riskNotes,
+      score,
+      actualDirection: direction(score),
+      actualHandicap: handicapDirection(score, reviewHandicapLine(modelPred)),
+      actualTotal,
+      modelPred,
+    };
+  }
   const normalLeader = sportteryOddsLeader(item.normal);
   const handicapLeader = sportteryOddsLeader(item.handicapOdds, [["让胜", "win"], ["让平", "draw"], ["让负", "lose"]]);
   const totalLow = lowestOddOption(item.totalGoalsOdds || [], "goals");
@@ -1835,7 +1911,6 @@ function sportteryResearchSnapshot(item) {
     .map((odd) => String(odd.score || "").replace(":", "-"))
     .filter(Boolean);
   const hasEnough = Boolean(normalLeader || handicapLeader || totalLow || scoreLow.length);
-  const score = normalizeResultScore(item.score);
   const actualDirection = direction(score);
   const actualHandicap = handicapDirection(score, item.handicap || "0");
   const actualTotal = parseScore(score)?.total;
@@ -1865,42 +1940,72 @@ function renderSportteryMatchDetail(key) {
   const base = findSportteryItemByKey(key);
   if (!content || !base) return;
   const item = sportteryDetailRow(base);
-  const research = sportteryResearchSnapshot(item);
+  const modelPred = item.linkedNo ? latestPredictionFor(item.linkedNo) : sportteryPredictionForItem(item);
+  const research = sportteryResearchSnapshot(item, modelPred);
+  const backLabel =
+    matchDetailReturnTarget === "review"
+      ? "← 复盘验票台"
+      : matchDetailReturnTarget === "model-stats"
+        ? "← 统计和回测"
+        : "← 赛事池";
   const scoreText = item.score || (item.status === "进行中" ? "LIVE" : "vs");
   const totalGoals = item.totalGoalsOdds || [];
   const scoreOdds = item.scoreOdds || [];
   const sourceStamp = formatCapturedAt(oddsData.importedAt || resultsData.importedAt);
   content.innerHTML = `
     <div class="match-page-toolbar">
-      <button type="button" data-detail-back>← 赛事池</button>
+      <button type="button" data-detail-back>${backLabel}</button>
       <span>${item.issue || item.no || "体彩"} · ${formatDate(item.displayDate)} · ${item.displayGroup}</span>
     </div>
     <section class="match-page-hero sporttery-detail-hero">
       <div>
-        <p class="eyebrow">Sporttery Research</p>
+        <p class="eyebrow">${modelPred?.competitionModel || "Sporttery Research"}</p>
         <h2>${item.displayHome} vs ${item.displayAway}</h2>
-        <p>${item.league || "体彩赛事"} · ${item.kickoffTime || "--:--"} 开赛 · 让球 ${item.handicap || "0"} · ${research.action}</p>
+        <p>${modelPred?.keyJudgement || `${item.league || "体彩赛事"} · ${item.kickoffTime || "--:--"} 开赛 · 让球 ${item.handicap || "0"} · ${research.action}`}</p>
       </div>
       <div class="match-page-summary">
         <span>${research.statusLabel}</span>
         <div class="summary-grid">
-          <div><small>当前比分</small><b>${scoreText}</b></div>
           <div><small>体彩期号</small><b>${item.issue || item.no || "-"}</b></div>
-          <div><small>联赛</small><b>${item.league || "竞彩"}</b></div>
-          <div><small>状态</small><b>${item.status || "-"}</b></div>
+          <div><small>当前比分</small><b>${scoreText}</b></div>
+          <div><small>单选</small><b>${modelPred?.pick || research.directionPick}</b></div>
+          <div><small>预测</small><b>${research.scorePick}</b></div>
         </div>
       </div>
     </section>
     <section class="match-page-section sporttery-research-panel">
-      <span>${research.score ? "复盘验票" : "赛前推演"}</span>
+      <span>${modelPred ? `${modelPred.competitionModel || "联赛模型"}推演` : research.score ? "复盘验票" : "盘口预筛"}</span>
       <div class="sporttery-research-grid">
         <article><small>胜平负倾向</small><strong>${research.directionPick}</strong></article>
         <article><small>让球方向</small><strong>${research.handicapPick}</strong></article>
         <article><small>总进球温度</small><strong>${research.totalPick}</strong></article>
         <article><small>比分候选</small><strong>${research.scorePick}</strong></article>
       </div>
-      <p>${research.score ? `实际比分 ${research.score}，赛果 ${research.actualDirection || "-"}，让球结果 ${research.actualHandicap || "-"}，总进球 ${research.actualTotal ?? "-"}。` : "这里先基于体彩开盘赔率做赛前过滤，后续模型锁版后可继续补入完整推演文本和最终结论。"}</p>
+      <p>${
+        research.score
+          ? `实际比分 ${research.score}，赛果 ${research.actualDirection || "-"}，让球结果 ${research.actualHandicap || "-"}，总进球 ${research.actualTotal ?? "-"}。`
+          : modelPred
+            ? displayModelText(modelPred.finalDecisionAction || modelPred.marketGap || modelPred.script)
+            : "这里先基于体彩开盘赔率做赛前过滤，后续模型锁版后可继续补入完整推演文本和最终结论。"
+      }</p>
     </section>
+    ${
+      modelPred
+        ? `
+          <section class="match-page-section sporttery-model-panel">
+            <span>联赛模型依据</span>
+            <div class="filter-board-grid">
+              <div><b>模型归属：</b>${modelPred.competitionModel || modelPred.competition || "体彩联赛模型"}</div>
+              <div><b>比赛类型：</b>${modelPred.matchType || "-"}</div>
+              <div><b>盘口偏差：</b>${displayModelText(modelPred.marketGap || "-")}</div>
+              <div><b>比赛脚本：</b>${displayModelText(modelPred.script || "-")}</div>
+              <div><b>半场触发：</b>${displayModelText(modelPred.halftimeDecision || "-")}</div>
+              <div><b>让球闸门：</b>${displayModelText(modelPred.handicapGate || "-")}</div>
+            </div>
+          </section>
+        `
+        : ""
+    }
     <section class="match-page-section sporttery-risk-panel">
       <span>判断风险</span>
       <div class="sporttery-risk-list">
@@ -1938,7 +2043,8 @@ function renderSportteryMatchDetail(key) {
     </section>
     <div class="match-page-actions">
       ${item.linkedNo ? `<button type="button" data-detail-model="${item.linkedNo}">世界杯模型页</button>` : ""}
-      <button type="button" class="secondary" data-detail-back>返回赛事池</button>
+      ${modelPred && !item.linkedNo ? `<button type="button" data-detail-global-stats>统计和回测</button>` : ""}
+      <button type="button" class="secondary" data-detail-back>${backLabel.replace("← ", "返回")}</button>
     </div>
   `;
   activateTab("match-detail");
@@ -1948,8 +2054,8 @@ function renderSportteryMatchDetail(key) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function openSportteryMatchPage(key) {
-  matchDetailReturnTarget = "sporttery";
+function openSportteryMatchPage(key, returnTarget = "sporttery") {
+  matchDetailReturnTarget = returnTarget;
   if (window.location.hash !== `#sporttery-match-${key}`) {
     window.location.hash = `sporttery-match-${key}`;
   }
@@ -3382,7 +3488,7 @@ function renderReview() {
 }
 
 function modelAuditRows() {
-  return groupedPredictions()
+  const worldCupRows = groupedPredictions()
     .slice()
     .sort((a, b) => a.match.date.localeCompare(b.match.date) || Number(a.match.no) - Number(b.match.no))
     .map(({ match, predictions }) => {
@@ -3397,6 +3503,35 @@ function modelAuditRows() {
         playType: pred.playType || "竞彩足球",
       };
     });
+  const sportteryRows = (data.sportteryPredictions || []).map((pred) => {
+    const item = findSportteryItemForPrediction(pred);
+    const result = item ? sportteryDetailRow(item) : null;
+    const match = {
+      no: pred.no,
+      date: pred.date || pred.matchDate,
+      matchDate: pred.matchDate || pred.date,
+      competition: pred.competition || "体彩",
+      league: pred.competition || "体彩",
+      group: pred.competition || "体彩",
+      home: pred.home,
+      away: pred.away,
+      score: normalizeResultScore(result?.score || item?.score || pred.score),
+      sportteryKey: pred.sportteryKey || (item ? sportteryItemKey(item) : ""),
+      matchId: pred.matchId || item?.matchId || "",
+    };
+    return {
+      match,
+      pred,
+      review: predictionReviewData(pred, match),
+      competition: pred.competitionModel || pred.competition || "体彩联赛",
+      playType: pred.playType || "竞彩足球",
+    };
+  });
+  return [...worldCupRows, ...sportteryRows].sort((a, b) => {
+    const dateCompare = String(a.match.date || "").localeCompare(String(b.match.date || ""));
+    if (dateCompare !== 0) return dateCompare;
+    return Number(a.match.no || 0) - Number(b.match.no || 0);
+  });
 }
 
 function renderGlobalStats() {
@@ -3467,7 +3602,7 @@ function renderGlobalStats() {
         .join("")}
       <article class="current-version-note">
         <strong>全体彩口径</strong>
-        <span>当前已接入世界杯锁版；后续赛事池推演记录会继续汇入本表。</span>
+        <span>世界杯专题和联赛模型锁版统一进入本表，但保留各自赛事模型归属。</span>
       </article>
     </div>
     ${renderCalibrationPanel(verifiedRows)}
@@ -4603,6 +4738,11 @@ document.querySelector("#sporttery-pool")?.addEventListener("click", (event) => 
 });
 
 document.querySelector("#review-table")?.addEventListener("click", (event) => {
+  const sportteryButton = event.target.closest("[data-review-open-sporttery]");
+  if (sportteryButton) {
+    openSportteryMatchPage(sportteryButton.dataset.reviewOpenSporttery, "review");
+    return;
+  }
   const matchButton = event.target.closest("[data-review-open-match]");
   if (matchButton) {
     openMatchPage(matchButton.dataset.reviewOpenMatch, "review");
@@ -4629,6 +4769,11 @@ document.querySelector("#global-stats-table")?.addEventListener("change", (event
 });
 
 document.querySelector("#global-stats-table")?.addEventListener("click", (event) => {
+  const sportteryButton = event.target.closest("[data-review-open-sporttery]");
+  if (sportteryButton) {
+    openSportteryMatchPage(sportteryButton.dataset.reviewOpenSporttery, "model-stats");
+    return;
+  }
   const matchButton = event.target.closest("[data-review-open-match]");
   if (!matchButton) return;
   openMatchPage(matchButton.dataset.reviewOpenMatch, "model-stats");
@@ -4689,6 +4834,10 @@ document.querySelector("#match-detail")?.addEventListener("click", (event) => {
   const review = event.target.closest("[data-detail-review]");
   if (review) {
     openReviewForMatch(review.dataset.detailReview);
+    return;
+  }
+  if (event.target.closest("[data-detail-global-stats]")) {
+    activateTab("model-stats");
   }
 });
 
