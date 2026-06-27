@@ -14,11 +14,13 @@ const DATA_FILES = [
   "web/live-sporttery-data.js",
   "web/live-sporttery-results.js",
   "web/live-sporttery-sp-history.js",
+  "web/live-football-scores.js",
 ];
 const FETCH_SCRIPTS = [
   "tools/fetch-sporttery-live.mjs",
   "tools/fetch-sporttery-results.mjs",
   "tools/fetch-sporttery-sp-history.mjs",
+  "tools/fetch-live-football-scores.mjs",
 ];
 
 async function log(message) {

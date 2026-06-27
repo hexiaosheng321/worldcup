@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
       update_data:
@@ -56,4 +56,5 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SPORTTERY_UPSTREAM_PROXY: ${{ secrets.SPORTTERY_UPSTREAM_PROXY }}
+          APIFOOTBALL_API_KEY: ${{ secrets.APIFOOTBALL_API_KEY }}
           RUN_DATA_UPDATE: ${{ github.event_name == 'schedule' || inputs.update_data == 'true' }}

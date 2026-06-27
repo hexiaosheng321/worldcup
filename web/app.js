@@ -16,6 +16,9 @@ let resultsData = window.LIVE_SPORTTERY_RESULTS?.results?.length
 let spHistoryData = window.LIVE_SPORTTERY_SP_HISTORY?.matches?.length
   ? window.LIVE_SPORTTERY_SP_HISTORY
   : { matches: [] };
+let liveFootballData = window.LIVE_FOOTBALL_SCORES?.matches?.length
+  ? window.LIVE_FOOTBALL_SCORES
+  : { matches: [] };
 
 const tabs = document.querySelectorAll(".tab");
 const panels = document.querySelectorAll(".panel");
@@ -356,6 +359,29 @@ function resultForSportteryItem(item) {
     );
 }
 
+function liveScoreForSportteryItem(item) {
+  const rows = liveFootballData.matches || [];
+  return rows.find(
+    (row) =>
+      row.date === item.matchDate &&
+      looseTeamMatch(item.home, row.homeZh || row.home) &&
+      looseTeamMatch(item.away, row.awayZh || row.away)
+  ) || rows.find(
+    (row) =>
+      row.date === item.matchDate &&
+      looseTeamMatch(item.home, row.home) &&
+      looseTeamMatch(item.away, row.away)
+  );
+}
+
+function liveScoreStatusText(row) {
+  if (!row) return "";
+  if (row.isFinished) return "已完赛";
+  if (row.minute) return `进行中 ${row.minute}`;
+  if (row.statusLabel) return row.statusLabel;
+  return row.live ? "进行中" : "";
+}
+
 function resultForWorldCupMatch(match) {
   const results = resultsData.results || [];
   return results.find(
@@ -369,13 +395,15 @@ function resultForWorldCupMatch(match) {
 function applyResultBackfill() {
   (oddsData.matches || []).forEach((item) => {
     const result = resultForSportteryItem(item);
-    const score = normalizeResultScore(result?.score);
+    const liveScore = liveScoreForSportteryItem(item);
+    const score = normalizeResultScore(result?.score) || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
     if (!score) return;
     item.score = score;
-    item.result = result.result || direction(score);
-    item.statusCode = result.statusCode || item.statusCode;
-    item.statusName = result.statusName || item.statusName || "已完成";
-    item.halfScore = result.halfScore || item.halfScore || "";
+    item.result = result?.result || direction(score);
+    item.statusCode = result?.statusCode || item.statusCode;
+    item.statusName = result?.statusName || liveScore?.statusLabel || item.statusName || "已完成";
+    item.halfScore = result?.halfScore || liveScore?.halfScore || item.halfScore || "";
+    item.liveScoreSource = liveScore?.source || item.liveScoreSource || "";
   });
   matches.forEach((match) => {
     const result = resultForWorldCupMatch(match);
@@ -993,9 +1021,13 @@ function sportteryPoolItems() {
     .map((item) => {
       const linkedMatch = matchFromOddsItem(item);
       const result = resultForSportteryItem(item);
-      const score = normalizeResultScore(item.score) || normalizeResultScore(result?.score);
+      const liveScore = liveScoreForSportteryItem(item);
+      const resultScore = normalizeResultScore(item.score) || normalizeResultScore(result?.score);
+      const liveScoreText = normalizeResultScore(liveScore?.score);
+      const score = resultScore || (liveScore?.isFinished ? liveScoreText : "");
+      const displayScore = score || liveScoreText;
       const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
-      const isLive = !score && Number.isFinite(kickoffAt) && now >= kickoffAt;
+      const isLive = !score && (Boolean(liveScoreText) || (Number.isFinite(kickoffAt) && now >= kickoffAt));
       return {
         ...item,
         linkedNo: linkedMatch?.no || "",
@@ -1004,9 +1036,14 @@ function sportteryPoolItems() {
         displayAway: linkedMatch?.away || item.away,
         displayGroup: linkedMatch ? `${linkedMatch.group}组` : item.league || "竞彩",
         score,
+        liveScore: liveScoreText,
+        displayScore,
+        liveStatus: liveScoreStatusText(liveScore),
+        liveHalfScore: liveScore?.halfScore || "",
+        liveSource: liveScore?.source || "",
         sourceType: "open",
         poolTone: score ? "finished" : isLive ? "live" : "open",
-        status: score ? "已完赛" : isLive ? "进行中" : linkedMatch && latestPredictionFor(linkedMatch.no) ? "已有推演" : "已开盘",
+        status: score ? "已完赛" : isLive ? liveScoreStatusText(liveScore) || "进行中" : linkedMatch && latestPredictionFor(linkedMatch.no) ? "已有推演" : "已开盘",
       };
     })
     .sort((a, b) => a.displayDate.localeCompare(b.displayDate) || String(a.issue).localeCompare(String(b.issue)));
@@ -1068,12 +1105,15 @@ function sportteryPoolCard(item) {
     ? `胜 ${item.normal.win} · 平 ${item.normal.draw} · 负 ${item.normal.lose}`
     : `让球 ${handicap}`;
   const score = normalizeResultScore(item.score);
+  const displayScore = normalizeResultScore(item.displayScore) || score;
   const isLive = item.poolTone === "live";
   const statusLine = isLive ? item.status || "进行中" : item.status;
   const marketText = item.sourceType === "finished"
     ? `半场 ${item.halfScore || "-"} · ${item.result || direction(score) || "-"}`
     : item.sourceType === "live"
-      ? item.liveNote || "等待官方比分回填"
+      ? item.liveScore
+        ? `半场 ${item.liveHalfScore || "-"} · ${item.liveSource || "实时比分源"}`
+        : item.liveNote || "等待官方比分回填"
     : normalText;
   return `
     <article class="match-card sporttery-card ${score ? "finished" : ""} ${isLive ? "is-live" : ""}" ${linked ? `data-pool-match-no="${item.linkedNo}"` : ""}>
@@ -1083,7 +1123,7 @@ function sportteryPoolCard(item) {
       </div>
       <div class="teams">
         <strong>${item.displayHome}</strong>
-        <b>${score || (isLive ? "LIVE" : "vs")}</b>
+        <b>${displayScore || (isLive ? "LIVE" : "vs")}</b>
         <strong>${item.displayAway}</strong>
       </div>
       <div class="match-card-insight">
@@ -1127,11 +1167,12 @@ function renderSportteryPool() {
     const stamp = oddsData.lastUpdateTime || formatCapturedAt(oddsData.importedAt) || "等待刷新";
     const source = oddsData.isLiveSnapshot ? "体彩官方实时接口" : "本地静态兜底";
     const resultStamp = formatCapturedAt(resultsData.importedAt);
+    const liveStamp = formatCapturedAt(liveFootballData.importedAt);
     sourceNode.textContent =
       activeSportteryPoolView === "finished"
         ? `数据源：体彩官方赛果接口 · ${resultStamp || "已有快照"}`
         : activeSportteryPoolView === "live"
-          ? `数据源：${source} + 赛果实时状态 · ${stamp}`
+          ? `数据源：${source} + APIfootball 实时比分 · ${liveStamp || stamp}`
           : `数据源：${source} · ${stamp}`;
   }
   target.innerHTML = grouped.size
