@@ -7,6 +7,23 @@ export const SPORTTERY_HEADERS = {
     "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
 };
 
+export function sportteryRequestUrl(targetUrl) {
+  const proxy = (process.env.SPORTTERY_UPSTREAM_PROXY || process.env.UPSTREAM_PROXY || "").trim();
+  if (!proxy) return targetUrl;
+  if (proxy.includes("{url}")) {
+    return proxy.replace("{url}", encodeURIComponent(targetUrl));
+  }
+  return `${proxy}${targetUrl}`;
+}
+
+export async function fetchSportteryJson(targetUrl) {
+  const response = await fetch(sportteryRequestUrl(targetUrl), { headers: SPORTTERY_HEADERS });
+  if (!response.ok) throw new Error(`Sporttery API ${response.status}`);
+  const raw = await response.json();
+  if (!raw.success) throw new Error(raw.errorMessage || "Sporttery API returned an error");
+  return raw;
+}
+
 export function toOdd(value) {
   if (value === undefined || value === null || value === "") return "";
   return String(value);

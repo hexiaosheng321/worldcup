@@ -2,11 +2,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
   compactNo,
+  fetchSportteryJson,
   latestMarketUpdate,
   marketOdds,
   normalizeHandicap,
   scoreOdds,
-  SPORTTERY_HEADERS,
   totalGoalsOdds,
 } from "./sporttery-utils.mjs";
 
@@ -57,10 +57,7 @@ function normalizePayload(raw, capturedAt) {
   };
 }
 
-const response = await fetch(API_URL, { headers: SPORTTERY_HEADERS });
-if (!response.ok) throw new Error(`Sporttery API ${response.status}`);
-const raw = await response.json();
-if (!raw.success) throw new Error(raw.errorMessage || "Sporttery API returned an error");
+const raw = await fetchSportteryJson(API_URL);
 
 const capturedAt = new Date().toISOString();
 const data = normalizePayload(raw, capturedAt);

@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { compactNo, SPORTTERY_HEADERS } from "./sporttery-utils.mjs";
+import { compactNo, fetchSportteryJson } from "./sporttery-utils.mjs";
 
 const API_URL = "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
 const OUTPUT = path.resolve("web/live-sporttery-results.js");
@@ -50,10 +50,7 @@ function normalizePayload(raw, capturedAt) {
   };
 }
 
-const response = await fetch(API_URL, { headers: SPORTTERY_HEADERS });
-if (!response.ok) throw new Error(`Sporttery results API ${response.status}`);
-const raw = await response.json();
-if (!raw.success) throw new Error(raw.errorMessage || "Sporttery results API returned an error");
+const raw = await fetchSportteryJson(API_URL);
 
 const capturedAt = new Date().toISOString();
 const data = normalizePayload(raw, capturedAt);

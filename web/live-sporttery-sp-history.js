@@ -1,7 +1,7 @@
 window.LIVE_SPORTTERY_SP_HISTORY = {
   "source": "中国体育彩票官方 SP 历史接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry",
-  "importedAt": "2026-06-27T00:22:04.009Z",
+  "importedAt": "2026-06-27T00:58:36.874Z",
   "isLiveSnapshot": true,
   "totalCount": 9,
   "errors": [],

@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { compactNo, SPORTTERY_HEADERS } from "./sporttery-utils.mjs";
+import { compactNo, fetchSportteryJson } from "./sporttery-utils.mjs";
 
 const CALCULATOR_API = "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c";
 const FIXED_BONUS_API = "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
@@ -44,15 +44,7 @@ function normalizeHistory(match, businessDate, history = {}) {
   };
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, { headers: SPORTTERY_HEADERS });
-  if (!response.ok) throw new Error(`${url} ${response.status}`);
-  const raw = await response.json();
-  if (!raw.success) throw new Error(raw.errorMessage || `API error: ${url}`);
-  return raw;
-}
-
-const liveRaw = await fetchJson(CALCULATOR_API);
+const liveRaw = await fetchSportteryJson(CALCULATOR_API);
 const days = liveRaw?.value?.matchInfoList || [];
 const liveMatches = days.flatMap((day) =>
   (day.subMatchList || []).map((match) => ({ match, businessDate: day.businessDate }))
@@ -64,7 +56,7 @@ for (const item of liveMatches) {
   const matchId = item.match.matchId;
   try {
     const url = `${FIXED_BONUS_API}?clientCode=3001&matchId=${encodeURIComponent(matchId)}`;
-    const raw = await fetchJson(url);
+    const raw = await fetchSportteryJson(url);
     histories.push(normalizeHistory(item.match, item.businessDate, raw.value || {}));
   } catch (error) {
     errors.push({ matchId: String(matchId), message: error.message });

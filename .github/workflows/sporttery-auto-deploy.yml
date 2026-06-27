@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -29,8 +31,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Deploy website
-        run: npm run cloudflare:deploy
+      - name: Deploy website or update Sporttery data
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ -z "$SPORTTERY_UPSTREAM_PROXY" ]; then
+              echo "::notice::SPORTTERY_UPSTREAM_PROXY is not configured; skipped cloud data update."
+              exit 0
+            fi
+            npm run sporttery:auto-deploy
+          else
+            npm run cloudflare:deploy
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SPORTTERY_UPSTREAM_PROXY: ${{ secrets.SPORTTERY_UPSTREAM_PROXY }}

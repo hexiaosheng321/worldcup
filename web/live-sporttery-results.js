@@ -1,7 +1,7 @@
 window.LIVE_SPORTTERY_RESULTS = {
   "source": "中国体育彩票官方赛果接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1",
-  "importedAt": "2026-06-27T00:41:08.778Z",
+  "importedAt": "2026-06-27T00:58:35.175Z",
   "isLiveSnapshot": true,
   "totalCount": 80,
   "matchDates": [
