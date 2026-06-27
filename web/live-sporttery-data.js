@@ -2,10 +2,10 @@ window.LIVE_SPORTTERY_ODDS = {
   "source": "中国体育彩票官方接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c",
   "lotterNo": "2026-06-27",
-  "importedAt": "2026-06-27T04:21:17.673Z",
+  "importedAt": "2026-06-27T04:31:38.768Z",
   "isLiveSnapshot": true,
   "totalCount": 15,
-  "lastUpdateTime": "2026-06-27 12:17:12",
+  "lastUpdateTime": "2026-06-27 12:26:27",
   "matchDates": [
     "2026-06-27",
     "2026-06-28",
@@ -516,14 +516,14 @@ window.LIVE_SPORTTERY_ODDS = {
       "score": "",
       "handicap": "+1",
       "normal": {
-        "win": "3.35",
-        "draw": "2.11",
-        "lose": "2.80"
+        "win": "3.54",
+        "draw": "2.07",
+        "lose": "2.75"
       },
       "handicapOdds": {
-        "win": "1.31",
-        "draw": "4.35",
-        "lose": "7.35"
+        "win": "1.33",
+        "draw": "4.30",
+        "lose": "6.90"
       },
       "scoreOdds": [
         {
@@ -621,7 +621,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "55.00"
         }
       ],
-      "updatedAt": "2026-06-27 12:17:12"
+      "updatedAt": "2026-06-27 12:26:27"
     },
     {
       "orderId": "6072",

@@ -1,7 +1,7 @@
 window.LIVE_SPORTTERY_SP_HISTORY = {
   "source": "中国体育彩票官方 SP 历史接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry",
-  "importedAt": "2026-06-27T04:21:21.629Z",
+  "importedAt": "2026-06-27T04:31:41.994Z",
   "isLiveSnapshot": true,
   "totalCount": 15,
   "errors": [],
@@ -18,7 +18,7 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
       "home": "克罗地亚",
       "away": "加纳",
       "handicap": "-1",
-      "updatedAt": "2026-06-27 12:01:23",
+      "updatedAt": "2026-06-27 12:30:45",
       "history": {
         "had": [
           {
@@ -63,6 +63,17 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
             "h": "1.59",
             "updateTime": "12:01:03",
             "hf": "-1",
+            "goalLine": ""
+          },
+          {
+            "a": "5.58",
+            "updateDate": "2026-06-27",
+            "df": "0",
+            "d": "3.07",
+            "af": "-1",
+            "h": "1.60",
+            "updateTime": "12:30:45",
+            "hf": "1",
             "goalLine": ""
           }
         ],
@@ -1740,7 +1751,7 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
       "home": "阿尔及利",
       "away": "奥地利",
       "handicap": "+1",
-      "updatedAt": "2026-06-27 12:17:01",
+      "updatedAt": "2026-06-27 12:25:10",
       "history": {
         "had": [
           {
@@ -1752,6 +1763,17 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
             "h": "3.35",
             "updateTime": "09:38:36",
             "hf": "0",
+            "goalLine": ""
+          },
+          {
+            "a": "2.75",
+            "updateDate": "2026-06-27",
+            "df": "-1",
+            "d": "2.07",
+            "af": "-1",
+            "h": "3.54",
+            "updateTime": "12:24:34",
+            "hf": "1",
             "goalLine": ""
           }
         ],
@@ -1765,6 +1787,17 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
             "h": "1.31",
             "updateTime": "09:38:36",
             "hf": "0",
+            "goalLine": "+1"
+          },
+          {
+            "a": "6.90",
+            "updateDate": "2026-06-27",
+            "df": "-1",
+            "d": "4.30",
+            "af": "-1",
+            "h": "1.33",
+            "updateTime": "12:25:10",
+            "hf": "1",
             "goalLine": "+1"
           }
         ],
@@ -1969,6 +2002,29 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
             "goalLine": "",
             "ha": "32.00",
             "hd": "15.00",
+            "da": "5.20",
+            "ahf": "0"
+          },
+          {
+            "aa": "5.15",
+            "dd": "2.88",
+            "hh": "6.30",
+            "updateDate": "2026-06-27",
+            "adf": "-1",
+            "ad": "14.50",
+            "dhf": "1",
+            "dh": "6.05",
+            "aaf": "0",
+            "ah": "36.00",
+            "ddf": "-1",
+            "hhf": "1",
+            "daf": "0",
+            "updateTime": "12:26:24",
+            "hdf": "-1",
+            "haf": "0",
+            "goalLine": "",
+            "ha": "32.00",
+            "hd": "14.50",
             "da": "5.20",
             "ahf": "0"
           }
