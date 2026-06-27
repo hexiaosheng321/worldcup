@@ -2,10 +2,10 @@ window.LIVE_SPORTTERY_ODDS = {
   "source": "中国体育彩票官方接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c",
   "lotterNo": "2026-06-27",
-  "importedAt": "2026-06-27T04:31:38.768Z",
+  "importedAt": "2026-06-27T05:37:06.362Z",
   "isLiveSnapshot": true,
   "totalCount": 15,
-  "lastUpdateTime": "2026-06-27 12:26:27",
+  "lastUpdateTime": "2026-06-27 13:32:15",
   "matchDates": [
     "2026-06-27",
     "2026-06-28",
@@ -28,25 +28,25 @@ window.LIVE_SPORTTERY_ODDS = {
       "score": "",
       "handicap": "-1",
       "normal": {
-        "win": "1.59",
-        "draw": "3.07",
-        "lose": "5.72"
+        "win": "1.67",
+        "draw": "2.99",
+        "lose": "5.10"
       },
       "handicapOdds": {
-        "win": "2.97",
-        "draw": "3.28",
-        "lose": "2.05"
+        "win": "3.27",
+        "draw": "3.22",
+        "lose": "1.95"
       },
       "scoreOdds": [
-        {
-          "score": "1:0",
-          "odds": "5.50",
-          "bucket": "胜"
-        },
         {
           "score": "1:1",
           "odds": "5.50",
           "bucket": "平"
+        },
+        {
+          "score": "1:0",
+          "odds": "5.80",
+          "bucket": "胜"
         },
         {
           "score": "2:0",
@@ -75,7 +75,7 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "score": "3:1",
-          "odds": "14.00",
+          "odds": "13.50",
           "bucket": "胜"
         },
         {
@@ -94,7 +94,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "bucket": "胜"
         },
         {
-          "score": "4:0",
+          "score": "3:2",
           "odds": "31.00",
           "bucket": "胜"
         }
@@ -133,7 +133,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "38.00"
         }
       ],
-      "updatedAt": "2026-06-27 12:01:26"
+      "updatedAt": "2026-06-27 13:32:15"
     },
     {
       "orderId": "6068",
@@ -152,9 +152,9 @@ window.LIVE_SPORTTERY_ODDS = {
       "handicap": "+2",
       "normal": null,
       "handicapOdds": {
-        "win": "2.48",
-        "draw": "3.90",
-        "lose": "2.13"
+        "win": "2.52",
+        "draw": "4.00",
+        "lose": "2.07"
       },
       "scoreOdds": [
         {
@@ -168,23 +168,23 @@ window.LIVE_SPORTTERY_ODDS = {
           "bucket": "负"
         },
         {
-          "score": "0:1",
-          "odds": "7.70",
-          "bucket": "负"
-        },
-        {
           "score": "0:4",
           "odds": "7.75",
           "bucket": "负"
         },
         {
+          "score": "0:1",
+          "odds": "8.00",
+          "bucket": "负"
+        },
+        {
           "score": "1:2",
-          "odds": "8.50",
+          "odds": "9.00",
           "bucket": "负"
         },
         {
           "score": "1:3",
-          "odds": "10.00",
+          "odds": "9.50",
           "bucket": "负"
         },
         {
@@ -252,7 +252,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "12.00"
         }
       ],
-      "updatedAt": "2026-06-27 10:14:57"
+      "updatedAt": "2026-06-27 12:49:06"
     },
     {
       "orderId": "6069",
@@ -270,14 +270,14 @@ window.LIVE_SPORTTERY_ODDS = {
       "score": "",
       "handicap": "+1",
       "normal": {
-        "win": "3.75",
-        "draw": "3.75",
-        "lose": "1.68"
+        "win": "3.50",
+        "draw": "3.68",
+        "lose": "1.75"
       },
       "handicapOdds": {
-        "win": "1.94",
-        "draw": "3.46",
-        "lose": "3.08"
+        "win": "1.85",
+        "draw": "3.62",
+        "lose": "3.20"
       },
       "scoreOdds": [
         {
@@ -375,7 +375,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "27.00"
         }
       ],
-      "updatedAt": "2026-06-27 12:16:33"
+      "updatedAt": "2026-06-27 13:20:28"
     },
     {
       "orderId": "6070",
@@ -640,9 +640,9 @@ window.LIVE_SPORTTERY_ODDS = {
       "handicap": "+2",
       "normal": null,
       "handicapOdds": {
-        "win": "2.45",
-        "draw": "3.87",
-        "lose": "2.16"
+        "win": "2.50",
+        "draw": "3.88",
+        "lose": "2.12"
       },
       "scoreOdds": [
         {
@@ -740,7 +740,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "16.00"
         }
       ],
-      "updatedAt": "2026-06-27 11:18:24"
+      "updatedAt": "2026-06-27 12:39:27"
     },
     {
       "orderId": "6201",
@@ -963,11 +963,11 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "goals": "2",
-          "odds": "3.80"
+          "odds": "3.85"
         },
         {
           "goals": "3",
-          "odds": "3.40"
+          "odds": "3.50"
         },
         {
           "goals": "4",
@@ -975,18 +975,18 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "goals": "5",
-          "odds": "7.80"
+          "odds": "7.60"
         },
         {
           "goals": "6",
-          "odds": "13.00"
+          "odds": "12.50"
         },
         {
           "goals": "7+",
-          "odds": "19.00"
+          "odds": "17.00"
         }
       ],
-      "updatedAt": "2026-06-27 09:14:16"
+      "updatedAt": "2026-06-27 13:14:37"
     },
     {
       "orderId": "6203",
@@ -1373,14 +1373,14 @@ window.LIVE_SPORTTERY_ODDS = {
       "score": "",
       "handicap": "-1",
       "normal": {
-        "win": "2.03",
-        "draw": "3.25",
-        "lose": "3.05"
+        "win": "1.96",
+        "draw": "3.30",
+        "lose": "3.16"
       },
       "handicapOdds": {
-        "win": "4.15",
-        "draw": "3.75",
-        "lose": "1.61"
+        "win": "3.90",
+        "draw": "3.70",
+        "lose": "1.66"
       },
       "scoreOdds": [
         {
@@ -1478,7 +1478,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "24.00"
         }
       ],
-      "updatedAt": "2026-06-27 09:14:16"
+      "updatedAt": "2026-06-27 12:40:04"
     },
     {
       "orderId": "7073",

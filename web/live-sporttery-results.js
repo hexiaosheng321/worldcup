@@ -1,7 +1,7 @@
 window.LIVE_SPORTTERY_RESULTS = {
   "source": "中国体育彩票官方赛果接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1",
-  "importedAt": "2026-06-27T03:09:21.900Z",
+  "importedAt": "2026-06-27T05:37:06.766Z",
   "isLiveSnapshot": true,
   "totalCount": 80,
   "matchDates": [
@@ -1436,12 +1436,12 @@ window.LIVE_SPORTTERY_RESULTS = {
       "matchId": "2040301",
       "home": "埃及",
       "away": "伊朗",
-      "statusCode": "10",
-      "statusName": "待开奖",
-      "halfScore": "",
-      "fullScoreRaw": "",
-      "score": "",
-      "result": ""
+      "statusCode": "11",
+      "statusName": "已完成",
+      "halfScore": "1-1",
+      "fullScoreRaw": "1:1",
+      "score": "1-1",
+      "result": "平"
     },
     {
       "orderId": "5066",
@@ -1454,12 +1454,12 @@ window.LIVE_SPORTTERY_RESULTS = {
       "matchId": "2040302",
       "home": "新西兰",
       "away": "比利时",
-      "statusCode": "10",
-      "statusName": "待开奖",
-      "halfScore": "",
-      "fullScoreRaw": "",
-      "score": "",
-      "result": ""
+      "statusCode": "11",
+      "statusName": "已完成",
+      "halfScore": "0-1",
+      "fullScoreRaw": "1:5",
+      "score": "1-5",
+      "result": "负"
     }
   ]
 };
