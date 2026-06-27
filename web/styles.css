@@ -6157,6 +6157,46 @@ body::before {
   font-size: 12px;
 }
 
+.sporttery-detail-odds {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sporttery-detail-odds.compact {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.sporttery-detail-odds article {
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(247, 251, 255, 0.92), rgba(255, 248, 230, 0.48));
+}
+
+.sporttery-detail-odds small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.sporttery-detail-odds strong {
+  color: var(--ink);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.sporttery-detail-odds p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 850;
+}
+
 .model-intro-panel {
   overflow: hidden;
   padding: 0;

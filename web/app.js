@@ -382,6 +382,16 @@ function liveScoreStatusText(row) {
   return row.live ? "进行中" : "";
 }
 
+function sportteryItemKey(item = {}) {
+  if (item.matchId) return `id-${item.matchId}`;
+  return `issue-${item.issue || item.no || item.orderId || ""}-${item.ticaiDate || item.matchDate || ""}`;
+}
+
+function findSportteryItemByKey(key = "") {
+  const rows = [...(oddsData.matches || []), ...(resultsData.results || [])];
+  return rows.find((item) => sportteryItemKey(item) === key);
+}
+
 function resultForWorldCupMatch(match) {
   const results = resultsData.results || [];
   return results.find(
@@ -1030,6 +1040,7 @@ function sportteryPoolItems() {
       const isLive = !score && (Boolean(liveScoreText) || (Number.isFinite(kickoffAt) && now >= kickoffAt));
       return {
         ...item,
+        sportteryKey: sportteryItemKey(item),
         linkedNo: linkedMatch?.no || "",
         displayDate: item.ticaiDate || oddsData.lotterNo || dashboardToday(),
         displayHome: linkedMatch?.home || item.home,
@@ -1055,6 +1066,7 @@ function sportteryPoolItems() {
       const linkedMatch = matchFromResultItem(item);
       return {
         ...item,
+        sportteryKey: sportteryItemKey(item),
         linkedNo: linkedMatch?.no || "",
         displayDate: item.ticaiDate || item.matchDate || latestFinishedDate,
         displayHome: linkedMatch?.home || item.home,
@@ -1080,6 +1092,7 @@ function sportteryPoolItems() {
       const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
       return {
         ...item,
+        sportteryKey: sportteryItemKey(item),
         linkedNo: linkedMatch?.no || "",
         displayDate: item.ticaiDate || item.matchDate || dashboardToday(),
         displayHome: linkedMatch?.home || item.home,
@@ -1116,7 +1129,7 @@ function sportteryPoolCard(item) {
         : item.liveNote || "等待官方比分回填"
     : normalText;
   return `
-    <article class="match-card sporttery-card ${score ? "finished" : ""} ${isLive ? "is-live" : ""}" ${linked ? `data-pool-match-no="${item.linkedNo}"` : ""}>
+    <article class="match-card sporttery-card ${score ? "finished" : ""} ${isLive ? "is-live" : ""}" data-sporttery-match-key="${item.sportteryKey || sportteryItemKey(item)}" ${linked ? `data-pool-match-no="${item.linkedNo}"` : ""}>
       <div class="match-meta">
         <span>${item.issue || item.no} · ${item.displayGroup}</span>
         <span>${formatDate(item.displayDate)}</span>
@@ -1132,7 +1145,7 @@ function sportteryPoolCard(item) {
       </div>
       <div class="card-foot">
         <span>${item.league || "体彩"}</span>
-        <span>${linked ? "进入单场详情页 ›" : "待接入详情"}</span>
+        <span>进入体彩详情 ›</span>
       </div>
     </article>
   `;
@@ -1760,12 +1773,122 @@ function openMatchPage(no, returnTarget = "today") {
   renderMatchDetail(no);
 }
 
+function oddsPairList(label, odds = {}) {
+  const rows = [
+    ["胜", odds.win],
+    ["平", odds.draw],
+    ["负", odds.lose],
+  ].filter(([, value]) => value);
+  if (!rows.length) return "";
+  return `
+    <section class="match-page-section">
+      <span>${label}</span>
+      <div class="sporttery-detail-odds">
+        ${rows.map(([name, value]) => `<article><small>${name}</small><strong>${value}</strong></article>`).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function sportteryDetailRow(item = {}) {
+  const result = resultForSportteryItem(item);
+  const liveScore = liveScoreForSportteryItem(item);
+  const resultScore = normalizeResultScore(item.score) || normalizeResultScore(result?.score);
+  const liveScoreText = normalizeResultScore(liveScore?.score);
+  const score = resultScore || liveScoreText;
+  const linkedMatch = matchFromOddsItem(item) || matchFromResultItem(item);
+  const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
+  const hasStarted = Number.isFinite(kickoffAt) && Date.now() >= kickoffAt;
+  return {
+    ...item,
+    linkedNo: linkedMatch?.no || "",
+    displayDate: item.ticaiDate || item.matchDate || oddsData.lotterNo || dashboardToday(),
+    displayHome: linkedMatch?.home || item.home,
+    displayAway: linkedMatch?.away || item.away,
+    displayGroup: linkedMatch ? `${linkedMatch.group}组` : item.league || "竞彩",
+    score,
+    liveScore: liveScoreText,
+    liveStatus: liveScoreStatusText(liveScore),
+    liveHalfScore: liveScore?.halfScore || result?.halfScore || item.halfScore || "",
+    liveSource: liveScore?.source || "",
+    result,
+    status: score ? liveScoreStatusText(liveScore) || result?.statusName || item.statusName || "已完赛" : hasStarted ? "进行中" : item.statusName || "待赛",
+  };
+}
+
+function renderSportteryMatchDetail(key) {
+  const content = document.querySelector("#match-detail-body");
+  const base = findSportteryItemByKey(key);
+  if (!content || !base) return;
+  const item = sportteryDetailRow(base);
+  const scoreText = item.score || (item.status === "进行中" ? "LIVE" : "vs");
+  const totalGoals = item.totalGoalsOdds || [];
+  const scoreOdds = item.scoreOdds || [];
+  const sourceStamp = formatCapturedAt(oddsData.importedAt || resultsData.importedAt);
+  content.innerHTML = `
+    <div class="match-page-toolbar">
+      <button type="button" data-detail-back>← 赛事池</button>
+      <span>${item.issue || item.no || "体彩"} · ${formatDate(item.displayDate)} · ${item.displayGroup}</span>
+    </div>
+    <section class="match-page-hero sporttery-detail-hero">
+      <div>
+        <p class="eyebrow">Sporttery Match</p>
+        <h2>${item.displayHome} vs ${item.displayAway}</h2>
+        <p>${item.league || "体彩赛事"} · ${item.kickoffTime || "--:--"} 开赛 · 让球 ${item.handicap || "0"}</p>
+      </div>
+      <div class="match-page-summary">
+        <span>${item.status || "赛事状态"}</span>
+        <div class="summary-grid">
+          <div><small>当前比分</small><b>${scoreText}</b></div>
+          <div><small>半场</small><b>${item.liveHalfScore || "-"}</b></div>
+          <div><small>体彩期号</small><b>${item.issue || item.no || "-"}</b></div>
+          <div><small>数据源</small><b>${item.liveSource || "体彩"}</b></div>
+        </div>
+      </div>
+    </section>
+    <div class="match-page-columns">
+      ${oddsPairList("胜平负", item.normal)}
+      ${oddsPairList(`让球胜平负（${item.handicap || "0"}）`, item.handicapOdds)}
+    </div>
+    <section class="match-page-section">
+      <span>总进球赔率</span>
+      <div class="sporttery-detail-odds compact">
+        ${totalGoals.length ? totalGoals.map((odd) => `<article><small>${odd.goals}球</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无总进球数据。</p>"}
+      </div>
+    </section>
+    <section class="match-page-section">
+      <span>比分低赔候选</span>
+      <div class="sporttery-detail-odds compact">
+        ${scoreOdds.length ? scoreOdds.slice(0, 8).map((odd) => `<article><small>${odd.score}</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无比分赔率。</p>"}
+      </div>
+    </section>
+    <section class="match-page-section">
+      <span>数据说明</span>
+      <p>盘口来自体彩官方接口；实时比分来自 APIfootball；赛后仍以体彩官方赛果回填作为复盘口径。最近体彩快照：${sourceStamp || "等待刷新"}。</p>
+    </section>
+    <div class="match-page-actions">
+      ${item.linkedNo ? `<button type="button" data-detail-model="${item.linkedNo}">世界杯模型页</button>` : ""}
+      <button type="button" class="secondary" data-detail-back>返回赛事池</button>
+    </div>
+  `;
+  activateTab("match-detail");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function openSportteryMatchPage(key) {
+  matchDetailReturnTarget = "sporttery";
+  if (window.location.hash !== `#sporttery-match-${key}`) {
+    window.location.hash = `sporttery-match-${key}`;
+  }
+  renderSportteryMatchDetail(key);
+}
+
 function closeMatchPage() {
-  if (window.location.hash.startsWith("#match-")) {
-    const hash = matchDetailReturnTarget === "review" ? "#worldcup-review" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : "#worldcup";
+  if (window.location.hash.startsWith("#match-") || window.location.hash.startsWith("#sporttery-match-")) {
+    const hash = matchDetailReturnTarget === "review" ? "#worldcup-review" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : "#worldcup";
     history.pushState("", document.title, `${window.location.pathname}${window.location.search}${hash}`);
   }
-  activateTab(matchDetailReturnTarget === "review" ? "review" : matchDetailReturnTarget === "model-stats" ? "model-stats" : "today");
+  activateTab(matchDetailReturnTarget === "review" ? "review" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : "today");
 }
 
 function handleRouteFromHash() {
@@ -1777,6 +1900,12 @@ function handleRouteFromHash() {
   if (match) {
     showDashboard();
     renderMatchDetail(match[1]);
+    return;
+  }
+  const sportteryMatch = window.location.hash.match(/^#sporttery-match-(.+)$/);
+  if (sportteryMatch) {
+    showDashboard();
+    renderSportteryMatchDetail(decodeURIComponent(sportteryMatch[1]));
     return;
   }
   if (window.location.hash === "#worldcup") {
@@ -4395,9 +4524,9 @@ document.querySelector("#sporttery-pool")?.addEventListener("click", (event) => 
     renderSportteryPool();
     return;
   }
-  const card = event.target.closest("[data-pool-match-no]");
+  const card = event.target.closest("[data-sporttery-match-key]");
   if (!card) return;
-  openMatchPage(card.dataset.poolMatchNo);
+  openSportteryMatchPage(card.dataset.sportteryMatchKey);
 });
 
 document.querySelector("#review-table")?.addEventListener("click", (event) => {
