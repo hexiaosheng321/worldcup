@@ -3719,7 +3719,8 @@ body::before {
   .match-page-hero,
   .match-page-grid,
   .match-page-columns,
-  .quick-decision-board {
+  .quick-decision-board,
+  .sporttery-research-grid {
     padding-right: 14px;
     padding-left: 14px;
   }
@@ -3731,6 +3732,7 @@ body::before {
   .universal-model-grid,
   .script-set-grid,
   .quick-decision-board,
+  .sporttery-research-grid,
   .quick-risk-grid,
   .summary-grid {
     grid-template-columns: 1fr;
@@ -6195,6 +6197,110 @@ body::before {
   margin: 0;
   color: var(--muted);
   font-weight: 850;
+}
+
+.sporttery-research-panel {
+  border-color: rgba(7, 60, 135, 0.32);
+  background:
+    linear-gradient(135deg, rgba(247, 251, 255, 0.98), rgba(255, 248, 230, 0.72));
+}
+
+.sporttery-research-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sporttery-research-grid article {
+  display: grid;
+  gap: 6px;
+  min-height: 74px;
+  padding: 13px;
+  border: 1px solid rgba(7, 60, 135, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.sporttery-research-grid small,
+.sporttery-data-panel summary {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.sporttery-research-grid strong {
+  color: var(--ink);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.sporttery-risk-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sporttery-risk-list em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 7px 11px;
+  border: 1px solid rgba(217, 154, 22, 0.35);
+  border-radius: 999px;
+  background: #fff8e6;
+  color: var(--ink);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.sporttery-data-panel {
+  display: block;
+}
+
+.sporttery-data-panel summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.sporttery-data-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.sporttery-data-panel summary::after {
+  content: "展开";
+  float: right;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.sporttery-data-panel[open] summary::after {
+  content: "收起";
+}
+
+.sporttery-data-panel .match-page-columns {
+  padding: 14px 0 0;
+}
+
+.sporttery-data-stack {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.sporttery-data-stack > section {
+  display: grid;
+  gap: 10px;
+}
+
+.sporttery-data-stack > section > span {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 950;
 }
 
 .model-intro-panel {

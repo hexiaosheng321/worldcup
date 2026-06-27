@@ -87,6 +87,7 @@ function showHome() {
   document.body.classList.remove(
     "dashboard-mode",
     "is-detail-page",
+    "sporttery-detail-mode",
     "sporttery-mode",
     "model-intro-mode",
     "model-stats-mode",
@@ -102,7 +103,7 @@ function showDashboard() {
   document.body.classList.remove("home-mode");
   document.querySelectorAll(".home-topbar nav button").forEach((button) => button.classList.remove("active"));
   const active =
-    window.location.hash === "#sporttery"
+    window.location.hash === "#sporttery" || window.location.hash.startsWith("#sporttery-match-")
       ? "[data-sporttery-pool]"
       : window.location.hash === "#model-intro"
         ? "[data-model-intro]"
@@ -1502,6 +1503,7 @@ function activateTab(tabName) {
   if (!targetPanel) return;
   showDashboard();
   document.body.classList.toggle("is-detail-page", tabName === "match-detail");
+  if (tabName !== "match-detail") document.body.classList.remove("sporttery-detail-mode");
   document.body.classList.toggle("sporttery-mode", tabName === "sporttery-pool");
   document.body.classList.toggle("model-intro-mode", tabName === "model-intro");
   document.body.classList.toggle("model-stats-mode", tabName === "model-stats");
@@ -1774,6 +1776,7 @@ function openMatchPage(no, returnTarget = "today") {
 }
 
 function oddsPairList(label, odds = {}) {
+  odds = odds || {};
   const rows = [
     ["胜", odds.win],
     ["平", odds.draw],
@@ -1816,11 +1819,53 @@ function sportteryDetailRow(item = {}) {
   };
 }
 
+function sportteryOddsLeader(odds = {}, labels = [["胜", "win"], ["平", "draw"], ["负", "lose"]]) {
+  return labels
+    .map(([label, key]) => ({ label, odd: numberOdd(odds?.[key]) }))
+    .filter((item) => item.odd)
+    .sort((a, b) => a.odd - b.odd)[0] || null;
+}
+
+function sportteryResearchSnapshot(item) {
+  const normalLeader = sportteryOddsLeader(item.normal);
+  const handicapLeader = sportteryOddsLeader(item.handicapOdds, [["让胜", "win"], ["让平", "draw"], ["让负", "lose"]]);
+  const totalLow = lowestOddOption(item.totalGoalsOdds || [], "goals");
+  const scoreLow = (item.scoreOdds || [])
+    .slice(0, 4)
+    .map((odd) => String(odd.score || "").replace(":", "-"))
+    .filter(Boolean);
+  const hasEnough = Boolean(normalLeader || handicapLeader || totalLow || scoreLow.length);
+  const score = normalizeResultScore(item.score);
+  const actualDirection = direction(score);
+  const actualHandicap = handicapDirection(score, item.handicap || "0");
+  const actualTotal = parseScore(score)?.total;
+  const riskNotes = [];
+  if (normalLeader && handicapLeader && !handicapLeader.label.includes(normalLeader.label)) riskNotes.push("胜平负和让球方向不完全一致，需二次过滤");
+  if (normalLeader?.odd && normalLeader.odd >= 2.45) riskNotes.push("主方向赔率偏高，单选信号不够硬");
+  if (!item.normal) riskNotes.push("缺少胜平负盘口，只能参考让球和比分层");
+  if (!item.scoreOdds?.length) riskNotes.push("缺少比分赔率，比分推演暂不完整");
+
+  return {
+    statusLabel: score ? "赛后复盘" : "赛前推演",
+    action: score ? "进入核验" : hasEnough ? "可进入推演" : "等待更多盘口",
+    directionPick: normalLeader ? `${normalLeader.label} ${normalLeader.odd.toFixed(2)}` : "-",
+    handicapPick: handicapLeader ? `${handicapLeader.label} ${handicapLeader.odd.toFixed(2)}` : "-",
+    totalPick: totalLow ? `${totalLow}球低位` : "-",
+    scorePick: scoreLow.length ? scoreLow.join(" / ") : "-",
+    riskNotes,
+    score,
+    actualDirection,
+    actualHandicap,
+    actualTotal,
+  };
+}
+
 function renderSportteryMatchDetail(key) {
   const content = document.querySelector("#match-detail-body");
   const base = findSportteryItemByKey(key);
   if (!content || !base) return;
   const item = sportteryDetailRow(base);
+  const research = sportteryResearchSnapshot(item);
   const scoreText = item.score || (item.status === "进行中" ? "LIVE" : "vs");
   const totalGoals = item.totalGoalsOdds || [];
   const scoreOdds = item.scoreOdds || [];
@@ -1832,36 +1877,61 @@ function renderSportteryMatchDetail(key) {
     </div>
     <section class="match-page-hero sporttery-detail-hero">
       <div>
-        <p class="eyebrow">Sporttery Match</p>
+        <p class="eyebrow">Sporttery Research</p>
         <h2>${item.displayHome} vs ${item.displayAway}</h2>
-        <p>${item.league || "体彩赛事"} · ${item.kickoffTime || "--:--"} 开赛 · 让球 ${item.handicap || "0"}</p>
+        <p>${item.league || "体彩赛事"} · ${item.kickoffTime || "--:--"} 开赛 · 让球 ${item.handicap || "0"} · ${research.action}</p>
       </div>
       <div class="match-page-summary">
-        <span>${item.status || "赛事状态"}</span>
+        <span>${research.statusLabel}</span>
         <div class="summary-grid">
           <div><small>当前比分</small><b>${scoreText}</b></div>
-          <div><small>半场</small><b>${item.liveHalfScore || "-"}</b></div>
           <div><small>体彩期号</small><b>${item.issue || item.no || "-"}</b></div>
-          <div><small>数据源</small><b>${item.liveSource || "体彩"}</b></div>
+          <div><small>联赛</small><b>${item.league || "竞彩"}</b></div>
+          <div><small>状态</small><b>${item.status || "-"}</b></div>
         </div>
       </div>
     </section>
-    <div class="match-page-columns">
-      ${oddsPairList("胜平负", item.normal)}
-      ${oddsPairList(`让球胜平负（${item.handicap || "0"}）`, item.handicapOdds)}
-    </div>
-    <section class="match-page-section">
-      <span>总进球赔率</span>
-      <div class="sporttery-detail-odds compact">
-        ${totalGoals.length ? totalGoals.map((odd) => `<article><small>${odd.goals}球</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无总进球数据。</p>"}
+    <section class="match-page-section sporttery-research-panel">
+      <span>${research.score ? "复盘验票" : "赛前推演"}</span>
+      <div class="sporttery-research-grid">
+        <article><small>胜平负倾向</small><strong>${research.directionPick}</strong></article>
+        <article><small>让球方向</small><strong>${research.handicapPick}</strong></article>
+        <article><small>总进球温度</small><strong>${research.totalPick}</strong></article>
+        <article><small>比分候选</small><strong>${research.scorePick}</strong></article>
+      </div>
+      <p>${research.score ? `实际比分 ${research.score}，赛果 ${research.actualDirection || "-"}，让球结果 ${research.actualHandicap || "-"}，总进球 ${research.actualTotal ?? "-"}。` : "这里先基于体彩开盘赔率做赛前过滤，后续模型锁版后可继续补入完整推演文本和最终结论。"}</p>
+    </section>
+    <section class="match-page-section sporttery-risk-panel">
+      <span>判断风险</span>
+      <div class="sporttery-risk-list">
+        ${
+          research.riskNotes.length
+            ? research.riskNotes.map((note) => `<em>${note}</em>`).join("")
+            : "<em>盘口结构暂未出现明显冲突，仍需结合临场阵容和赛程动机。</em>"
+        }
       </div>
     </section>
-    <section class="match-page-section">
-      <span>比分低赔候选</span>
-      <div class="sporttery-detail-odds compact">
-        ${scoreOdds.length ? scoreOdds.slice(0, 8).map((odd) => `<article><small>${odd.score}</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无比分赔率。</p>"}
+    <details class="match-page-section sporttery-data-panel">
+      <summary>数据支撑</summary>
+      <div class="match-page-columns">
+        ${oddsPairList("胜平负", item.normal)}
+        ${oddsPairList(`让球胜平负（${item.handicap || "0"}）`, item.handicapOdds)}
       </div>
-    </section>
+      <div class="sporttery-data-stack">
+        <section>
+          <span>总进球赔率</span>
+          <div class="sporttery-detail-odds compact">
+            ${totalGoals.length ? totalGoals.map((odd) => `<article><small>${odd.goals}球</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无总进球数据。</p>"}
+          </div>
+        </section>
+        <section>
+          <span>比分低赔候选</span>
+          <div class="sporttery-detail-odds compact">
+            ${scoreOdds.length ? scoreOdds.slice(0, 8).map((odd) => `<article><small>${odd.score}</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无比分赔率。</p>"}
+          </div>
+        </section>
+      </div>
+    </details>
     <section class="match-page-section">
       <span>数据说明</span>
       <p>盘口来自体彩官方接口；实时比分来自 APIfootball；赛后仍以体彩官方赛果回填作为复盘口径。最近体彩快照：${sourceStamp || "等待刷新"}。</p>
@@ -1872,6 +1942,9 @@ function renderSportteryMatchDetail(key) {
     </div>
   `;
   activateTab("match-detail");
+  document.body.classList.add("sporttery-detail-mode");
+  document.querySelectorAll(".home-topbar nav button").forEach((button) => button.classList.remove("active"));
+  document.querySelector(".home-topbar [data-sporttery-pool]")?.classList.add("active");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
