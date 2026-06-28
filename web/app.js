@@ -1866,6 +1866,7 @@ function renderMatchDetail(no) {
           <section class="match-page-section"><span>比赛脚本</span><p>${displayModelText(pred.script)}</p></section>
           ${pred.institutionLine ? `<section class="match-page-section"><span>机构视角</span><p>${displayModelText(pred.institutionLine)}</p></section>` : ""}
           ${pred.noiseFilter ? `<section class="match-page-section"><span>排除因素</span><p>${displayModelText(pred.noiseFilter)}</p></section>` : ""}
+          ${renderSimilarCasePanel(pred, match)}
         `
         : `
           <section class="match-page-section">
@@ -2030,6 +2031,231 @@ function sportteryV4Filter(modelPred, research) {
   };
 }
 
+function probabilityNumber(value) {
+  return parseProbRange(value) || 0;
+}
+
+function qualityLevel(value = "") {
+  const text = String(value || "").toUpperCase();
+  if (text.includes("HIGH") || text.includes("完整")) return "HIGH";
+  if (text.includes("LOW") || text.includes("缺") || text.includes("不足")) return "LOW";
+  return "MEDIUM";
+}
+
+function normalizedFinalAction(pred) {
+  return window.WC_LOCK_ENGINE?.finalAction(pred?.advice || confidenceAdvice(confidenceGrade(pred))) || "谨慎";
+}
+
+function simpleConsistencyScore(pred = {}) {
+  let score = 3;
+  if (pred.decisionConflict) score -= 1;
+  if (pred.crossMarketConsistency && !/冲突|不一致/.test(pred.crossMarketConsistency)) score += 1;
+  if (pred.handicapGate && pred.pick && pred.handicapPick && String(pred.handicapGate).includes(pred.handicapPick)) score += 1;
+  return Math.max(1, Math.min(5, score));
+}
+
+function matchResultFromScore(match = {}) {
+  const score = parseScore(match.score);
+  if (!score) return null;
+  return {
+    matchId: String(match.matchId || match.no || ""),
+    fullTimeHomeGoals: score.home,
+    fullTimeAwayGoals: score.away,
+    result1x2: score.home > score.away ? "HOME" : score.home === score.away ? "DRAW" : "AWAY",
+    totalGoals: score.total,
+    reviewedAt: new Date().toISOString(),
+  };
+}
+
+function lockFromPrediction(pred, match = {}) {
+  if (!pred || !match || !window.WC_LOCK_ENGINE) return null;
+  const gate = autoDecisionGate(match.no, pred);
+  const odds = oddsMatch(match.no);
+  const normal = odds?.normal || {};
+  const market = odds ? impliedMarket(oddsMarketEntries(odds, "had")) : { entries: [] };
+  const marketMap = new Map((market.entries || []).map((item) => [item.code, item.probability]));
+  const modelHomeProb = probabilityNumber(pred.homeProb);
+  const modelDrawProb = probabilityNumber(pred.drawProb);
+  const modelAwayProb = probabilityNumber(pred.awayProb);
+  const confidenceScore = gate.score || 0;
+  const result = matchResultFromScore(match);
+  return window.WC_LOCK_ENGINE.buildLockedPrediction(match, {
+    lockId: `${match.no || match.matchId}-${predictionModelVersion(pred)}-${pred.date || match.date}`,
+    matchId: String(match.matchId || match.no || ""),
+    matchCode: match.no || pred.no || "",
+    league: match.competition || match.league || match.group || pred.competition || "世界杯",
+    kickoffTime: match.matchDate || match.date || pred.date || "",
+    lockedAt: pred.lockedAt || `${pred.date || match.date || data.currentDate}T00:00:00+08:00`,
+    lockType: "FINAL_LOCK",
+    modelHomeProb,
+    modelDrawProb,
+    modelAwayProb,
+    recommendation: pred.pick || "",
+    pick: pred.pick || "",
+    finalGrade: confidenceGrade(pred),
+    finalAction: normalizedFinalAction(pred),
+    confidenceScore,
+    riskScore: Math.max(0, 100 - confidenceScore),
+    consistencyScore: simpleConsistencyScore(pred),
+    sportteryHomeSp: normal.win,
+    sportteryDrawSp: normal.draw,
+    sportteryAwaySp: normal.lose,
+    sportteryHomeProb: marketMap.get("H"),
+    sportteryDrawProb: marketMap.get("D"),
+    sportteryAwayProb: marketMap.get("A"),
+    valueHomeGap: marketMap.has("H") ? modelHomeProb - marketMap.get("H") : undefined,
+    valueDrawGap: marketMap.has("D") ? modelDrawProb - marketMap.get("D") : undefined,
+    valueAwayGap: marketMap.has("A") ? modelAwayProb - marketMap.get("A") : undefined,
+    asianHandicap: Number(String(reviewHandicapLine(pred) || "0").replace("+", "")),
+    euroHomeOdds: normal.win,
+    euroDrawOdds: normal.draw,
+    euroAwayOdds: normal.lose,
+    euroHomeProb: marketMap.get("H"),
+    euroDrawProb: marketMap.get("D"),
+    euroAwayProb: marketMap.get("A"),
+    dataQuality: qualityLevel(pred.dataQuality),
+    reasoningSummary: pred.finalDecisionAction || pred.keyJudgement || pred.marketGap || pred.script || "",
+    downgradeReasons: [pred.decisionConflict, pred.keyFailureRisk, pred.eventRisk].filter(Boolean),
+    resultStatus: result ? "PENDING" : "PENDING",
+  });
+}
+
+function reviewedLockCase(pred, match) {
+  if (predictionModelVersion(pred) !== "V4") {
+    return { lock: null, result: matchResultFromScore(match), review: null, caseItem: null };
+  }
+  const lock = lockFromPrediction(pred, match);
+  const result = matchResultFromScore(match);
+  if (!lock || !result || !window.WC_REVIEW_ENGINE) return { lock, result, review: null, caseItem: null };
+  const review = window.WC_REVIEW_ENGINE.evaluateLockedPrediction(lock, result);
+  lock.resultStatus = review.hitStatus;
+  const caseItem = window.WC_REVIEW_ENGINE.generateCaseFromLock(lock, result, review);
+  return { lock, result, review, caseItem };
+}
+
+let runtimeCaseBaseCache = null;
+function runtimeCaseBase() {
+  if (runtimeCaseBaseCache) return runtimeCaseBaseCache;
+  const cases = window.WC_CASE_BASE?.getAllCases ? window.WC_CASE_BASE.getAllCases().slice() : [];
+  const seen = new Set(cases.map((item) => item.sourceLockId));
+  groupedPredictions().forEach(({ match, predictions }) => {
+    predictions.forEach((pred) => {
+      if (predictionModelVersion(pred) !== "V4") return;
+      const { caseItem } = reviewedLockCase(pred, match);
+      if (caseItem && !seen.has(caseItem.sourceLockId)) {
+        seen.add(caseItem.sourceLockId);
+        cases.push(caseItem);
+      }
+    });
+  });
+  (data.sportteryPredictions || []).forEach((pred) => {
+    if (predictionModelVersion(pred) !== "V4") return;
+    const item = findSportteryItemForPrediction(pred);
+    const detail = item ? sportteryDetailRow(item) : null;
+    const match = {
+      no: pred.no,
+      matchId: pred.matchId || detail?.matchId || pred.no,
+      date: pred.date || pred.matchDate,
+      matchDate: pred.matchDate || pred.date,
+      competition: pred.competition || pred.competitionModel || "体彩",
+      group: pred.competition || "体彩",
+      home: pred.home,
+      away: pred.away,
+      score: normalizeResultScore(detail?.score || pred.score),
+    };
+    const { caseItem } = reviewedLockCase(pred, match);
+    if (caseItem && !seen.has(caseItem.sourceLockId)) {
+      seen.add(caseItem.sourceLockId);
+      cases.push(caseItem);
+    }
+  });
+  runtimeCaseBaseCache = cases;
+  return cases;
+}
+
+function caseBaseStatus(pred, match) {
+  if (predictionModelVersion(pred) !== "V4") {
+    return {
+      lock: null,
+      review: null,
+      caseItem: null,
+      generated: false,
+      caseId: "-",
+      reviewText: "旧版本不进入 V4 Case Base",
+      hitStatus: "VOID",
+    };
+  }
+  const { lock, result, review, caseItem } = reviewedLockCase(pred, match);
+  return {
+    lock,
+    review,
+    caseItem,
+    generated: Boolean(caseItem),
+    caseId: caseItem?.caseId || "-",
+    reviewText: review?.reviewText || (result ? "等待验票" : "赛果未回填"),
+    hitStatus: review?.hitStatus || "PENDING",
+  };
+}
+
+function renderSimilarCasePanel(pred, match) {
+  if (!pred || !match || !window.WC_SIMILAR_CASE_ENGINE) return "";
+  if (predictionModelVersion(pred) !== "V4") return "";
+  const lock = lockFromPrediction(pred, match);
+  if (!lock) return "";
+  const result = window.WC_SIMILAR_CASE_ENGINE.findSimilarCases(lock, runtimeCaseBase());
+  const stats = result.stats || {};
+  const pct = (value) => `${((Number(value) || 0) * 100).toFixed(1)}%`;
+  const adjustment = result.confidenceAdjustment > 0 ? `+${result.confidenceAdjustment}` : String(result.confidenceAdjustment || 0);
+  const rows = result.topCases
+    .map(
+      (item) => `
+        <tr>
+          <td>${item.similarityScore}</td>
+          <td>${item.homeTeam} vs ${item.awayTeam}</td>
+          <td>${item.league}</td>
+          <td>${item.recommendation}</td>
+          <td>${item.finalGrade}</td>
+          <td>${item.actualResult} / ${item.actualGoals}球</td>
+          <td>${item.hitStatus === "WIN" ? "命中" : item.hitStatus === "LOSE" ? "未命中" : "走空"}</td>
+        </tr>
+      `
+    )
+    .join("") || `<tr><td colspan="7" class="empty-cell">相似样本不足，先作为观察项。</td></tr>`;
+  return `
+    <section class="match-page-section similar-case-panel">
+      <span>历史相似案例库</span>
+      <div class="similar-case-summary">
+        <article><small>匹配样本</small><strong>${result.sampleCount}</strong></article>
+        <article><small>主 / 平 / 客</small><strong>${pct(stats.homeWinRate)} / ${pct(stats.drawRate)} / ${pct(stats.awayWinRate)}</strong></article>
+        <article><small>当前推荐命中率</small><strong>${pct(stats.sameRecommendationHitRate)}</strong></article>
+        <article><small>相同等级命中率</small><strong>${pct(stats.sameGradeHitRate)}</strong></article>
+        <article><small>平均进球</small><strong>${Number(stats.avgGoals || 0).toFixed(2)}</strong></article>
+        <article><small>置信度修正</small><strong>${adjustment}</strong></article>
+      </div>
+      <p class="similar-case-summary-text">${result.summaryText}</p>
+      <div class="similar-case-flags">
+        ${(result.warningFlags.length ? result.warningFlags : ["暂无额外风险提示"]).map((item) => `<em>${item}</em>`).join("")}
+      </div>
+      <div class="review-record-wrap compact similar-case-wrap">
+        <table class="review-record-table similar-case-table">
+          <thead>
+            <tr>
+              <th>相似度</th>
+              <th>比赛</th>
+              <th>联赛</th>
+              <th>当时推荐</th>
+              <th>等级</th>
+              <th>赛果</th>
+              <th>验票</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
 function renderSportteryEvidenceGate(item, modelPred, research) {
   const checks = [
     ["锁版结果", Boolean(modelPred?.pick && modelPred?.totalGoalsPick && (modelPred?.mainScore || modelPred?.counterScore))],
@@ -2148,6 +2374,7 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
     ${modelPred.institutionLine ? `<section class="match-page-section"><span>机构视角</span><p>${displayModelText(modelPred.institutionLine)}</p></section>` : ""}
     ${modelPred.noiseFilter ? `<section class="match-page-section"><span>排除因素</span><p>${displayModelText(modelPred.noiseFilter)}</p></section>` : ""}
     ${renderFinalDecisionGatePanel(modelPred)}
+    ${renderSimilarCasePanel(modelPred, item)}
     ${renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp)}
   `;
 }
@@ -2980,6 +3207,8 @@ function renderSiteLocks() {
           const keyAttr = match.sportteryKey
             ? `data-lock-sporttery="${match.sportteryKey}"`
             : `data-lock-worldcup="${match.no}"`;
+          const caseStatus = caseBaseStatus(pred, match);
+          const lock = caseStatus.lock;
           return `
             <article class="site-lock-card" ${keyAttr}>
               <div class="site-lock-head">
@@ -2994,6 +3223,12 @@ function renderSiteLocks() {
                 <span>${pred.matchType || "待分类"}</span>
                 <span>${confidenceGrade(pred)}</span>
                 <span>${pred.advice || confidenceAdvice(confidenceGrade(pred))}</span>
+                <span>lockedAt ${dash(lock?.lockedAt)}</span>
+                <span>${dash(lock?.lockType)}</span>
+                <span>finalGrade ${dash(lock?.finalGrade)}</span>
+                <span>finalAction ${dash(lock?.finalAction)}</span>
+                <span>resultStatus ${dash(caseStatus.hitStatus)}</span>
+                <span>Case ${caseStatus.generated ? "已生成" : "未生成"}</span>
               </div>
               <div class="site-lock-picks">
                 <strong>胜平负 ${dash(pred.pick)}</strong>
@@ -3642,20 +3877,30 @@ function renderReview() {
   const dateScopeLabel =
     activeReviewDate === "all" ? "全部锁版记录" : `${formatDate(activeReviewDate)} 锁版记录`;
   const ticketRows = visibleRows
-    .map(({ match, pred, review }) => `
-      <tr data-review-no="${match.no}">
-        <td>${dash(pred.date)}</td>
-        <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
-        <td>${match.no}</td>
-        <td class="match-name-cell">${reviewMatchButton(match)}</td>
-        <td class="actual-cell">${dash(match.score)}</td>
-        <td><b>${dash(pred.pick)}</b>${hitCell(review.directionHit)}</td>
-        <td><b>${dash(review.hPick)}</b>${hitCell(review.handicapHit)}</td>
-        <td><b>${dash(pred.totalGoalsPick)}</b>${hitCell(review.totalGoalsHit)}</td>
-        <td><b>${dash(pred.mainScore)} / ${dash(pred.counterScore)}</b>${hitCell(review.scoreHit)}</td>
-      </tr>
-    `)
-    .join("") || `<tr><td colspan="9" class="empty-cell">当前日期暂无可复盘记录</td></tr>`;
+    .map(({ match, pred, review }) => {
+      const caseStatus = caseBaseStatus(pred, match);
+      const tags = [
+        ...(caseStatus.caseItem?.failureTags || []),
+        ...(caseStatus.caseItem?.successTags || []),
+      ];
+      return `
+        <tr data-review-no="${match.no}">
+          <td>${dash(pred.date)}</td>
+          <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
+          <td>${match.no}</td>
+          <td class="match-name-cell">${reviewMatchButton(match)}</td>
+          <td class="actual-cell">${dash(match.score)}</td>
+          <td><b>${dash(pred.pick)}</b>${hitCell(review.directionHit)}</td>
+          <td><b>${dash(review.hPick)}</b>${hitCell(review.handicapHit)}</td>
+          <td><b>${dash(pred.totalGoalsPick)}</b>${hitCell(review.totalGoalsHit)}</td>
+          <td><b>${dash(pred.mainScore)} / ${dash(pred.counterScore)}</b>${hitCell(review.scoreHit)}</td>
+          <td>${dash(caseStatus.hitStatus)}</td>
+          <td>${caseStatus.generated ? "已进入" : "未进入"}</td>
+          <td class="text-cell">${dash(caseStatus.caseId)}${tags.length ? `<em>${tags.join(" / ")}</em>` : ""}</td>
+        </tr>
+      `;
+    })
+    .join("") || `<tr><td colspan="12" class="empty-cell">当前日期暂无可复盘记录</td></tr>`;
 
   const diagnosticRows = visibleRows
     .map(({ match, pred, review }) => {
@@ -3702,12 +3947,15 @@ function renderReview() {
             <th>让球</th>
             <th>总进球</th>
             <th>比分预测</th>
+            <th>验票结果</th>
+            <th>Case Base</th>
+            <th>caseId / 标签</th>
           </tr>
         </thead>
         <tbody>${ticketRows}</tbody>
         <tfoot>
           <tr>
-            <td colspan="9">
+            <td colspan="12">
               <strong>命中概率：</strong>${reviewRateSummary.map((item) => `<span>${item}</span>`).join("")}
             </td>
           </tr>

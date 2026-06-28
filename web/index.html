@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>体彩足彩模型中心</title>
-    <link rel="stylesheet" href="./styles.css?v=202606270003" />
+    <link rel="stylesheet" href="./styles.css?v=202606290001" />
   </head>
   <body class="home-mode page-loading">
     <header class="home-topbar">
@@ -347,6 +347,27 @@
             <article><span>09</span><strong>数据质量</strong><p>阵容、战意、盘口和赛程证据不足时，自动降低置信或跳过。</p></article>
           </div>
         </div>
+
+        <div class="model-update-log">
+          <div class="about-section-head">
+            <p class="eyebrow">Update Log</p>
+            <h3>V4 更新日志</h3>
+          </div>
+          <article>
+            <span>2026-06-29</span>
+            <strong>新增</strong>
+            <ul>
+              <li>锁版案例库 Case Base</li>
+              <li>正式锁版不可覆盖机制</li>
+              <li>赛后自动验票</li>
+              <li>锁版完成后生成历史案例</li>
+              <li>历史相似案例匹配</li>
+              <li>相同推荐历史命中率</li>
+              <li>历史平局率与冷门率风险提示</li>
+              <li>相似案例仅修正置信度，不直接覆盖原推荐</li>
+            </ul>
+          </article>
+        </div>
       </section>
 
       <section id="about-site" class="panel about-site-panel">
@@ -597,9 +618,13 @@
     <script src="./live-football-scores.js?v=202606270001"></script>
     <script src="./odds-data.js?v=202606260001"></script>
     <script src="./data.js?v=202606280001"></script>
+    <script src="./lib/lockEngine.js?v=202606290001"></script>
+    <script src="./lib/reviewEngine.js?v=202606290001"></script>
+    <script src="./lib/caseBase.js?v=202606290001"></script>
+    <script src="./lib/similarCaseEngine.js?v=202606290001"></script>
     <script src="./auto-sporttery-predictions.js?v=202606270002"></script>
     <script src="./sporttery-math.js?v=202606260001"></script>
-    <script src="./app.js?v=202606280004"></script>
+    <script src="./app.js?v=202606290001"></script>
 <button type="button" class="back-to-top" id="back-to-top" aria-label="返回顶部">&#8593;</button>
   </body>
 </html>
