@@ -193,6 +193,16 @@ function compactSportteryNo(matchNumStr = "", matchNum = "") {
 }
 
 const teamAliases = {
+  民主刚果: ["刚果金", "刚果（金）", "刚果民主共和国", "DR Congo", "Congo DR"],
+  "刚果（金）": ["民主刚果", "刚果金", "刚果民主共和国", "DR Congo", "Congo DR"],
+  刚果金: ["民主刚果", "刚果（金）", "刚果民主共和国", "DR Congo", "Congo DR"],
+  乌兹别克斯坦: ["乌兹别克", "Uzbekistan"],
+  乌兹别克: ["乌兹别克斯坦", "Uzbekistan"],
+  阿尔及利亚: ["阿尔及利", "Algeria"],
+  阿尔及利: ["阿尔及利亚", "Algeria"],
+  科特迪瓦: ["象牙海岸", "Ivory Coast", "Cote dIvoire", "Côte dIvoire"],
+  佛得角: ["佛得角共和国", "Cape Verde", "Cabo Verde"],
+  波黑: ["波斯尼亚", "波斯尼亚和黑塞哥维那", "Bosnia", "Bosnia Herzegovina"],
   坦山猫: ["Ilves", "Tampereen Ilves", "Ilves Tampere"],
   塞伊奈: ["SJK", "Seinajoen JK", "Seinäjoen JK", "SJK Seinajoki"],
   赫尔辛基: ["HJK", "HJK Helsinki"],
