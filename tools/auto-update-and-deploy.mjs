@@ -22,7 +22,6 @@ const FETCH_SCRIPTS = [
   "tools/fetch-sporttery-results.mjs",
   "tools/fetch-sporttery-sp-history.mjs",
   "tools/fetch-live-football-scores.mjs",
-  "tools/generate-sporttery-v1-locks.mjs",
 ];
 
 async function log(message) {

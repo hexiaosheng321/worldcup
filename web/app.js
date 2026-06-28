@@ -2024,74 +2024,116 @@ function renderSportteryMatchDetail(key) {
         </div>
       </div>
     </section>
-    <section class="match-page-section sporttery-research-panel">
-      <span>${modelPred ? `${modelPred.competitionModel || "联赛模型"}推演` : research.score ? "复盘验票" : "盘口预筛"}</span>
-      <div class="sporttery-research-grid">
-        <article><small>胜平负倾向</small><strong>${research.directionPick}</strong></article>
-        <article><small>让球方向</small><strong>${research.handicapPick}</strong></article>
-        <article><small>总进球温度</small><strong>${research.totalPick}</strong></article>
-        <article><small>比分候选</small><strong>${research.scorePick}</strong></article>
-      </div>
-      <p>${
-        research.score
-          ? `实际比分 ${research.score}，赛果 ${research.actualDirection || "-"}，让球结果 ${research.actualHandicap || "-"}，总进球 ${research.actualTotal ?? "-"}。`
-          : modelPred
-            ? displayModelText(modelPred.finalDecisionAction || modelPred.marketGap || modelPred.script)
-            : "这里先基于体彩开盘赔率做赛前过滤，后续模型锁版后可继续补入完整推演文本和最终结论。"
-      }</p>
-    </section>
-    ${
-      modelPred
-        ? `
-          <section class="match-page-section sporttery-model-panel">
-            <span>联赛模型依据</span>
-            <div class="filter-board-grid">
-              <div><b>模型归属：</b>${modelPred.competitionModel || modelPred.competition || "体彩联赛模型"}</div>
-              <div><b>比赛类型：</b>${modelPred.matchType || "-"}</div>
-              <div><b>盘口偏差：</b>${displayModelText(modelPred.marketGap || "-")}</div>
-              <div><b>比赛脚本：</b>${displayModelText(modelPred.script || "-")}</div>
-              <div><b>半场触发：</b>${displayModelText(modelPred.halftimeDecision || "-")}</div>
-              <div><b>让球闸门：</b>${displayModelText(modelPred.handicapGate || "-")}</div>
+    <div class="match-mode-switch" role="tablist" aria-label="体彩单场详情模式">
+      <button type="button" class="active" data-match-mode="quick">快速判断</button>
+      <button type="button" data-match-mode="full">完整推演</button>
+    </div>
+    <div class="match-mode-panel active" data-match-mode-panel="quick">
+      <section class="quick-decision-board sporttery-quick-board">
+        <article class="quick-main-card">
+          <span>${modelPred ? "锁版结论" : "盘口预筛"}</span>
+          <strong>${research.directionPick}</strong>
+          <p>让球 ${research.handicapPick} · 总进球 ${research.totalPick} · 比分 ${research.scorePick}</p>
+        </article>
+        <article>
+          <span>比赛状态</span>
+          <strong>${item.status || "待赛"}</strong>
+          <p>${item.liveScore ? `实时比分 ${item.liveScore}，${item.liveStatus || "进行中"}` : `当前比分 ${scoreText}`}</p>
+        </article>
+        <article>
+          <span>建议动作</span>
+          <strong>${research.action}</strong>
+          <p>${modelPred?.advice || "等待模型锁版或人工确认"}</p>
+        </article>
+        <article>
+          <span>模型版本</span>
+          <strong>${modelPred ? predictionVersionLabel(modelPred) : "未锁版"}</strong>
+          <p>${modelPred?.competitionModel || "盘口预筛，不计入正式模型版本"}</p>
+        </article>
+      </section>
+      <section class="match-page-section sporttery-research-panel">
+        <span>${modelPred ? `${modelPred.competitionModel || "联赛模型"}快速判断` : research.score ? "复盘验票" : "盘口预筛"}</span>
+        <p>${
+          research.score
+            ? `实际比分 ${research.score}，赛果 ${research.actualDirection || "-"}，让球结果 ${research.actualHandicap || "-"}，总进球 ${research.actualTotal ?? "-"}。`
+            : modelPred
+              ? displayModelText(modelPred.finalDecisionAction || modelPred.marketGap || modelPred.script)
+              : "这里先基于体彩开盘赔率做赛前过滤，后续模型锁版后可继续补入完整推演文本和最终结论。"
+        }</p>
+      </section>
+      <section class="match-page-section sporttery-risk-panel">
+        <span>判断风险</span>
+        <div class="sporttery-risk-list">
+          ${
+            research.riskNotes.length
+              ? research.riskNotes.map((note) => `<em>${note}</em>`).join("")
+              : "<em>盘口结构暂未出现明显冲突，仍需结合临场阵容和赛程动机。</em>"
+          }
+        </div>
+      </section>
+    </div>
+    <div class="match-mode-panel" data-match-mode-panel="full" hidden>
+      ${
+        modelPred
+          ? `
+            <section class="match-page-section sporttery-model-panel">
+              <span>联赛模型依据</span>
+              <div class="filter-board-grid">
+                <div><b>模型归属：</b>${modelPred.competitionModel || modelPred.competition || "体彩联赛模型"}</div>
+                <div><b>比赛类型：</b>${modelPred.matchType || "-"}</div>
+                <div><b>概率底盘：</b>${modelPred.homeProb || "-"} / ${modelPred.drawProb || "-"} / ${modelPred.awayProb || "-"}</div>
+                <div><b>xG：</b>${modelPred.xg || "-"}</div>
+                <div><b>盘口偏差：</b>${displayModelText(modelPred.marketGap || "-")}</div>
+                <div><b>比赛脚本：</b>${displayModelText(modelPred.script || "-")}</div>
+                <div><b>半场触发：</b>${displayModelText(modelPred.halftimeDecision || "-")}</div>
+                <div><b>让球闸门：</b>${displayModelText(modelPred.handicapGate || "-")}</div>
+              </div>
+            </section>
+            <section class="match-page-section sporttery-model-panel">
+              <span>完整推演链路</span>
+              <div class="filter-board-grid">
+                <div><b>联赛阶段：</b>${displayModelText(modelPred.groupSituation || "-")}</div>
+                <div><b>近期/风格：</b>${displayModelText(modelPred.recentAnalysis || "-")}</div>
+                <div><b>机构视角：</b>${displayModelText(modelPred.institutionLine || "-")}</div>
+                <div><b>排除噪音：</b>${displayModelText(modelPred.noiseFilter || "-")}</div>
+                <div><b>比分淘汰：</b>${displayModelText(modelPred.scoreElimination || "-")}</div>
+                <div><b>错层风险：</b>${displayModelText(modelPred.keyFailureRisk || "-")}</div>
+              </div>
+            </section>
+          `
+          : `
+            <section class="match-page-section sporttery-model-panel">
+              <span>模型状态</span>
+              <p>这场还没有正式锁版，只显示盘口数据和预筛方向。</p>
+            </section>
+          `
+      }
+      <details class="match-page-section sporttery-data-panel" open>
+        <summary>数据支撑</summary>
+        <div class="match-page-columns">
+          ${oddsPairList("胜平负", item.normal)}
+          ${oddsPairList(`让球胜平负（${item.handicap || "0"}）`, item.handicapOdds)}
+        </div>
+        <div class="sporttery-data-stack">
+          <section>
+            <span>总进球赔率</span>
+            <div class="sporttery-detail-odds compact">
+              ${totalGoals.length ? totalGoals.map((odd) => `<article><small>${odd.goals}球</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无总进球数据。</p>"}
             </div>
           </section>
-        `
-        : ""
-    }
-    <section class="match-page-section sporttery-risk-panel">
-      <span>判断风险</span>
-      <div class="sporttery-risk-list">
-        ${
-          research.riskNotes.length
-            ? research.riskNotes.map((note) => `<em>${note}</em>`).join("")
-            : "<em>盘口结构暂未出现明显冲突，仍需结合临场阵容和赛程动机。</em>"
-        }
-      </div>
-    </section>
-    <details class="match-page-section sporttery-data-panel">
-      <summary>数据支撑</summary>
-      <div class="match-page-columns">
-        ${oddsPairList("胜平负", item.normal)}
-        ${oddsPairList(`让球胜平负（${item.handicap || "0"}）`, item.handicapOdds)}
-      </div>
-      <div class="sporttery-data-stack">
-        <section>
-          <span>总进球赔率</span>
-          <div class="sporttery-detail-odds compact">
-            ${totalGoals.length ? totalGoals.map((odd) => `<article><small>${odd.goals}球</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无总进球数据。</p>"}
-          </div>
-        </section>
-        <section>
-          <span>比分低赔候选</span>
-          <div class="sporttery-detail-odds compact">
-            ${scoreOdds.length ? scoreOdds.slice(0, 8).map((odd) => `<article><small>${odd.score}</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无比分赔率。</p>"}
-          </div>
-        </section>
-      </div>
-    </details>
-    <section class="match-page-section">
-      <span>数据说明</span>
-      <p>盘口来自体彩官方接口；实时比分来自 APIfootball；赛后仍以体彩官方赛果回填作为复盘口径。最近体彩快照：${sourceStamp || "等待刷新"}。</p>
-    </section>
+          <section>
+            <span>比分低赔候选</span>
+            <div class="sporttery-detail-odds compact">
+              ${scoreOdds.length ? scoreOdds.slice(0, 8).map((odd) => `<article><small>${odd.score}</small><strong>${odd.odds}</strong></article>`).join("") : "<p>暂无比分赔率。</p>"}
+            </div>
+          </section>
+        </div>
+      </details>
+      <section class="match-page-section">
+        <span>数据说明</span>
+        <p>盘口来自体彩官方接口；实时比分来自 APIfootball；赛后仍以体彩官方赛果回填作为复盘口径。最近体彩快照：${sourceStamp || "等待刷新"}。</p>
+      </section>
+    </div>
     <div class="match-page-actions">
       ${item.linkedNo ? `<button type="button" data-detail-model="${item.linkedNo}">世界杯模型页</button>` : ""}
       ${modelPred && !item.linkedNo ? `<button type="button" data-detail-global-stats>统计和回测</button>` : ""}
