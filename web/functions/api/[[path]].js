@@ -90,6 +90,12 @@ function caseTags(lock, result, review) {
 }
 
 function rowToCase(row) {
+  let payload = {};
+  try {
+    payload = row.payload_json ? JSON.parse(row.payload_json) : {};
+  } catch {
+    payload = {};
+  }
   return {
     caseId: row.case_id,
     sourceLockId: row.source_lock_id,
@@ -129,6 +135,8 @@ function rowToCase(row) {
     euroAwayProb: row.euro_away_prob,
     dataQuality: row.data_quality,
     actualResult: row.actual_result,
+    actualHomeGoals: payload.actualHomeGoals,
+    actualAwayGoals: payload.actualAwayGoals,
     actualGoals: row.actual_goals,
     hitStatus: row.hit_status,
     failureTags: parseArray(row.failure_tags_json),
@@ -169,6 +177,26 @@ const weights = {
 };
 
 const gradeRank = { A: 4, B: 3, C: 2, D: 1 };
+const competitionRules = [
+  ["世界杯", /世界杯|World Cup/i],
+  ["芬超", /芬超|Finland|Veikkausliiga/i],
+  ["日职", /日职|J1|J联赛|Japan/i],
+  ["韩职", /韩职|K联赛|K League/i],
+  ["欧冠", /欧冠|Champions League/i],
+  ["欧联", /欧联|Europa League/i],
+  ["英超", /英超|Premier League/i],
+  ["西甲", /西甲|La Liga/i],
+  ["意甲", /意甲|Serie A/i],
+  ["德甲", /德甲|Bundesliga/i],
+  ["法甲", /法甲|Ligue 1/i],
+];
+
+function normalizeCompetition(value = "") {
+  const text = String(value || "").trim();
+  const found = competitionRules.find(([, pattern]) => pattern.test(text));
+  if (found) return found[0];
+  return text || "未分类赛事";
+}
 
 function has(...values) {
   return values.every((value) => Number.isFinite(Number(value)));
@@ -181,7 +209,7 @@ function addPart(parts, key, score) {
 
 function similarity(current, sample) {
   const parts = [];
-  addPart(parts, "league", current.league === sample.league ? 100 : 40);
+  addPart(parts, "league", normalizeCompetition(current.league) === normalizeCompetition(sample.league) ? 100 : 0);
   if (has(current.modelHomeProb, current.modelDrawProb, current.modelAwayProb, sample.modelHomeProb, sample.modelDrawProb, sample.modelAwayProb)) {
     addPart(parts, "modelProb", 100 - (Math.abs(current.modelHomeProb - sample.modelHomeProb) + Math.abs(current.modelDrawProb - sample.modelDrawProb) + Math.abs(current.modelAwayProb - sample.modelAwayProb)) * 100);
   }
@@ -218,15 +246,60 @@ function avg(rows, getter) {
   return values.reduce((sum, item) => sum + item, 0) / values.length;
 }
 
+function countBy(rows, getter, limit = 5) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const key = getter(row);
+    if (!key) return;
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  return [...map.entries()]
+    .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))
+    .slice(0, limit)
+    .map(([label, count]) => ({ label, count, rate: rows.length ? count / rows.length : 0 }));
+}
+
+function scoreLabel(row) {
+  const home = Number(row.actualHomeGoals);
+  const away = Number(row.actualAwayGoals);
+  if (!Number.isFinite(home) || !Number.isFinite(away)) return "";
+  return `${home}-${away}`;
+}
+
+function handicapResult(row) {
+  const home = Number(row.actualHomeGoals);
+  const away = Number(row.actualAwayGoals);
+  const line = Number(row.asianHandicap);
+  if (![home, away, line].every(Number.isFinite)) return "";
+  const adjusted = home + line - away;
+  if (adjusted > 0) return "让胜";
+  if (adjusted === 0) return "让平";
+  return "让负";
+}
+
+function samplePolicy(count) {
+  if (count >= 30) return { level: "FULL", label: "可参与置信修正", note: "同赛事样本达到 30 场，允许进入最终置信修正。" };
+  if (count >= 10) return { level: "RISK_ONLY", label: "仅做风险提示", note: "同赛事样本 10-29 场，只提示风险，不改最终置信。" };
+  return { level: "DISPLAY_ONLY", label: "只展示不修正", note: "同赛事样本不足 10 场，只展示，不参与最终判断。" };
+}
+
 function stats(rows, current) {
   const sameRecommendation = rows.filter((item) => item.recommendationSide === current.recommendationSide);
   const sameGrade = rows.filter((item) => item.finalGrade === current.finalGrade);
+  const policy = samplePolicy(rows.length);
   return {
     sampleCount: rows.length,
+    competition: normalizeCompetition(current.league),
+    samplePolicy: policy.level,
+    samplePolicyLabel: policy.label,
+    samplePolicyNote: policy.note,
     homeWinRate: rate(rows, (item) => item.actualResult === "HOME"),
     drawRate: rate(rows, (item) => item.actualResult === "DRAW"),
     awayWinRate: rate(rows, (item) => item.actualResult === "AWAY"),
     avgGoals: avg(rows, (item) => Number(item.actualGoals)),
+    totalGoalDistribution: countBy(rows, (item) => `${Number(item.actualGoals)}球`),
+    commonScores: countBy(rows, scoreLabel),
+    handicapDistribution: countBy(rows, handicapResult),
     over25Rate: rate(rows, (item) => Number(item.actualGoals) > 2.5),
     under25Rate: rate(rows, (item) => Number(item.actualGoals) <= 2.5),
     sameRecommendationCount: sameRecommendation.length,
@@ -240,7 +313,7 @@ function stats(rows, current) {
 }
 
 function confidenceAdjustment(s) {
-  if (!s || s.sampleCount < 10) return 0;
+  if (!s || s.sampleCount < 30) return 0;
   let value = 0;
   if (s.sameRecommendationHitRate >= 0.58) value += 3;
   if (s.sampleCount >= 30 && s.sameRecommendationHitRate >= 0.62) value += 5;
@@ -252,7 +325,8 @@ function confidenceAdjustment(s) {
 
 function warnings(s, topCases) {
   const flags = [];
-  if (!s || s.sampleCount < 5) flags.push("相似样本不足");
+  if (!s || s.sampleCount < 10) flags.push("同赛事样本不足，不参与修正");
+  if (s?.sampleCount >= 10 && s.sampleCount < 30) flags.push("样本只做风险提示，不改置信");
   if (s?.sampleCount >= 10 && s.sameRecommendationHitRate < 0.45) flags.push("当前推荐历史命中率偏低");
   if (s?.drawRate >= 0.34) flags.push("历史平局率偏高，建议防平");
   if (s?.upsetRate >= 0.3) flags.push("历史冷门率偏高");
@@ -294,7 +368,14 @@ async function createCaseForLock(db, lockId) {
     lock.value_home_gap, lock.value_draw_gap, lock.value_away_gap, lock.asian_handicap, lock.asian_home_water, lock.asian_away_water,
     lock.euro_home_odds, lock.euro_draw_odds, lock.euro_away_odds, lock.euro_home_prob, lock.euro_draw_prob, lock.euro_away_prob,
     lock.data_quality, result.result_1x2, result.total_goals, review.hitStatus,
-    JSON.stringify(tags.failureTags), JSON.stringify(tags.successTags), JSON.stringify({ reviewText: review.reviewText }), new Date().toISOString()
+    JSON.stringify(tags.failureTags),
+    JSON.stringify(tags.successTags),
+    JSON.stringify({
+      reviewText: review.reviewText,
+      actualHomeGoals: result.full_time_home_goals,
+      actualAwayGoals: result.full_time_away_goals,
+    }),
+    new Date().toISOString()
   ).run();
   await db.prepare("UPDATE locked_predictions SET result_status = ? WHERE lock_id = ?").bind(review.hitStatus, lock.lock_id).run();
   return { ok: true, caseId, review };
@@ -825,6 +906,7 @@ export async function onRequest(context) {
       const pool = cases
         .filter((item) => item.modelVersion === "V4")
         .filter((item) => String(item.matchId) !== String(current.matchId))
+        .filter((item) => normalizeCompetition(item.league) === normalizeCompetition(current.league))
         .filter((item) => ["HIGH", "MEDIUM"].includes(item.dataQuality || "MEDIUM"))
         .map((item) => ({ ...item, similarityScore: similarity(current, item) }))
         .filter((item) => item.similarityScore >= (current.threshold ?? 65))
@@ -841,9 +923,11 @@ export async function onRequest(context) {
         stats: s,
         confidenceAdjustment: adjustment,
         warningFlags,
-        summaryText: pool.length < 5
-          ? `当前仅匹配到 ${pool.length} 场相似案例，样本量不足，只作为参考，不参与置信度修正。`
-          : `匹配到 ${pool.length} 场相似案例，当前推荐在历史相似样本中的命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%。`,
+        summaryText: pool.length < 10
+          ? `当前仅在【${s.competition}】匹配到 ${pool.length} 场相似案例，样本量不足，只展示，不参与置信度修正。`
+          : pool.length < 30
+            ? `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%，样本只做风险提示，不调整最终置信。`
+            : `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%。`,
       });
     }
 

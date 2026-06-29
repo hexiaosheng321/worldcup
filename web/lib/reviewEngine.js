@@ -89,6 +89,8 @@ window.WC_REVIEW_ENGINE = (() => {
       euroAwayProb: lock.euroAwayProb,
       dataQuality: lock.dataQuality,
       actualResult: result.result1x2,
+      actualHomeGoals: result.fullTimeHomeGoals,
+      actualAwayGoals: result.fullTimeAwayGoals,
       actualGoals: result.totalGoals,
       hitStatus: review.hitStatus,
       failureTags: tags.failureTags,

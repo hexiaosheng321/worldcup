@@ -9377,7 +9377,7 @@ body.dashboard-mode .home-topbar nav button.active {
 
 .similar-case-summary {
   display: grid;
-  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
   gap: 10px;
   margin: 14px 0;
 }
@@ -9399,6 +9399,33 @@ body.dashboard-mode .home-topbar nav button.active {
 .similar-case-summary strong {
   color: #08245c;
   font-size: 18px;
+}
+
+.similar-case-distribution {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.similar-case-distribution article {
+  border: 1px solid rgba(227, 161, 11, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 251, 235, 0.82);
+  padding: 12px;
+}
+
+.similar-case-distribution small {
+  display: block;
+  color: #9a6700;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.similar-case-distribution strong {
+  color: #08245c;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 .similar-case-summary-text {
@@ -9465,5 +9492,9 @@ body.dashboard-mode .home-topbar nav button.active {
 @media (max-width: 760px) {
   .similar-case-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .similar-case-distribution {
+    grid-template-columns: 1fr;
   }
 }

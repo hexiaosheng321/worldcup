@@ -1,6 +1,6 @@
 window.WC_SIMILAR_CASE_ENGINE = (() => {
   const SIMILARITY_WEIGHTS = {
-    league: 0.1,
+    league: 0.03,
     modelProb: 0.22,
     sportterySp: 0.15,
     valueGap: 0.15,
@@ -22,12 +22,87 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     return Math.max(0, Math.min(100, value));
   }
 
+  const competitionRules = [
+    ["世界杯", /世界杯|World Cup/i],
+    ["芬超", /芬超|Finland|Veikkausliiga/i],
+    ["日职", /日职|J1|J联赛|Japan/i],
+    ["韩职", /韩职|K联赛|K League/i],
+    ["欧冠", /欧冠|Champions League/i],
+    ["欧联", /欧联|Europa League/i],
+    ["英超", /英超|Premier League/i],
+    ["西甲", /西甲|La Liga/i],
+    ["意甲", /意甲|Serie A/i],
+    ["德甲", /德甲|Bundesliga/i],
+    ["法甲", /法甲|Ligue 1/i],
+  ];
+
+  function normalizeCompetition(value = "") {
+    const text = String(value || "").trim();
+    const found = competitionRules.find(([, pattern]) => pattern.test(text));
+    if (found) return found[0];
+    return text || "未分类赛事";
+  }
+
   function leagueScore(current, sample) {
-    if (current.league === sample.league) return 100;
-    const left = String(current.league || "");
-    const right = String(sample.league || "");
-    if (left && right && (left.includes(right) || right.includes(left))) return 70;
-    return 40;
+    const left = normalizeCompetition(current.league);
+    const right = normalizeCompetition(sample.league);
+    if (left === right) return 100;
+    return 0;
+  }
+
+  function sameCompetition(current, sample) {
+    return normalizeCompetition(current.league) === normalizeCompetition(sample.league);
+  }
+
+  function formatScore(home, away) {
+    if (!Number.isFinite(Number(home)) || !Number.isFinite(Number(away))) return "";
+    return `${Number(home)}-${Number(away)}`;
+  }
+
+  function countBy(rows, getter, limit = 5) {
+    const map = new Map();
+    rows.forEach((row) => {
+      const key = getter(row);
+      if (!key) return;
+      map.set(key, (map.get(key) || 0) + 1);
+    });
+    return [...map.entries()]
+      .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))
+      .slice(0, limit)
+      .map(([label, count]) => ({ label, count, rate: rows.length ? count / rows.length : 0 }));
+  }
+
+  function handicapResult(item) {
+    const home = Number(item.actualHomeGoals);
+    const away = Number(item.actualAwayGoals);
+    const line = Number(item.asianHandicap);
+    if (![home, away, line].every(Number.isFinite)) return "";
+    const adjusted = home + line - away;
+    if (adjusted > 0) return "让胜";
+    if (adjusted === 0) return "让平";
+    return "让负";
+  }
+
+  function samplePolicy(sampleCount) {
+    if (sampleCount >= 30) {
+      return {
+        level: "FULL",
+        label: "可参与置信修正",
+        note: "同赛事样本达到 30 场，允许进入最终置信修正。",
+      };
+    }
+    if (sampleCount >= 10) {
+      return {
+        level: "RISK_ONLY",
+        label: "仅做风险提示",
+        note: "同赛事样本 10-29 场，只提示风险，不改最终置信。",
+      };
+    }
+    return {
+      level: "DISPLAY_ONLY",
+      label: "只展示不修正",
+      note: "同赛事样本不足 10 场，只展示，不参与最终判断。",
+    };
   }
 
   function calculateSimilarity(current, sample) {
@@ -101,12 +176,20 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   function buildSimilarCaseStats(cases, current) {
     const sameRecommendation = cases.filter((item) => item.recommendationSide === current.recommendationSide);
     const sameGrade = cases.filter((item) => item.finalGrade === current.finalGrade);
+    const policy = samplePolicy(cases.length);
     return {
       sampleCount: cases.length,
+      competition: normalizeCompetition(current.league),
+      samplePolicy: policy.level,
+      samplePolicyLabel: policy.label,
+      samplePolicyNote: policy.note,
       homeWinRate: rate(cases, (item) => item.actualResult === "HOME"),
       drawRate: rate(cases, (item) => item.actualResult === "DRAW"),
       awayWinRate: rate(cases, (item) => item.actualResult === "AWAY"),
       avgGoals: average(cases, (item) => Number(item.actualGoals)),
+      totalGoalDistribution: countBy(cases, (item) => `${Number(item.actualGoals)}球`),
+      commonScores: countBy(cases, (item) => formatScore(item.actualHomeGoals, item.actualAwayGoals)),
+      handicapDistribution: countBy(cases, handicapResult),
       over25Rate: rate(cases, (item) => Number(item.actualGoals) > 2.5),
       under25Rate: rate(cases, (item) => Number(item.actualGoals) <= 2.5),
       sameRecommendationCount: sameRecommendation.length,
@@ -120,7 +203,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   }
 
   function calculateConfidenceAdjustment(stats) {
-    if (!stats || stats.sampleCount < 10) return 0;
+    if (!stats || stats.sampleCount < 30) return 0;
     let value = 0;
     if (stats.sameRecommendationHitRate >= 0.58) value += 3;
     if (stats.sampleCount >= 30 && stats.sameRecommendationHitRate >= 0.62) value += 5;
@@ -132,7 +215,8 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
 
   function generateWarningFlags(stats, topCases) {
     const flags = [];
-    if (!stats || stats.sampleCount < 5) flags.push("相似样本不足");
+    if (!stats || stats.sampleCount < 10) flags.push("同赛事样本不足，不参与修正");
+    if (stats?.sampleCount >= 10 && stats.sampleCount < 30) flags.push("样本只做风险提示，不改置信");
     if (stats?.sampleCount >= 10 && stats.sameRecommendationHitRate < 0.45) flags.push("当前推荐历史命中率偏低");
     if (stats?.drawRate >= 0.34) flags.push("历史平局率偏高，建议防平");
     if (stats?.upsetRate >= 0.3) flags.push("历史冷门率偏高");
@@ -143,8 +227,13 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   }
 
   function summaryText(stats, adjustment, flags) {
-    if (!stats || stats.sampleCount < 5) {
-      return `当前仅匹配到 ${stats?.sampleCount || 0} 场相似案例，样本量不足，只作为参考，不参与置信度修正。`;
+    if (!stats || stats.sampleCount < 10) {
+      return `当前仅在【${stats?.competition || "同赛事"}】匹配到 ${stats?.sampleCount || 0} 场相似案例，样本量不足，只展示，不参与置信度修正。`;
+    }
+    if (stats.sampleCount < 30) {
+      const hitRate = (stats.sameRecommendationHitRate * 100).toFixed(1);
+      const warning = flags.length ? ` ${flags.join("；")}。` : "";
+      return `【${stats.competition}】同赛事匹配到 ${stats.sampleCount} 场，当前推荐历史命中率 ${hitRate}%，样本只做风险提示，不调整最终置信。${warning}`;
     }
     const hitRate = (stats.sameRecommendationHitRate * 100).toFixed(1);
     const direction = adjustment > 0 ? "置信度小幅上调" : adjustment < 0 ? "置信度下调" : "置信度不调整";
@@ -166,6 +255,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     const pool = (caseBase || [])
       .filter((item) => item.modelVersion === "V4")
       .filter((item) => String(item.matchId) !== String(currentMatch.matchId))
+      .filter((item) => sameCompetition(currentMatch, item))
       .filter((item) => ["HIGH", "MEDIUM"].includes(item.dataQuality || "MEDIUM"))
       .map((item) => ({
         ...item,
@@ -205,6 +295,8 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
 
   return {
     calculateSimilarity,
+    normalizeCompetition,
+    samplePolicy,
     findSimilarCases,
     buildSimilarCaseStats,
     generateWarningFlags,

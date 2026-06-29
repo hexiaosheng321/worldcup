@@ -2191,6 +2191,24 @@ function matchResultFromScore(match = {}) {
   };
 }
 
+function competitionBucketForCase(pred = {}, match = {}) {
+  const text = [
+    pred.competition,
+    pred.competitionModel,
+    match.competition,
+    match.league,
+    match.group,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  if (window.WC_SIMILAR_CASE_ENGINE?.normalizeCompetition) {
+    return window.WC_SIMILAR_CASE_ENGINE.normalizeCompetition(text);
+  }
+  if (/世界杯/.test(text)) return "世界杯";
+  if (/芬超/.test(text)) return "芬超";
+  return text || "未分类赛事";
+}
+
 function lockFromPrediction(pred, match = {}) {
   if (!pred || !match || !window.WC_LOCK_ENGINE) return null;
   const gate = autoDecisionGate(match.no, pred);
@@ -2207,7 +2225,7 @@ function lockFromPrediction(pred, match = {}) {
     lockId: `${match.no || match.matchId}-${predictionModelVersion(pred)}-${pred.date || match.date}`,
     matchId: String(match.matchId || match.no || ""),
     matchCode: match.no || pred.no || "",
-    league: match.competition || match.league || match.group || pred.competition || "世界杯",
+    league: competitionBucketForCase(pred, match),
     kickoffTime: match.matchDate || match.date || pred.date || "",
     lockedAt: pred.lockedAt || `${pred.date || match.date || data.currentDate}T00:00:00+08:00`,
     lockType: "FINAL_LOCK",
@@ -2330,6 +2348,13 @@ function renderSimilarCasePanel(pred, match) {
   const stats = result.stats || {};
   const pct = (value) => `${((Number(value) || 0) * 100).toFixed(1)}%`;
   const adjustment = result.confidenceAdjustment > 0 ? `+${result.confidenceAdjustment}` : String(result.confidenceAdjustment || 0);
+  const distText = (rows = [], empty = "等待样本") =>
+    rows.length
+      ? rows.map((item) => `${item.label} ${item.count}场/${pct(item.rate)}`).join(" · ")
+      : empty;
+  const handicapText = distText(stats.handicapDistribution || [], "等待比分拆分");
+  const scoreText = distText(stats.commonScores || [], "等待比分拆分");
+  const totalText = distText(stats.totalGoalDistribution || [], "等待样本");
   const rows = result.topCases
     .map(
       (item) => `
@@ -2349,14 +2374,20 @@ function renderSimilarCasePanel(pred, match) {
     <section class="match-page-section similar-case-panel">
       <span>历史相似案例库</span>
       <div class="similar-case-summary">
+        <article><small>样本范围</small><strong>${stats.competition || "同赛事"}</strong></article>
+        <article><small>参与方式</small><strong>${stats.samplePolicyLabel || "只展示不修正"}</strong></article>
         <article><small>匹配样本</small><strong>${result.sampleCount}</strong></article>
         <article><small>主 / 平 / 客</small><strong>${pct(stats.homeWinRate)} / ${pct(stats.drawRate)} / ${pct(stats.awayWinRate)}</strong></article>
         <article><small>当前推荐命中率</small><strong>${pct(stats.sameRecommendationHitRate)}</strong></article>
-        <article><small>相同等级命中率</small><strong>${pct(stats.sameGradeHitRate)}</strong></article>
         <article><small>平均进球</small><strong>${Number(stats.avgGoals || 0).toFixed(2)}</strong></article>
         <article><small>置信度修正</small><strong>${adjustment}</strong></article>
       </div>
       <p class="similar-case-summary-text">${result.summaryText}</p>
+      <div class="similar-case-distribution">
+        <article><small>总进球分布</small><strong>${totalText}</strong></article>
+        <article><small>常见比分</small><strong>${scoreText}</strong></article>
+        <article><small>让球分布</small><strong>${handicapText}</strong></article>
+      </div>
       <div class="similar-case-flags">
         ${(result.warningFlags.length ? result.warningFlags : ["暂无额外风险提示"]).map((item) => `<em>${item}</em>`).join("")}
       </div>

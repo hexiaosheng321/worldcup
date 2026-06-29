@@ -354,7 +354,11 @@ async function evaluateAndCreateCases(db, matchId) {
       hitStatus,
       JSON.stringify(failureTags),
       JSON.stringify(successTags),
-      JSON.stringify({ generatedBy: "worldcup-sync-worker" }),
+      JSON.stringify({
+        generatedBy: "worldcup-sync-worker",
+        actualHomeGoals: result.full_time_home_goals,
+        actualAwayGoals: result.full_time_away_goals,
+      }),
       new Date().toISOString()
     ).run();
     cases += 1;
