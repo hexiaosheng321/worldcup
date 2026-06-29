@@ -44,11 +44,7 @@ jobs:
         shell: bash
         run: |
           if [ "$RUN_DATA_UPDATE" = "true" ]; then
-            if [ -z "$SPORTTERY_UPSTREAM_PROXY" ]; then
-              echo "::notice::SPORTTERY_UPSTREAM_PROXY is not configured; skipped cloud data update."
-              exit 0
-            fi
-            npm run sporttery:auto-deploy
+            curl -fsS -X POST "https://worldcup-dashboard-4hr.pages.dev/api/sync/sporttery"
           else
             npm run cloudflare:deploy
           fi

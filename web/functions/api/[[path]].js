@@ -281,6 +281,265 @@ async function createCaseForLock(db, lockId) {
   return { ok: true, caseId, review };
 }
 
+const sportteryApis = {
+  calculator: "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c",
+  results: "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1",
+};
+
+const sportteryHeaders = {
+  accept: "application/json, text/plain, */*",
+  "accept-encoding": "identity",
+  origin: "https://m.sporttery.cn",
+  referer: "https://m.sporttery.cn/",
+  "user-agent":
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+};
+
+function sportteryProxyUrl(env, targetUrl) {
+  const proxy = (env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || "").trim();
+  if (!proxy) return targetUrl;
+  if (proxy.includes("{url}")) return proxy.replace("{url}", encodeURIComponent(targetUrl));
+  return `${proxy}${targetUrl}`;
+}
+
+async function fetchSportteryJson(env, targetUrl) {
+  const response = await fetch(sportteryProxyUrl(env, targetUrl), { headers: sportteryHeaders });
+  if (!response.ok) throw new Error(`Sporttery API ${response.status}`);
+  const raw = await response.json();
+  if (!raw.success) throw new Error(raw.errorMessage || "Sporttery API returned an error");
+  return raw;
+}
+
+function compactSportteryNo(matchNumStr = "", matchNum = "") {
+  const text = String(matchNumStr || matchNum || "");
+  const found = text.match(/(\d{3})$/);
+  return found ? found[1] : text.slice(-3).padStart(3, "0");
+}
+
+function normalizeSportteryHandicap(goalLine = "") {
+  const raw = String(goalLine || "0").trim();
+  if (!raw) return "0";
+  const numeric = Number(raw.replace("+", ""));
+  if (Number.isNaN(numeric)) return raw;
+  if (numeric > 0) return `+${numeric}`;
+  return String(numeric);
+}
+
+function toSportteryOdd(value) {
+  if (value === undefined || value === null || value === "") return "";
+  return String(value);
+}
+
+function sportteryMarketOdds(market) {
+  if (!market || !market.h) return null;
+  return { win: toSportteryOdd(market.h), draw: toSportteryOdd(market.d), lose: toSportteryOdd(market.a) };
+}
+
+function sportteryScoreBucket(home, away) {
+  if (home > away) return "胜";
+  if (home < away) return "负";
+  return "平";
+}
+
+function sportteryScoreOdds(crs = {}) {
+  return Object.entries(crs)
+    .flatMap(([key, value]) => {
+      if (!value || key.endsWith("f")) return [];
+      if (key === "s-1sh" || key === "s1sh") return [{ score: "胜其它", odds: toSportteryOdd(value), bucket: "胜" }];
+      if (key === "s-1sd" || key === "s1sd") return [{ score: "平其它", odds: toSportteryOdd(value), bucket: "平" }];
+      if (key === "s-1sa" || key === "s1sa") return [{ score: "负其它", odds: toSportteryOdd(value), bucket: "负" }];
+      const found = key.match(/^s(\d{2})s(\d{2})$/);
+      if (!found) return [];
+      const home = Number(found[1]);
+      const away = Number(found[2]);
+      return [{ score: `${home}:${away}`, odds: toSportteryOdd(value), bucket: sportteryScoreBucket(home, away) }];
+    })
+    .sort((a, b) => Number(a.odds) - Number(b.odds))
+    .slice(0, 12);
+}
+
+function sportteryTotalGoalsOdds(ttg = {}) {
+  return Array.from({ length: 8 }, (_, index) => {
+    const value = ttg[`s${index}`];
+    if (!value) return null;
+    return { goals: index === 7 ? "7+" : String(index), odds: toSportteryOdd(value) };
+  }).filter(Boolean);
+}
+
+function sportteryLatestUpdate(match) {
+  return [match.had, match.hhad, match.crs, match.ttg, match.hafu]
+    .map((market) => `${market?.updateDate || ""} ${market?.updateTime || ""}`.trim())
+    .filter(Boolean)
+    .sort()
+    .at(-1) || "";
+}
+
+function sportteryKey(item) {
+  return String(item.matchId || item.orderId || `${item.ticaiDate || item.matchDate}-${item.issue || item.no}-${item.home}-${item.away}`);
+}
+
+function sportteryDbMatchId(item) {
+  return `sporttery-${sportteryKey(item)}`;
+}
+
+function normalizeSportteryMatch(match, businessDate) {
+  const item = {
+    orderId: String(match.matchNum || ""),
+    issue: match.matchNumStr || "",
+    no: compactSportteryNo(match.matchNumStr, match.matchNum),
+    ticaiDate: businessDate || match.businessDate || match.matchDate || "",
+    matchDate: match.matchDate || "",
+    kickoffTime: String(match.matchTime || "").slice(0, 5),
+    league: match.leagueAbbName || match.leagueAllName || "竞彩",
+    matchId: String(match.matchId || ""),
+    home: match.homeTeamAbbName || match.homeTeamAllName || "",
+    away: match.awayTeamAbbName || match.awayTeamAllName || "",
+    venue: match.remark || "",
+    statusCode: match.matchStatus || "",
+    score: "",
+    handicap: normalizeSportteryHandicap(match.hhad?.goalLine),
+    normal: sportteryMarketOdds(match.had),
+    handicapOdds: sportteryMarketOdds(match.hhad),
+    scoreOdds: sportteryScoreOdds(match.crs || {}),
+    totalGoalsOdds: sportteryTotalGoalsOdds(match.ttg || {}),
+    updatedAt: sportteryLatestUpdate(match),
+  };
+  item.sportteryKey = sportteryKey(item);
+  return item;
+}
+
+function parseSportteryScore(score = "") {
+  if (!score.includes(":")) return null;
+  const [home, away] = score.split(":").map(Number);
+  if (!Number.isFinite(home) || !Number.isFinite(away)) return null;
+  return { home, away, text: `${home}-${away}` };
+}
+
+function normalizeSportteryResult(match, businessDate) {
+  const parsed = parseSportteryScore(match.sectionsNo999 || "");
+  const item = {
+    orderId: String(match.matchNum || ""),
+    issue: match.matchNumStr || "",
+    no: compactSportteryNo(match.matchNumStr, match.matchNum),
+    ticaiDate: businessDate || match.businessDate || match.matchDate || "",
+    matchDate: match.matchDate || "",
+    kickoffTime: String(match.matchTime || "").slice(0, 5),
+    league: match.leagueAbbName || match.leagueAllName || "竞彩",
+    matchId: String(match.matchId || ""),
+    home: match.homeTeamAbbName || match.homeTeamAllName || "",
+    away: match.awayTeamAbbName || match.awayTeamAllName || "",
+    statusCode: match.matchStatus || "",
+    statusName: match.matchStatusName || "",
+    halfScore: String(match.sectionsNo1 || "").replace(":", "-"),
+    fullScoreRaw: match.sectionsNo999 || "",
+    score: parsed?.text || "",
+    result: parsed ? (parsed.home > parsed.away ? "胜" : parsed.home < parsed.away ? "负" : "平") : "",
+  };
+  item.sportteryKey = sportteryKey(item);
+  return item;
+}
+
+async function autoReviewMatch(db, matchId) {
+  const locks = await db.prepare("SELECT lock_id, lock_type FROM locked_predictions WHERE match_id = ?").bind(matchId).all();
+  let reviewed = 0;
+  let cases = 0;
+  for (const lock of locks.results || []) {
+    const created = await createCaseForLock(db, lock.lock_id);
+    if (created.ok || created.error === "only FINAL_LOCK can enter Case Base") reviewed += 1;
+    if (created.caseId && !created.duplicated) cases += 1;
+  }
+  return { reviewed, cases };
+}
+
+async function syncSportteryToD1(db, env) {
+  const capturedAt = new Date().toISOString();
+  const [calculatorRaw, resultsRaw] = await Promise.all([
+    fetchSportteryJson(env, sportteryApis.calculator),
+    fetchSportteryJson(env, sportteryApis.results),
+  ]);
+  const days = calculatorRaw?.value?.matchInfoList || [];
+  const matches = days.flatMap((day) =>
+    (day.subMatchList || []).map((match) => normalizeSportteryMatch(match, day.businessDate))
+  );
+  for (const match of matches) {
+    const matchId = sportteryDbMatchId(match);
+    await db.prepare(`
+      INSERT INTO matches (match_id, match_code, league, home_team, away_team, kickoff_time, status, payload_json, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(match_id) DO UPDATE SET
+        match_code=excluded.match_code, league=excluded.league, home_team=excluded.home_team, away_team=excluded.away_team,
+        kickoff_time=excluded.kickoff_time, status=excluded.status, payload_json=excluded.payload_json, updated_at=excluded.updated_at
+    `).bind(
+      matchId,
+      match.issue || match.no || "",
+      match.league || "竞彩",
+      match.home || "",
+      match.away || "",
+      `${match.matchDate || match.ticaiDate || ""} ${match.kickoffTime || ""}`.trim(),
+      "SCHEDULED",
+      JSON.stringify({ ...match, cloudMatchId: matchId }),
+      capturedAt
+    ).run();
+    await db.prepare(`
+      INSERT INTO odds_snapshots (snapshot_id, match_id, source, captured_at, sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp, handicap, payload_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      `odds-${matchId}-${capturedAt}`,
+      matchId,
+      "sporttery",
+      capturedAt,
+      n(match.normal?.win, null),
+      n(match.normal?.draw, null),
+      n(match.normal?.lose, null),
+      n(String(match.handicap || "0").replace("+", ""), null),
+      JSON.stringify(match)
+    ).run();
+  }
+
+  const resultDays = resultsRaw?.value?.matchInfoList || [];
+  const resultRows = resultDays.flatMap((day) =>
+    (day.subMatchList || []).map((match) => normalizeSportteryResult(match, day.matchDate || day.businessDate))
+  );
+  let resultCount = 0;
+  let reviewed = 0;
+  let cases = 0;
+  for (const result of resultRows) {
+    const parsed = parseSportteryScore(result.fullScoreRaw || "");
+    if (!parsed) continue;
+    const matchId = sportteryDbMatchId(result);
+    await db.prepare(`
+      INSERT INTO match_results (match_id, full_time_home_goals, full_time_away_goals, result_1x2, total_goals, reviewed_at, payload_json, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(match_id) DO UPDATE SET
+        full_time_home_goals=excluded.full_time_home_goals, full_time_away_goals=excluded.full_time_away_goals,
+        result_1x2=excluded.result_1x2, total_goals=excluded.total_goals, reviewed_at=excluded.reviewed_at,
+        payload_json=excluded.payload_json, updated_at=excluded.updated_at
+    `).bind(
+      matchId,
+      parsed.home,
+      parsed.away,
+      sideFromResult(parsed.home, parsed.away),
+      parsed.home + parsed.away,
+      capturedAt,
+      JSON.stringify({ ...result, cloudMatchId: matchId }),
+      capturedAt
+    ).run();
+    const review = await autoReviewMatch(db, matchId);
+    reviewed += review.reviewed;
+    cases += review.cases;
+    resultCount += 1;
+  }
+  await db.prepare(`
+    INSERT INTO sync_logs (sync_id, source, status, message, payload_json, created_at)
+    VALUES (?, 'sporttery-pages-api', 'OK', 'sync completed', ?, ?)
+  `).bind(
+    `sync-${Date.now()}-${crypto.randomUUID()}`,
+    JSON.stringify({ matchCount: matches.length, resultCount, reviewed, cases }),
+    capturedAt
+  ).run();
+  return { ok: true, capturedAt, matchCount: matches.length, resultCount, reviewed, cases };
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -297,6 +556,10 @@ export async function onRequest(context) {
   }
 
   try {
+    if (path === "sync/sporttery" && request.method === "POST") {
+      return json(await syncSportteryToD1(db, env));
+    }
+
     if (path === "bootstrap" && request.method === "GET") {
       const [matches, locks, results, cases] = await Promise.all([
         db.prepare("SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT 200").all(),
