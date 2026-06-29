@@ -688,6 +688,10 @@ function ticaiIssue(match) {
 
 function dashboardToday() {
   if (data.currentDate) return data.currentDate;
+  return calendarToday();
+}
+
+function calendarToday() {
   const now = new Date();
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: data.timezone || "Asia/Shanghai",
@@ -1136,12 +1140,10 @@ function renderMatchLanes(sourceMatches, options = {}) {
 
 function sportteryPoolItems() {
   const resultRows = resultsData.results || [];
-  const resultDates = resultRows
-    .filter((item) => normalizeResultScore(item.score))
-    .map((item) => item.ticaiDate || item.matchDate)
-    .filter(Boolean)
-    .sort();
-  const latestFinishedDate = resultDates.at(-1) || data.currentDate || oddsData.lotterNo || dashboardToday();
+  const currentSportteryDate =
+    oddsData.lotterNo ||
+    [...(oddsData.matchDates || [])].filter(Boolean).sort().at(0) ||
+    calendarToday();
   const now = Date.now();
   const openItems = (oddsData.matches || [])
     .map((item) => {
@@ -1176,7 +1178,7 @@ function sportteryPoolItems() {
     .sort((a, b) => a.displayDate.localeCompare(b.displayDate) || String(a.issue).localeCompare(String(b.issue)));
 
   const finishedItems = resultRows
-    .filter((item) => (item.ticaiDate || item.matchDate) === latestFinishedDate)
+    .filter((item) => (item.ticaiDate || item.matchDate) === currentSportteryDate)
     .filter((item) => normalizeResultScore(item.score))
     .map((item) => {
       const linkedMatch = matchFromResultItem(item);
@@ -1184,7 +1186,7 @@ function sportteryPoolItems() {
         ...item,
         sportteryKey: sportteryItemKey(item),
         linkedNo: linkedMatch?.no || "",
-        displayDate: item.ticaiDate || item.matchDate || latestFinishedDate,
+        displayDate: item.ticaiDate || item.matchDate || currentSportteryDate,
         displayHome: linkedMatch?.home || item.home,
         displayAway: linkedMatch?.away || item.away,
         displayGroup: linkedMatch ? `${linkedMatch.group}组` : item.league || "竞彩",
