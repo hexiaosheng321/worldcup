@@ -303,6 +303,8 @@ async function createCaseForLock(db, lockId) {
 const sportteryApis = {
   calculator: "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c",
   results: "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1",
+  resultPage: (pageNo) =>
+    `https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=${pageNo}`,
 };
 
 const sportteryHeaders = {
@@ -327,6 +329,24 @@ async function fetchSportteryJson(env, targetUrl) {
   const raw = await response.json();
   if (!raw.success) throw new Error(raw.errorMessage || "Sporttery API returned an error");
   return raw;
+}
+
+async function fetchSportteryResultPages(env, maxPages = 5) {
+  const pages = [];
+  const seen = new Set();
+  for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
+    const raw = await fetchSportteryJson(env, sportteryApis.resultPage(pageNo));
+    const days = raw?.value?.matchInfoList || [];
+    const pageKeys = days.flatMap((day) =>
+      (day.subMatchList || []).map((match) => `${day.matchDate || day.businessDate || ""}-${match.matchId || match.matchNumStr || match.matchNum || ""}`)
+    );
+    const freshKeys = pageKeys.filter((key) => !seen.has(key));
+    if (!pageKeys.length || !freshKeys.length) break;
+    pageKeys.forEach((key) => seen.add(key));
+    pages.push(raw);
+    if (pageKeys.length < 80) break;
+  }
+  return pages;
 }
 
 function compactSportteryNo(matchNumStr = "", matchNum = "") {
@@ -472,9 +492,9 @@ async function autoReviewMatch(db, matchId) {
 
 async function syncSportteryToD1(db, env) {
   const capturedAt = new Date().toISOString();
-  const [calculatorRaw, resultsRaw] = await Promise.all([
+  const [calculatorRaw, resultPages] = await Promise.all([
     fetchSportteryJson(env, sportteryApis.calculator),
-    fetchSportteryJson(env, sportteryApis.results),
+    fetchSportteryResultPages(env),
   ]);
   const days = calculatorRaw?.value?.matchInfoList || [];
   const matches = days.flatMap((day) =>
@@ -515,10 +535,19 @@ async function syncSportteryToD1(db, env) {
     ).run();
   }
 
-  const resultDays = resultsRaw?.value?.matchInfoList || [];
-  const resultRows = resultDays.flatMap((day) =>
-    (day.subMatchList || []).map((match) => normalizeSportteryResult(match, day.matchDate || day.businessDate))
-  );
+  const resultSeen = new Set();
+  const resultRows = resultPages.flatMap((raw) => {
+    const resultDays = raw?.value?.matchInfoList || [];
+    return resultDays.flatMap((day) =>
+      (day.subMatchList || []).flatMap((match) => {
+        const item = normalizeSportteryResult(match, day.matchDate || day.businessDate);
+        const key = sportteryDbMatchId(item);
+        if (resultSeen.has(key)) return [];
+        resultSeen.add(key);
+        return [item];
+      })
+    );
+  });
   let resultCount = 0;
   let reviewed = 0;
   let cases = 0;
@@ -553,7 +582,7 @@ async function syncSportteryToD1(db, env) {
     VALUES (?, 'sporttery-pages-api', 'OK', 'sync completed', ?, ?)
   `).bind(
     `sync-${Date.now()}-${crypto.randomUUID()}`,
-    JSON.stringify({ matchCount: matches.length, resultCount, reviewed, cases }),
+    JSON.stringify({ matchCount: matches.length, resultCount, reviewed, cases, resultPages: resultPages.length }),
     capturedAt
   ).run();
   return { ok: true, capturedAt, matchCount: matches.length, resultCount, reviewed, cases };
