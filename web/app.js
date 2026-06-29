@@ -2432,7 +2432,6 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
         <span>模型状态</span>
         <p>这场还没有正式锁版，只显示盘口数据和预筛方向。正式推演不会自动生成，需要人工确认后写入锁版记录。</p>
       </section>
-      ${renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp)}
     `;
   }
   const filter = sportteryV4Filter(modelPred, research);
@@ -2499,7 +2498,6 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
     ${modelPred.noiseFilter ? `<section class="match-page-section"><span>排除因素</span><p>${displayModelText(modelPred.noiseFilter)}</p></section>` : ""}
     ${renderFinalDecisionGatePanel(modelPred)}
     ${renderSimilarCasePanel(modelPred, item)}
-    ${renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp)}
   `;
 }
 
@@ -2620,6 +2618,7 @@ function renderSportteryMatchDetail(key) {
           }
         </div>
       </section>
+      ${renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp)}
     </div>
     <div class="match-mode-panel" data-match-mode-panel="full" hidden>
       ${renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreOdds, sourceStamp)}
