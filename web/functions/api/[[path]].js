@@ -10,6 +10,16 @@ function json(data, status = 200) {
   });
 }
 
+function javascript(source, status = 200) {
+  return new Response(source, {
+    status,
+    headers: {
+      "content-type": "application/javascript; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
 async function readJson(request) {
   if (request.method === "GET") return {};
   try {
@@ -133,6 +143,15 @@ function parseArray(text) {
     return Array.isArray(value) ? value : [];
   } catch {
     return [];
+  }
+}
+
+function parseObject(text, fallback = {}) {
+  try {
+    const value = JSON.parse(text || "{}");
+    return value && typeof value === "object" ? value : fallback;
+  } catch {
+    return fallback;
   }
 }
 
@@ -540,6 +559,85 @@ async function syncSportteryToD1(db, env) {
   return { ok: true, capturedAt, matchCount: matches.length, resultCount, reviewed, cases };
 }
 
+async function d1OddsScript(db) {
+  const rows = await db.prepare("SELECT * FROM matches ORDER BY kickoff_time ASC LIMIT 300").all();
+  const matches = (rows.results || [])
+    .map((row) => {
+      const payload = parseObject(row.payload_json, null);
+      if (payload?.home && payload?.away) return payload;
+      const kickoff = String(row.kickoff_time || "");
+      return {
+        orderId: row.match_id || "",
+        issue: row.match_code || "",
+        no: compactSportteryNo(row.match_code, row.match_id),
+        ticaiDate: kickoff.slice(0, 10),
+        matchDate: kickoff.slice(0, 10),
+        kickoffTime: kickoff.slice(11, 16),
+        league: row.league || "竞彩",
+        matchId: String(row.match_id || "").replace(/^sporttery-/, ""),
+        home: row.home_team || "",
+        away: row.away_team || "",
+        score: "",
+      };
+    })
+    .filter((item) => item.home && item.away);
+  const data = {
+    source: "Cloudflare D1 + 中国体育彩票官方接口",
+    apiEndpoint: "/api/live-sporttery-data.js",
+    importedAt: rows.results?.[0]?.updated_at || new Date().toISOString(),
+    isLiveSnapshot: true,
+    isCloudSnapshot: true,
+    totalCount: matches.length,
+    lastUpdateTime: rows.results?.[0]?.updated_at || "",
+    matchDates: [...new Set(matches.map((item) => item.ticaiDate || item.matchDate).filter(Boolean))],
+    matches,
+  };
+  return javascript(`window.LIVE_SPORTTERY_ODDS = ${JSON.stringify(data, null, 2)};\n`);
+}
+
+async function d1ResultsScript(db) {
+  const [resultRows, matchRows] = await Promise.all([
+    db.prepare("SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT 300").all(),
+    db.prepare("SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT 300").all(),
+  ]);
+  const matchPayloadById = new Map((matchRows.results || []).map((row) => [row.match_id, parseObject(row.payload_json)]));
+  const results = (resultRows.results || [])
+    .map((row) => {
+      const payload = parseObject(row.payload_json);
+      const matchPayload = matchPayloadById.get(row.match_id) || {};
+      const score = `${row.full_time_home_goals}-${row.full_time_away_goals}`;
+      return {
+        ...matchPayload,
+        ...payload,
+        orderId: payload.orderId || matchPayload.orderId || row.match_id,
+        issue: payload.issue || matchPayload.issue || "",
+        no: payload.no || matchPayload.no || compactSportteryNo(matchPayload.issue, row.match_id),
+        ticaiDate: payload.ticaiDate || matchPayload.ticaiDate || String(matchPayload.matchDate || "").slice(0, 10),
+        matchDate: payload.matchDate || matchPayload.matchDate || "",
+        kickoffTime: payload.kickoffTime || matchPayload.kickoffTime || "",
+        league: payload.league || matchPayload.league || "竞彩",
+        matchId: payload.matchId || matchPayload.matchId || String(row.match_id || "").replace(/^sporttery-/, ""),
+        home: payload.home || matchPayload.home || "",
+        away: payload.away || matchPayload.away || "",
+        score,
+        fullScoreRaw: `${row.full_time_home_goals}:${row.full_time_away_goals}`,
+        result: score.includes("-") ? (Number(score.split("-")[0]) > Number(score.split("-")[1]) ? "胜" : Number(score.split("-")[0]) < Number(score.split("-")[1]) ? "负" : "平") : "",
+      };
+    })
+    .filter((item) => item.home && item.away && item.score);
+  const data = {
+    source: "Cloudflare D1 + 中国体育彩票官方赛果接口",
+    apiEndpoint: "/api/live-sporttery-results.js",
+    importedAt: resultRows.results?.[0]?.reviewed_at || new Date().toISOString(),
+    isLiveSnapshot: true,
+    isCloudSnapshot: true,
+    totalCount: results.length,
+    matchDates: [...new Set(results.map((item) => item.ticaiDate || item.matchDate).filter(Boolean))],
+    results,
+  };
+  return javascript(`window.LIVE_SPORTTERY_RESULTS = ${JSON.stringify(data, null, 2)};\n`);
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -556,6 +654,14 @@ export async function onRequest(context) {
   }
 
   try {
+    if (path === "live-sporttery-data.js" && request.method === "GET") {
+      return d1OddsScript(db);
+    }
+
+    if (path === "live-sporttery-results.js" && request.method === "GET") {
+      return d1ResultsScript(db);
+    }
+
     if (path === "sync/sporttery" && request.method === "POST") {
       const requestProxy = request.headers.get("x-sporttery-upstream-proxy") || "";
       return json(await syncSportteryToD1(db, { ...env, REQUEST_UPSTREAM_PROXY: requestProxy }));
