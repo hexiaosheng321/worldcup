@@ -44,7 +44,9 @@ jobs:
         shell: bash
         run: |
           if [ "$RUN_DATA_UPDATE" = "true" ]; then
-            curl -fsS -X POST "https://worldcup-dashboard-4hr.pages.dev/api/sync/sporttery"
+            curl -fsS -X POST \
+              -H "x-sporttery-upstream-proxy: $SPORTTERY_UPSTREAM_PROXY" \
+              "https://worldcup-dashboard-4hr.pages.dev/api/sync/sporttery"
           else
             npm run cloudflare:deploy
           fi

@@ -296,7 +296,7 @@ const sportteryHeaders = {
 };
 
 function sportteryProxyUrl(env, targetUrl) {
-  const proxy = (env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || "").trim();
+  const proxy = (env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || env.REQUEST_UPSTREAM_PROXY || "").trim();
   if (!proxy) return targetUrl;
   if (proxy.includes("{url}")) return proxy.replace("{url}", encodeURIComponent(targetUrl));
   return `${proxy}${targetUrl}`;
@@ -557,7 +557,8 @@ export async function onRequest(context) {
 
   try {
     if (path === "sync/sporttery" && request.method === "POST") {
-      return json(await syncSportteryToD1(db, env));
+      const requestProxy = request.headers.get("x-sporttery-upstream-proxy") || "";
+      return json(await syncSportteryToD1(db, { ...env, REQUEST_UPSTREAM_PROXY: requestProxy }));
     }
 
     if (path === "bootstrap" && request.method === "GET") {
