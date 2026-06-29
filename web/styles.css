@@ -3014,6 +3014,10 @@ body::before {
   display: none;
 }
 
+.site-locks-mode .sticky-board {
+  display: none;
+}
+
 .about-site-mode .sticky-board {
   display: none;
 }
