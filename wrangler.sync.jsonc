@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "worldcup-sync-worker",
+  "main": "worker/sync-worker.js",
+  "compatibility_date": "2026-06-18",
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "worldcup-case-base",
+      "database_id": "25f4a7fb-1bff-4746-93e4-1dc79b74538f"
+    }
+  ]
+}

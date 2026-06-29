@@ -1298,7 +1298,7 @@ function renderSportteryPool() {
   }
   if (sourceNode) {
     const stamp = oddsData.lastUpdateTime || formatCapturedAt(oddsData.importedAt) || "等待刷新";
-    const source = oddsData.isLiveSnapshot ? "体彩官方实时接口" : "本地静态兜底";
+    const source = oddsData.isCloudSnapshot ? "Cloudflare D1 云端数据" : oddsData.isLiveSnapshot ? "体彩官方实时接口" : "本地静态兜底";
     const resultStamp = formatCapturedAt(resultsData.importedAt);
     const liveStamp = formatCapturedAt(liveFootballData.importedAt);
     sourceNode.textContent =
@@ -1467,7 +1467,124 @@ async function refreshSportterySpHistoryData(sourceMatches = oddsData.matches ||
   window.LIVE_SPORTTERY_SP_HISTORY = spHistoryData;
 }
 
+function parseCloudJson(text, fallback = null) {
+  try {
+    return text ? JSON.parse(text) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function cloudMatchRowsToOddsData(rows = [], capturedAt = new Date().toISOString()) {
+  const matchesFromRows = rows
+    .map((row) => {
+      const payload = parseCloudJson(row.payload_json, null);
+      if (payload?.home && payload?.away) return payload;
+      return {
+        orderId: row.match_id || "",
+        issue: row.match_code || "",
+        no: compactSportteryNo(row.match_code, row.match_id),
+        ticaiDate: String(row.kickoff_time || "").slice(0, 10),
+        matchDate: String(row.kickoff_time || "").slice(0, 10),
+        kickoffTime: String(row.kickoff_time || "").slice(11, 16),
+        league: row.league || "竞彩",
+        matchId: String(row.match_id || "").replace(/^sporttery-/, ""),
+        home: row.home_team || "",
+        away: row.away_team || "",
+        statusCode: row.status || "",
+        score: "",
+      };
+    })
+    .filter((item) => item.home && item.away);
+  return {
+    source: "Cloudflare D1 + 中国体育彩票官方接口",
+    apiEndpoint: "/api/bootstrap",
+    importedAt: capturedAt,
+    isLiveSnapshot: true,
+    isCloudSnapshot: true,
+    totalCount: matchesFromRows.length,
+    lastUpdateTime: capturedAt,
+    matchDates: [...new Set(matchesFromRows.map((item) => item.ticaiDate || item.matchDate).filter(Boolean))],
+    matches: matchesFromRows.sort(
+      (a, b) =>
+        String(a.ticaiDate || a.matchDate).localeCompare(String(b.ticaiDate || b.matchDate)) ||
+        String(a.issue || a.no).localeCompare(String(b.issue || b.no))
+    ),
+  };
+}
+
+function cloudResultRowsToResultsData(rows = [], matchRows = [], capturedAt = new Date().toISOString()) {
+  const matchPayloadById = new Map(
+    matchRows.map((row) => [row.match_id, parseCloudJson(row.payload_json, {})])
+  );
+  const resultsFromRows = rows
+    .map((row) => {
+      const payload = parseCloudJson(row.payload_json, {});
+      const matchPayload = matchPayloadById.get(row.match_id) || {};
+      const score = `${row.full_time_home_goals}-${row.full_time_away_goals}`;
+      return {
+        ...matchPayload,
+        ...payload,
+        orderId: payload.orderId || matchPayload.orderId || row.match_id,
+        issue: payload.issue || matchPayload.issue || "",
+        no: payload.no || matchPayload.no || compactSportteryNo(matchPayload.issue, row.match_id),
+        ticaiDate: payload.ticaiDate || matchPayload.ticaiDate || String(matchPayload.matchDate || "").slice(0, 10),
+        matchDate: payload.matchDate || matchPayload.matchDate || "",
+        kickoffTime: payload.kickoffTime || matchPayload.kickoffTime || "",
+        league: payload.league || matchPayload.league || "竞彩",
+        matchId: payload.matchId || matchPayload.matchId || String(row.match_id || "").replace(/^sporttery-/, ""),
+        home: payload.home || matchPayload.home || "",
+        away: payload.away || matchPayload.away || "",
+        score,
+        fullScoreRaw: `${row.full_time_home_goals}:${row.full_time_away_goals}`,
+        result: direction(score),
+      };
+    })
+    .filter((item) => item.home && item.away && normalizeResultScore(item.score));
+  return {
+    source: "Cloudflare D1 + 中国体育彩票官方赛果接口",
+    apiEndpoint: "/api/bootstrap",
+    importedAt: capturedAt,
+    isLiveSnapshot: true,
+    isCloudSnapshot: true,
+    totalCount: resultsFromRows.length,
+    matchDates: [...new Set(resultsFromRows.map((item) => item.ticaiDate || item.matchDate).filter(Boolean))],
+    results: resultsFromRows.sort(
+      (a, b) =>
+        String(a.ticaiDate || a.matchDate).localeCompare(String(b.ticaiDate || b.matchDate)) ||
+        String(a.issue || a.no).localeCompare(String(b.issue || b.no))
+    ),
+  };
+}
+
+async function loadCloudBootstrapData({ rerender = false } = {}) {
+  if (!window.WC_CLOUD_STORE?.bootstrap) return false;
+  const payload = await window.WC_CLOUD_STORE.bootstrap();
+  if (!payload?.ok) return false;
+  window.WC_CLOUD_BOOTSTRAP = payload;
+  const capturedAt =
+    payload.matches?.[0]?.updated_at ||
+    payload.results?.[0]?.reviewed_at ||
+    payload.cases?.[0]?.createdAt ||
+    new Date().toISOString();
+  let changed = false;
+  if (payload.matches?.length) {
+    oddsData = cloudMatchRowsToOddsData(payload.matches, capturedAt);
+    window.LIVE_SPORTTERY_ODDS = oddsData;
+    changed = true;
+  }
+  if (payload.results?.length) {
+    resultsData = cloudResultRowsToResultsData(payload.results, payload.matches || [], capturedAt);
+    window.LIVE_SPORTTERY_RESULTS = resultsData;
+    changed = true;
+  }
+  if (changed && rerender) rerenderOddsSurfaces();
+  return changed;
+}
+
 async function refreshSportteryCloudData() {
+  const loadedCloud = await loadCloudBootstrapData({ rerender: true });
+  if (loadedCloud) return;
   if (!SPORTTERY_CLOUD_API_URL) {
     await Promise.allSettled([refreshSportteryLiveData(), refreshSportteryResultsData()]);
     await refreshSportterySpHistoryData();

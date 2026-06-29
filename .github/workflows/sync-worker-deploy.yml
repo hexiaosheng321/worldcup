@@ -1,0 +1,42 @@
+name: Sync Worker Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "worker/**"
+      - "wrangler.sync.jsonc"
+      - "package.json"
+      - ".github/workflows/sync-worker-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-worker-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy sync worker
+        run: npx wrangler deploy -c wrangler.sync.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SPORTTERY_UPSTREAM_PROXY: ${{ secrets.SPORTTERY_UPSTREAM_PROXY }}
