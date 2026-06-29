@@ -2360,16 +2360,17 @@ function renderSimilarCasePanel(pred, match) {
       (item) => `
         <tr>
           <td>${item.similarityScore}</td>
+          <td>${item.sampleType || "锁版案例"}</td>
           <td>${item.homeTeam} vs ${item.awayTeam}</td>
           <td>${item.league}</td>
           <td>${item.recommendation}</td>
-          <td>${item.finalGrade}</td>
+          <td>${item.finalGrade || "-"}</td>
           <td>${item.actualResult} / ${item.actualGoals}球</td>
-          <td>${item.hitStatus === "WIN" ? "命中" : item.hitStatus === "LOSE" ? "未命中" : "走空"}</td>
+          <td>${item.sampleType === "外部历史" ? (item.hitStatus === "WIN" ? "低赔打出" : "低赔未出") : item.hitStatus === "WIN" ? "命中" : item.hitStatus === "LOSE" ? "未命中" : "走空"}</td>
         </tr>
       `
     )
-    .join("") || `<tr><td colspan="7" class="empty-cell">相似样本不足，先作为观察项。</td></tr>`;
+    .join("") || `<tr><td colspan="8" class="empty-cell">相似样本不足，先作为观察项。</td></tr>`;
   return `
     <section class="match-page-section similar-case-panel">
       <span>历史相似案例库</span>
@@ -2377,8 +2378,10 @@ function renderSimilarCasePanel(pred, match) {
         <article><small>样本范围</small><strong>${stats.competition || "同赛事"}</strong></article>
         <article><small>参与方式</small><strong>${stats.samplePolicyLabel || "只展示不修正"}</strong></article>
         <article><small>匹配样本</small><strong>${result.sampleCount}</strong></article>
+        <article><small>锁版 / 外部</small><strong>${stats.lockedSampleCount || 0} / ${stats.externalSampleCount || 0}</strong></article>
         <article><small>主 / 平 / 客</small><strong>${pct(stats.homeWinRate)} / ${pct(stats.drawRate)} / ${pct(stats.awayWinRate)}</strong></article>
-        <article><small>当前推荐命中率</small><strong>${pct(stats.sameRecommendationHitRate)}</strong></article>
+        <article><small>模型推荐命中率</small><strong>${pct(stats.sameRecommendationHitRate)}</strong></article>
+        <article><small>市场低赔命中率</small><strong>${pct(stats.marketFavoriteHitRate)}</strong></article>
         <article><small>平均进球</small><strong>${Number(stats.avgGoals || 0).toFixed(2)}</strong></article>
         <article><small>置信度修正</small><strong>${adjustment}</strong></article>
       </div>
@@ -2396,6 +2399,7 @@ function renderSimilarCasePanel(pred, match) {
           <thead>
             <tr>
               <th>相似度</th>
+              <th>来源</th>
               <th>比赛</th>
               <th>联赛</th>
               <th>当时推荐</th>

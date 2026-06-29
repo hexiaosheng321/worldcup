@@ -105,6 +105,14 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     };
   }
 
+  function isExternalSample(item) {
+    return item?.sampleType === "external-history" || item?.modelVersion === "EXTERNAL_HISTORY";
+  }
+
+  function loadExternalSamples() {
+    return Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES) ? window.WC_EXTERNAL_HISTORICAL_SAMPLES : [];
+  }
+
   function calculateSimilarity(current, sample) {
     const parts = [];
     function add(key, score) {
@@ -174,15 +182,31 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   }
 
   function buildSimilarCaseStats(cases, current) {
-    const sameRecommendation = cases.filter((item) => item.recommendationSide === current.recommendationSide);
-    const sameGrade = cases.filter((item) => item.finalGrade === current.finalGrade);
+    const lockedCases = cases.filter((item) => !isExternalSample(item));
+    const externalCases = cases.filter(isExternalSample);
+    const sameRecommendation = lockedCases.filter((item) => item.recommendationSide === current.recommendationSide);
+    const sameGrade = lockedCases.filter((item) => item.finalGrade === current.finalGrade);
     const policy = samplePolicy(cases.length);
+    const policyLabel =
+      lockedCases.length >= 30
+        ? policy.label
+        : externalCases.length >= 30
+          ? "参与分布校验"
+          : policy.label;
+    const policyNote =
+      lockedCases.length >= 30
+        ? policy.note
+        : externalCases.length >= 30
+          ? "外部历史赔率样本达到 30 场，可参与赛果、进球、比分分布校验，但不直接修正模型命中率。"
+          : policy.note;
     return {
       sampleCount: cases.length,
+      lockedSampleCount: lockedCases.length,
+      externalSampleCount: externalCases.length,
       competition: normalizeCompetition(current.league),
       samplePolicy: policy.level,
-      samplePolicyLabel: policy.label,
-      samplePolicyNote: policy.note,
+      samplePolicyLabel: policyLabel,
+      samplePolicyNote: policyNote,
       homeWinRate: rate(cases, (item) => item.actualResult === "HOME"),
       drawRate: rate(cases, (item) => item.actualResult === "DRAW"),
       awayWinRate: rate(cases, (item) => item.actualResult === "AWAY"),
@@ -194,16 +218,17 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       under25Rate: rate(cases, (item) => Number(item.actualGoals) <= 2.5),
       sameRecommendationCount: sameRecommendation.length,
       sameRecommendationHitRate: rate(sameRecommendation, (item) => item.hitStatus === "WIN"),
+      marketFavoriteHitRate: rate(externalCases, (item) => item.hitStatus === "WIN"),
       sameGradeCount: sameGrade.length,
       sameGradeHitRate: rate(sameGrade, (item) => item.hitStatus === "WIN"),
       avgRiskScore: average(cases, (item) => Number(item.riskScore)),
       avgConsistencyScore: average(cases, (item) => Number(item.consistencyScore)),
-      upsetRate: rate(cases, (item) => ["C", "D"].includes(item.finalGrade) && item.hitStatus === "WIN"),
+      upsetRate: rate(lockedCases, (item) => ["C", "D"].includes(item.finalGrade) && item.hitStatus === "WIN"),
     };
   }
 
   function calculateConfidenceAdjustment(stats) {
-    if (!stats || stats.sampleCount < 30) return 0;
+    if (!stats || stats.lockedSampleCount < 30) return 0;
     let value = 0;
     if (stats.sameRecommendationHitRate >= 0.58) value += 3;
     if (stats.sampleCount >= 30 && stats.sameRecommendationHitRate >= 0.62) value += 5;
@@ -216,12 +241,13 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   function generateWarningFlags(stats, topCases) {
     const flags = [];
     if (!stats || stats.sampleCount < 10) flags.push("同赛事样本不足，不参与修正");
-    if (stats?.sampleCount >= 10 && stats.sampleCount < 30) flags.push("样本只做风险提示，不改置信");
-    if (stats?.sampleCount >= 10 && stats.sameRecommendationHitRate < 0.45) flags.push("当前推荐历史命中率偏低");
+    if (stats?.sampleCount >= 10 && stats.lockedSampleCount < 30) flags.push("锁版样本不足，不改模型置信");
+    if (stats?.lockedSampleCount >= 10 && stats.sameRecommendationHitRate < 0.45) flags.push("当前推荐历史命中率偏低");
     if (stats?.drawRate >= 0.34) flags.push("历史平局率偏高，建议防平");
     if (stats?.upsetRate >= 0.3) flags.push("历史冷门率偏高");
-    const topLose = topCases.filter((item) => item.hitStatus === "LOSE").length;
-    const topWin = topCases.filter((item) => item.hitStatus === "WIN").length;
+    const topLocked = topCases.filter((item) => item.sampleType !== "外部历史");
+    const topLose = topLocked.filter((item) => item.hitStatus === "LOSE").length;
+    const topWin = topLocked.filter((item) => item.hitStatus === "WIN").length;
     if (topCases.length && topLose > topWin) flags.push("高相似案例失败较多");
     return flags;
   }
@@ -230,10 +256,10 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     if (!stats || stats.sampleCount < 10) {
       return `当前仅在【${stats?.competition || "同赛事"}】匹配到 ${stats?.sampleCount || 0} 场相似案例，样本量不足，只展示，不参与置信度修正。`;
     }
-    if (stats.sampleCount < 30) {
+    if (stats.lockedSampleCount < 30) {
       const hitRate = (stats.sameRecommendationHitRate * 100).toFixed(1);
       const warning = flags.length ? ` ${flags.join("；")}。` : "";
-      return `【${stats.competition}】同赛事匹配到 ${stats.sampleCount} 场，当前推荐历史命中率 ${hitRate}%，样本只做风险提示，不调整最终置信。${warning}`;
+      return `【${stats.competition}】同赛事匹配到 ${stats.sampleCount} 场，其中锁版案例 ${stats.lockedSampleCount} 场、外部赔率样本 ${stats.externalSampleCount} 场。外部样本参与赛果、进球和比分分布校验；锁版样本不足 30 场，暂不调整模型置信。当前推荐锁版命中率 ${hitRate}%。${warning}`;
     }
     const hitRate = (stats.sameRecommendationHitRate * 100).toFixed(1);
     const direction = adjustment > 0 ? "置信度小幅上调" : adjustment < 0 ? "置信度下调" : "置信度不调整";
@@ -243,17 +269,23 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
 
   function keyReasons(current, sample) {
     const reasons = [];
-    if (current.league === sample.league) reasons.push("赛事类型一致");
+    if (sameCompetition(current, sample)) reasons.push("赛事类型一致");
+    if (isExternalSample(sample)) reasons.push("外部历史赔率样本");
     if (current.finalGrade === sample.finalGrade) reasons.push("等级一致");
     if (current.recommendationSide === sample.recommendationSide) reasons.push("推荐方向一致");
+    if (hasNumbers(current.sportteryHomeSp, sample.sportteryHomeSp, current.sportteryDrawSp, sample.sportteryDrawSp, current.sportteryAwaySp, sample.sportteryAwaySp)) {
+      reasons.push("胜平负赔率接近");
+    }
     if (hasNumbers(current.riskScore, sample.riskScore) && Math.abs(current.riskScore - sample.riskScore) <= 10) reasons.push("风险分接近");
     return reasons.slice(0, 4);
   }
 
   function findSimilarCases(currentMatch, caseBase, options = {}) {
     const threshold = options.threshold ?? 65;
-    const pool = (caseBase || [])
-      .filter((item) => item.modelVersion === "V4")
+    const externalSamples = options.externalSamples || loadExternalSamples();
+    const combinedSamples = [...(caseBase || []), ...externalSamples];
+    const pool = combinedSamples
+      .filter((item) => item.modelVersion === "V4" || isExternalSample(item))
       .filter((item) => String(item.matchId) !== String(currentMatch.matchId))
       .filter((item) => sameCompetition(currentMatch, item))
       .filter((item) => ["HIGH", "MEDIUM"].includes(item.dataQuality || "MEDIUM"))
@@ -269,6 +301,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       caseId: item.caseId,
       matchId: item.matchId,
       league: item.league,
+      sampleType: isExternalSample(item) ? "外部历史" : "锁版案例",
       homeTeam: item.homeTeam,
       awayTeam: item.awayTeam,
       kickoffTime: item.kickoffTime,
