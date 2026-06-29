@@ -1144,6 +1144,7 @@ function sportteryPoolItems() {
     oddsData.lotterNo ||
     [...(oddsData.matchDates || [])].filter(Boolean).sort().at(0) ||
     calendarToday();
+  const currentCalendarDate = calendarToday();
   const now = Date.now();
   const openItems = (oddsData.matches || [])
     .map((item) => {
@@ -1178,7 +1179,11 @@ function sportteryPoolItems() {
     .sort((a, b) => a.displayDate.localeCompare(b.displayDate) || String(a.issue).localeCompare(String(b.issue)));
 
   const finishedItems = resultRows
-    .filter((item) => (item.ticaiDate || item.matchDate) === currentSportteryDate)
+    .filter((item) => {
+      const ticaiDate = item.ticaiDate || "";
+      const matchDate = item.matchDate || "";
+      return ticaiDate === currentSportteryDate || matchDate === currentSportteryDate || matchDate === currentCalendarDate;
+    })
     .filter((item) => normalizeResultScore(item.score))
     .map((item) => {
       const linkedMatch = matchFromResultItem(item);
