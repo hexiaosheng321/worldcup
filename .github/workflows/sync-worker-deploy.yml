@@ -34,6 +34,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Bind upstream proxy secret
+        run: |
+          if [ -z "$SPORTTERY_UPSTREAM_PROXY" ]; then
+            echo "SPORTTERY_UPSTREAM_PROXY is not configured"
+            exit 1
+          fi
+          printf '%s' "$SPORTTERY_UPSTREAM_PROXY" | npx wrangler secret put SPORTTERY_UPSTREAM_PROXY -c wrangler.sync.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SPORTTERY_UPSTREAM_PROXY: ${{ secrets.SPORTTERY_UPSTREAM_PROXY }}
+
       - name: Deploy sync worker
         run: npx wrangler deploy -c wrangler.sync.jsonc
         env:
