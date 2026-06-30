@@ -309,8 +309,17 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       recommendation: item.recommendation,
       finalGrade: item.finalGrade,
       hitStatus: item.hitStatus,
+      sportteryHomeSp: item.sportteryHomeSp,
+      sportteryDrawSp: item.sportteryDrawSp,
+      sportteryAwaySp: item.sportteryAwaySp,
+      asianHandicap: item.asianHandicap,
+      over25Odds: item.over25Odds,
+      under25Odds: item.under25Odds,
       actualResult: item.actualResult,
+      actualHomeGoals: item.actualHomeGoals,
+      actualAwayGoals: item.actualAwayGoals,
       actualGoals: item.actualGoals,
+      score: item.score || formatScore(item.actualHomeGoals, item.actualAwayGoals),
       keyReasons: item.keyReasons,
     }));
     const stats = buildSimilarCaseStats(samples, currentMatch);

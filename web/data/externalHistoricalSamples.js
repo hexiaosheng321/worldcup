@@ -5892,6 +5892,404 @@ window.WC_EXTERNAL_HISTORICAL_SAMPLES = [
     }
   },
   {
+    "caseId": "external-oddsportal-法甲-2025-43",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/nice-YagoQJpq/st-etienne-YL2QybFe/#dIyJLZhe",
+    "sourceCapturedAt": "2026-06-30 01:24:51 UTC",
+    "matchId": "dIyJLZhe",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Nice",
+    "awayTeam": "St Etienne",
+    "kickoffTime": "2026-05-30 02:45:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.93,
+    "sportteryDrawSp": 3.203,
+    "sportteryAwaySp": 4.59,
+    "euroHomeOdds": 1.93,
+    "euroDrawOdds": 3.203,
+    "euroAwayOdds": 4.59,
+    "euroHomeProb": 0.4943,
+    "euroDrawProb": 0.2978,
+    "euroAwayProb": 0.2078,
+    "over25Odds": 2.542,
+    "under25Odds": 1.515,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 4,
+    "actualAwayGoals": 1,
+    "actualGoals": 5,
+    "score": "4-1",
+    "hitStatus": "WIN",
+    "venue": "Allianz Riviera",
+    "venueTown": "Nice",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 4:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "4-1",
+      "oneXTwoMarket": [
+        {
+          "1": "1.92",
+          "2": "4.86",
+          "X": "3.29",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.88",
+          "2": "4.74",
+          "X": "3.22",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.94",
+          "2": "4.50",
+          "X": "3.15",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.96",
+          "2": "4.74",
+          "X": "3.24",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.94",
+          "2": "4.60",
+          "X": "3.15",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.94",
+          "2": "4.70",
+          "X": "3.20",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.95",
+          "2": "4.65",
+          "X": "3.14",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.88",
+          "2": "4.74",
+          "X": "3.22",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.95",
+          "2": "4.20",
+          "X": "3.35",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.92",
+          "2": "4.50",
+          "X": "3.15",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.88",
+          "2": "4.35",
+          "X": "3.07",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.00",
+          "2": "4.50",
+          "X": "3.25",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "2.63",
+          "odds_under": "1.50",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.62",
+          "odds_under": "1.49",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.62",
+          "odds_under": "1.54",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.45",
+          "odds_under": "1.52",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.60",
+          "odds_under": "1.50",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.46",
+          "odds_under": "1.53",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.62",
+          "odds_under": "1.49",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.35",
+          "odds_under": "1.53",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.40",
+          "odds_under": "1.49",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.49",
+          "odds_under": "1.52",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.72(490)",
+          "odds_under": "1.56(512)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-47",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/nice-YagoQJpq/st-etienne-YL2QybFe/#O4wBNeOr",
+    "sourceCapturedAt": "2026-06-30 01:25:54 UTC",
+    "matchId": "O4wBNeOr",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "St Etienne",
+    "awayTeam": "Nice",
+    "kickoffTime": "2026-05-27 02:45:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 2.678,
+    "sportteryDrawSp": 3.165,
+    "sportteryAwaySp": 2.786,
+    "euroHomeOdds": 2.678,
+    "euroDrawOdds": 3.165,
+    "euroAwayOdds": 2.786,
+    "euroHomeProb": 0.3562,
+    "euroDrawProb": 0.3014,
+    "euroAwayProb": 0.3424,
+    "over25Odds": 2.269,
+    "under25Odds": 1.636,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 0,
+    "actualGoals": 0,
+    "score": "0-0",
+    "hitStatus": "LOSE",
+    "venue": "Allianz Riviera",
+    "venueTown": "Nice",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 0:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-0",
+      "oneXTwoMarket": [
+        {
+          "1": "2.78",
+          "2": "2.78",
+          "X": "3.20",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.73",
+          "2": "2.73",
+          "X": "3.13",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.68",
+          "2": "2.78",
+          "X": "3.15",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.80",
+          "2": "2.81",
+          "X": "3.18",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.77",
+          "2": "2.71",
+          "X": "3.12",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.75",
+          "2": "2.75",
+          "X": "3.15",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.32",
+          "2": "3.09",
+          "X": "3.36",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.73",
+          "2": "2.73",
+          "X": "3.13",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.60",
+          "2": "2.85",
+          "X": "3.15",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.68",
+          "2": "2.68",
+          "X": "3.15",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.55",
+          "2": "2.72",
+          "X": "3.06",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.75",
+          "2": "2.80",
+          "X": "3.20",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "2.29",
+          "odds_under": "1.63",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.29",
+          "odds_under": "1.63",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.37",
+          "odds_under": "1.64",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.27",
+          "odds_under": "1.60",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.30",
+          "odds_under": "1.62",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.03",
+          "odds_under": "1.79",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.29",
+          "odds_under": "1.63",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.15",
+          "odds_under": "1.62",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.18",
+          "odds_under": "1.59",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.29",
+          "odds_under": "1.60",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.50(161)",
+          "odds_under": "1.65(736)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
     "caseId": "external-oddsportal-芬超-2026-2",
     "sampleType": "external-history",
     "source": "oddsportal",
@@ -7652,6 +8050,1797 @@ window.WC_EXTERNAL_HISTORICAL_SAMPLES = [
     }
   },
   {
+    "caseId": "external-oddsportal-法甲-2025-12",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/angers-SAlF91iL/brest-Cr4VGaUl/#prPnPy9r",
+    "sourceCapturedAt": "2026-06-30 01:16:45 UTC",
+    "matchId": "prPnPy9r",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Brest",
+    "awayTeam": "Angers",
+    "kickoffTime": "2026-05-18 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.954,
+    "sportteryDrawSp": 3.488,
+    "sportteryAwaySp": 3.953,
+    "euroHomeOdds": 1.954,
+    "euroDrawOdds": 3.488,
+    "euroAwayOdds": 3.953,
+    "euroHomeProb": 0.4867,
+    "euroDrawProb": 0.2727,
+    "euroAwayProb": 0.2406,
+    "over25Odds": 1.975,
+    "under25Odds": 1.857,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 1,
+    "actualGoals": 2,
+    "score": "1-1",
+    "hitStatus": "LOSE",
+    "venue": "Stade Francis-Le Bl",
+    "venueTown": "Brest",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 1:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-1",
+      "oneXTwoMarket": [
+        {
+          "1": "2.01",
+          "2": "4.02",
+          "X": "3.51",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.97",
+          "2": "3.92",
+          "X": "3.42",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.97",
+          "2": "3.90",
+          "X": "3.45",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.03",
+          "2": "4.08",
+          "X": "3.50",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.96",
+          "2": "3.99",
+          "X": "3.45",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.82",
+          "2": "4.14",
+          "X": "3.70",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.95",
+          "2": "3.94",
+          "X": "3.48",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.97",
+          "2": "3.92",
+          "X": "3.42",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.00",
+          "2": "4.10",
+          "X": "3.60",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.95",
+          "2": "3.85",
+          "X": "3.40",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.87",
+          "2": "3.78",
+          "X": "3.48",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.95",
+          "2": "3.80",
+          "X": "3.45",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "2.10",
+          "odds_under": "1.80",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.06",
+          "odds_under": "1.77",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.08",
+          "odds_under": "1.85",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.03",
+          "odds_under": "1.79",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.83",
+          "odds_under": "1.98",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.89",
+          "odds_under": "1.91",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.06",
+          "odds_under": "1.77",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.95",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.80",
+          "odds_under": "1.88",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.95",
+          "odds_under": "1.85",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.08(895)",
+          "odds_under": "1.88(2668)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-18",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lens-IBmris38/lyon-2akflumR/#OhrGQlpm",
+    "sourceCapturedAt": "2026-06-30 01:18:20 UTC",
+    "matchId": "OhrGQlpm",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Lyon",
+    "awayTeam": "Lens",
+    "kickoffTime": "2026-05-18 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.582,
+    "sportteryDrawSp": 4.567,
+    "sportteryAwaySp": 5.08,
+    "euroHomeOdds": 1.582,
+    "euroDrawOdds": 4.567,
+    "euroAwayOdds": 5.08,
+    "euroHomeProb": 0.6032,
+    "euroDrawProb": 0.2089,
+    "euroAwayProb": 0.1878,
+    "over25Odds": 1.487,
+    "under25Odds": 2.616,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 4,
+    "actualGoals": 4,
+    "score": "0-4",
+    "hitStatus": "LOSE",
+    "venue": "Stade Bollaert-Delelis",
+    "venueTown": "Lens",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:3, 0:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-4",
+      "oneXTwoMarket": [
+        {
+          "1": "1.63",
+          "2": "5.18",
+          "X": "4.49",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.59",
+          "2": "5.05",
+          "X": "4.38",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.58",
+          "2": "5.00",
+          "X": "4.50",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.58",
+          "2": "5.27",
+          "X": "4.97",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.55",
+          "2": "5.10",
+          "X": "4.80",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.75",
+          "2": "3.95",
+          "X": "4.16",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.56",
+          "2": "5.47",
+          "X": "4.47",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.59",
+          "2": "5.05",
+          "X": "4.38",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.55",
+          "2": "5.40",
+          "X": "5.00",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.57",
+          "2": "5.00",
+          "X": "4.50",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.47",
+          "2": "5.29",
+          "X": "4.56",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.56",
+          "2": "5.20",
+          "X": "4.60",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.63",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.61",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.48",
+          "odds_under": "2.76",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.47",
+          "odds_under": "2.57",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.56",
+          "odds_under": "2.38",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.48",
+          "odds_under": "2.60",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.61",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.45",
+          "odds_under": "2.55",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.44",
+          "odds_under": "2.54",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.47",
+          "odds_under": "2.65",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.51(639)",
+          "odds_under": "2.88(131)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-19",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/paris-fc-0OEHEprs/psg-CjhkPw0k/#IeNfNFwe",
+    "sourceCapturedAt": "2026-06-30 01:18:28 UTC",
+    "matchId": "IeNfNFwe",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Paris FC",
+    "awayTeam": "PSG",
+    "kickoffTime": "2026-05-18 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 5.705,
+    "sportteryDrawSp": 4.93,
+    "sportteryAwaySp": 1.494,
+    "euroHomeOdds": 5.705,
+    "euroDrawOdds": 4.93,
+    "euroAwayOdds": 1.494,
+    "euroHomeProb": 0.1673,
+    "euroDrawProb": 0.1936,
+    "euroAwayProb": 0.639,
+    "over25Odds": 1.364,
+    "under25Odds": 3.103,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 1,
+    "actualGoals": 3,
+    "score": "2-1",
+    "hitStatus": "LOSE",
+    "venue": "Parc des Princes",
+    "venueTown": "Paris",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 2:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-1",
+      "oneXTwoMarket": [
+        {
+          "1": "5.85",
+          "2": "1.51",
+          "X": "5.09",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "6.00",
+          "2": "1.46",
+          "X": "5.00",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.60",
+          "2": "1.48",
+          "X": "4.90",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "6.03",
+          "2": "1.51",
+          "X": "5.10",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "6.00",
+          "2": "1.46",
+          "X": "5.00",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.89",
+          "2": "1.55",
+          "X": "4.62",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.57",
+          "2": "1.55",
+          "X": "4.82",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.70",
+          "2": "1.48",
+          "X": "4.98",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "6.00",
+          "2": "1.50",
+          "X": "4.90",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.60",
+          "2": "1.47",
+          "X": "4.90",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.22",
+          "2": "1.47",
+          "X": "4.65",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "6.00",
+          "2": "1.49",
+          "X": "5.20",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.36",
+          "odds_under": "3.20",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "3.18",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.37",
+          "odds_under": "3.25",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "3.05",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.36",
+          "odds_under": "3.03",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.40",
+          "odds_under": "2.97",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "3.18",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "2.90",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.34",
+          "odds_under": "2.92",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.37",
+          "odds_under": "3.05",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.40(42)",
+          "odds_under": "3.40(238)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-23",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/nantes-veuetnGG/toulouse-MLmY2yB1/#z9FNO7c2",
+    "sourceCapturedAt": "2026-06-30 01:19:32 UTC",
+    "matchId": "z9FNO7c2",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Nantes",
+    "awayTeam": "Toulouse",
+    "kickoffTime": "2026-05-18 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 2.848,
+    "sportteryDrawSp": 3.472,
+    "sportteryAwaySp": 2.458,
+    "euroHomeOdds": 2.848,
+    "euroDrawOdds": 3.472,
+    "euroAwayOdds": 2.458,
+    "euroHomeProb": 0.3357,
+    "euroDrawProb": 0.2754,
+    "euroAwayProb": 0.389,
+    "over25Odds": 1.819,
+    "under25Odds": 2.016,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 0,
+    "actualGoals": 0,
+    "score": "0-0",
+    "hitStatus": "LOSE",
+    "venue": "Stade de la Beaujoire",
+    "venueTown": "Nantes",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "-",
+      "oneXTwoMarket": [
+        {
+          "1": "3.06",
+          "2": "2.40",
+          "X": "3.48",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.00",
+          "2": "2.35",
+          "X": "3.40",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.80",
+          "2": "2.46",
+          "X": "3.45",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.01",
+          "2": "2.44",
+          "X": "3.60",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.87",
+          "2": "2.44",
+          "X": "3.41",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.55",
+          "2": "2.61",
+          "X": "3.55",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.61",
+          "2": "2.60",
+          "X": "3.51",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.00",
+          "2": "2.35",
+          "X": "3.40",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.95",
+          "2": "2.50",
+          "X": "3.50",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.82",
+          "2": "2.40",
+          "X": "3.40",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.56",
+          "2": "2.48",
+          "X": "3.41",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.95",
+          "2": "2.46",
+          "X": "3.55",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.89",
+          "odds_under": "2.00",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.96",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.90",
+          "odds_under": "2.06",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.96",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.73",
+          "odds_under": "2.06",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.05",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.96",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.75",
+          "odds_under": "2.08",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.02",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.81",
+          "odds_under": "1.97",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.92(1323)",
+          "odds_under": "2.06(37)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-24",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/marseille-SblU3Hee/rennes-d2nnj1IE/#xbwdLg87",
+    "sourceCapturedAt": "2026-06-30 01:19:55 UTC",
+    "matchId": "xbwdLg87",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Marseille",
+    "awayTeam": "Rennes",
+    "kickoffTime": "2026-05-18 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.871,
+    "sportteryDrawSp": 4.132,
+    "sportteryAwaySp": 3.688,
+    "euroHomeOdds": 1.871,
+    "euroDrawOdds": 4.132,
+    "euroAwayOdds": 3.688,
+    "euroHomeProb": 0.5102,
+    "euroDrawProb": 0.231,
+    "euroAwayProb": 0.2588,
+    "over25Odds": 1.41,
+    "under25Odds": 3.095,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 3,
+    "actualAwayGoals": 1,
+    "actualGoals": 4,
+    "score": "3-1",
+    "hitStatus": "WIN",
+    "venue": "Roazhon Park",
+    "venueTown": "Rennes",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(2:0, 1:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "3-1",
+      "oneXTwoMarket": [
+        {
+          "1": "1.85",
+          "2": "3.89",
+          "X": "4.30",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.81",
+          "2": "3.80",
+          "X": "4.20",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.84",
+          "2": "3.75",
+          "X": "4.10",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.86",
+          "2": "3.97",
+          "X": "4.30",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.82",
+          "2": "3.88",
+          "X": "4.10",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.98",
+          "2": "3.51",
+          "X": "3.68",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.98",
+          "2": "3.32",
+          "X": "4.14",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.81",
+          "2": "3.80",
+          "X": "4.20",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.95",
+          "2": "3.60",
+          "X": "4.25",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.83",
+          "2": "3.70",
+          "X": "4.10",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.90",
+          "2": "3.29",
+          "X": "3.91",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.82",
+          "2": "3.75",
+          "X": "4.30",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.33",
+          "odds_under": "3.40",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.36",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "3.33",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.25",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.41",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.34",
+          "odds_under": "3.10",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.36",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.30",
+          "odds_under": "3.50",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.03",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.98",
+          "odds_under": "1.81",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.38(1086)",
+          "odds_under": "3.50(112)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-25",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/monaco-2PIvr8o4/strasbourg-nP6UzIU1/#44Vsqc0E",
+    "sourceCapturedAt": "2026-06-30 01:20:03 UTC",
+    "matchId": "44Vsqc0E",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Strasbourg",
+    "awayTeam": "Monaco",
+    "kickoffTime": "2026-05-18 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 3.247,
+    "sportteryDrawSp": 4.12,
+    "sportteryAwaySp": 1.996,
+    "euroHomeOdds": 3.247,
+    "euroDrawOdds": 4.12,
+    "euroAwayOdds": 1.996,
+    "euroHomeProb": 0.2928,
+    "euroDrawProb": 0.2308,
+    "euroAwayProb": 0.4764,
+    "over25Odds": 1.335,
+    "under25Odds": 3.262,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 5,
+    "actualAwayGoals": 4,
+    "actualGoals": 9,
+    "score": "5-4",
+    "hitStatus": "LOSE",
+    "venue": "Stade de la Meinau",
+    "venueTown": "Strasbourg",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:3, 4:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "5-4",
+      "oneXTwoMarket": [
+        {
+          "1": "3.38",
+          "2": "1.99",
+          "X": "4.29",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.30",
+          "2": "1.95",
+          "X": "4.20",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.30",
+          "2": "1.96",
+          "X": "4.20",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.41",
+          "2": "1.98",
+          "X": "4.35",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.32",
+          "2": "1.95",
+          "X": "4.20",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.93",
+          "2": "2.15",
+          "X": "3.94",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.00",
+          "2": "2.10",
+          "X": "4.10",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.30",
+          "2": "1.95",
+          "X": "4.20",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.50",
+          "2": "2.00",
+          "X": "3.70",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.25",
+          "2": "1.94",
+          "X": "4.10",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.98",
+          "2": "2.01",
+          "X": "3.96",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.30",
+          "2": "1.97",
+          "X": "4.20",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.33",
+          "odds_under": "3.40",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.36",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.34",
+          "odds_under": "3.42",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.25",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.41",
+          "odds_under": "2.78",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.34",
+          "odds_under": "3.13",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.36",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.30",
+          "odds_under": "3.20",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.30",
+          "odds_under": "3.13",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.33",
+          "odds_under": "3.25",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.37(969)",
+          "odds_under": "3.60(47)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-28",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/auxerre-MTLr36WA/lille-pfDZL71o/#IXv8WJG8",
+    "sourceCapturedAt": "2026-06-30 01:20:58 UTC",
+    "matchId": "IXv8WJG8",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Lille",
+    "awayTeam": "Auxerre",
+    "kickoffTime": "2026-05-18 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.431,
+    "sportteryDrawSp": 4.635,
+    "sportteryAwaySp": 7.432,
+    "euroHomeOdds": 1.431,
+    "euroDrawOdds": 4.635,
+    "euroAwayOdds": 7.432,
+    "euroHomeProb": 0.6661,
+    "euroDrawProb": 0.2056,
+    "euroAwayProb": 0.1283,
+    "over25Odds": 1.735,
+    "under25Odds": 2.121,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 2,
+    "actualGoals": 2,
+    "score": "0-2",
+    "hitStatus": "LOSE",
+    "venue": "Stade Pierre-Mauroy",
+    "venueTown": "Villeneuve d'Ascq",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:1, 0:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-2",
+      "oneXTwoMarket": [
+        {
+          "1": "1.46",
+          "2": "7.71",
+          "X": "4.63",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.46",
+          "2": "7.00",
+          "X": "4.36",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.44",
+          "2": "7.00",
+          "X": "4.60",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.45",
+          "2": "7.61",
+          "X": "4.72",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.44",
+          "2": "7.20",
+          "X": "4.60",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.35",
+          "2": "8.17",
+          "X": "4.94",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.40",
+          "2": "7.67",
+          "X": "4.77",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.43",
+          "2": "7.50",
+          "X": "4.52",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.48",
+          "2": "7.75",
+          "X": "4.50",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.44",
+          "2": "7.00",
+          "X": "4.50",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.36",
+          "2": "7.37",
+          "X": "4.68",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.46",
+          "2": "7.20",
+          "X": "4.80",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.80",
+          "odds_under": "2.10",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.79",
+          "odds_under": "2.18",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.73",
+          "odds_under": "2.09",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.13",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.17",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.70",
+          "odds_under": "2.15",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.09",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.71",
+          "odds_under": "2.10",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.80(223)",
+          "odds_under": "2.20(330)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-37",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/le-havre-CIEe04GT/lorient-jgNAYRGi/#r1cGQTSk",
+    "sourceCapturedAt": "2026-06-30 01:23:19 UTC",
+    "matchId": "r1cGQTSk",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Lorient",
+    "awayTeam": "Le Havre",
+    "kickoffTime": "2026-05-18 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 2.347,
+    "sportteryDrawSp": 3.483,
+    "sportteryAwaySp": 2.955,
+    "euroHomeOdds": 2.347,
+    "euroDrawOdds": 3.483,
+    "euroAwayOdds": 2.955,
+    "euroHomeProb": 0.4052,
+    "euroDrawProb": 0.273,
+    "euroAwayProb": 0.3218,
+    "over25Odds": 1.855,
+    "under25Odds": 1.961,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 2,
+    "actualGoals": 2,
+    "score": "0-2",
+    "hitStatus": "LOSE",
+    "venue": "Stade Ocane",
+    "venueTown": "Le Havre",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:1, 0:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-2",
+      "oneXTwoMarket": [
+        {
+          "1": "2.34",
+          "2": "3.05",
+          "X": "3.65",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.31",
+          "2": "2.91",
+          "X": "3.60",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.34",
+          "2": "2.96",
+          "X": "3.45",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.37",
+          "2": "3.14",
+          "X": "3.55",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.31",
+          "2": "3.02",
+          "X": "3.50",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.63",
+          "2": "2.55",
+          "X": "3.49",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.36",
+          "2": "3.00",
+          "X": "3.38",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.29",
+          "2": "2.98",
+          "X": "3.56",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.30",
+          "2": "3.10",
+          "X": "3.40",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.32",
+          "2": "2.92",
+          "X": "3.40",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.29",
+          "2": "2.83",
+          "X": "3.37",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.30",
+          "2": "3.00",
+          "X": "3.45",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.89",
+          "odds_under": "2.00",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.96",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.89",
+          "odds_under": "2.07",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.84",
+          "odds_under": "1.97",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.89",
+          "odds_under": "1.91",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.86",
+          "odds_under": "1.94",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.96",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.85",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.79",
+          "odds_under": "1.90",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.80",
+          "odds_under": "1.95",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.90(397)",
+          "odds_under": "2.06(639)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-41",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/metz-4v0yqlWc/nice-YagoQJpq/#QcrGUcoL",
+    "sourceCapturedAt": "2026-06-30 01:24:21 UTC",
+    "matchId": "QcrGUcoL",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Nice",
+    "awayTeam": "Metz",
+    "kickoffTime": "2026-05-18 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.284,
+    "sportteryDrawSp": 5.919,
+    "sportteryAwaySp": 9.694,
+    "euroHomeOdds": 1.284,
+    "euroDrawOdds": 5.919,
+    "euroAwayOdds": 9.694,
+    "euroHomeProb": 0.7411,
+    "euroDrawProb": 0.1608,
+    "euroAwayProb": 0.0982,
+    "over25Odds": 1.487,
+    "under25Odds": 2.609,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 0,
+    "actualGoals": 0,
+    "score": "0-0",
+    "hitStatus": "LOSE",
+    "venue": "Allianz Riviera",
+    "venueTown": "Nice",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 0:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-0",
+      "oneXTwoMarket": [
+        {
+          "1": "1.30",
+          "2": "10.50",
+          "X": "6.06",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.27",
+          "2": "10.00",
+          "X": "5.90",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.28",
+          "2": "9.80",
+          "X": "5.80",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.29",
+          "2": "10.92",
+          "X": "6.46",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.26",
+          "2": "10.00",
+          "X": "6.30",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.31",
+          "2": "8.89",
+          "X": "5.27",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.30",
+          "2": "8.90",
+          "X": "5.77",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.27",
+          "2": "10.00",
+          "X": "5.90",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.30",
+          "2": "9.00",
+          "X": "5.80",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.27",
+          "2": "9.60",
+          "X": "5.80",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.26",
+          "2": "8.72",
+          "X": "5.57",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.30",
+          "2": "10.00",
+          "X": "6.40",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.63",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.61",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.49",
+          "odds_under": "2.72",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.47",
+          "odds_under": "2.57",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.56",
+          "odds_under": "2.37",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.45",
+          "odds_under": "2.70",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.61",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.45",
+          "odds_under": "2.55",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.43",
+          "odds_under": "2.56",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.47",
+          "odds_under": "2.60",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54(1277)",
+          "odds_under": "2.78(59)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
     "caseId": "external-oddsportal-芬超-2026-31",
     "sampleType": "external-history",
     "source": "oddsportal",
@@ -8637,6 +10826,2195 @@ window.WC_EXTERNAL_HISTORICAL_SAMPLES = [
     }
   },
   {
+    "caseId": "external-oddsportal-法甲-2025-13",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/rodez-0pOdQOCg/st-etienne-YL2QybFe/#lUe93UEb",
+    "sourceCapturedAt": "2026-06-30 01:16:54 UTC",
+    "matchId": "lUe93UEb",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "St Etienne",
+    "awayTeam": "Rodez",
+    "kickoffTime": "2026-05-16 02:30:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.744,
+    "sportteryDrawSp": 3.876,
+    "sportteryAwaySp": 4.34,
+    "euroHomeOdds": 1.744,
+    "euroDrawOdds": 3.876,
+    "euroAwayOdds": 4.34,
+    "euroHomeProb": 0.54,
+    "euroDrawProb": 0.243,
+    "euroAwayProb": 0.217,
+    "over25Odds": 1.604,
+    "under25Odds": 2.284,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 0,
+    "actualGoals": 1,
+    "score": "1-0",
+    "hitStatus": "WIN",
+    "venue": "Stade Geoffroy-Guichard",
+    "venueTown": "Saint-tienne",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-0",
+      "oneXTwoMarket": [
+        {
+          "1": "1.70",
+          "2": "4.33",
+          "X": "4.00",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.70",
+          "2": "4.33",
+          "X": "4.00",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.72",
+          "2": "4.40",
+          "X": "3.90",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.78",
+          "2": "4.59",
+          "X": "3.94",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.75",
+          "2": "4.50",
+          "X": "3.88",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.68",
+          "2": "4.27",
+          "X": "4.00",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.81",
+          "2": "4.25",
+          "X": "3.63",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.72",
+          "2": "4.32",
+          "X": "3.89",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.85",
+          "2": "4.30",
+          "X": "3.60",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.71",
+          "2": "4.30",
+          "X": "3.85",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.70",
+          "2": "4.19",
+          "X": "3.82",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.81",
+          "2": "4.30",
+          "X": "4.00",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.25",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.25",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.66",
+          "odds_under": "2.30",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.27",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.53",
+          "odds_under": "2.38",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.29",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.25",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.19",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.57",
+          "odds_under": "2.22",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.30",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69(622)",
+          "odds_under": "2.42(21)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-26",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lens-IBmris38/psg-CjhkPw0k/#vXzxUeVr",
+    "sourceCapturedAt": "2026-06-30 01:20:27 UTC",
+    "matchId": "vXzxUeVr",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Lens",
+    "awayTeam": "PSG",
+    "kickoffTime": "2026-05-14 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 3.262,
+    "sportteryDrawSp": 4.03,
+    "sportteryAwaySp": 2.028,
+    "euroHomeOdds": 3.262,
+    "euroDrawOdds": 4.03,
+    "euroAwayOdds": 2.028,
+    "euroHomeProb": 0.2926,
+    "euroDrawProb": 0.2368,
+    "euroAwayProb": 0.4706,
+    "over25Odds": 1.376,
+    "under25Odds": 3.055,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 2,
+    "actualGoals": 2,
+    "score": "0-2",
+    "hitStatus": "WIN",
+    "venue": "Stade Bollaert-Delelis",
+    "venueTown": "Lens",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:1, 0:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-2",
+      "oneXTwoMarket": [
+        {
+          "1": "3.49",
+          "2": "1.98",
+          "X": "4.20",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.40",
+          "2": "1.94",
+          "X": "4.10",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.25",
+          "2": "2.00",
+          "X": "4.10",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.33",
+          "2": "2.08",
+          "X": "4.15",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.31",
+          "2": "2.00",
+          "X": "4.00",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.19",
+          "2": "2.10",
+          "X": "3.94",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.01",
+          "2": "2.15",
+          "X": "4.28",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.40",
+          "2": "1.94",
+          "X": "4.10",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.50",
+          "2": "2.05",
+          "X": "3.60",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.15",
+          "2": "1.99",
+          "X": "4.10",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.91",
+          "2": "2.10",
+          "X": "3.74",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.20",
+          "2": "2.00",
+          "X": "4.05",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.36",
+          "odds_under": "3.20",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "3.18",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "3.31",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "3.05",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.46",
+          "odds_under": "2.66",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.37",
+          "odds_under": "3.15",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "3.18",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "2.90",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.43",
+          "odds_under": "2.57",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.36",
+          "odds_under": "3.05",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.41(2467)",
+          "odds_under": "3.35(25)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-31",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/brest-Cr4VGaUl/strasbourg-nP6UzIU1/#ba03FdGk",
+    "sourceCapturedAt": "2026-06-30 01:21:38 UTC",
+    "matchId": "ba03FdGk",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Brest",
+    "awayTeam": "Strasbourg",
+    "kickoffTime": "2026-05-14 01:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 3.218,
+    "sportteryDrawSp": 3.526,
+    "sportteryAwaySp": 2.206,
+    "euroHomeOdds": 3.218,
+    "euroDrawOdds": 3.526,
+    "euroAwayOdds": 2.206,
+    "euroHomeProb": 0.2966,
+    "euroDrawProb": 0.2707,
+    "euroAwayProb": 0.4327,
+    "over25Odds": 1.731,
+    "under25Odds": 2.138,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 2,
+    "actualGoals": 3,
+    "score": "1-2",
+    "hitStatus": "WIN",
+    "venue": "Stade de la Meinau",
+    "venueTown": "Strasbourg",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:2, 0:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-2",
+      "oneXTwoMarket": [
+        {
+          "1": "3.34",
+          "2": "2.21",
+          "X": "3.59",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.26",
+          "2": "2.17",
+          "X": "3.50",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.20",
+          "2": "2.16",
+          "X": "3.60",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.38",
+          "2": "2.20",
+          "X": "3.65",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.34",
+          "2": "2.13",
+          "X": "3.56",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.76",
+          "2": "2.51",
+          "X": "3.55",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.14",
+          "2": "2.28",
+          "X": "3.37",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.26",
+          "2": "2.17",
+          "X": "3.50",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.35",
+          "2": "2.25",
+          "X": "3.50",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.20",
+          "2": "2.14",
+          "X": "3.55",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.13",
+          "2": "2.10",
+          "X": "3.44",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.25",
+          "2": "2.15",
+          "X": "3.50",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.73",
+          "odds_under": "2.21",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.72",
+          "odds_under": "2.26",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.70",
+          "odds_under": "2.13",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.09",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.75",
+          "odds_under": "2.07",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.70",
+          "odds_under": "2.15",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.04",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.70",
+          "odds_under": "2.15",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.75(476)",
+          "odds_under": "2.30(39)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-27",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/red-star-2kM6ufaS/rodez-0pOdQOCg/#Kni5RCfK",
+    "sourceCapturedAt": "2026-06-30 01:20:35 UTC",
+    "matchId": "Kni5RCfK",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Red Star",
+    "awayTeam": "Rodez",
+    "kickoffTime": "2026-05-13 02:30:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 2.437,
+    "sportteryDrawSp": 3.258,
+    "sportteryAwaySp": 2.948,
+    "euroHomeOdds": 2.437,
+    "euroDrawOdds": 3.258,
+    "euroAwayOdds": 2.948,
+    "euroHomeProb": 0.3884,
+    "euroDrawProb": 0.2905,
+    "euroAwayProb": 0.3211,
+    "over25Odds": 1.953,
+    "under25Odds": 1.859,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 3,
+    "actualGoals": 5,
+    "score": "2-3",
+    "hitStatus": "LOSE",
+    "venue": "Stade Paul-Lignon",
+    "venueTown": "Rodez",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:1, 1:2)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-3",
+      "oneXTwoMarket": [
+        {
+          "1": "2.53",
+          "2": "2.98",
+          "X": "3.35",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.48",
+          "2": "2.91",
+          "X": "3.26",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.44",
+          "2": "2.92",
+          "X": "3.20",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.51",
+          "2": "3.00",
+          "X": "3.32",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.46",
+          "2": "2.93",
+          "X": "3.30",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.25",
+          "2": "3.17",
+          "X": "3.33",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.50",
+          "2": "2.95",
+          "X": "3.07",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.48",
+          "2": "2.91",
+          "X": "3.26",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.40",
+          "2": "2.95",
+          "X": "3.35",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.38",
+          "2": "2.92",
+          "X": "3.20",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.36",
+          "2": "2.89",
+          "X": "3.16",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.45",
+          "2": "2.85",
+          "X": "3.30",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.94",
+          "odds_under": "1.88",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.93",
+          "odds_under": "1.87",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.00",
+          "odds_under": "1.91",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.92",
+          "odds_under": "1.89",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.97",
+          "odds_under": "1.88",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.96",
+          "odds_under": "1.81",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.93",
+          "odds_under": "1.87",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.90",
+          "odds_under": "1.80",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.94",
+          "odds_under": "1.75",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.95",
+          "odds_under": "1.85",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.04(264)",
+          "odds_under": "1.94(46)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-3",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/brest-Cr4VGaUl/psg-CjhkPw0k/#4UIIImq3",
+    "sourceCapturedAt": "2026-06-30 01:14:14 UTC",
+    "matchId": "4UIIImq3",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "PSG",
+    "awayTeam": "Brest",
+    "kickoffTime": "2026-05-11 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.201,
+    "sportteryDrawSp": 7.532,
+    "sportteryAwaySp": 12.078,
+    "euroHomeOdds": 1.201,
+    "euroDrawOdds": 7.532,
+    "euroAwayOdds": 12.078,
+    "euroHomeProb": 0.7944,
+    "euroDrawProb": 0.1267,
+    "euroAwayProb": 0.079,
+    "over25Odds": 1.283,
+    "under25Odds": 3.641,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 0,
+    "actualGoals": 1,
+    "score": "1-0",
+    "hitStatus": "WIN",
+    "venue": "Stade Francis-Le Bl",
+    "venueTown": "Brest",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 1:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-0",
+      "oneXTwoMarket": [
+        {
+          "1": "1.22",
+          "2": "11.70",
+          "X": "7.96",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.20",
+          "2": "11.00",
+          "X": "7.70",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.20",
+          "2": "12.00",
+          "X": "7.20",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.22",
+          "2": "13.89",
+          "X": "7.86",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.19",
+          "2": "13.00",
+          "X": "7.40",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.14",
+          "2": "13.58",
+          "X": "8.23",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.24",
+          "2": "12.05",
+          "X": "7.10",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.20",
+          "2": "11.00",
+          "X": "7.70",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.22",
+          "2": "11.00",
+          "X": "7.00",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.19",
+          "2": "12.00",
+          "X": "7.40",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.16",
+          "2": "11.71",
+          "X": "7.03",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.23",
+          "2": "12.00",
+          "X": "7.80",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.26",
+          "odds_under": "4.00",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.25",
+          "odds_under": "3.96",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.33",
+          "odds_under": "3.39",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.25",
+          "odds_under": "3.80",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.18",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.31",
+          "odds_under": "3.49",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.25",
+          "odds_under": "3.96",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.30",
+          "odds_under": "3.20",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.27",
+          "odds_under": "3.32",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.27",
+          "odds_under": "3.65",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.30(1518)",
+          "odds_under": "4.10(293)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-6",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lorient-jgNAYRGi/metz-4v0yqlWc/#nDz9T4cL",
+    "sourceCapturedAt": "2026-06-30 01:14:58 UTC",
+    "matchId": "nDz9T4cL",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Metz",
+    "awayTeam": "Lorient",
+    "kickoffTime": "2026-05-11 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 2.941,
+    "sportteryDrawSp": 3.661,
+    "sportteryAwaySp": 2.306,
+    "euroHomeOdds": 2.941,
+    "euroDrawOdds": 3.661,
+    "euroAwayOdds": 2.306,
+    "euroHomeProb": 0.3248,
+    "euroDrawProb": 0.2609,
+    "euroAwayProb": 0.4143,
+    "over25Odds": 1.645,
+    "under25Odds": 2.257,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 4,
+    "actualGoals": 4,
+    "score": "0-4",
+    "hitStatus": "WIN",
+    "venue": "Stade Saint-Symphorien",
+    "venueTown": "Metz",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:1, 0:3)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-4",
+      "oneXTwoMarket": [
+        {
+          "1": "2.93",
+          "2": "2.34",
+          "X": "3.82",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.86",
+          "2": "2.29",
+          "X": "3.74",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.90",
+          "2": "2.32",
+          "X": "3.60",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.02",
+          "2": "2.41",
+          "X": "3.80",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.95",
+          "2": "2.34",
+          "X": "3.52",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.24",
+          "2": "2.08",
+          "X": "3.68",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.85",
+          "2": "2.37",
+          "X": "3.59",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.86",
+          "2": "2.29",
+          "X": "3.74",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.00",
+          "2": "2.35",
+          "X": "3.65",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.88",
+          "2": "2.30",
+          "X": "3.55",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.85",
+          "2": "2.22",
+          "X": "3.49",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.95",
+          "2": "2.36",
+          "X": "3.75",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.30",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.28",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.23",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.66",
+          "odds_under": "2.17",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.64",
+          "odds_under": "2.24",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.24",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.17",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.62",
+          "odds_under": "2.26",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.72(343)",
+          "odds_under": "2.36(37)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-17",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/auxerre-MTLr36WA/nice-YagoQJpq/#OvkE7Nz2",
+    "sourceCapturedAt": "2026-06-30 01:17:57 UTC",
+    "matchId": "OvkE7Nz2",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Auxerre",
+    "awayTeam": "Nice",
+    "kickoffTime": "2026-05-11 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 2.366,
+    "sportteryDrawSp": 3.344,
+    "sportteryAwaySp": 3.065,
+    "euroHomeOdds": 2.366,
+    "euroDrawOdds": 3.344,
+    "euroAwayOdds": 3.065,
+    "euroHomeProb": 0.4033,
+    "euroDrawProb": 0.2854,
+    "euroAwayProb": 0.3113,
+    "over25Odds": 2.015,
+    "under25Odds": 1.818,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 1,
+    "actualGoals": 3,
+    "score": "2-1",
+    "hitStatus": "WIN",
+    "venue": "Stade de l'Abb-Deschamps",
+    "venueTown": "Auxerre",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:1, 1:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-1",
+      "oneXTwoMarket": [
+        {
+          "1": "2.42",
+          "2": "3.05",
+          "X": "3.46",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.37",
+          "2": "2.98",
+          "X": "3.38",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.28",
+          "2": "3.15",
+          "X": "3.35",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.48",
+          "2": "3.15",
+          "X": "3.40",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.41",
+          "2": "3.08",
+          "X": "3.21",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.40",
+          "2": "2.94",
+          "X": "3.31",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.32",
+          "2": "3.09",
+          "X": "3.35",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.37",
+          "2": "2.98",
+          "X": "3.38",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.35",
+          "2": "3.20",
+          "X": "3.45",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.34",
+          "2": "3.00",
+          "X": "3.25",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.21",
+          "2": "3.11",
+          "X": "3.19",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.44",
+          "2": "3.05",
+          "X": "3.40",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "2.10",
+          "odds_under": "1.80",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.06",
+          "odds_under": "1.77",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.05",
+          "odds_under": "1.89",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.98",
+          "odds_under": "1.83",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.91",
+          "odds_under": "1.89",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.04",
+          "odds_under": "1.77",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.06",
+          "odds_under": "1.77",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.95",
+          "odds_under": "1.85",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.97",
+          "odds_under": "1.73",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.97",
+          "odds_under": "1.81",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.08(621)",
+          "odds_under": "1.89(1188)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-29",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/paris-fc-0OEHEprs/rennes-d2nnj1IE/#vmX0VQS8",
+    "sourceCapturedAt": "2026-06-30 01:21:06 UTC",
+    "matchId": "vmX0VQS8",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Rennes",
+    "awayTeam": "Paris FC",
+    "kickoffTime": "2026-05-11 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.553,
+    "sportteryDrawSp": 4.676,
+    "sportteryAwaySp": 5.178,
+    "euroHomeOdds": 1.553,
+    "euroDrawOdds": 4.676,
+    "euroAwayOdds": 5.178,
+    "euroHomeProb": 0.6127,
+    "euroDrawProb": 0.2035,
+    "euroAwayProb": 0.1838,
+    "over25Odds": 1.413,
+    "under25Odds": 2.858,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 1,
+    "actualGoals": 3,
+    "score": "2-1",
+    "hitStatus": "WIN",
+    "venue": "Stade Jean Bouin",
+    "venueTown": "Paris",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 2:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-1",
+      "oneXTwoMarket": [
+        {
+          "1": "1.59",
+          "2": "5.12",
+          "X": "4.86",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.55",
+          "2": "5.00",
+          "X": "4.76",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.56",
+          "2": "5.00",
+          "X": "4.70",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.58",
+          "2": "5.51",
+          "X": "4.94",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.55",
+          "2": "5.20",
+          "X": "4.70",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.48",
+          "2": "5.52",
+          "X": "4.74",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.58",
+          "2": "4.90",
+          "X": "4.64",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.55",
+          "2": "5.00",
+          "X": "4.76",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.57",
+          "2": "5.80",
+          "X": "4.10",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.54",
+          "2": "5.00",
+          "X": "4.60",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.51",
+          "2": "4.88",
+          "X": "4.51",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.58",
+          "2": "5.20",
+          "X": "4.80",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.40",
+          "odds_under": "3.00",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.39",
+          "odds_under": "2.98",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.41",
+          "odds_under": "2.97",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.40",
+          "odds_under": "2.80",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.46",
+          "odds_under": "2.58",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.39",
+          "odds_under": "2.89",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.39",
+          "odds_under": "2.98",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.45",
+          "odds_under": "2.55",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.37",
+          "odds_under": "2.79",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.42",
+          "odds_under": "2.80",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.46(423)",
+          "odds_under": "3.10(112)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-30",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lille-pfDZL71o/monaco-2PIvr8o4/#I1AmMMke",
+    "sourceCapturedAt": "2026-06-30 01:21:30 UTC",
+    "matchId": "I1AmMMke",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Monaco",
+    "awayTeam": "Lille",
+    "kickoffTime": "2026-05-11 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 2.543,
+    "sportteryDrawSp": 3.662,
+    "sportteryAwaySp": 2.626,
+    "euroHomeOdds": 2.543,
+    "euroDrawOdds": 3.662,
+    "euroAwayOdds": 2.626,
+    "euroHomeProb": 0.3755,
+    "euroDrawProb": 0.2608,
+    "euroAwayProb": 0.3637,
+    "over25Odds": 1.658,
+    "under25Odds": 2.235,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 1,
+    "actualGoals": 1,
+    "score": "0-1",
+    "hitStatus": "LOSE",
+    "venue": "Stade Louis II",
+    "venueTown": "Monaco",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 0:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-1",
+      "oneXTwoMarket": [
+        {
+          "1": "2.54",
+          "2": "2.69",
+          "X": "3.79",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.48",
+          "2": "2.63",
+          "X": "3.70",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.58",
+          "2": "2.58",
+          "X": "3.65",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.72",
+          "2": "2.64",
+          "X": "3.65",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.64",
+          "2": "2.55",
+          "X": "3.59",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.31",
+          "2": "2.76",
+          "X": "3.77",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.52",
+          "2": "2.67",
+          "X": "3.57",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.48",
+          "2": "2.63",
+          "X": "3.70",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.60",
+          "2": "2.70",
+          "X": "3.70",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.54",
+          "2": "2.54",
+          "X": "3.60",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.46",
+          "2": "2.52",
+          "X": "3.52",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.65",
+          "2": "2.60",
+          "X": "3.70",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.20",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.71",
+          "odds_under": "2.27",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.17",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.62",
+          "odds_under": "2.26",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.33",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.34",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.16",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.66",
+          "odds_under": "2.18",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.74(277)",
+          "odds_under": "2.30(304)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-35",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lyon-2akflumR/toulouse-MLmY2yB1/#Y9AZE5rS",
+    "sourceCapturedAt": "2026-06-30 01:22:40 UTC",
+    "matchId": "Y9AZE5rS",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Toulouse",
+    "awayTeam": "Lyon",
+    "kickoffTime": "2026-05-11 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 3.999,
+    "sportteryDrawSp": 3.846,
+    "sportteryAwaySp": 1.857,
+    "euroHomeOdds": 3.999,
+    "euroDrawOdds": 3.846,
+    "euroAwayOdds": 1.857,
+    "euroHomeProb": 0.2385,
+    "euroDrawProb": 0.248,
+    "euroAwayProb": 0.5136,
+    "over25Odds": 1.715,
+    "under25Odds": 2.135,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 1,
+    "actualGoals": 3,
+    "score": "2-1",
+    "hitStatus": "LOSE",
+    "venue": "Stadium de Toulouse",
+    "venueTown": "Toulouse",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:0, 1:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-1",
+      "oneXTwoMarket": [
+        {
+          "1": "3.83",
+          "2": "1.92",
+          "X": "4.04",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.74",
+          "2": "1.88",
+          "X": "3.94",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.95",
+          "2": "1.86",
+          "X": "3.80",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.22",
+          "2": "1.91",
+          "X": "3.90",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.10",
+          "2": "1.88",
+          "X": "3.68",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.25",
+          "2": "1.72",
+          "X": "4.01",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.11",
+          "2": "1.83",
+          "X": "3.87",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.74",
+          "2": "1.88",
+          "X": "3.94",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.20",
+          "2": "1.87",
+          "X": "3.60",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.90",
+          "2": "1.85",
+          "X": "3.75",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.95",
+          "2": "1.77",
+          "X": "3.72",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.00",
+          "2": "1.91",
+          "X": "3.90",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.80",
+          "odds_under": "2.10",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.74",
+          "odds_under": "2.20",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.70",
+          "odds_under": "2.13",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.73",
+          "odds_under": "2.06",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.15",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.11",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.10",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.14",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.78(311)",
+          "odds_under": "2.24(204)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-40",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/le-havre-CIEe04GT/marseille-SblU3Hee/#Qq7RGRDF",
+    "sourceCapturedAt": "2026-06-30 01:24:17 UTC",
+    "matchId": "Qq7RGRDF",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Le Havre",
+    "awayTeam": "Marseille",
+    "kickoffTime": "2026-05-11 03:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 3.701,
+    "sportteryDrawSp": 3.777,
+    "sportteryAwaySp": 1.942,
+    "euroHomeOdds": 3.701,
+    "euroDrawOdds": 3.777,
+    "euroAwayOdds": 1.942,
+    "euroHomeProb": 0.2574,
+    "euroDrawProb": 0.2522,
+    "euroAwayProb": 0.4905,
+    "over25Odds": 1.622,
+    "under25Odds": 2.287,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 1,
+    "actualGoals": 1,
+    "score": "0-1",
+    "hitStatus": "WIN",
+    "venue": "Stade Vlodrome",
+    "venueTown": "Marseille",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 0:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-1",
+      "oneXTwoMarket": [
+        {
+          "1": "3.84",
+          "2": "1.94",
+          "X": "3.89",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.76",
+          "2": "1.90",
+          "X": "3.80",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.65",
+          "2": "1.93",
+          "X": "3.80",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.94",
+          "2": "1.96",
+          "X": "3.95",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.83",
+          "2": "1.91",
+          "X": "3.76",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.54",
+          "2": "1.97",
+          "X": "3.67",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.41",
+          "2": "2.02",
+          "X": "3.88",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.76",
+          "2": "1.90",
+          "X": "3.80",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.90",
+          "2": "1.95",
+          "X": "3.50",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.65",
+          "2": "1.91",
+          "X": "3.75",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.38",
+          "2": "1.94",
+          "X": "3.62",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.75",
+          "2": "1.97",
+          "X": "3.90",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.30",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.35",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.27",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.66",
+          "odds_under": "2.20",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.61",
+          "odds_under": "2.30",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.19",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.56",
+          "odds_under": "2.25",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.32",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68(34)",
+          "odds_under": "2.40(559)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
     "caseId": "external-oddsportal-芬超-2026-40",
     "sampleType": "external-history",
     "source": "oddsportal",
@@ -9228,6 +13606,205 @@ window.WC_EXTERNAL_HISTORICAL_SAMPLES = [
     }
   },
   {
+    "caseId": "external-oddsportal-法甲-2025-22",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lens-IBmris38/nantes-veuetnGG/#jRj69q6k",
+    "sourceCapturedAt": "2026-06-30 01:19:23 UTC",
+    "matchId": "jRj69q6k",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Lens",
+    "awayTeam": "Nantes",
+    "kickoffTime": "2026-05-09 02:45:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.456,
+    "sportteryDrawSp": 4.928,
+    "sportteryAwaySp": 6.259,
+    "euroHomeOdds": 1.456,
+    "euroDrawOdds": 4.928,
+    "euroAwayOdds": 6.259,
+    "euroHomeProb": 0.6544,
+    "euroDrawProb": 0.1934,
+    "euroAwayProb": 0.1522,
+    "over25Odds": 1.528,
+    "under25Odds": 2.521,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 0,
+    "actualGoals": 1,
+    "score": "1-0",
+    "hitStatus": "WIN",
+    "venue": "Stade Bollaert-Delelis",
+    "venueTown": "Lens",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 1:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-0",
+      "oneXTwoMarket": [
+        {
+          "1": "1.49",
+          "2": "6.15",
+          "X": "5.12",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.46",
+          "2": "6.00",
+          "X": "5.00",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.45",
+          "2": "6.20",
+          "X": "4.90",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.48",
+          "2": "6.61",
+          "X": "5.00",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.46",
+          "2": "6.30",
+          "X": "4.90",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.45",
+          "2": "6.48",
+          "X": "4.95",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.44",
+          "2": "6.48",
+          "X": "4.90",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.46",
+          "2": "6.00",
+          "X": "5.00",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.50",
+          "2": "6.40",
+          "X": "4.95",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.44",
+          "2": "6.20",
+          "X": "4.80",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.39",
+          "2": "6.29",
+          "X": "4.77",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.45",
+          "2": "6.00",
+          "X": "4.85",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.50",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.49",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.54",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.53",
+          "odds_under": "2.43",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.51",
+          "odds_under": "2.59",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.54",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.49",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.55",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.46",
+          "odds_under": "2.49",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.45",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59(352)",
+          "odds_under": "2.66(30)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
     "caseId": "external-oddsportal-芬超-2026-16",
     "sampleType": "external-history",
     "source": "oddsportal",
@@ -9812,6 +14389,4782 @@ window.WC_EXTERNAL_HISTORICAL_SAMPLES = [
         {
           "odds_over": "1.79(694)",
           "odds_under": "2.24(121)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-14",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lyon-2akflumR/rennes-d2nnj1IE/#vDGi4lU9",
+    "sourceCapturedAt": "2026-06-30 01:17:17 UTC",
+    "matchId": "vDGi4lU9",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Lyon",
+    "awayTeam": "Rennes",
+    "kickoffTime": "2026-05-04 02:45:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 2.073,
+    "sportteryDrawSp": 3.803,
+    "sportteryAwaySp": 3.288,
+    "euroHomeOdds": 2.073,
+    "euroDrawOdds": 3.803,
+    "euroAwayOdds": 3.288,
+    "euroHomeProb": 0.4596,
+    "euroDrawProb": 0.2506,
+    "euroAwayProb": 0.2898,
+    "over25Odds": 1.563,
+    "under25Odds": 2.435,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 4,
+    "actualAwayGoals": 2,
+    "actualGoals": 6,
+    "score": "4-2",
+    "hitStatus": "WIN",
+    "venue": "Parc Olympique Lyonnais",
+    "venueTown": "Lyon",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(2:1, 2:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "4-2",
+      "oneXTwoMarket": [
+        {
+          "1": "2.04",
+          "2": "3.51",
+          "X": "3.90",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.05",
+          "2": "3.28",
+          "X": "3.82",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.06",
+          "2": "3.25",
+          "X": "3.85",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.17",
+          "2": "3.32",
+          "X": "3.85",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.05",
+          "2": "3.34",
+          "X": "3.81",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.13",
+          "2": "3.27",
+          "X": "3.72",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.05",
+          "2": "3.13",
+          "X": "4.06",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.05",
+          "2": "3.28",
+          "X": "3.82",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.10",
+          "2": "3.60",
+          "X": "3.60",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.06",
+          "2": "3.20",
+          "X": "3.75",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.02",
+          "2": "3.13",
+          "X": "3.66",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.10",
+          "2": "3.15",
+          "X": "3.80",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.38",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.37",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.58",
+          "odds_under": "2.50",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.52",
+          "odds_under": "2.45",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.28",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.53",
+          "odds_under": "2.47",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.37",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.55",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.49",
+          "odds_under": "2.40",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.40",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59(1347)",
+          "odds_under": "2.62(146)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-4",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/strasbourg-nP6UzIU1/toulouse-MLmY2yB1/#WnDq6Aac",
+    "sourceCapturedAt": "2026-06-30 01:14:27 UTC",
+    "matchId": "WnDq6Aac",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Strasbourg",
+    "awayTeam": "Toulouse",
+    "kickoffTime": "2026-05-03 23:15:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 2.988,
+    "sportteryDrawSp": 3.519,
+    "sportteryAwaySp": 2.328,
+    "euroHomeOdds": 2.988,
+    "euroDrawOdds": 3.519,
+    "euroAwayOdds": 2.328,
+    "euroHomeProb": 0.3192,
+    "euroDrawProb": 0.2711,
+    "euroAwayProb": 0.4097,
+    "over25Odds": 1.775,
+    "under25Odds": 2.055,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 2,
+    "actualGoals": 3,
+    "score": "1-2",
+    "hitStatus": "WIN",
+    "venue": "Stadium de Toulouse",
+    "venueTown": "Toulouse",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:1, 0:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-2",
+      "oneXTwoMarket": [
+        {
+          "1": "2.92",
+          "2": "2.45",
+          "X": "3.58",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.86",
+          "2": "2.39",
+          "X": "3.50",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.00",
+          "2": "2.30",
+          "X": "3.50",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.26",
+          "2": "2.31",
+          "X": "3.60",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.03",
+          "2": "2.31",
+          "X": "3.50",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.85",
+          "2": "2.40",
+          "X": "3.57",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.93",
+          "2": "2.29",
+          "X": "3.63",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.86",
+          "2": "2.39",
+          "X": "3.50",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.10",
+          "2": "2.30",
+          "X": "3.40",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.98",
+          "2": "2.28",
+          "X": "3.45",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.97",
+          "2": "2.19",
+          "X": "3.40",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.10",
+          "2": "2.33",
+          "X": "3.60",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.80",
+          "odds_under": "2.10",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.81",
+          "odds_under": "2.14",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.76",
+          "odds_under": "2.06",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.78",
+          "odds_under": "2.03",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.76",
+          "odds_under": "2.05",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.75",
+          "odds_under": "1.96",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.74",
+          "odds_under": "1.95",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.75",
+          "odds_under": "2.04",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.84(416)",
+          "odds_under": "2.16(1016)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-7",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/angers-SAlF91iL/auxerre-MTLr36WA/#WAeWd6Mq",
+    "sourceCapturedAt": "2026-06-30 01:15:19 UTC",
+    "matchId": "WAeWd6Mq",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Auxerre",
+    "awayTeam": "Angers",
+    "kickoffTime": "2026-05-03 23:15:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.747,
+    "sportteryDrawSp": 3.704,
+    "sportteryAwaySp": 4.884,
+    "euroHomeOdds": 1.747,
+    "euroDrawOdds": 3.704,
+    "euroAwayOdds": 4.884,
+    "euroHomeProb": 0.5466,
+    "euroDrawProb": 0.2578,
+    "euroAwayProb": 0.1955,
+    "over25Odds": 2.034,
+    "under25Odds": 1.796,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 3,
+    "actualAwayGoals": 1,
+    "actualGoals": 4,
+    "score": "3-1",
+    "hitStatus": "WIN",
+    "venue": "Stade de l'Abb-Deschamps",
+    "venueTown": "Auxerre",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:0, 2:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "3-1",
+      "oneXTwoMarket": [
+        {
+          "1": "1.85",
+          "2": "4.61",
+          "X": "3.69",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.81",
+          "2": "4.50",
+          "X": "3.60",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.71",
+          "2": "4.90",
+          "X": "3.75",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.82",
+          "2": "4.81",
+          "X": "3.75",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.73",
+          "2": "5.00",
+          "X": "3.72",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.64",
+          "2": "5.67",
+          "X": "3.85",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.68",
+          "2": "5.10",
+          "X": "3.83",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.81",
+          "2": "4.50",
+          "X": "3.60",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.72",
+          "2": "5.20",
+          "X": "3.60",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.74",
+          "2": "4.70",
+          "X": "3.65",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.64",
+          "2": "4.92",
+          "X": "3.66",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.81",
+          "2": "4.70",
+          "X": "3.75",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "2.10",
+          "odds_under": "1.80",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.06",
+          "odds_under": "1.77",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.11",
+          "odds_under": "1.83",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.97",
+          "odds_under": "1.84",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.08",
+          "odds_under": "1.77",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.01",
+          "odds_under": "1.80",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.06",
+          "odds_under": "1.77",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.95",
+          "odds_under": "1.76",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.92",
+          "odds_under": "1.77",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.99",
+          "odds_under": "1.79",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.12(167)",
+          "odds_under": "1.86(741)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-36",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/brest-Cr4VGaUl/paris-fc-0OEHEprs/#zuA02SbM",
+    "sourceCapturedAt": "2026-06-30 01:23:11 UTC",
+    "matchId": "zuA02SbM",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Paris FC",
+    "awayTeam": "Brest",
+    "kickoffTime": "2026-05-03 23:15:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.905,
+    "sportteryDrawSp": 3.72,
+    "sportteryAwaySp": 3.92,
+    "euroHomeOdds": 1.905,
+    "euroDrawOdds": 3.72,
+    "euroAwayOdds": 3.92,
+    "euroHomeProb": 0.5005,
+    "euroDrawProb": 0.2563,
+    "euroAwayProb": 0.2432,
+    "over25Odds": 1.693,
+    "under25Odds": 2.165,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 4,
+    "actualAwayGoals": 0,
+    "actualGoals": 4,
+    "score": "4-0",
+    "hitStatus": "WIN",
+    "venue": "Stade Francis-Le Bl",
+    "venueTown": "Brest",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(2:0, 2:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "4-0",
+      "oneXTwoMarket": [
+        {
+          "1": "1.94",
+          "2": "3.97",
+          "X": "3.82",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.90",
+          "2": "3.88",
+          "X": "3.72",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.87",
+          "2": "3.95",
+          "X": "3.75",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.93",
+          "2": "4.08",
+          "X": "3.90",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.88",
+          "2": "4.00",
+          "X": "3.72",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.01",
+          "2": "3.68",
+          "X": "3.63",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.89",
+          "2": "3.91",
+          "X": "3.71",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.90",
+          "2": "3.88",
+          "X": "3.72",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.88",
+          "2": "4.20",
+          "X": "3.50",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.86",
+          "2": "3.85",
+          "X": "3.75",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.88",
+          "2": "3.64",
+          "X": "3.57",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.92",
+          "2": "4.00",
+          "X": "3.85",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.20",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.72",
+          "odds_under": "2.28",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.64",
+          "odds_under": "2.13",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.76",
+          "odds_under": "2.10",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.17",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.70",
+          "odds_under": "2.03",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.04",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.17",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.73(792)",
+          "odds_under": "2.32(283)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-42",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/le-havre-CIEe04GT/lille-pfDZL71o/#jizcr77j",
+    "sourceCapturedAt": "2026-06-30 01:24:49 UTC",
+    "matchId": "jizcr77j",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Lille",
+    "awayTeam": "Le Havre",
+    "kickoffTime": "2026-05-03 21:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.382,
+    "sportteryDrawSp": 4.712,
+    "sportteryAwaySp": 8.488,
+    "euroHomeOdds": 1.382,
+    "euroDrawOdds": 4.712,
+    "euroAwayOdds": 8.488,
+    "euroHomeProb": 0.6868,
+    "euroDrawProb": 0.2014,
+    "euroAwayProb": 0.1118,
+    "over25Odds": 1.856,
+    "under25Odds": 1.968,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 1,
+    "actualGoals": 2,
+    "score": "1-1",
+    "hitStatus": "LOSE",
+    "venue": "Stade Pierre-Mauroy",
+    "venueTown": "Villeneuve d'Ascq",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:1, 0:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-1",
+      "oneXTwoMarket": [
+        {
+          "1": "1.41",
+          "2": "8.68",
+          "X": "4.85",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.38",
+          "2": "8.40",
+          "X": "4.74",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.39",
+          "2": "8.20",
+          "X": "4.70",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.38",
+          "2": "9.35",
+          "X": "4.99",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.37",
+          "2": "9.10",
+          "X": "4.80",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.40",
+          "2": "8.14",
+          "X": "4.70",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.43",
+          "2": "7.97",
+          "X": "4.42",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.38",
+          "2": "8.40",
+          "X": "4.74",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.38",
+          "2": "9.00",
+          "X": "4.60",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.36",
+          "2": "8.20",
+          "X": "4.70",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.35",
+          "2": "7.92",
+          "X": "4.50",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.35",
+          "2": "8.50",
+          "X": "4.80",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.89",
+          "odds_under": "2.00",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.96",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.88",
+          "odds_under": "2.06",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.82",
+          "odds_under": "2.00",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.87",
+          "odds_under": "1.99",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.90",
+          "odds_under": "1.90",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.96",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.85",
+          "odds_under": "1.85",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.81",
+          "odds_under": "1.87",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.80",
+          "odds_under": "2.00",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.90(152)",
+          "odds_under": "2.06(3109)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-33",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lens-IBmris38/nice-YagoQJpq/#xOQWfpid",
+    "sourceCapturedAt": "2026-06-30 01:22:09 UTC",
+    "matchId": "xOQWfpid",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Nice",
+    "awayTeam": "Lens",
+    "kickoffTime": "2026-05-03 03:05:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 4.84,
+    "sportteryDrawSp": 4.243,
+    "sportteryAwaySp": 1.656,
+    "euroHomeOdds": 4.84,
+    "euroDrawOdds": 4.243,
+    "euroAwayOdds": 1.656,
+    "euroHomeProb": 0.1975,
+    "euroDrawProb": 0.2253,
+    "euroAwayProb": 0.5772,
+    "over25Odds": 1.545,
+    "under25Odds": 2.481,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 1,
+    "actualGoals": 2,
+    "score": "1-1",
+    "hitStatus": "LOSE",
+    "venue": "Allianz Riviera",
+    "venueTown": "Nice",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 1:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-1",
+      "oneXTwoMarket": [
+        {
+          "1": "4.89",
+          "2": "1.66",
+          "X": "4.46",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.78",
+          "2": "1.63",
+          "X": "4.36",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.80",
+          "2": "1.64",
+          "X": "4.20",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.11",
+          "2": "1.67",
+          "X": "4.32",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.00",
+          "2": "1.64",
+          "X": "4.20",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.58",
+          "2": "1.72",
+          "X": "4.09",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.69",
+          "2": "1.67",
+          "X": "4.18",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.78",
+          "2": "1.63",
+          "X": "4.36",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.20",
+          "2": "1.70",
+          "X": "4.10",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.70",
+          "2": "1.64",
+          "X": "4.20",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.55",
+          "2": "1.61",
+          "X": "4.04",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.00",
+          "2": "1.66",
+          "X": "4.40",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.50",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.49",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.56",
+          "odds_under": "2.56",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.53",
+          "odds_under": "2.43",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.40",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.44",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.49",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.55",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.51",
+          "odds_under": "2.35",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.42",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.58(272)",
+          "odds_under": "2.66(1198)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-45",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/metz-4v0yqlWc/monaco-2PIvr8o4/#MypRmTqT",
+    "sourceCapturedAt": "2026-06-30 01:25:22 UTC",
+    "matchId": "MypRmTqT",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Metz",
+    "awayTeam": "Monaco",
+    "kickoffTime": "2026-05-03 01:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 7.476,
+    "sportteryDrawSp": 5.715,
+    "sportteryAwaySp": 1.35,
+    "euroHomeOdds": 7.476,
+    "euroDrawOdds": 5.715,
+    "euroAwayOdds": 1.35,
+    "euroHomeProb": 0.1275,
+    "euroDrawProb": 0.1667,
+    "euroAwayProb": 0.7058,
+    "over25Odds": 1.291,
+    "under25Odds": 3.536,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 2,
+    "actualGoals": 3,
+    "score": "1-2",
+    "hitStatus": "WIN",
+    "venue": "Stade Saint-Symphorien",
+    "venueTown": "Metz",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 1:2)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-2",
+      "oneXTwoMarket": [
+        {
+          "1": "7.71",
+          "2": "1.37",
+          "X": "5.91",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.50",
+          "2": "1.34",
+          "X": "5.75",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.20",
+          "2": "1.35",
+          "X": "5.60",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.95",
+          "2": "1.36",
+          "X": "5.90",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.50",
+          "2": "1.36",
+          "X": "5.60",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.81",
+          "2": "1.36",
+          "X": "5.72",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.21",
+          "2": "1.36",
+          "X": "5.59",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.50",
+          "2": "1.34",
+          "X": "5.75",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.75",
+          "2": "1.35",
+          "X": "5.50",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.00",
+          "2": "1.35",
+          "X": "5.40",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.38",
+          "2": "1.29",
+          "X": "5.66",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "7.20",
+          "2": "1.37",
+          "X": "6.20",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.28",
+          "odds_under": "3.75",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.28",
+          "odds_under": "3.72",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.33",
+          "odds_under": "3.30",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.28",
+          "odds_under": "3.50",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.35",
+          "odds_under": "3.03",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.25",
+          "odds_under": "3.62",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.28",
+          "odds_under": "3.72",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.30",
+          "odds_under": "3.20",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.25",
+          "odds_under": "3.51",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.28",
+          "odds_under": "3.60",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32(802)",
+          "odds_under": "3.95(169)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-34",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lorient-jgNAYRGi/psg-CjhkPw0k/#hdhAiBp4",
+    "sourceCapturedAt": "2026-06-30 01:22:32 UTC",
+    "matchId": "hdhAiBp4",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "PSG",
+    "awayTeam": "Lorient",
+    "kickoffTime": "2026-05-02 23:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.346,
+    "sportteryDrawSp": 5.635,
+    "sportteryAwaySp": 7.654,
+    "euroHomeOdds": 1.346,
+    "euroDrawOdds": 5.635,
+    "euroAwayOdds": 7.654,
+    "euroHomeProb": 0.7069,
+    "euroDrawProb": 0.1688,
+    "euroAwayProb": 0.1243,
+    "over25Odds": 1.411,
+    "under25Odds": 2.871,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 2,
+    "actualGoals": 4,
+    "score": "2-2",
+    "hitStatus": "LOSE",
+    "venue": "Parc des Princes",
+    "venueTown": "Paris",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:1, 1:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-2",
+      "oneXTwoMarket": [
+        {
+          "1": "1.39",
+          "2": "7.13",
+          "X": "5.86",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.36",
+          "2": "6.95",
+          "X": "5.70",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.34",
+          "2": "7.60",
+          "X": "5.60",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.36",
+          "2": "8.58",
+          "X": "5.88",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.33",
+          "2": "8.30",
+          "X": "5.60",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.28",
+          "2": "8.28",
+          "X": "5.90",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.37",
+          "2": "8.19",
+          "X": "5.59",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.36",
+          "2": "6.95",
+          "X": "5.70",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.37",
+          "2": "7.75",
+          "X": "5.10",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.33",
+          "2": "7.40",
+          "X": "5.60",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.31",
+          "2": "7.47",
+          "X": "5.34",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.35",
+          "2": "7.25",
+          "X": "5.75",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.40",
+          "odds_under": "3.00",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.39",
+          "odds_under": "2.98",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.42",
+          "odds_under": "2.94",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.40",
+          "odds_under": "2.80",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.38",
+          "odds_under": "2.87",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.42",
+          "odds_under": "2.89",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.46",
+          "odds_under": "2.74",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.40",
+          "odds_under": "2.70",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.39",
+          "odds_under": "2.71",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.42",
+          "odds_under": "2.80",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.44(969)",
+          "odds_under": "3.15(1304)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-1",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/marseille-SblU3Hee/nantes-veuetnGG/#Q9jIkkFG",
+    "sourceCapturedAt": "2026-06-30 01:13:43 UTC",
+    "matchId": "Q9jIkkFG",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Nantes",
+    "awayTeam": "Marseille",
+    "kickoffTime": "2026-05-02 21:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 3.895,
+    "sportteryDrawSp": 3.85,
+    "sportteryAwaySp": 1.878,
+    "euroHomeOdds": 3.895,
+    "euroDrawOdds": 3.85,
+    "euroAwayOdds": 1.878,
+    "euroHomeProb": 0.2448,
+    "euroDrawProb": 0.2476,
+    "euroAwayProb": 0.5076,
+    "over25Odds": 1.586,
+    "under25Odds": 2.375,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 3,
+    "actualAwayGoals": 0,
+    "actualGoals": 3,
+    "score": "3-0",
+    "hitStatus": "LOSE",
+    "venue": "Stade de la Beaujoire",
+    "venueTown": "Nantes",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 3:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "3-0",
+      "oneXTwoMarket": [
+        {
+          "1": "3.99",
+          "2": "1.91",
+          "X": "3.90",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.90",
+          "2": "1.87",
+          "X": "3.80",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.70",
+          "2": "1.92",
+          "X": "3.80",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.85",
+          "2": "1.94",
+          "X": "4.10",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.71",
+          "2": "1.92",
+          "X": "3.86",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.71",
+          "2": "1.70",
+          "X": "4.08",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.88",
+          "2": "1.87",
+          "X": "3.91",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.90",
+          "2": "1.87",
+          "X": "3.80",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.10",
+          "2": "1.90",
+          "X": "3.50",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.65",
+          "2": "1.90",
+          "X": "3.80",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.60",
+          "2": "1.84",
+          "X": "3.75",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.75",
+          "2": "1.90",
+          "X": "3.90",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.38",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.37",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.61",
+          "odds_under": "2.44",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.40",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.28",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.56",
+          "odds_under": "2.40",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.37",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.19",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.53",
+          "odds_under": "2.31",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.40",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.62(128)",
+          "odds_under": "2.58(32)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-11",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/marseille-SblU3Hee/nice-YagoQJpq/#dUb1gXFi",
+    "sourceCapturedAt": "2026-06-30 01:16:22 UTC",
+    "matchId": "dUb1gXFi",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Marseille",
+    "awayTeam": "Nice",
+    "kickoffTime": "2026-04-27 02:45:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.693,
+    "sportteryDrawSp": 4.012,
+    "sportteryAwaySp": 4.939,
+    "euroHomeOdds": 1.693,
+    "euroDrawOdds": 4.012,
+    "euroAwayOdds": 4.939,
+    "euroHomeProb": 0.5666,
+    "euroDrawProb": 0.2391,
+    "euroAwayProb": 0.1942,
+    "over25Odds": 1.648,
+    "under25Odds": 2.277,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 1,
+    "actualGoals": 2,
+    "score": "1-1",
+    "hitStatus": "LOSE",
+    "venue": "Stade Vlodrome",
+    "venueTown": "Marseille",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:0, 1:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-1",
+      "oneXTwoMarket": [
+        {
+          "1": "1.75",
+          "2": "4.89",
+          "X": "3.91",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.72",
+          "2": "4.78",
+          "X": "3.82",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.70",
+          "2": "4.70",
+          "X": "3.95",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.75",
+          "2": "4.83",
+          "X": "4.10",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.72",
+          "2": "4.75",
+          "X": "3.88",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.44",
+          "2": "6.55",
+          "X": "4.96",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.68",
+          "2": "4.68",
+          "X": "4.18",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.72",
+          "2": "4.78",
+          "X": "3.82",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.75",
+          "2": "5.40",
+          "X": "3.70",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.70",
+          "2": "4.60",
+          "X": "3.85",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.65",
+          "2": "4.51",
+          "X": "3.87",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.74",
+          "2": "4.80",
+          "X": "4.10",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.20",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.33",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.71",
+          "odds_under": "2.12",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.44",
+          "odds_under": "2.76",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.32",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.24",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.58",
+          "odds_under": "2.21",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.17",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.74(317)",
+          "odds_under": "2.32(52)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-9",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/nantes-veuetnGG/rennes-d2nnj1IE/#0MufgCbf",
+    "sourceCapturedAt": "2026-06-30 01:15:51 UTC",
+    "matchId": "0MufgCbf",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Rennes",
+    "awayTeam": "Nantes",
+    "kickoffTime": "2026-04-26 23:15:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.47,
+    "sportteryDrawSp": 4.564,
+    "sportteryAwaySp": 6.693,
+    "euroHomeOdds": 1.47,
+    "euroDrawOdds": 4.564,
+    "euroAwayOdds": 6.693,
+    "euroHomeProb": 0.6486,
+    "euroDrawProb": 0.2089,
+    "euroAwayProb": 0.1425,
+    "over25Odds": 1.64,
+    "under25Odds": 2.263,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 1,
+    "actualGoals": 3,
+    "score": "2-1",
+    "hitStatus": "WIN",
+    "venue": "Roazhon Park",
+    "venueTown": "Rennes",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:1, 1:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-1",
+      "oneXTwoMarket": [
+        {
+          "1": "1.51",
+          "2": "6.63",
+          "X": "4.59",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.48",
+          "2": "6.45",
+          "X": "4.48",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.47",
+          "2": "6.60",
+          "X": "4.50",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.49",
+          "2": "6.97",
+          "X": "4.75",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.47",
+          "2": "6.80",
+          "X": "4.50",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.40",
+          "2": "7.69",
+          "X": "4.91",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.46",
+          "2": "6.58",
+          "X": "4.68",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.48",
+          "2": "6.45",
+          "X": "4.48",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.48",
+          "2": "7.00",
+          "X": "4.30",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.46",
+          "2": "6.40",
+          "X": "4.40",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.43",
+          "2": "6.35",
+          "X": "4.38",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.51",
+          "2": "6.40",
+          "X": "4.80",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.30",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.33",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.23",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.28",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.64",
+          "odds_under": "2.23",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.11",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.19",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.24",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69(536)",
+          "odds_under": "2.40(32)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-20",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/le-havre-CIEe04GT/metz-4v0yqlWc/#U1XAkUcJ",
+    "sourceCapturedAt": "2026-06-30 01:18:52 UTC",
+    "matchId": "U1XAkUcJ",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Le Havre",
+    "awayTeam": "Metz",
+    "kickoffTime": "2026-04-26 23:15:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.604,
+    "sportteryDrawSp": 4.22,
+    "sportteryAwaySp": 5.275,
+    "euroHomeOdds": 1.604,
+    "euroDrawOdds": 4.22,
+    "euroAwayOdds": 5.275,
+    "euroHomeProb": 0.5938,
+    "euroDrawProb": 0.2257,
+    "euroAwayProb": 0.1805,
+    "over25Odds": 1.664,
+    "under25Odds": 2.23,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 4,
+    "actualAwayGoals": 4,
+    "actualGoals": 8,
+    "score": "4-4",
+    "hitStatus": "LOSE",
+    "venue": "Stade Ocane",
+    "venueTown": "Le Havre",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(2:2, 2:2)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "4-4",
+      "oneXTwoMarket": [
+        {
+          "1": "1.64",
+          "2": "5.12",
+          "X": "4.44",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.61",
+          "2": "5.00",
+          "X": "4.34",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.60",
+          "2": "5.20",
+          "X": "4.20",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.65",
+          "2": "5.50",
+          "X": "4.35",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.60",
+          "2": "5.50",
+          "X": "4.20",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.62",
+          "2": "5.21",
+          "X": "3.89",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.57",
+          "2": "5.41",
+          "X": "4.30",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.61",
+          "2": "5.00",
+          "X": "4.34",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.60",
+          "2": "5.80",
+          "X": "3.90",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.58",
+          "2": "5.20",
+          "X": "4.20",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.54",
+          "2": "5.16",
+          "X": "4.08",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.63",
+          "2": "5.20",
+          "X": "4.40",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.30",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.66",
+          "odds_under": "2.37",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.62",
+          "odds_under": "2.25",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.90",
+          "odds_under": "1.90",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.15",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.11",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.61",
+          "odds_under": "2.15",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.62",
+          "odds_under": "2.26",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.66(16)",
+          "odds_under": "2.46(314)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-38",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lille-pfDZL71o/paris-fc-0OEHEprs/#WKGfctHP",
+    "sourceCapturedAt": "2026-06-30 01:23:44 UTC",
+    "matchId": "WKGfctHP",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Paris FC",
+    "awayTeam": "Lille",
+    "kickoffTime": "2026-04-26 23:15:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 4.726,
+    "sportteryDrawSp": 3.887,
+    "sportteryAwaySp": 1.733,
+    "euroHomeOdds": 4.726,
+    "euroDrawOdds": 3.887,
+    "euroAwayOdds": 1.733,
+    "euroHomeProb": 0.2023,
+    "euroDrawProb": 0.246,
+    "euroAwayProb": 0.5517,
+    "over25Odds": 1.764,
+    "under25Odds": 2.088,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 1,
+    "actualGoals": 1,
+    "score": "0-1",
+    "hitStatus": "WIN",
+    "venue": "Stade Pierre-Mauroy",
+    "venueTown": "Villeneuve d'Ascq",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:1, 0:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-1",
+      "oneXTwoMarket": [
+        {
+          "1": "4.83",
+          "2": "1.73",
+          "X": "4.07",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.72",
+          "2": "1.70",
+          "X": "3.98",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.60",
+          "2": "1.73",
+          "X": "3.90",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.03",
+          "2": "1.74",
+          "X": "3.95",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.00",
+          "2": "1.70",
+          "X": "3.83",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.98",
+          "2": "1.92",
+          "X": "3.65",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.62",
+          "2": "1.70",
+          "X": "4.03",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.72",
+          "2": "1.70",
+          "X": "3.98",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.40",
+          "2": "1.75",
+          "X": "3.70",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.60",
+          "2": "1.71",
+          "X": "3.80",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.51",
+          "2": "1.67",
+          "X": "3.76",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.70",
+          "2": "1.75",
+          "X": "4.00",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.80",
+          "odds_under": "2.10",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.81",
+          "odds_under": "2.15",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.05",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.87",
+          "odds_under": "1.98",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.15",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.70",
+          "odds_under": "2.15",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.03",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.73",
+          "odds_under": "2.08",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.81(152)",
+          "odds_under": "2.16(681)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-16",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/lorient-jgNAYRGi/strasbourg-nP6UzIU1/#Sj2QiKvm",
+    "sourceCapturedAt": "2026-06-30 01:17:48 UTC",
+    "matchId": "Sj2QiKvm",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Lorient",
+    "awayTeam": "Strasbourg",
+    "kickoffTime": "2026-04-26 21:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 2.147,
+    "sportteryDrawSp": 3.639,
+    "sportteryAwaySp": 3.25,
+    "euroHomeOdds": 2.147,
+    "euroDrawOdds": 3.639,
+    "euroAwayOdds": 3.25,
+    "euroHomeProb": 0.4443,
+    "euroDrawProb": 0.2621,
+    "euroAwayProb": 0.2935,
+    "over25Odds": 1.692,
+    "under25Odds": 2.17,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 3,
+    "actualGoals": 5,
+    "score": "2-3",
+    "hitStatus": "LOSE",
+    "venue": "Stade de la Meinau",
+    "venueTown": "Strasbourg",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:0, 1:3)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-3",
+      "oneXTwoMarket": [
+        {
+          "1": "2.19",
+          "2": "3.24",
+          "X": "3.76",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.15",
+          "2": "3.17",
+          "X": "3.68",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.10",
+          "2": "3.25",
+          "X": "3.70",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.19",
+          "2": "3.44",
+          "X": "3.75",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.15",
+          "2": "3.36",
+          "X": "3.47",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.24",
+          "2": "3.16",
+          "X": "3.57",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.13",
+          "2": "3.18",
+          "X": "3.72",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.15",
+          "2": "3.17",
+          "X": "3.68",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.15",
+          "2": "3.35",
+          "X": "3.45",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.12",
+          "2": "3.10",
+          "X": "3.65",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.04",
+          "2": "3.23",
+          "X": "3.49",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.15",
+          "2": "3.35",
+          "X": "3.75",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.20",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.71",
+          "odds_under": "2.25",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.17",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.80",
+          "odds_under": "2.04",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.18",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.11",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.64",
+          "odds_under": "2.09",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.17",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.75(275)",
+          "odds_under": "2.28(156)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-21",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/monaco-2PIvr8o4/toulouse-MLmY2yB1/#WraslxvC",
+    "sourceCapturedAt": "2026-06-30 01:19:01 UTC",
+    "matchId": "WraslxvC",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Toulouse",
+    "awayTeam": "Monaco",
+    "kickoffTime": "2026-04-26 03:05:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 4.321,
+    "sportteryDrawSp": 4.047,
+    "sportteryAwaySp": 1.759,
+    "euroHomeOdds": 4.321,
+    "euroDrawOdds": 4.047,
+    "euroAwayOdds": 1.759,
+    "euroHomeProb": 0.221,
+    "euroDrawProb": 0.236,
+    "euroAwayProb": 0.543,
+    "over25Odds": 1.578,
+    "under25Odds": 2.414,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 2,
+    "actualGoals": 4,
+    "score": "2-2",
+    "hitStatus": "LOSE",
+    "venue": "Stade Louis II",
+    "venueTown": "Monaco",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:2, 2:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-2",
+      "oneXTwoMarket": [
+        {
+          "1": "4.34",
+          "2": "1.78",
+          "X": "4.19",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.24",
+          "2": "1.74",
+          "X": "4.10",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.40",
+          "2": "1.73",
+          "X": "4.00",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.58",
+          "2": "1.75",
+          "X": "4.20",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.60",
+          "2": "1.70",
+          "X": "4.10",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.39",
+          "2": "2.11",
+          "X": "3.64",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.22",
+          "2": "1.74",
+          "X": "4.13",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.24",
+          "2": "1.74",
+          "X": "4.10",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.70",
+          "2": "1.75",
+          "X": "4.10",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.40",
+          "2": "1.71",
+          "X": "3.95",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.34",
+          "2": "1.66",
+          "X": "3.95",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.40",
+          "2": "1.70",
+          "X": "4.10",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.60",
+          "odds_under": "2.38",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.37",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.58",
+          "odds_under": "2.52",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.53",
+          "odds_under": "2.43",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.73",
+          "odds_under": "2.15",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.50",
+          "odds_under": "2.54",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.37",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.45",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.29",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.45",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.60(1174)",
+          "odds_under": "2.60(48)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-10",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/angers-SAlF91iL/psg-CjhkPw0k/#MyU2ijT6",
+    "sourceCapturedAt": "2026-06-30 01:16:14 UTC",
+    "matchId": "MyU2ijT6",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Angers",
+    "awayTeam": "PSG",
+    "kickoffTime": "2026-04-26 01:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 11.116,
+    "sportteryDrawSp": 6.274,
+    "sportteryAwaySp": 1.251,
+    "euroHomeOdds": 11.116,
+    "euroDrawOdds": 6.274,
+    "euroAwayOdds": 1.251,
+    "euroHomeProb": 0.0858,
+    "euroDrawProb": 0.152,
+    "euroAwayProb": 0.7622,
+    "over25Odds": 1.524,
+    "under25Odds": 2.519,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 3,
+    "actualGoals": 3,
+    "score": "0-3",
+    "hitStatus": "WIN",
+    "venue": "Stade Raymond-Kopa",
+    "venueTown": "Angers",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:2, 0:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-3",
+      "oneXTwoMarket": [
+        {
+          "1": "10.80",
+          "2": "1.28",
+          "X": "6.49",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "10.50",
+          "2": "1.25",
+          "X": "6.35",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "11.00",
+          "2": "1.25",
+          "X": "6.00",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "11.93",
+          "2": "1.25",
+          "X": "6.50",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "12.00",
+          "2": "1.25",
+          "X": "6.20",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "10.96",
+          "2": "1.23",
+          "X": "6.63",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "11.61",
+          "2": "1.28",
+          "X": "6.01",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "10.50",
+          "2": "1.25",
+          "X": "6.35",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "11.00",
+          "2": "1.25",
+          "X": "6.00",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "11.00",
+          "2": "1.25",
+          "X": "6.00",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "11.09",
+          "2": "1.20",
+          "X": "6.16",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "11.00",
+          "2": "1.27",
+          "X": "6.60",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.50",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.49",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.55",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.52",
+          "odds_under": "2.45",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.47",
+          "odds_under": "2.63",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.52",
+          "odds_under": "2.58",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.49",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.29",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.46",
+          "odds_under": "2.48",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.52",
+          "odds_under": "2.49",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.56(44)",
+          "odds_under": "2.76(66)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-15",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/auxerre-MTLr36WA/lyon-2akflumR/#OIeZkb9a",
+    "sourceCapturedAt": "2026-06-30 01:17:25 UTC",
+    "matchId": "OIeZkb9a",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Lyon",
+    "awayTeam": "Auxerre",
+    "kickoffTime": "2026-04-25 21:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.634,
+    "sportteryDrawSp": 4.025,
+    "sportteryAwaySp": 5.324,
+    "euroHomeOdds": 1.634,
+    "euroDrawOdds": 4.025,
+    "euroAwayOdds": 5.324,
+    "euroHomeProb": 0.5838,
+    "euroDrawProb": 0.237,
+    "euroAwayProb": 0.1792,
+    "over25Odds": 1.767,
+    "under25Odds": 2.068,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 3,
+    "actualAwayGoals": 2,
+    "actualGoals": 5,
+    "score": "3-2",
+    "hitStatus": "WIN",
+    "venue": "Parc Olympique Lyonnais",
+    "venueTown": "Lyon",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:1, 2:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "3-2",
+      "oneXTwoMarket": [
+        {
+          "1": "1.68",
+          "2": "5.33",
+          "X": "4.06",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.64",
+          "2": "5.20",
+          "X": "3.96",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.64",
+          "2": "5.20",
+          "X": "3.95",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.67",
+          "2": "5.62",
+          "X": "4.10",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.63",
+          "2": "5.50",
+          "X": "3.96",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.62",
+          "2": "5.42",
+          "X": "4.08",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.60",
+          "2": "5.42",
+          "X": "4.18",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.64",
+          "2": "5.20",
+          "X": "3.96",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.65",
+          "2": "5.20",
+          "X": "4.00",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.63",
+          "2": "5.20",
+          "X": "3.90",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.54",
+          "2": "5.40",
+          "X": "3.95",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.67",
+          "2": "5.20",
+          "X": "4.20",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.80",
+          "odds_under": "2.10",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.80",
+          "odds_under": "2.12",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.73",
+          "odds_under": "2.09",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.84",
+          "odds_under": "2.02",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.76",
+          "odds_under": "2.06",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.75",
+          "odds_under": "1.96",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.70",
+          "odds_under": "2.00",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.72",
+          "odds_under": "2.08",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.80(240)",
+          "odds_under": "2.20(571)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-8",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/brest-Cr4VGaUl/lens-IBmris38/#jXBFVTNp",
+    "sourceCapturedAt": "2026-06-30 01:15:42 UTC",
+    "matchId": "jXBFVTNp",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Brest",
+    "awayTeam": "Lens",
+    "kickoffTime": "2026-04-25 02:45:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 5.715,
+    "sportteryDrawSp": 4.205,
+    "sportteryAwaySp": 1.573,
+    "euroHomeOdds": 5.715,
+    "euroDrawOdds": 4.205,
+    "euroAwayOdds": 1.573,
+    "euroHomeProb": 0.1669,
+    "euroDrawProb": 0.2268,
+    "euroAwayProb": 0.6063,
+    "over25Odds": 1.722,
+    "under25Odds": 2.137,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 3,
+    "actualAwayGoals": 3,
+    "actualGoals": 6,
+    "score": "3-3",
+    "hitStatus": "LOSE",
+    "venue": "Stade Bollaert-Delelis",
+    "venueTown": "Lens",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(3:0, 0:3)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "3-3",
+      "oneXTwoMarket": [
+        {
+          "1": "5.94",
+          "2": "1.58",
+          "X": "4.34",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.80",
+          "2": "1.55",
+          "X": "4.24",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.60",
+          "2": "1.58",
+          "X": "4.10",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "6.09",
+          "2": "1.57",
+          "X": "4.50",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "6.00",
+          "2": "1.55",
+          "X": "4.20",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.71",
+          "2": "1.70",
+          "X": "4.07",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.52",
+          "2": "1.58",
+          "X": "4.17",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.80",
+          "2": "1.55",
+          "X": "4.24",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.90",
+          "2": "1.58",
+          "X": "4.00",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.60",
+          "2": "1.57",
+          "X": "4.10",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "5.62",
+          "2": "1.50",
+          "X": "4.10",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "6.00",
+          "2": "1.57",
+          "X": "4.40",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.80",
+          "odds_under": "2.10",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.76",
+          "odds_under": "2.20",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.72",
+          "odds_under": "2.10",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.21",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.66",
+          "odds_under": "2.21",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.77",
+          "odds_under": "2.06",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.11",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.09",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.71",
+          "odds_under": "2.11",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.76(65)",
+          "odds_under": "2.26(1190)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-44",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/nantes-veuetnGG/psg-CjhkPw0k/#ED38z4iM",
+    "sourceCapturedAt": "2026-06-30 01:25:22 UTC",
+    "matchId": "ED38z4iM",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "PSG",
+    "awayTeam": "Nantes",
+    "kickoffTime": "2026-04-23 01:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.156,
+    "sportteryDrawSp": 8.183,
+    "sportteryAwaySp": 15.513,
+    "euroHomeOdds": 1.156,
+    "euroDrawOdds": 8.183,
+    "euroAwayOdds": 15.513,
+    "euroHomeProb": 0.8225,
+    "euroDrawProb": 0.1162,
+    "euroAwayProb": 0.0613,
+    "over25Odds": 1.325,
+    "under25Odds": 3.333,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "HOME",
+    "actualHomeGoals": 3,
+    "actualAwayGoals": 0,
+    "actualGoals": 3,
+    "score": "3-0",
+    "hitStatus": "WIN",
+    "venue": "Parc des Princes",
+    "venueTown": "Paris",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(2:0, 1:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "3-0",
+      "oneXTwoMarket": [
+        {
+          "1": "1.18",
+          "2": "15.40",
+          "X": "8.24",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.16",
+          "2": "15.00",
+          "X": "8.00",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.15",
+          "2": "16.00",
+          "X": "8.20",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.17",
+          "2": "17.60",
+          "X": "9.05",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.15",
+          "2": "15.00",
+          "X": "8.50",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.16",
+          "2": "13.68",
+          "X": "8.27",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.17",
+          "2": "15.80",
+          "X": "8.15",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.16",
+          "2": "15.00",
+          "X": "8.00",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.15",
+          "2": "16.00",
+          "X": "8.00",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.16",
+          "2": "15.00",
+          "X": "7.60",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.11",
+          "2": "15.68",
+          "X": "7.94",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.15",
+          "2": "16.00",
+          "X": "8.25",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.33",
+          "odds_under": "3.40",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.36",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.43",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.25",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.30",
+          "odds_under": "3.40",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.36",
+          "odds_under": "3.20",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.36",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.30",
+          "odds_under": "3.20",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.06",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.32",
+          "odds_under": "3.35",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.37(2553)",
+          "odds_under": "3.65(122)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-2",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/metz-4v0yqlWc/paris-fc-0OEHEprs/#OKAulHME",
+    "sourceCapturedAt": "2026-06-30 01:13:56 UTC",
+    "matchId": "OKAulHME",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Metz",
+    "awayTeam": "Paris FC",
+    "kickoffTime": "2026-04-19 23:15:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 3.082,
+    "sportteryDrawSp": 3.568,
+    "sportteryAwaySp": 2.251,
+    "euroHomeOdds": 3.082,
+    "euroDrawOdds": 3.568,
+    "euroAwayOdds": 2.251,
+    "euroHomeProb": 0.3093,
+    "euroDrawProb": 0.2672,
+    "euroAwayProb": 0.4235,
+    "over25Odds": 1.69,
+    "under25Odds": 2.183,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 3,
+    "actualGoals": 4,
+    "score": "1-3",
+    "hitStatus": "WIN",
+    "venue": "Stade Saint-Symphorien",
+    "venueTown": "Metz",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:1, 0:2)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-3",
+      "oneXTwoMarket": [
+        {
+          "1": "3.00",
+          "2": "2.33",
+          "X": "3.73",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.98",
+          "2": "2.24",
+          "X": "3.68",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.05",
+          "2": "2.26",
+          "X": "3.50",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.21",
+          "2": "2.31",
+          "X": "3.75",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.07",
+          "2": "2.29",
+          "X": "3.47",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.46",
+          "2": "2.06",
+          "X": "3.49",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.00",
+          "2": "2.28",
+          "X": "3.55",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.98",
+          "2": "2.24",
+          "X": "3.68",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.05",
+          "2": "2.30",
+          "X": "3.45",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.05",
+          "2": "2.22",
+          "X": "3.50",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.03",
+          "2": "2.17",
+          "X": "3.37",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.10",
+          "2": "2.31",
+          "X": "3.65",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.69",
+          "odds_under": "2.20",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.37",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.20",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.82",
+          "odds_under": "1.99",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.67",
+          "odds_under": "2.19",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.68",
+          "odds_under": "2.19",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.11",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.73",
+          "odds_under": "1.96",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.64",
+          "odds_under": "2.23",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.71(291)",
+          "odds_under": "2.38(65)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-5",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/rennes-d2nnj1IE/strasbourg-nP6UzIU1/#8CShQDU7",
+    "sourceCapturedAt": "2026-06-30 01:14:47 UTC",
+    "matchId": "8CShQDU7",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Strasbourg",
+    "awayTeam": "Rennes",
+    "kickoffTime": "2026-04-19 23:15:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 3.694,
+    "sportteryDrawSp": 3.971,
+    "sportteryAwaySp": 1.951,
+    "euroHomeOdds": 3.694,
+    "euroDrawOdds": 3.971,
+    "euroAwayOdds": 1.951,
+    "euroHomeProb": 0.2615,
+    "euroDrawProb": 0.2433,
+    "euroAwayProb": 0.4952,
+    "over25Odds": 1.569,
+    "under25Odds": 2.413,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "AWAY",
+    "actualHomeGoals": 0,
+    "actualAwayGoals": 3,
+    "actualGoals": 3,
+    "score": "0-3",
+    "hitStatus": "WIN",
+    "venue": "Roazhon Park",
+    "venueTown": "Rennes",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:1, 0:2)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "0-3",
+      "oneXTwoMarket": [
+        {
+          "1": "3.75",
+          "2": "1.89",
+          "X": "4.28",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.66",
+          "2": "1.85",
+          "X": "4.18",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.90",
+          "2": "1.83",
+          "X": "4.00",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.12",
+          "2": "1.85",
+          "X": "4.13",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.93",
+          "2": "1.84",
+          "X": "3.98",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.56",
+          "2": "2.61",
+          "X": "3.70",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.91",
+          "2": "1.82",
+          "X": "4.05",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.66",
+          "2": "1.85",
+          "X": "4.18",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.30",
+          "2": "1.85",
+          "X": "3.60",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.85",
+          "2": "1.82",
+          "X": "3.95",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.69",
+          "2": "2.33",
+          "X": "3.50",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "4.00",
+          "2": "1.87",
+          "X": "4.10",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.50",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.49",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.56",
+          "odds_under": "2.53",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.53",
+          "odds_under": "2.43",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.70",
+          "odds_under": "2.19",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.41",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.54",
+          "odds_under": "2.49",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.29",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.61",
+          "odds_under": "2.14",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.55",
+          "odds_under": "2.41",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59(27)",
+          "odds_under": "2.66(537)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-46",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/brest-Cr4VGaUl/nantes-veuetnGG/#IsnywiED",
+    "sourceCapturedAt": "2026-06-30 01:25:56 UTC",
+    "matchId": "IsnywiED",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Nantes",
+    "awayTeam": "Brest",
+    "kickoffTime": "2026-04-19 23:15:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 2.402,
+    "sportteryDrawSp": 3.241,
+    "sportteryAwaySp": 3.086,
+    "euroHomeOdds": 2.402,
+    "euroDrawOdds": 3.241,
+    "euroAwayOdds": 3.086,
+    "euroHomeProb": 0.3969,
+    "euroDrawProb": 0.2942,
+    "euroAwayProb": 0.3089,
+    "over25Odds": 2.215,
+    "under25Odds": 1.672,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 1,
+    "actualGoals": 2,
+    "score": "1-1",
+    "hitStatus": "LOSE",
+    "venue": "Stade de la Beaujoire",
+    "venueTown": "Nantes",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:0, 0:1)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-1",
+      "oneXTwoMarket": [
+        {
+          "1": "2.40",
+          "2": "3.16",
+          "X": "3.37",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.34",
+          "2": "3.10",
+          "X": "3.28",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.40",
+          "2": "3.05",
+          "X": "3.20",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.43",
+          "2": "3.24",
+          "X": "3.30",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.42",
+          "2": "3.09",
+          "X": "3.19",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.35",
+          "2": "3.20",
+          "X": "3.28",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.42",
+          "2": "3.03",
+          "X": "3.24",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.34",
+          "2": "3.10",
+          "X": "3.28",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.45",
+          "2": "3.05",
+          "X": "3.15",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.38",
+          "2": "3.05",
+          "X": "3.20",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.45",
+          "2": "2.81",
+          "X": "3.10",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.44",
+          "2": "3.15",
+          "X": "3.30",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "2.32",
+          "odds_under": "1.67",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.28",
+          "odds_under": "1.63",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.24",
+          "odds_under": "1.73",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.17",
+          "odds_under": "1.67",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.20",
+          "odds_under": "1.70",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.15",
+          "odds_under": "1.69",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.28",
+          "odds_under": "1.63",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.20",
+          "odds_under": "1.60",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.09",
+          "odds_under": "1.64",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.15",
+          "odds_under": "1.68",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.28(531)",
+          "odds_under": "1.75(514)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-32",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/auxerre-MTLr36WA/monaco-2PIvr8o4/#MFhSvDq1",
+    "sourceCapturedAt": "2026-06-30 01:22:01 UTC",
+    "matchId": "MFhSvDq1",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Monaco",
+    "awayTeam": "Auxerre",
+    "kickoffTime": "2026-04-19 21:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场主胜",
+    "recommendationSide": "HOME",
+    "sportteryHomeSp": 1.61,
+    "sportteryDrawSp": 4.218,
+    "sportteryAwaySp": 5.269,
+    "euroHomeOdds": 1.61,
+    "euroDrawOdds": 4.218,
+    "euroAwayOdds": 5.269,
+    "euroHomeProb": 0.5927,
+    "euroDrawProb": 0.2262,
+    "euroAwayProb": 0.1811,
+    "over25Odds": 1.638,
+    "under25Odds": 2.272,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 2,
+    "actualAwayGoals": 2,
+    "actualGoals": 4,
+    "score": "2-2",
+    "hitStatus": "LOSE",
+    "venue": "Stade Louis II",
+    "venueTown": "Monaco",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(0:2, 2:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "2-2",
+      "oneXTwoMarket": [
+        {
+          "1": "1.66",
+          "2": "5.13",
+          "X": "4.31",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.62",
+          "2": "5.00",
+          "X": "4.22",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.60",
+          "2": "5.20",
+          "X": "4.20",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.65",
+          "2": "5.56",
+          "X": "4.30",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.62",
+          "2": "5.20",
+          "X": "4.20",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.56",
+          "2": "5.71",
+          "X": "4.33",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.59",
+          "2": "5.21",
+          "X": "4.33",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.62",
+          "2": "5.00",
+          "X": "4.22",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.62",
+          "2": "5.80",
+          "X": "3.80",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.59",
+          "2": "5.20",
+          "X": "4.20",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.55",
+          "2": "5.02",
+          "X": "4.10",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "1.64",
+          "2": "5.20",
+          "X": "4.40",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.30",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.41",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.23",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.72",
+          "odds_under": "2.15",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.33",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.63",
+          "odds_under": "2.29",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.65",
+          "odds_under": "2.11",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.59",
+          "odds_under": "2.19",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.61",
+          "odds_under": "2.27",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "1.69(86)",
+          "odds_under": "2.42(336)",
+          "bookmaker_name": "Betfair Exchange",
+          "period": "FullTime"
+        }
+      ]
+    }
+  },
+  {
+    "caseId": "external-oddsportal-法甲-2025-39",
+    "sampleType": "external-history",
+    "source": "oddsportal",
+    "sourceUrl": "https://www.oddsportal.com/football/h2h/angers-SAlF91iL/le-havre-CIEe04GT/#EkkKtZEl",
+    "sourceCapturedAt": "2026-06-30 01:23:51 UTC",
+    "matchId": "EkkKtZEl",
+    "league": "法甲",
+    "season": "2025",
+    "homeTeam": "Angers",
+    "awayTeam": "Le Havre",
+    "kickoffTime": "2026-04-19 01:00:00 UTC",
+    "modelVersion": "EXTERNAL_HISTORY",
+    "recommendation": "市场客胜",
+    "recommendationSide": "AWAY",
+    "sportteryHomeSp": 3.242,
+    "sportteryDrawSp": 2.998,
+    "sportteryAwaySp": 2.462,
+    "euroHomeOdds": 3.242,
+    "euroDrawOdds": 2.998,
+    "euroAwayOdds": 2.462,
+    "euroHomeProb": 0.2943,
+    "euroDrawProb": 0.3182,
+    "euroAwayProb": 0.3875,
+    "over25Odds": 2.546,
+    "under25Odds": 1.513,
+    "bookmakerCount1x2": 12,
+    "bookmakerCountTotal": 11,
+    "dataQuality": "HIGH",
+    "actualResult": "DRAW",
+    "actualHomeGoals": 1,
+    "actualAwayGoals": 1,
+    "actualGoals": 2,
+    "score": "1-1",
+    "hitStatus": "LOSE",
+    "venue": "Stade Ocane",
+    "venueTown": "Le Havre",
+    "venueCountry": "France",
+    "payload": {
+      "leagueName": "Ligue 1",
+      "partialResults": "(1:1, 0:0)",
+      "scoreMode": "fulltime-score",
+      "sourceFinalScore": "1-1",
+      "oneXTwoMarket": [
+        {
+          "1": "3.27",
+          "2": "2.50",
+          "X": "3.07",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.20",
+          "2": "2.46",
+          "X": "3.01",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.35",
+          "2": "2.40",
+          "X": "2.96",
+          "bookmaker_name": "Betfury",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.39",
+          "2": "2.51",
+          "X": "3.01",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.31",
+          "2": "2.44",
+          "X": "2.95",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "1": "2.93",
+          "2": "2.74",
+          "X": "2.96",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.34",
+          "2": "2.38",
+          "X": "3.01",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.20",
+          "2": "2.46",
+          "X": "3.01",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.20",
+          "2": "2.40",
+          "X": "3.10",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.25",
+          "2": "2.42",
+          "X": "2.94",
+          "bookmaker_name": "Roobet",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.17",
+          "2": "2.34",
+          "X": "2.91",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "1": "3.30",
+          "2": "2.50",
+          "X": "3.05",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        }
+      ],
+      "overUnder25Market": [
+        {
+          "odds_over": "2.63",
+          "odds_under": "1.50",
+          "bookmaker_name": "1xBet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.62",
+          "odds_under": "1.49",
+          "bookmaker_name": "22Bet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.63",
+          "odds_under": "1.53",
+          "bookmaker_name": "BetInAsia",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.45",
+          "odds_under": "1.52",
+          "bookmaker_name": "Bets.io",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.44",
+          "odds_under": "1.57",
+          "bookmaker_name": "Cloudbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.52",
+          "odds_under": "1.51",
+          "bookmaker_name": "GGBET",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.62",
+          "odds_under": "1.49",
+          "bookmaker_name": "Melbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.50",
+          "odds_under": "1.47",
+          "bookmaker_name": "Mozzartbet",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.42",
+          "odds_under": "1.48",
+          "bookmaker_name": "Shuffle",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.50",
+          "odds_under": "1.51",
+          "bookmaker_name": "Stake.com",
+          "period": "FullTime"
+        },
+        {
+          "odds_over": "2.68(62)",
+          "odds_under": "1.57(1767)",
           "bookmaker_name": "Betfair Exchange",
           "period": "FullTime"
         }

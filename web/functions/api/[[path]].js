@@ -45,6 +45,31 @@ function n(value, fallback = null) {
   return Number.isFinite(number) ? number : fallback;
 }
 
+const BJT_OFFSET_MS = 8 * 60 * 60 * 1000;
+const AUTO_DECISION_CUTOFF = "19:50";
+const SALE_CLOSE_TIME = "22:00";
+
+function bjtParts(date = new Date()) {
+  const shifted = new Date(date.getTime() + BJT_OFFSET_MS);
+  return {
+    date: shifted.toISOString().slice(0, 10),
+    time: shifted.toISOString().slice(11, 16),
+  };
+}
+
+function bjtAt(dateText = "", timeText = "00:00") {
+  if (!dateText) return NaN;
+  return Date.parse(`${dateText}T${String(timeText || "00:00").slice(0, 5)}:00+08:00`);
+}
+
+function addMinutes(timestamp, minutes) {
+  return Number.isFinite(timestamp) ? timestamp + minutes * 60 * 1000 : NaN;
+}
+
+function isoFromMs(timestamp) {
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : new Date().toISOString();
+}
+
 function sideFromResult(home, away) {
   if (home > away) return "HOME";
   if (home < away) return "AWAY";
@@ -684,6 +709,281 @@ function normalizeSportteryResult(match, businessDate) {
   return item;
 }
 
+function oddNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function lowestOdd(rows) {
+  return rows
+    .filter((item) => oddNumber(item.odd))
+    .sort((a, b) => oddNumber(a.odd) - oddNumber(b.odd))[0] || null;
+}
+
+function impliedProb(odd) {
+  const number = oddNumber(odd);
+  return number ? 1 / number : null;
+}
+
+function normalizedMarketProbabilities(odds = {}) {
+  const raw = {
+    home: impliedProb(odds.win),
+    draw: impliedProb(odds.draw),
+    away: impliedProb(odds.lose),
+  };
+  const total = Object.values(raw).reduce((sum, value) => sum + (value || 0), 0);
+  if (!total) return { home: 0, draw: 0, away: 0 };
+  return {
+    home: raw.home ? raw.home / total : 0,
+    draw: raw.draw ? raw.draw / total : 0,
+    away: raw.away ? raw.away / total : 0,
+  };
+}
+
+function pickNormal(odds = {}) {
+  return lowestOdd([
+    { label: "胜", side: "HOME", odd: odds.win },
+    { label: "平", side: "DRAW", odd: odds.draw },
+    { label: "负", side: "AWAY", odd: odds.lose },
+  ]);
+}
+
+function pickHandicap(odds = {}) {
+  return lowestOdd([
+    { label: "让胜", odd: odds.win },
+    { label: "让平", odd: odds.draw },
+    { label: "让负", odd: odds.lose },
+  ]);
+}
+
+function topScoreTexts(scores = []) {
+  return scores
+    .filter((item) => item.score && oddNumber(item.odds))
+    .sort((a, b) => oddNumber(a.odds) - oddNumber(b.odds))
+    .slice(0, 2)
+    .map((item) => String(item.score).replace(":", "-"));
+}
+
+function topGoalText(goals = []) {
+  const rows = goals
+    .filter((item) => item.goals && oddNumber(item.odds))
+    .sort((a, b) => oddNumber(a.odds) - oddNumber(b.odds))
+    .slice(0, 2)
+    .map((item) => `${item.goals}球`);
+  return rows.length ? rows.join("/") : "2球/3球";
+}
+
+function autoPhaseForMatch(match, nowMs = Date.now()) {
+  const ticaiDate = match.ticaiDate || match.matchDate || bjtParts(new Date(nowMs)).date;
+  const kickoffAt = bjtAt(match.matchDate || ticaiDate, match.kickoffTime || "23:59");
+  const decisionCutoffAt = bjtAt(ticaiDate, AUTO_DECISION_CUTOFF);
+  const saleClosedAt = bjtAt(ticaiDate, SALE_CLOSE_TIME);
+  const kickoffFinalAt = addMinutes(kickoffAt, -60);
+  const finalLockAt = Math.min(
+    Number.isFinite(kickoffFinalAt) ? kickoffFinalAt : decisionCutoffAt,
+    decisionCutoffAt
+  );
+  if (Number.isFinite(kickoffAt) && nowMs >= kickoffAt) return { phase: "MATCH_STARTED", ticaiDate, kickoffAt, finalLockAt, saleClosedAt };
+  if (nowMs >= saleClosedAt) return { phase: "SALE_CLOSED", ticaiDate, kickoffAt, finalLockAt, saleClosedAt };
+  if (nowMs >= bjtAt(ticaiDate, "20:00")) return { phase: "RISK_WATCH", ticaiDate, kickoffAt, finalLockAt, saleClosedAt };
+  if (nowMs >= finalLockAt) return { phase: "FINAL_LOCK", ticaiDate, kickoffAt, finalLockAt, saleClosedAt };
+  return { phase: "DRAFT_AUTO", ticaiDate, kickoffAt, finalLockAt, saleClosedAt };
+}
+
+function lockTypeForPhase(phase) {
+  return phase === "FINAL_LOCK" || phase === "RISK_WATCH" || phase === "SALE_CLOSED" ? "FINAL_LOCK" : "PRE_LOCK";
+}
+
+function actionForPhase(phase, hasEnoughData) {
+  if (!hasEnoughData) return "跳过";
+  if (phase === "SALE_CLOSED" || phase === "RISK_WATCH") return "谨慎";
+  return "可选";
+}
+
+function buildAutoSportteryPrediction(match, phaseInfo, capturedAt) {
+  const normal = pickNormal(match.normal || {});
+  const handicap = pickHandicap(match.handicapOdds || {});
+  const probs = normalizedMarketProbabilities(match.normal || {});
+  const scores = topScoreTexts(match.scoreOdds || []);
+  const mainScore = scores[0] || "1-1";
+  const counterScore = scores[1] || (normal?.label === "平" ? "0-0" : "1-1");
+  const totalGoalsPick = topGoalText(match.totalGoalsOdds || []);
+  const canRecommend = !["RISK_WATCH", "SALE_CLOSED"].includes(phaseInfo.phase);
+  const hasEnoughData = canRecommend && Boolean(normal && handicap && match.scoreOdds?.length && match.totalGoalsOdds?.length);
+  const finalAction = actionForPhase(phaseInfo.phase, hasEnoughData);
+  const confidence = hasEnoughData && normal?.odd <= 1.7 ? "B" : hasEnoughData ? "C+" : "D";
+  const advice =
+    finalAction === "跳过"
+      ? "数据不足不推"
+      : phaseInfo.phase === "FINAL_LOCK"
+        ? "自动最终锁版"
+      : phaseInfo.phase === "DRAFT_AUTO"
+        ? "自动初推演"
+      : "风险观察";
+  const marketGap = normal && handicap && !handicap.label.includes(normal.label)
+    ? "胜平负低位与让球低位不完全一致，自动降级为风险观察方向。"
+    : "胜平负低位、让球保护与比分低赔暂未出现强冲突。";
+  const prediction = {
+    sportteryKey: sportteryKey(match),
+    matchId: match.matchId || "",
+    no: match.no || "",
+    issue: match.issue || match.no || "",
+    date: match.ticaiDate || "",
+    ticaiDate: match.ticaiDate || "",
+    matchDate: match.matchDate || match.ticaiDate || "",
+    kickoffTime: match.kickoffTime || "",
+    competition: match.league || "竞彩",
+    playType: "竞彩足球",
+    home: match.home || "",
+    away: match.away || "",
+    type: `${match.league || "体彩"}自动云端推演`,
+    modelVersion: "V4",
+    confidence,
+    advice,
+    matchType: normal?.odd <= 1.55 ? "常规局" : "谨慎局",
+    competitionModel: `${match.league || "体彩"} 云端自动 V4`,
+    homeProb: `${Math.round(probs.home * 100)}%`,
+    drawProb: `${Math.round(probs.draw * 100)}%`,
+    awayProb: `${Math.round(probs.away * 100)}%`,
+    xg: "云端自动盘口结构估计",
+    poisson: [mainScore, counterScore].join(" / "),
+    groupSituation: `体彩销售日 ${match.ticaiDate || "-"}，最终锁版截止 ${AUTO_DECISION_CUTOFF}，停售 ${SALE_CLOSE_TIME}。`,
+    recentAnalysis: "云端自动推演已接入体彩当日赛程、胜平负、让球、比分低赔和总进球低赔；阵容伤停和人工深层战术信息未作为自动层硬输入。",
+    institutionLine: `胜平负低位 ${normal ? `${normal.label}${normal.odd}` : "-"}；让球低位 ${handicap ? `${handicap.label}${handicap.odd}` : "-"}。`,
+    noiseFilter: "自动层排除单纯名气和排名叙事，低置信或数据缺口场次只保留为观察/跳过。",
+    keyJudgement: hasEnoughData ? marketGap : "盘口字段不完整，自动层不强行给出正式推荐。",
+    marketGap,
+    script: `主脚本按${normal?.label || "待定"}方向展开，比分低赔落点为 ${mainScore}；反脚本保留 ${counterScore}。`,
+    dataQuality: hasEnoughData ? "MEDIUM" : "LOW",
+    decisionConflict: marketGap,
+    finalDecisionAction: `${advice}：胜平负 ${normal?.label || "-"}；让球 ${handicap?.label || "-"}；总进球 ${totalGoalsPick}；比分 ${mainScore} / ${counterScore}。`,
+    pick: hasEnoughData ? normal?.label || "" : "",
+    handicapPick: hasEnoughData ? handicap?.label || "" : "",
+    totalGoalsPick,
+    mainScore,
+    counterScore,
+    handicap: `${match.home || "主队"}${match.handicap || "0"}：${handicap?.label || "待定"}`,
+    autoGenerated: true,
+    autoStatus: phaseInfo.phase,
+    generatedAt: capturedAt,
+    finalLockDeadline: isoFromMs(phaseInfo.finalLockAt),
+    saleCloseAt: isoFromMs(phaseInfo.saleClosedAt),
+  };
+  const lockType = lockTypeForPhase(phaseInfo.phase);
+  return {
+    prediction,
+    lock: {
+      lockId: `auto-${sportteryDbMatchId(match)}-${match.ticaiDate || "sales"}-${lockType}`,
+      lockType,
+      recommendation: prediction.pick,
+      recommendationSide: hasEnoughData ? normal?.side || "SKIP" : "SKIP",
+      finalGrade: confidence.slice(0, 1),
+      finalAction,
+      confidenceScore: confidence === "B" ? 72 : confidence === "C+" ? 58 : 20,
+      riskScore: confidence === "B" ? 28 : confidence === "C+" ? 42 : 80,
+      consistencyScore: marketGap.includes("不完全一致") ? 2 : 3,
+      sportteryHomeProb: probs.home,
+      sportteryDrawProb: probs.draw,
+      sportteryAwayProb: probs.away,
+      valueHomeGap: 0,
+      valueDrawGap: 0,
+      valueAwayGap: 0,
+      dataQuality: prediction.dataQuality,
+      reasoningSummary: prediction.finalDecisionAction,
+      payload: {
+        autoGenerated: true,
+        autoStatus: phaseInfo.phase,
+        sportteryPrediction: prediction,
+      },
+    },
+  };
+}
+
+async function createAutoLocks(db, matches, capturedAt) {
+  const nowMs = Date.now();
+  const today = bjtParts(new Date(nowMs)).date;
+  let created = 0;
+  let skipped = 0;
+  const statuses = {};
+  for (const match of matches) {
+    if ((match.ticaiDate || "") !== today) continue;
+    const phaseInfo = autoPhaseForMatch(match, nowMs);
+    statuses[phaseInfo.phase] = (statuses[phaseInfo.phase] || 0) + 1;
+    if (phaseInfo.phase === "MATCH_STARTED") {
+      skipped += 1;
+      continue;
+    }
+    const { prediction, lock } = buildAutoSportteryPrediction(match, phaseInfo, capturedAt);
+    const matchId = sportteryDbMatchId(match);
+    const existingFinal = await db.prepare(`
+      SELECT lock_id FROM locked_predictions
+      WHERE match_id = ? AND lock_type = 'FINAL_LOCK'
+      ORDER BY locked_at DESC LIMIT 1
+    `).bind(matchId).first();
+    if (existingFinal) {
+      skipped += 1;
+      continue;
+    }
+    const existingSame = await db.prepare("SELECT lock_id FROM locked_predictions WHERE lock_id = ?").bind(lock.lockId).first();
+    if (existingSame) {
+      skipped += 1;
+      continue;
+    }
+    await db.prepare(`
+      INSERT INTO locked_predictions (
+        lock_id, match_id, match_code, home_team, away_team, league, kickoff_time, locked_at, lock_type, model_version,
+        model_home_prob, model_draw_prob, model_away_prob, recommendation, recommendation_side, final_grade, final_action,
+        confidence_score, risk_score, consistency_score, sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp,
+        sporttery_home_prob, sporttery_draw_prob, sporttery_away_prob, value_home_gap, value_draw_gap, value_away_gap,
+        asian_handicap, euro_home_odds, euro_draw_odds, euro_away_odds, euro_home_prob, euro_draw_prob, euro_away_prob,
+        data_quality, reasoning_summary, downgrade_reasons_json, result_status, payload_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'V4', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
+    `).bind(
+      lock.lockId,
+      matchId,
+      match.issue || match.no || "",
+      match.home || "",
+      match.away || "",
+      match.league || "竞彩",
+      `${match.matchDate || match.ticaiDate || ""} ${match.kickoffTime || ""}`.trim(),
+      capturedAt,
+      lock.lockType,
+      lock.sportteryHomeProb,
+      lock.sportteryDrawProb,
+      lock.sportteryAwayProb,
+      lock.recommendation,
+      lock.recommendationSide,
+      lock.finalGrade,
+      lock.finalAction,
+      lock.confidenceScore,
+      lock.riskScore,
+      lock.consistencyScore,
+      n(match.normal?.win, null),
+      n(match.normal?.draw, null),
+      n(match.normal?.lose, null),
+      lock.sportteryHomeProb,
+      lock.sportteryDrawProb,
+      lock.sportteryAwayProb,
+      lock.valueHomeGap,
+      lock.valueDrawGap,
+      lock.valueAwayGap,
+      n(String(match.handicap || "0").replace("+", ""), null),
+      n(match.normal?.win, null),
+      n(match.normal?.draw, null),
+      n(match.normal?.lose, null),
+      lock.sportteryHomeProb,
+      lock.sportteryDrawProb,
+      lock.sportteryAwayProb,
+      lock.dataQuality,
+      lock.reasoningSummary,
+      JSON.stringify([prediction.decisionConflict].filter(Boolean)),
+      JSON.stringify(lock.payload)
+    ).run();
+    created += 1;
+  }
+  return { created, skipped, statuses };
+}
+
 async function autoReviewMatch(db, matchId) {
   const locks = await db.prepare("SELECT lock_id, lock_type FROM locked_predictions WHERE match_id = ?").bind(matchId).all();
   let reviewed = 0;
@@ -740,6 +1040,7 @@ async function syncSportteryToD1(db, env) {
       JSON.stringify(match)
     ).run();
   }
+  const autoLocks = await createAutoLocks(db, matches, capturedAt);
 
   const resultSeen = new Set();
   const currentMatchIds = new Set(matches.map((match) => sportteryDbMatchId(match)));
@@ -874,13 +1175,35 @@ async function syncSportteryToD1(db, env) {
       liveFallbackCount,
       reviewed,
       cases,
+      autoLocks,
       resultPages: resultPages.length,
       liveFallbackErrors: liveRows.errors,
       officialOverrides,
     }),
     capturedAt
   ).run();
-  return { ok: true, capturedAt, matchCount: matches.length, resultCount, liveFallbackCount, reviewed, cases, officialOverrides };
+  return { ok: true, capturedAt, matchCount: matches.length, resultCount, liveFallbackCount, reviewed, cases, autoLocks, officialOverrides };
+}
+
+async function listAutoPredictions(db, limit = 300) {
+  const rows = await db.prepare(`
+    SELECT * FROM locked_predictions
+    WHERE payload_json LIKE '%"autoGenerated":true%'
+    ORDER BY locked_at DESC
+    LIMIT ?
+  `).bind(limit).all();
+  return (rows.results || []).map((row) => {
+    const payload = parseObject(row.payload_json);
+    const prediction = payload.sportteryPrediction || {};
+    return {
+      ...prediction,
+      lockId: row.lock_id,
+      lockType: row.lock_type,
+      lockedAt: row.locked_at,
+      resultStatus: row.result_status,
+      autoStatus: prediction.autoStatus || payload.autoStatus || row.lock_type,
+    };
+  });
 }
 
 async function d1OddsScript(db) {
@@ -996,14 +1319,19 @@ export async function onRequest(context) {
       }));
     }
 
+    if (path === "auto-predictions" && request.method === "GET") {
+      return json({ ok: true, predictions: await listAutoPredictions(db) });
+    }
+
     if (path === "bootstrap" && request.method === "GET") {
-      const [matches, locks, results, cases] = await Promise.all([
+      const [matches, locks, results, cases, autoPredictions] = await Promise.all([
         db.prepare("SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT 200").all(),
         db.prepare("SELECT * FROM locked_predictions ORDER BY locked_at DESC LIMIT 200").all(),
         db.prepare("SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT 200").all(),
         listCases(db),
+        listAutoPredictions(db, 200),
       ]);
-      return json({ ok: true, matches: matches.results, locks: locks.results, results: results.results, cases });
+      return json({ ok: true, matches: matches.results, locks: locks.results, results: results.results, cases, autoPredictions });
     }
 
     if (path === "matches" && request.method === "GET") {

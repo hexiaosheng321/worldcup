@@ -32,6 +32,7 @@
     bootstrap: () => request("/bootstrap"),
     listMatches: () => request("/matches"),
     upsertMatch: (match) => post("/matches", match),
+    listAutoPredictions: () => request("/auto-predictions"),
     listLocks: (matchId) => request(matchId ? `/locks?matchId=${encodeURIComponent(matchId)}` : "/locks"),
     getPreferredLock: (matchId) => request(`/locks/preferred?matchId=${encodeURIComponent(matchId)}`),
     createLock: (lock) => post("/locks", lock),

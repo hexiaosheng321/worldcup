@@ -5,7 +5,14 @@ on:
     branches:
       - main
   schedule:
-    - cron: "*/5 * * * *"
+    # Beijing time 08:00-22:30: rolling coverage for the current Sporttery sales day.
+    - cron: "*/30 0-14 * * *"
+    # Beijing time 19:50: hard final-lock checkpoint.
+    - cron: "50 11 * * *"
+    # Beijing time 21:40: final odds snapshot before sale close.
+    - cron: "40 13 * * *"
+    # Beijing time 22:05: sale-close freeze and post-match review pass.
+    - cron: "5 14 * * *"
   workflow_dispatch:
     inputs:
       update_data:
