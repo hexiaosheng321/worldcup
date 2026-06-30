@@ -46,6 +46,7 @@ jobs:
           if [ "$RUN_DATA_UPDATE" = "true" ]; then
             curl -fsS -X POST \
               -H "x-sporttery-upstream-proxy: $SPORTTERY_UPSTREAM_PROXY" \
+              -H "x-apifootball-api-key: $APIFOOTBALL_API_KEY" \
               "https://worldcup-dashboard-4hr.pages.dev/api/sync/sporttery"
           else
             npm run cloudflare:deploy

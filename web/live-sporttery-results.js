@@ -1,9 +1,9 @@
 window.LIVE_SPORTTERY_RESULTS = {
   "source": "中国体育彩票官方赛果接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1",
-  "importedAt": "2026-06-28T06:31:15.752Z",
+  "importedAt": "2026-06-29T13:24:15Z",
   "isLiveSnapshot": true,
-  "totalCount": 80,
+  "totalCount": 81,
   "matchDates": [
     "2026-06-14",
     "2026-06-15",
@@ -18,9 +18,29 @@ window.LIVE_SPORTTERY_RESULTS = {
     "2026-06-24",
     "2026-06-25",
     "2026-06-26",
-    "2026-06-27"
+    "2026-06-27",
+    "2026-06-28"
   ],
   "results": [
+    {
+      "orderId": "7073",
+      "issue": "周日073",
+      "no": "073",
+      "ticaiDate": "2026-06-28",
+      "matchDate": "2026-06-29",
+      "kickoffTime": "03:00",
+      "league": "世界杯",
+      "matchId": "2040327",
+      "home": "南非",
+      "away": "加拿大",
+      "statusCode": "11",
+      "statusName": "已完成",
+      "halfScore": "",
+      "fullScoreRaw": "0:1",
+      "score": "0-1",
+      "result": "负",
+      "resultSource": "manual-confirmed-ap"
+    },
     {
       "orderId": "7011",
       "issue": "周日011",

@@ -154,31 +154,57 @@ function scoreShapeLabel(score) {
   return score.replace("-", ":");
 }
 
-function oddsMatch(matchOrNo) {
-  const match = typeof matchOrNo === "object" ? matchOrNo : matches.find((item) => item.no === matchOrNo);
-  const rows = oddsData.matches || [];
-  if (match) {
-    return (
-      rows.find(
-        (item) =>
-          item.ticaiDate === match.date &&
-          looseTeamMatch(match.home, item.home) &&
-          looseTeamMatch(match.away, item.away)
-      ) ||
-      rows.find(
-        (item) =>
-          item.matchDate === match.date &&
-          looseTeamMatch(match.home, item.home) &&
-          looseTeamMatch(match.away, item.away)
-      ) ||
-      rows.find(
-        (item) =>
-          looseTeamMatch(match.home, item.home) &&
-          looseTeamMatch(match.away, item.away)
-      )
+function normalizedIssueNo(value = "") {
+  const found = String(value || "").match(/(\d{3})$/);
+  return found ? found[1] : String(value || "");
+}
+
+function findOddsRow(rows = [], matchOrNo) {
+  const match = typeof matchOrNo === "object" ? matchOrNo : null;
+  const targetNo = normalizedIssueNo(match?.no || matchOrNo);
+  if (targetNo) {
+    const byNo = rows.find(
+      (item) =>
+        normalizedIssueNo(item.no) === targetNo ||
+        normalizedIssueNo(item.issue) === targetNo ||
+        normalizedIssueNo(item.orderId) === targetNo
     );
+    if (byNo) return byNo;
   }
-  return rows.find((item) => item.no === matchOrNo);
+  if (!match) return null;
+  if (match.matchId) {
+    const byId = rows.find((item) => String(item.matchId || "") === String(match.matchId));
+    if (byId) return byId;
+  }
+  return (
+    rows.find(
+      (item) =>
+        item.ticaiDate === match.date &&
+        looseTeamMatch(match.home, item.home) &&
+        looseTeamMatch(match.away, item.away)
+    ) ||
+    rows.find(
+      (item) =>
+        item.matchDate === match.date &&
+        looseTeamMatch(match.home, item.home) &&
+        looseTeamMatch(match.away, item.away)
+    ) ||
+    rows.find(
+      (item) =>
+        looseTeamMatch(match.home, item.home) &&
+        looseTeamMatch(match.away, item.away)
+    ) ||
+    null
+  );
+}
+
+function oddsMatch(matchOrNo) {
+  const match =
+    typeof matchOrNo === "object"
+      ? matchOrNo
+      : matches.find((item) => normalizedIssueNo(item.no) === normalizedIssueNo(matchOrNo));
+  const rows = oddsData.matches || [];
+  return findOddsRow(rows, match || matchOrNo);
 }
 
 function toOdd(value) {
@@ -512,6 +538,11 @@ function resultForWorldCupMatch(match) {
   );
 }
 
+function officialScoreForMatch(match) {
+  const result = resultForWorldCupMatch(match);
+  return normalizeResultScore(match?.score) || normalizeResultScore(result?.score) || normalizeResultScore(oddsMatch(match)?.score);
+}
+
 function applyResultBackfill() {
   (oddsData.matches || []).forEach((item) => {
     const result = resultForSportteryItem(item);
@@ -676,14 +707,14 @@ function addDays(date, days) {
 }
 
 function ticaiDate(match) {
-  const odds = oddsMatch(match.no);
+  const odds = oddsMatch(match);
   if (odds?.ticaiDate) return odds.ticaiDate;
   if (match.ticaiDate) return match.ticaiDate;
   return addDays(match.date, data.ticaiDateOffsetDays || 0);
 }
 
 function ticaiIssue(match) {
-  return oddsMatch(match.no)?.issue || match.no;
+  return oddsMatch(match)?.issue || match.no;
 }
 
 function dashboardToday() {
@@ -710,12 +741,12 @@ function homeReferenceDate() {
 function homeUpcomingMatches() {
   const baseDate = homeReferenceDate();
   const future = matches
-    .filter((match) => !parseScore(match.score) && match.date >= baseDate)
+    .filter((match) => !parseScore(officialScoreForMatch(match)) && match.date >= baseDate)
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date) || Number(a.no) - Number(b.no));
   if (future.length) return future;
   return matches
-    .filter((match) => !parseScore(match.score))
+    .filter((match) => !parseScore(officialScoreForMatch(match)))
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date) || Number(a.no) - Number(b.no));
 }
@@ -827,7 +858,7 @@ function startHomeCountdown() {
 }
 
 function matchKickoffAt(match) {
-  const odds = oddsMatch(match.no);
+  const odds = oddsMatch(match);
   const result = resultForWorldCupMatch(match);
   const date = odds?.matchDate || result?.matchDate || match.matchDate || match.date;
   const time = odds?.kickoffTime || result?.kickoffTime || match.kickoffTime;
@@ -835,8 +866,7 @@ function matchKickoffAt(match) {
 }
 
 function liveScoreForMatch(match) {
-  const result = resultForWorldCupMatch(match);
-  return normalizeResultScore(match.score) || normalizeResultScore(result?.score) || normalizeResultScore(oddsMatch(match.no)?.score);
+  return officialScoreForMatch(match);
 }
 
 function liveStatusForMatch(match) {
@@ -1031,7 +1061,7 @@ function marketFavoriteText(odds) {
 }
 
 function matchLiveDataSummary(match, pred) {
-  const odds = oddsMatch(match.no);
+  const odds = oddsMatch(match);
   const spRow = spRadarForMatch(match.no);
   const consistency = pred ? marketConsistency(match.no, pred) : null;
   const gate = pred ? autoDecisionGate(match.no, pred) : null;
@@ -1178,7 +1208,51 @@ function sportteryPoolItems() {
     })
     .sort((a, b) => a.displayDate.localeCompare(b.displayDate) || String(a.issue).localeCompare(String(b.issue)));
 
-  const finishedItems = resultRows
+  const resultKeys = new Set(
+    resultRows.map((item) =>
+      [
+        normalizedIssueNo(item.no || item.issue),
+        item.ticaiDate || "",
+        item.matchDate || "",
+        `${item.home || ""}__${item.away || ""}`,
+      ].join("|")
+    )
+  );
+  const worldCupFinishedFallbackRows = matches
+    .filter((match) => normalizeResultScore(match.score))
+    .map((match) => {
+      const odds = oddsMatch(match) || {};
+      return {
+        ...odds,
+        orderId: odds.orderId || "",
+        issue: odds.issue || match.no,
+        no: match.no,
+        ticaiDate: odds.ticaiDate || match.date,
+        matchDate: odds.matchDate || match.date,
+        kickoffTime: odds.kickoffTime || "",
+        league: odds.league || "世界杯",
+        matchId: odds.matchId || "",
+        home: match.home,
+        away: match.away,
+        statusCode: odds.statusCode || "11",
+        statusName: "已完成",
+        score: match.score,
+        result: direction(match.score),
+        resultSource: "worldcup-data-fallback",
+        linkedMatch: match,
+      };
+    })
+    .filter((item) => {
+      const key = [
+        normalizedIssueNo(item.no || item.issue),
+        item.ticaiDate || "",
+        item.matchDate || "",
+        `${item.home || ""}__${item.away || ""}`,
+      ].join("|");
+      return !resultKeys.has(key);
+    });
+
+  const finishedItems = [...resultRows, ...worldCupFinishedFallbackRows]
     .filter((item) => {
       const ticaiDate = item.ticaiDate || "";
       const matchDate = item.matchDate || "";
@@ -1186,7 +1260,7 @@ function sportteryPoolItems() {
     })
     .filter((item) => normalizeResultScore(item.score))
     .map((item) => {
-      const linkedMatch = matchFromResultItem(item);
+      const linkedMatch = item.linkedMatch || matchFromResultItem(item);
       return {
         ...item,
         sportteryKey: sportteryItemKey(item),
@@ -1486,8 +1560,9 @@ function cloudMatchRowsToOddsData(rows = [], capturedAt = new Date().toISOString
   const matchesFromRows = rows
     .map((row) => {
       const payload = parseCloudJson(row.payload_json, null);
-      if (payload?.home && payload?.away) return payload;
-      return {
+      const base = payload?.home && payload?.away
+        ? payload
+        : {
         orderId: row.match_id || "",
         issue: row.match_code || "",
         no: compactSportteryNo(row.match_code, row.match_id),
@@ -1500,6 +1575,20 @@ function cloudMatchRowsToOddsData(rows = [], capturedAt = new Date().toISOString
         away: row.away_team || "",
         statusCode: row.status || "",
         score: "",
+      };
+      const fallback = findOddsRow(oddsData.matches || [], base) || {};
+      const kickoffDate = String(row.kickoff_time || "");
+      return {
+        ...fallback,
+        ...base,
+        no: base.no || fallback.no || compactSportteryNo(base.issue || row.match_code, base.matchId || row.match_id),
+        issue: base.issue || fallback.issue || row.match_code || "",
+        ticaiDate: base.ticaiDate || fallback.ticaiDate || kickoffDate.slice(0, 10),
+        matchDate: base.matchDate || fallback.matchDate || kickoffDate.slice(0, 10),
+        kickoffTime: base.kickoffTime || fallback.kickoffTime || kickoffDate.slice(11, 16),
+        matchId: base.matchId || fallback.matchId || String(row.match_id || "").replace(/^sporttery-/, ""),
+        home: base.home || fallback.home || row.home_team || "",
+        away: base.away || fallback.away || row.away_team || "",
       };
     })
     .filter((item) => item.home && item.away);
@@ -2212,7 +2301,7 @@ function competitionBucketForCase(pred = {}, match = {}) {
 function lockFromPrediction(pred, match = {}) {
   if (!pred || !match || !window.WC_LOCK_ENGINE) return null;
   const gate = autoDecisionGate(match.no, pred);
-  const odds = oddsMatch(match.no);
+  const odds = oddsMatch(match);
   const normal = odds?.normal || {};
   const market = odds ? impliedMarket(oddsMarketEntries(odds, "had")) : { entries: [] };
   const marketMap = new Map((market.entries || []).map((item) => [item.code, item.probability]));

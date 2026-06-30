@@ -397,6 +397,41 @@ const sportteryHeaders = {
     "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
 };
 
+const apiFootballEndpoint = "https://apiv3.apifootball.com/";
+const apiFootballTeamZh = {
+  Argentina: "阿根廷",
+  Australia: "澳大利亚",
+  Belgium: "比利时",
+  Brazil: "巴西",
+  Canada: "加拿大",
+  Croatia: "克罗地亚",
+  Denmark: "丹麦",
+  Ecuador: "厄瓜多尔",
+  England: "英格兰",
+  France: "法国",
+  Germany: "德国",
+  Ghana: "加纳",
+  Haiti: "海地",
+  Iran: "伊朗",
+  Italy: "意大利",
+  Japan: "日本",
+  Mexico: "墨西哥",
+  Morocco: "摩洛哥",
+  Netherlands: "荷兰",
+  Norway: "挪威",
+  Paraguay: "巴拉圭",
+  Portugal: "葡萄牙",
+  Qatar: "卡塔尔",
+  Scotland: "苏格兰",
+  Spain: "西班牙",
+  Sweden: "瑞典",
+  Switzerland: "瑞士",
+  Tunisia: "突尼斯",
+  Uruguay: "乌拉圭",
+  USA: "美国",
+  "United States": "美国",
+};
+
 function sportteryProxyUrl(env, targetUrl) {
   const proxy = (env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || env.REQUEST_UPSTREAM_PROXY || "").trim();
   if (!proxy) return targetUrl;
@@ -500,6 +535,96 @@ function sportteryKey(item) {
 
 function sportteryDbMatchId(item) {
   return `sporttery-${sportteryKey(item)}`;
+}
+
+function normalizeTeamName(value = "") {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function sameTeam(left = "", right = "") {
+  const a = normalizeTeamName(left);
+  const b = normalizeTeamName(right);
+  return Boolean(a && b && (a === b || a.includes(b) || b.includes(a)));
+}
+
+function liveTeamNames(name = "") {
+  const text = String(name || "");
+  return [text, apiFootballTeamZh[text]].filter(Boolean);
+}
+
+function liveTeamMatches(sportteryName = "", liveName = "") {
+  return liveTeamNames(liveName).some((candidate) => sameTeam(sportteryName, candidate));
+}
+
+function apiFootballKey(env) {
+  return (env.APIFOOTBALL_API_KEY || env.REQUEST_APIFOOTBALL_API_KEY || "").trim();
+}
+
+async function fetchApiFootballDay(env, date) {
+  const key = apiFootballKey(env);
+  if (!key) return [];
+  const url = new URL(apiFootballEndpoint);
+  url.searchParams.set("action", "get_events");
+  url.searchParams.set("from", date);
+  url.searchParams.set("to", date);
+  url.searchParams.set("APIkey", key);
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`APIfootball ${response.status}`);
+  const raw = await response.json();
+  if (raw?.error) throw new Error(raw.message || raw.error);
+  if (!Array.isArray(raw)) return [];
+  return raw.map((match) => ({
+    source: "APIfootball",
+    externalId: String(match.match_id || ""),
+    date: match.match_date || "",
+    time: match.match_time || "",
+    league: match.league_name || match.country_name || "Football",
+    home: match.match_hometeam_name || "",
+    away: match.match_awayteam_name || "",
+    homeZh: apiFootballTeamZh[match.match_hometeam_name] || "",
+    awayZh: apiFootballTeamZh[match.match_awayteam_name] || "",
+    score: `${match.match_hometeam_score ?? ""}-${match.match_awayteam_score ?? ""}`,
+    halfScore: `${match.match_hometeam_halftime_score ?? ""}-${match.match_awayteam_halftime_score ?? ""}`,
+    status: match.match_status || "",
+    isFinished: /finished|after/i.test(String(match.match_status || "")),
+    live: String(match.match_live || "") === "1",
+  }));
+}
+
+async function fetchApiFootballMatches(env, sportteryMatches = []) {
+  const dates = [...new Set(
+    sportteryMatches
+      .map((match) => match.matchDate || match.ticaiDate)
+      .filter(Boolean)
+  )];
+  if (!apiFootballKey(env) || !dates.length) return { matches: [], errors: [] };
+  const settled = await Promise.allSettled(dates.map((date) => fetchApiFootballDay(env, date)));
+  return {
+    matches: settled.flatMap((item) => item.status === "fulfilled" ? item.value : []),
+    errors: settled
+      .map((item, index) => item.status === "rejected" ? { date: dates[index], message: item.reason?.message || "unknown" } : null)
+      .filter(Boolean),
+  };
+}
+
+function parseDashScore(score = "") {
+  if (!String(score).includes("-")) return null;
+  const [home, away] = String(score).split("-").map(Number);
+  if (!Number.isFinite(home) || !Number.isFinite(away)) return null;
+  return { home, away, text: `${home}-${away}` };
+}
+
+function liveResultForSportteryMatch(match, liveRows = []) {
+  return liveRows.find(
+    (row) =>
+      row.isFinished &&
+      row.date === match.matchDate &&
+      liveTeamMatches(match.home, row.home) &&
+      liveTeamMatches(match.away, row.away) &&
+      parseDashScore(row.score)
+  );
 }
 
 function normalizeSportteryMatch(match, businessDate) {
@@ -630,12 +755,78 @@ async function syncSportteryToD1(db, env) {
     );
   });
   let resultCount = 0;
+  let liveFallbackCount = 0;
   let reviewed = 0;
   let cases = 0;
+  const officialMatchIds = new Set();
+  const officialOverrides = [];
   for (const result of resultRows) {
     const parsed = parseSportteryScore(result.fullScoreRaw || "");
     if (!parsed) continue;
     const matchId = sportteryDbMatchId(result);
+    officialMatchIds.add(matchId);
+    const existing = await db.prepare("SELECT * FROM match_results WHERE match_id = ?").bind(matchId).first();
+    if (existing) {
+      const existingPayload = parseObject(existing.payload_json);
+      const existingScore = `${existing.full_time_home_goals}-${existing.full_time_away_goals}`;
+      if (existingPayload.resultSource === "live-fallback-apifootball" && existingScore !== parsed.text) {
+        officialOverrides.push({
+          matchId,
+          issue: result.issue || result.no || "",
+          home: result.home,
+          away: result.away,
+          liveFallbackScore: existingScore,
+          officialScore: parsed.text,
+        });
+      }
+    }
+    await db.prepare(`
+      INSERT INTO match_results (match_id, full_time_home_goals, full_time_away_goals, result_1x2, total_goals, reviewed_at, payload_json, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(match_id) DO UPDATE SET
+        full_time_home_goals=excluded.full_time_home_goals, full_time_away_goals=excluded.full_time_away_goals,
+        result_1x2=excluded.result_1x2, total_goals=excluded.total_goals, reviewed_at=excluded.reviewed_at,
+        payload_json=excluded.payload_json, updated_at=excluded.updated_at
+    `).bind(
+      matchId,
+      parsed.home,
+      parsed.away,
+      sideFromResult(parsed.home, parsed.away),
+      parsed.home + parsed.away,
+      capturedAt,
+      JSON.stringify({ ...result, cloudMatchId: matchId, resultSource: "sporttery-official" }),
+      capturedAt
+    ).run();
+    const review = await autoReviewMatch(db, matchId);
+    reviewed += review.reviewed;
+    cases += review.cases;
+    resultCount += 1;
+  }
+
+  const liveRows = await fetchApiFootballMatches(env, matches);
+  for (const match of matches) {
+    const matchId = sportteryDbMatchId(match);
+    if (officialMatchIds.has(matchId)) continue;
+    const live = liveResultForSportteryMatch(match, liveRows.matches);
+    if (!live) continue;
+    const parsed = parseDashScore(live.score);
+    if (!parsed) continue;
+    const existing = await db.prepare("SELECT payload_json FROM match_results WHERE match_id = ?").bind(matchId).first();
+    const existingPayload = parseObject(existing?.payload_json);
+    if (existing && existingPayload.resultSource !== "live-fallback-apifootball") continue;
+    const result = {
+      ...match,
+      statusCode: "live-finished",
+      statusName: "已完赛",
+      halfScore: live.halfScore || "",
+      fullScoreRaw: `${parsed.home}:${parsed.away}`,
+      score: parsed.text,
+      result: parsed.home > parsed.away ? "胜" : parsed.home < parsed.away ? "负" : "平",
+      liveSource: live.source,
+      liveExternalId: live.externalId,
+      resultSource: "live-fallback-apifootball",
+      officialComparison: "pending",
+    };
     await db.prepare(`
       INSERT INTO match_results (match_id, full_time_home_goals, full_time_away_goals, result_1x2, total_goals, reviewed_at, payload_json, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -656,17 +847,26 @@ async function syncSportteryToD1(db, env) {
     const review = await autoReviewMatch(db, matchId);
     reviewed += review.reviewed;
     cases += review.cases;
-    resultCount += 1;
+    liveFallbackCount += 1;
   }
   await db.prepare(`
     INSERT INTO sync_logs (sync_id, source, status, message, payload_json, created_at)
     VALUES (?, 'sporttery-pages-api', 'OK', 'sync completed', ?, ?)
   `).bind(
     `sync-${Date.now()}-${crypto.randomUUID()}`,
-    JSON.stringify({ matchCount: matches.length, resultCount, reviewed, cases, resultPages: resultPages.length }),
+    JSON.stringify({
+      matchCount: matches.length,
+      resultCount,
+      liveFallbackCount,
+      reviewed,
+      cases,
+      resultPages: resultPages.length,
+      liveFallbackErrors: liveRows.errors,
+      officialOverrides,
+    }),
     capturedAt
   ).run();
-  return { ok: true, capturedAt, matchCount: matches.length, resultCount, reviewed, cases };
+  return { ok: true, capturedAt, matchCount: matches.length, resultCount, liveFallbackCount, reviewed, cases, officialOverrides };
 }
 
 async function d1OddsScript(db) {
@@ -774,7 +974,12 @@ export async function onRequest(context) {
 
     if (path === "sync/sporttery" && request.method === "POST") {
       const requestProxy = request.headers.get("x-sporttery-upstream-proxy") || "";
-      return json(await syncSportteryToD1(db, { ...env, REQUEST_UPSTREAM_PROXY: requestProxy }));
+      const requestApiFootballKey = request.headers.get("x-apifootball-api-key") || "";
+      return json(await syncSportteryToD1(db, {
+        ...env,
+        REQUEST_UPSTREAM_PROXY: requestProxy,
+        REQUEST_APIFOOTBALL_API_KEY: requestApiFootballKey,
+      }));
     }
 
     if (path === "bootstrap" && request.method === "GET") {

@@ -1,8 +1,8 @@
 window.WC_DATA = {
-  updatedAt: "2026-06-28 14:45",
+  updatedAt: "2026-06-29 21:24",
   currentModelVersion: "V4",
   timezone: "Asia/Shanghai",
-  currentDate: "2026-06-28",
+  currentDate: "2026-06-29",
   tournamentTotalMatches: 104,
   ticaiDateOffsetDays: 1,
   historicalDrawRates: [
@@ -182,7 +182,7 @@ window.WC_DATA = {
     { no: "070", date: "2026-06-27", group: "K", home: "民主刚果", away: "乌兹别克斯坦", score: "3-1" },
     { no: "071", date: "2026-06-27", group: "J", home: "阿尔及利亚", away: "奥地利", score: "3-3" },
     { no: "072", date: "2026-06-27", group: "J", home: "约旦", away: "阿根廷", score: "1-3" },
-    { no: "073", date: "2026-06-28", group: "32强", home: "南非", away: "加拿大", score: "" },
+    { no: "073", date: "2026-06-28", group: "32强", home: "南非", away: "加拿大", score: "0-1" },
     { no: "074", date: "2026-06-29", group: "32强", home: "巴西", away: "日本", score: "" },
     { no: "075", date: "2026-06-29", group: "32强", home: "德国", away: "巴拉圭", score: "" },
     { no: "076", date: "2026-06-29", group: "32强", home: "荷兰", away: "摩洛哥", score: "" },
