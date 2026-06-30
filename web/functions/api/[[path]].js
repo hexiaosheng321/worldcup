@@ -742,6 +742,8 @@ async function syncSportteryToD1(db, env) {
   }
 
   const resultSeen = new Set();
+  const currentMatchIds = new Set(matches.map((match) => sportteryDbMatchId(match)));
+  const currentDates = new Set(matches.flatMap((match) => [match.ticaiDate, match.matchDate]).filter(Boolean));
   const resultRows = resultPages.flatMap((raw) => {
     const resultDays = raw?.value?.matchInfoList || [];
     return resultDays.flatMap((day) =>
@@ -750,6 +752,13 @@ async function syncSportteryToD1(db, env) {
         const key = sportteryDbMatchId(item);
         if (resultSeen.has(key)) return [];
         resultSeen.add(key);
+        if (
+          !currentMatchIds.has(key) &&
+          !currentDates.has(item.ticaiDate) &&
+          !currentDates.has(item.matchDate)
+        ) {
+          return [];
+        }
         return [item];
       })
     );
