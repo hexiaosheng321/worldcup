@@ -570,7 +570,7 @@ async function fetchApiFootballDay(env, date) {
   url.searchParams.set("from", date);
   url.searchParams.set("to", date);
   url.searchParams.set("APIkey", key);
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(12000) });
   if (!response.ok) throw new Error(`APIfootball ${response.status}`);
   const raw = await response.json();
   if (raw?.error) throw new Error(raw.message || raw.error);
@@ -600,7 +600,7 @@ async function fetchApiFootballMatches(env, sportteryMatches = []) {
       .filter(Boolean)
   )];
   if (!apiFootballKey(env) || !dates.length) return { matches: [], errors: [] };
-  const settled = await Promise.allSettled(dates.map((date) => fetchApiFootballDay(env, date)));
+  const settled = await Promise.allSettled(dates.slice(0, 4).map((date) => fetchApiFootballDay(env, date)));
   return {
     matches: settled.flatMap((item) => item.status === "fulfilled" ? item.value : []),
     errors: settled
@@ -803,7 +803,12 @@ async function syncSportteryToD1(db, env) {
     resultCount += 1;
   }
 
-  const liveRows = await fetchApiFootballMatches(env, matches);
+  let liveRows = { matches: [], errors: [] };
+  try {
+    liveRows = await fetchApiFootballMatches(env, matches);
+  } catch (error) {
+    liveRows = { matches: [], errors: [{ date: "all", message: error.message || "APIfootball fallback failed" }] };
+  }
   for (const match of matches) {
     const matchId = sportteryDbMatchId(match);
     if (officialMatchIds.has(matchId)) continue;

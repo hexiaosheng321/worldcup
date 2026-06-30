@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           if [ "$RUN_DATA_UPDATE" = "true" ]; then
-            curl -fsS -X POST \
+            curl --fail-with-body -sS -X POST \
               -H "x-sporttery-upstream-proxy: $SPORTTERY_UPSTREAM_PROXY" \
               -H "x-apifootball-api-key: $APIFOOTBALL_API_KEY" \
               "https://worldcup-dashboard-4hr.pages.dev/api/sync/sporttery"
