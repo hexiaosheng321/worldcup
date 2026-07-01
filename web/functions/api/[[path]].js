@@ -138,7 +138,13 @@ async function analyticsSummary(db, request, env) {
   const token = env.ANALYTICS_ADMIN_TOKEN || "";
   const requestToken = request.headers.get("x-admin-token") || new URL(request.url).searchParams.get("token") || "";
   if (!token || requestToken !== token) {
-    return { ok: false, status: 403, error: "analytics summary is private" };
+    return {
+      ok: false,
+      status: 403,
+      error: "analytics summary is private",
+      reason: !token ? "server token is not configured" : !requestToken ? "request token is missing" : "request token does not match",
+      hint: "Use /api/analytics/summary?token=YOUR_ANALYTICS_ADMIN_TOKEN",
+    };
   }
   await ensureAnalyticsSchema(db);
   const since = new URL(request.url).searchParams.get("since") || "-7 days";
