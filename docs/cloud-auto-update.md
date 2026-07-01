@@ -40,12 +40,44 @@ RESULT_REVIEW   赛果出来后自动复盘入库
 4. Pages API 按销售日和 19:50 规则生成自动锁版
 5. 网站打开后从 `/api/bootstrap` 和 `/api/auto-predictions` 读取云端自动推演
 
+## 比分回填来源
+
+赛果回填按优先级执行：
+
+1. 体彩官方赛果。只要官方返回全场比分，以官方为准。
+2. `football-data.org`。用于官方赛果延迟时的第一备用源，需要 `FOOTBALL_DATA_API_KEY`。世界杯优先使用 `WC` 专属赛程接口，避免通用日期接口在免费权限下返回空数据。
+3. APIfootball。保留原有备用源，需要 `APIFOOTBALL_API_KEY`。
+4. TheSportsDB。作为最后兜底源，默认使用免费公共 key `3`，也可配置 `THESPORTSDB_API_KEY`。
+
+备用源只在体彩官方还没有比分时写入，并标记为 `officialComparison=pending`。之后官方比分出现时会覆盖备用比分，并记录覆盖差异。
+
+如果体彩同步入口因官方接口 `567` 失败，定时任务会自动补跑 `/api/sync/live-results`。这个接口不重新抓体彩赛程，只读取 D1 中已有赛程，再用备用比分源回填赛果。
+
+页面进行中比分读取 `/api/live-football-scores.js`。该接口会按 D1 中的近期赛程匹配 football-data / APIfootball / TheSportsDB 的实时行，并且 football-data 比分统一优先使用 `regularTime`，符合体彩 90 分钟常规时间口径。
+
+`football-data.org` 还可以继续补强这些网站能力：
+
+- 赛程阶段：小组赛、32 强、16 强等阶段字段可用于杯赛规则判断。
+- 半全场比分：完赛后可补全半场比分，支持半全场复盘。
+- 球队状态：世界杯/联赛积分榜里的积分、进失球、净胜球、近况 `form` 可进入球队状态层。
+- 联赛扩展：英超、西甲、德甲、意甲、法甲、荷甲、葡超、英冠、欧冠、世界杯等免费层赛事可以作为后续联赛 V1 的客观数据源。
+
+当前已接入的数据层：
+
+- `/api/football-data-context.js` 输出 `window.FOOTBALL_DATA_CONTEXT`，包含赛事阶段、积分/状态表、每场比赛匹配到的球队状态和 90 分钟比分上下文。
+- 云端自动锁版会把 `footballDataContext` 写入比赛 payload，并把球队状态、赛事阶段、半全场口径写入自动预测的 `teamState`、`competitionStage`、`halftimeDecision`、`objectiveDataLayer`。
+- 前端单场详情页展示“客观数据层”，与体彩盘口数据支撑分开展示。
+
 ## GitHub Secrets
 
-仓库需要配置两个 Secrets：
+仓库需要配置这些 Secrets：
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
+- `SPORTTERY_UPSTREAM_PROXY`
+- `FOOTBALL_DATA_API_KEY`
+- `APIFOOTBALL_API_KEY`（可选，但建议保留）
+- `THESPORTSDB_API_KEY`（可选，不配置时使用免费公共 key `3`）
 
 当前 Cloudflare Account ID：
 

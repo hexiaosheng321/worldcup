@@ -16,12 +16,14 @@ const DATA_FILES = [
   "web/live-sporttery-sp-history.js",
   "web/live-football-scores.js",
   "web/auto-sporttery-predictions.js",
+  "web/data/caseBase.js",
 ];
 const FETCH_SCRIPTS = [
   "tools/fetch-sporttery-live.mjs",
   "tools/fetch-sporttery-results.mjs",
   "tools/fetch-sporttery-sp-history.mjs",
   "tools/fetch-live-football-scores.mjs",
+  "tools/generate-case-base.mjs",
 ];
 
 async function log(message) {
@@ -73,11 +75,13 @@ async function readMaybe(file) {
 }
 
 function stableJsonFromJs(content) {
-  const matched = content.match(/=\s*(\{[\s\S]*\});?\s*$/);
+  const matched = content.match(/=\s*([\[{][\s\S]*[\]}]);?\s*$/);
   if (!matched) return content.trim();
   try {
     const data = JSON.parse(matched[1]);
-    delete data.importedAt;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      delete data.importedAt;
+    }
     return JSON.stringify(data);
   } catch {
     return content.trim();

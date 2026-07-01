@@ -51,10 +51,19 @@ jobs:
         shell: bash
         run: |
           if [ "$RUN_DATA_UPDATE" = "true" ]; then
-            curl --fail-with-body -sS -X POST \
+            if ! curl --fail-with-body -sS -X POST \
               -H "x-sporttery-upstream-proxy: $SPORTTERY_UPSTREAM_PROXY" \
               -H "x-apifootball-api-key: $APIFOOTBALL_API_KEY" \
-              "https://worldcup-dashboard-4hr.pages.dev/api/sync/sporttery"
+              -H "x-football-data-api-key: $FOOTBALL_DATA_API_KEY" \
+              -H "x-thesportsdb-api-key: $THESPORTSDB_API_KEY" \
+              "https://worldcup-dashboard-4hr.pages.dev/api/sync/sporttery"; then
+              echo "Sporttery sync failed; running live-result fallback only."
+              curl --fail-with-body -sS -X POST \
+                -H "x-apifootball-api-key: $APIFOOTBALL_API_KEY" \
+                -H "x-football-data-api-key: $FOOTBALL_DATA_API_KEY" \
+                -H "x-thesportsdb-api-key: $THESPORTSDB_API_KEY" \
+                "https://worldcup-dashboard-4hr.pages.dev/api/sync/live-results"
+            fi
           else
             npm run cloudflare:deploy
           fi
@@ -63,4 +72,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SPORTTERY_UPSTREAM_PROXY: ${{ secrets.SPORTTERY_UPSTREAM_PROXY }}
           APIFOOTBALL_API_KEY: ${{ secrets.APIFOOTBALL_API_KEY }}
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+          THESPORTSDB_API_KEY: ${{ secrets.THESPORTSDB_API_KEY }}
           RUN_DATA_UPDATE: ${{ github.event_name == 'schedule' || inputs.update_data == 'true' }}

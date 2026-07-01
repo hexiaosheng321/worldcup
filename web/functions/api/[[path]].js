@@ -411,6 +411,8 @@ const sportteryApis = {
   results: "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1",
   resultPage: (pageNo) =>
     `https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=${pageNo}`,
+  fixedBonus: (matchId) =>
+    `https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry?clientCode=3001&matchId=${encodeURIComponent(matchId)}`,
 };
 
 const sportteryHeaders = {
@@ -423,6 +425,12 @@ const sportteryHeaders = {
 };
 
 const apiFootballEndpoint = "https://apiv3.apifootball.com/";
+const footballDataEndpoint = "https://api.football-data.org/v4/matches";
+const footballDataCompetitionEndpoint = (code, season = "") =>
+  `https://api.football-data.org/v4/competitions/${code}/matches${season ? `?season=${season}` : ""}`;
+const footballDataStandingsEndpoint = (code, season = "") =>
+  `https://api.football-data.org/v4/competitions/${code}/standings${season ? `?season=${season}` : ""}`;
+const theSportsDbEndpoint = "https://www.thesportsdb.com/api/v1/json";
 const apiFootballTeamZh = {
   Argentina: "阿根廷",
   Australia: "澳大利亚",
@@ -439,6 +447,9 @@ const apiFootballTeamZh = {
   Haiti: "海地",
   Iran: "伊朗",
   Italy: "意大利",
+  "Ivory Coast": "科特迪瓦",
+  "Cote d'Ivoire": "科特迪瓦",
+  "Côte d'Ivoire": "科特迪瓦",
   Japan: "日本",
   Mexico: "墨西哥",
   Morocco: "摩洛哥",
@@ -587,6 +598,40 @@ function apiFootballKey(env) {
   return (env.APIFOOTBALL_API_KEY || env.REQUEST_APIFOOTBALL_API_KEY || "").trim();
 }
 
+function footballDataKey(env) {
+  return (env.FOOTBALL_DATA_API_KEY || env.REQUEST_FOOTBALL_DATA_API_KEY || "").trim();
+}
+
+function theSportsDbKey(env) {
+  return (env.THESPORTSDB_API_KEY || env.REQUEST_THESPORTSDB_API_KEY || "3").trim();
+}
+
+function scorePartValue(value) {
+  if (value === null || value === undefined || value === "") return undefined;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : undefined;
+}
+
+function footballDataScoreParts(score = {}) {
+  const regular = score.regularTime || {};
+  const full = score.fullTime || {};
+  const half = score.halfTime || {};
+  const home = scorePartValue(regular.home) ?? scorePartValue(full.home);
+  const away = scorePartValue(regular.away) ?? scorePartValue(full.away);
+  return {
+    home,
+    away,
+    halfHome: scorePartValue(half.home),
+    halfAway: scorePartValue(half.away),
+    duration: score.duration || "",
+  };
+}
+
+function dashScoreText(home, away) {
+  if (!Number.isFinite(Number(home)) || !Number.isFinite(Number(away))) return "";
+  return `${Number(home)}-${Number(away)}`;
+}
+
 async function fetchApiFootballDay(env, date) {
   const key = apiFootballKey(env);
   if (!key) return [];
@@ -610,12 +655,186 @@ async function fetchApiFootballDay(env, date) {
     away: match.match_awayteam_name || "",
     homeZh: apiFootballTeamZh[match.match_hometeam_name] || "",
     awayZh: apiFootballTeamZh[match.match_awayteam_name] || "",
-    score: `${match.match_hometeam_score ?? ""}-${match.match_awayteam_score ?? ""}`,
-    halfScore: `${match.match_hometeam_halftime_score ?? ""}-${match.match_awayteam_halftime_score ?? ""}`,
+    score: dashScoreText(match.match_hometeam_score, match.match_awayteam_score),
+    halfScore: dashScoreText(match.match_hometeam_halftime_score, match.match_awayteam_halftime_score),
     status: match.match_status || "",
     isFinished: /finished|after/i.test(String(match.match_status || "")),
     live: String(match.match_live || "") === "1",
   }));
+}
+
+async function fetchFootballDataDay(env, date) {
+  const key = footballDataKey(env);
+  if (!key) return [];
+  const url = new URL(footballDataEndpoint);
+  url.searchParams.set("dateFrom", date);
+  url.searchParams.set("dateTo", date);
+  const response = await fetch(url, {
+    headers: { "X-Auth-Token": key },
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!response.ok) throw new Error(`football-data ${response.status}`);
+  const raw = await response.json();
+  const rows = Array.isArray(raw?.matches) ? raw.matches : [];
+  return rows.map((match) => {
+    const home = match.homeTeam?.name || match.homeTeam?.shortName || "";
+    const away = match.awayTeam?.name || match.awayTeam?.shortName || "";
+    const score = footballDataScoreParts(match.score || {});
+    return {
+      source: "football-data.org",
+      externalId: String(match.id || ""),
+      date: String(match.utcDate || "").slice(0, 10),
+      time: String(match.utcDate || "").slice(11, 16),
+      league: match.competition?.name || "Football",
+      home,
+      away,
+      homeZh: apiFootballTeamZh[home] || "",
+      awayZh: apiFootballTeamZh[away] || "",
+      score: dashScoreText(score.home, score.away),
+      halfScore: dashScoreText(score.halfHome, score.halfAway),
+      status: match.status || "",
+      isFinished: match.status === "FINISHED",
+      live: ["IN_PLAY", "PAUSED"].includes(match.status),
+      scoreDuration: score.duration,
+    };
+  });
+}
+
+async function fetchFootballDataCompetition(env, code, season = "") {
+  const key = footballDataKey(env);
+  if (!key) return [];
+  const response = await fetch(footballDataCompetitionEndpoint(code, season), {
+    headers: { "X-Auth-Token": key },
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!response.ok) throw new Error(`football-data ${code} ${response.status}`);
+  const raw = await response.json();
+  const rows = Array.isArray(raw?.matches) ? raw.matches : [];
+  return rows.map((match) => {
+    const home = match.homeTeam?.name || match.homeTeam?.shortName || "";
+    const away = match.awayTeam?.name || match.awayTeam?.shortName || "";
+    const score = footballDataScoreParts(match.score || {});
+    return {
+      source: "football-data.org",
+      externalId: String(match.id || ""),
+      date: String(match.utcDate || "").slice(0, 10),
+      time: String(match.utcDate || "").slice(11, 16),
+      league: match.competition?.name || "Football",
+      home,
+      away,
+      homeZh: apiFootballTeamZh[home] || "",
+      awayZh: apiFootballTeamZh[away] || "",
+      score: dashScoreText(score.home, score.away),
+      halfScore: dashScoreText(score.halfHome, score.halfAway),
+      status: match.status || "",
+      isFinished: match.status === "FINISHED",
+      live: ["IN_PLAY", "PAUSED"].includes(match.status),
+      scoreDuration: score.duration,
+      stage: match.stage || "",
+      group: match.group || "",
+      matchday: match.matchday || "",
+    };
+  });
+}
+
+async function fetchFootballDataStandings(env, code, season = "") {
+  const key = footballDataKey(env);
+  if (!key) return [];
+  const response = await fetch(footballDataStandingsEndpoint(code, season), {
+    headers: { "X-Auth-Token": key },
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!response.ok) throw new Error(`football-data standings ${code} ${response.status}`);
+  const raw = await response.json();
+  const standings = Array.isArray(raw?.standings) ? raw.standings : [];
+  return standings.flatMap((standing) =>
+    (standing.table || []).map((row, index) => ({
+      source: "football-data.org",
+      competition: raw.competition?.code || code,
+      type: standing.type || "",
+      group: standing.group || "",
+      rank: row.position || index + 1,
+      team: row.team?.name || row.team?.shortName || "",
+      played: row.playedGames || 0,
+      won: row.won || 0,
+      draw: row.draw || 0,
+      lost: row.lost || 0,
+      points: row.points || 0,
+      goalsFor: row.goalsFor || 0,
+      goalsAgainst: row.goalsAgainst || 0,
+      goalDifference: row.goalDifference || 0,
+      form: row.form || "",
+    }))
+  );
+}
+
+async function fetchFootballDataMatches(env, sportteryMatches = []) {
+  const dates = [...new Set(
+    sportteryMatches
+      .map((match) => match.matchDate || match.ticaiDate)
+      .filter(Boolean)
+  )];
+  if (!dates.length) return { matches: [], errors: [] };
+  if (!footballDataKey(env)) {
+    return { matches: [], errors: [{ source: "football-data.org", date: "config", message: "FOOTBALL_DATA_API_KEY missing; football-data fallback skipped" }] };
+  }
+  const needsWorldCup = sportteryMatches.some((match) => /世界杯|World Cup/i.test(String(match.league || "")));
+  const settled = await Promise.allSettled([
+    ...(needsWorldCup ? [fetchFootballDataCompetition(env, "WC", "2026")] : []),
+    ...dates.slice(0, 4).map((date) => fetchFootballDataDay(env, date)),
+  ]);
+  return {
+    matches: settled.flatMap((item) => item.status === "fulfilled" ? item.value : []),
+    errors: settled
+      .map((item, index) => item.status === "rejected" ? {
+        source: "football-data.org",
+        date: needsWorldCup && index === 0 ? "WC-2026" : dates[needsWorldCup ? index - 1 : index],
+        message: item.reason?.message || "unknown",
+      } : null)
+      .filter(Boolean),
+  };
+}
+
+async function fetchTheSportsDbDay(env, date) {
+  const key = theSportsDbKey(env);
+  if (!key) return [];
+  const url = new URL(`${theSportsDbEndpoint}/${encodeURIComponent(key)}/eventsday.php`);
+  url.searchParams.set("d", date);
+  url.searchParams.set("s", "Soccer");
+  const response = await fetch(url, { signal: AbortSignal.timeout(12000) });
+  if (!response.ok) throw new Error(`TheSportsDB ${response.status}`);
+  const raw = await response.json();
+  const rows = Array.isArray(raw?.events) ? raw.events : [];
+  return rows.map((match) => ({
+    source: "TheSportsDB",
+    externalId: String(match.idEvent || ""),
+    date: match.dateEvent || String(match.strTimestamp || "").slice(0, 10),
+    time: String(match.strTime || match.strTimestamp || "").slice(11, 16),
+    league: match.strLeague || "Football",
+    home: match.strHomeTeam || "",
+    away: match.strAwayTeam || "",
+    homeZh: apiFootballTeamZh[match.strHomeTeam] || "",
+    awayZh: apiFootballTeamZh[match.strAwayTeam] || "",
+    score: dashScoreText(match.intHomeScore, match.intAwayScore),
+    halfScore: "",
+    status: match.strStatus || match.strProgress || "",
+    isFinished: Boolean(parseDashScore(`${match.intHomeScore ?? ""}-${match.intAwayScore ?? ""}`)) &&
+      /finish|ft|after|ended/i.test(String(match.strStatus || match.strProgress || "finished")),
+    live: /live|in play|^\d+/.test(String(match.strStatus || match.strProgress || "")),
+  }));
+}
+
+async function fetchFallbackSource(label, dates, fetchDay, missingMessage = "") {
+  if (missingMessage) {
+    return { matches: [], errors: [{ source: label, date: "config", message: missingMessage }] };
+  }
+  const settled = await Promise.allSettled(dates.slice(0, 4).map((date) => fetchDay(date)));
+  return {
+    matches: settled.flatMap((item) => item.status === "fulfilled" ? item.value : []),
+    errors: settled
+      .map((item, index) => item.status === "rejected" ? { source: label, date: dates[index], message: item.reason?.message || "unknown" } : null)
+      .filter(Boolean),
+  };
 }
 
 async function fetchApiFootballMatches(env, sportteryMatches = []) {
@@ -624,12 +843,160 @@ async function fetchApiFootballMatches(env, sportteryMatches = []) {
       .map((match) => match.matchDate || match.ticaiDate)
       .filter(Boolean)
   )];
-  if (!apiFootballKey(env) || !dates.length) return { matches: [], errors: [] };
+  if (!dates.length) return { matches: [], errors: [] };
+  if (!apiFootballKey(env)) {
+    return { matches: [], errors: [{ date: "config", message: "APIFOOTBALL_API_KEY missing; live fallback skipped" }] };
+  }
   const settled = await Promise.allSettled(dates.slice(0, 4).map((date) => fetchApiFootballDay(env, date)));
   return {
     matches: settled.flatMap((item) => item.status === "fulfilled" ? item.value : []),
     errors: settled
       .map((item, index) => item.status === "rejected" ? { date: dates[index], message: item.reason?.message || "unknown" } : null)
+      .filter(Boolean),
+  };
+}
+
+async function fetchLiveFallbackMatches(env, sportteryMatches = []) {
+  const dates = [...new Set(
+    sportteryMatches
+      .map((match) => match.matchDate || match.ticaiDate)
+      .filter(Boolean)
+  )];
+  if (!dates.length) return { matches: [], errors: [] };
+
+  const sources = [
+    await fetchFootballDataMatches(env, sportteryMatches),
+    await fetchApiFootballMatches(env, sportteryMatches),
+    await fetchFallbackSource(
+      "TheSportsDB",
+      dates,
+      (date) => fetchTheSportsDbDay(env, date),
+      theSportsDbKey(env) ? "" : "THESPORTSDB_API_KEY missing; TheSportsDB fallback skipped"
+    ),
+  ];
+
+  return {
+    matches: sources.flatMap((source) => source.matches),
+    errors: sources.flatMap((source) => source.errors),
+  };
+}
+
+function standingForTeam(teamName = "", standings = []) {
+  return standings.find((row) => row.type === "TOTAL" && liveTeamMatches(teamName, row.team)) ||
+    standings.find((row) => liveTeamMatches(teamName, row.team)) ||
+    null;
+}
+
+function matchesForTeamBefore(teamName = "", beforeDate = "", matches = []) {
+  return matches
+    .filter((row) =>
+      row.isFinished &&
+      row.date &&
+      (!beforeDate || row.date <= beforeDate) &&
+      (liveTeamMatches(teamName, row.home) || liveTeamMatches(teamName, row.away))
+    )
+    .sort((a, b) => `${b.date} ${b.time || ""}`.localeCompare(`${a.date} ${a.time || ""}`))
+    .slice(0, 5);
+}
+
+function teamStateFromContext(teamName = "", beforeDate = "", context = {}) {
+  const standing = standingForTeam(teamName, context.standings || []);
+  const recent = matchesForTeamBefore(teamName, beforeDate, context.matches || []);
+  return {
+    team: teamName,
+    rank: standing?.rank || null,
+    points: standing?.points ?? null,
+    played: standing?.played ?? null,
+    goalsFor: standing?.goalsFor ?? null,
+    goalsAgainst: standing?.goalsAgainst ?? null,
+    goalDifference: standing?.goalDifference ?? null,
+    form: standing?.form || "",
+    recentMatches: recent.map((row) => ({
+      date: row.date,
+      home: row.home,
+      away: row.away,
+      score: row.score,
+      halfScore: row.halfScore,
+      stage: row.stage || "",
+      duration: row.scoreDuration || "",
+    })),
+  };
+}
+
+function compactTeamStateText(label, state = {}) {
+  const table = Number.isFinite(Number(state.rank))
+    ? `第${state.rank}，${state.points ?? "-"}分，进${state.goalsFor ?? "-"}失${state.goalsAgainst ?? "-"}，净胜${state.goalDifference ?? "-"}`
+    : "暂无积分榜";
+  const form = state.form ? `，近况 ${state.form}` : "";
+  const recent = state.recentMatches?.length
+    ? `；近${state.recentMatches.length}场 ${state.recentMatches.map((row) => `${row.home}-${row.away} ${row.score}`).join(" / ")}`
+    : "";
+  return `${label}${table}${form}${recent}`;
+}
+
+function footballDataContextForMatch(match = {}, context = {}) {
+  const sourceMatch = (context.matches || []).find((row) =>
+    liveDateMatchesSporttery(match, row) &&
+    liveTeamMatches(match.home, row.home) &&
+    liveTeamMatches(match.away, row.away)
+  ) || null;
+  const beforeDate = match.matchDate || match.ticaiDate || sourceMatch?.date || "";
+  const homeState = teamStateFromContext(match.home, beforeDate, context);
+  const awayState = teamStateFromContext(match.away, beforeDate, context);
+  return {
+    source: "football-data.org",
+    competitionCode: context.competitionCode || "",
+    season: context.season || "",
+    stage: sourceMatch?.stage || "",
+    group: sourceMatch?.group || "",
+    matchday: sourceMatch?.matchday || "",
+    status: sourceMatch?.status || "",
+    regularScore: sourceMatch?.score || "",
+    halfScore: sourceMatch?.halfScore || "",
+    scoreDuration: sourceMatch?.scoreDuration || "",
+    homeState,
+    awayState,
+    stateSummary: `${compactTeamStateText(match.home || "主队", homeState)}；${compactTeamStateText(match.away || "客队", awayState)}`,
+    matchedExternalId: sourceMatch?.externalId || "",
+    importedAt: context.importedAt || "",
+  };
+}
+
+async function fetchFootballDataContext(env, sportteryMatches = []) {
+  if (!footballDataKey(env)) {
+    return {
+      source: "football-data.org",
+      importedAt: new Date().toISOString(),
+      competitionCode: "",
+      season: "",
+      matches: [],
+      standings: [],
+      errors: [{ source: "football-data.org", date: "config", message: "FOOTBALL_DATA_API_KEY missing; context skipped" }],
+    };
+  }
+  const needsWorldCup = sportteryMatches.some((match) => /世界杯|World Cup/i.test(String(match.league || "")));
+  const competitionCode = needsWorldCup ? "WC" : "";
+  const season = needsWorldCup ? "2026" : "";
+  if (!competitionCode) {
+    return { source: "football-data.org", importedAt: new Date().toISOString(), competitionCode, season, matches: [], standings: [], errors: [] };
+  }
+  const settled = await Promise.allSettled([
+    fetchFootballDataCompetition(env, competitionCode, season),
+    fetchFootballDataStandings(env, competitionCode, season),
+  ]);
+  return {
+    source: "football-data.org",
+    importedAt: new Date().toISOString(),
+    competitionCode,
+    season,
+    matches: settled[0].status === "fulfilled" ? settled[0].value : [],
+    standings: settled[1].status === "fulfilled" ? settled[1].value : [],
+    errors: settled
+      .map((item, index) => item.status === "rejected" ? {
+        source: "football-data.org",
+        date: index === 0 ? `${competitionCode}-${season}-matches` : `${competitionCode}-${season}-standings`,
+        message: item.reason?.message || "unknown",
+      } : null)
       .filter(Boolean),
   };
 }
@@ -641,11 +1008,25 @@ function parseDashScore(score = "") {
   return { home, away, text: `${home}-${away}` };
 }
 
+function dateDistanceDays(left = "", right = "") {
+  const leftMs = Date.parse(`${left}T00:00:00Z`);
+  const rightMs = Date.parse(`${right}T00:00:00Z`);
+  if (!Number.isFinite(leftMs) || !Number.isFinite(rightMs)) return Infinity;
+  return Math.abs(leftMs - rightMs) / 86400000;
+}
+
+function liveDateMatchesSporttery(match, row) {
+  if (!row.date) return true;
+  return [match.matchDate, match.ticaiDate]
+    .filter(Boolean)
+    .some((date) => dateDistanceDays(date, row.date) <= 1);
+}
+
 function liveResultForSportteryMatch(match, liveRows = []) {
   return liveRows.find(
     (row) =>
       row.isFinished &&
-      row.date === match.matchDate &&
+      liveDateMatchesSporttery(match, row) &&
       liveTeamMatches(match.home, row.home) &&
       liveTeamMatches(match.away, row.away) &&
       parseDashScore(row.score)
@@ -808,10 +1189,12 @@ function buildAutoSportteryPrediction(match, phaseInfo, capturedAt) {
   const mainScore = scores[0] || "1-1";
   const counterScore = scores[1] || (normal?.label === "平" ? "0-0" : "1-1");
   const totalGoalsPick = topGoalText(match.totalGoalsOdds || []);
+  const objective = match.footballDataContext || {};
+  const hasObjectiveState = Boolean(objective.homeState?.played || objective.awayState?.played || objective.stage);
   const canRecommend = !["RISK_WATCH", "SALE_CLOSED"].includes(phaseInfo.phase);
   const hasEnoughData = canRecommend && Boolean(normal && handicap && match.scoreOdds?.length && match.totalGoalsOdds?.length);
   const finalAction = actionForPhase(phaseInfo.phase, hasEnoughData);
-  const confidence = hasEnoughData && normal?.odd <= 1.7 ? "B" : hasEnoughData ? "C+" : "D";
+  const confidence = hasEnoughData && normal?.odd <= 1.7 && hasObjectiveState ? "B+" : hasEnoughData && normal?.odd <= 1.7 ? "B" : hasEnoughData ? "C+" : "D";
   const advice =
     finalAction === "跳过"
       ? "数据不足不推"
@@ -823,6 +1206,11 @@ function buildAutoSportteryPrediction(match, phaseInfo, capturedAt) {
   const marketGap = normal && handicap && !handicap.label.includes(normal.label)
     ? "胜平负低位与让球低位不完全一致，自动降级为风险观察方向。"
     : "胜平负低位、让球保护与比分低赔暂未出现强冲突。";
+  const stageText = objective.stage ? `football-data 阶段 ${objective.stage}${objective.group ? ` / ${objective.group}` : ""}` : "football-data 阶段待补";
+  const teamStateText = objective.stateSummary || "football-data 球队状态待补；自动层仍以体彩盘口结构为主。";
+  const halfFullText = objective.halfScore || objective.regularScore
+    ? `football-data 口径：半场 ${objective.halfScore || "-"}，90分钟 ${objective.regularScore || "-"}，duration=${objective.scoreDuration || "-"}。`
+    : "未完赛或无比分时不使用加时/点球比分；赛果回填只认 90 分钟 regularTime。";
   const prediction = {
     sportteryKey: sportteryKey(match),
     matchId: match.matchId || "",
@@ -847,14 +1235,20 @@ function buildAutoSportteryPrediction(match, phaseInfo, capturedAt) {
     awayProb: `${Math.round(probs.away * 100)}%`,
     xg: "云端自动盘口结构估计",
     poisson: [mainScore, counterScore].join(" / "),
-    groupSituation: `体彩销售日 ${match.ticaiDate || "-"}，最终锁版截止 ${AUTO_DECISION_CUTOFF}，停售 ${SALE_CLOSE_TIME}。`,
-    recentAnalysis: "云端自动推演已接入体彩当日赛程、胜平负、让球、比分低赔和总进球低赔；阵容伤停和人工深层战术信息未作为自动层硬输入。",
+    groupSituation: `${stageText}；体彩销售日 ${match.ticaiDate || "-"}，最终锁版截止 ${AUTO_DECISION_CUTOFF}，停售 ${SALE_CLOSE_TIME}。`,
+    recentAnalysis: `${teamStateText} 自动推演已接入体彩当日赛程、胜平负、让球、比分低赔和总进球低赔；阵容伤停和人工深层战术信息未作为自动层硬输入。`,
+    teamState: teamStateText,
+    teamForm: teamStateText,
+    competitionStage: objective.stage || "",
+    objectiveDataLayer: objective,
+    halftimeDecision: halfFullText,
+    stateTransfer: `按 ${objective.stage || match.league || "赛事"} 阶段处理，半全场与60分钟分支复盘使用 football-data halfTime / regularTime。`,
     institutionLine: `胜平负低位 ${normal ? `${normal.label}${normal.odd}` : "-"}；让球低位 ${handicap ? `${handicap.label}${handicap.odd}` : "-"}。`,
     noiseFilter: "自动层排除单纯名气和排名叙事，低置信或数据缺口场次只保留为观察/跳过。",
     keyJudgement: hasEnoughData ? marketGap : "盘口字段不完整，自动层不强行给出正式推荐。",
     marketGap,
     script: `主脚本按${normal?.label || "待定"}方向展开，比分低赔落点为 ${mainScore}；反脚本保留 ${counterScore}。`,
-    dataQuality: hasEnoughData ? "MEDIUM" : "LOW",
+    dataQuality: hasEnoughData && hasObjectiveState ? "HIGH" : hasEnoughData ? "MEDIUM" : "LOW",
     decisionConflict: marketGap,
     finalDecisionAction: `${advice}：胜平负 ${normal?.label || "-"}；让球 ${handicap?.label || "-"}；总进球 ${totalGoalsPick}；比分 ${mainScore} / ${counterScore}。`,
     pick: hasEnoughData ? normal?.label || "" : "",
@@ -879,9 +1273,9 @@ function buildAutoSportteryPrediction(match, phaseInfo, capturedAt) {
       recommendationSide: hasEnoughData ? normal?.side || "SKIP" : "SKIP",
       finalGrade: confidence.slice(0, 1),
       finalAction,
-      confidenceScore: confidence === "B" ? 72 : confidence === "C+" ? 58 : 20,
-      riskScore: confidence === "B" ? 28 : confidence === "C+" ? 42 : 80,
-      consistencyScore: marketGap.includes("不完全一致") ? 2 : 3,
+      confidenceScore: confidence === "B+" ? 78 : confidence === "B" ? 72 : confidence === "C+" ? 58 : 20,
+      riskScore: confidence === "B+" ? 24 : confidence === "B" ? 28 : confidence === "C+" ? 42 : 80,
+      consistencyScore: marketGap.includes("不完全一致") ? 2 : hasObjectiveState ? 4 : 3,
       sportteryHomeProb: probs.home,
       sportteryDrawProb: probs.draw,
       sportteryAwayProb: probs.away,
@@ -1003,9 +1397,14 @@ async function syncSportteryToD1(db, env) {
     fetchSportteryResultPages(env),
   ]);
   const days = calculatorRaw?.value?.matchInfoList || [];
-  const matches = days.flatMap((day) =>
+  const rawMatches = days.flatMap((day) =>
     (day.subMatchList || []).map((match) => normalizeSportteryMatch(match, day.businessDate))
   );
+  const footballContext = await fetchFootballDataContext(env, rawMatches);
+  const matches = rawMatches.map((match) => ({
+    ...match,
+    footballDataContext: footballDataContextForMatch(match, footballContext),
+  }));
   for (const match of matches) {
     const matchId = sportteryDbMatchId(match);
     await db.prepare(`
@@ -1079,7 +1478,7 @@ async function syncSportteryToD1(db, env) {
     if (existing) {
       const existingPayload = parseObject(existing.payload_json);
       const existingScore = `${existing.full_time_home_goals}-${existing.full_time_away_goals}`;
-      if (existingPayload.resultSource === "live-fallback-apifootball" && existingScore !== parsed.text) {
+      if (String(existingPayload.resultSource || "").startsWith("live-fallback") && existingScore !== parsed.text) {
         officialOverrides.push({
           matchId,
           issue: result.issue || result.no || "",
@@ -1115,9 +1514,9 @@ async function syncSportteryToD1(db, env) {
 
   let liveRows = { matches: [], errors: [] };
   try {
-    liveRows = await fetchApiFootballMatches(env, matches);
+    liveRows = await fetchLiveFallbackMatches(env, matches);
   } catch (error) {
-    liveRows = { matches: [], errors: [{ date: "all", message: error.message || "APIfootball fallback failed" }] };
+    liveRows = { matches: [], errors: [{ date: "all", message: error.message || "live fallback failed" }] };
   }
   for (const match of matches) {
     const matchId = sportteryDbMatchId(match);
@@ -1128,7 +1527,7 @@ async function syncSportteryToD1(db, env) {
     if (!parsed) continue;
     const existing = await db.prepare("SELECT payload_json FROM match_results WHERE match_id = ?").bind(matchId).first();
     const existingPayload = parseObject(existing?.payload_json);
-    if (existing && existingPayload.resultSource !== "live-fallback-apifootball") continue;
+    if (existing && !String(existingPayload.resultSource || "").startsWith("live-fallback")) continue;
     const result = {
       ...match,
       statusCode: "live-finished",
@@ -1139,7 +1538,7 @@ async function syncSportteryToD1(db, env) {
       result: parsed.home > parsed.away ? "胜" : parsed.home < parsed.away ? "负" : "平",
       liveSource: live.source,
       liveExternalId: live.externalId,
-      resultSource: "live-fallback-apifootball",
+      resultSource: `live-fallback-${String(live.source || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown"}`,
       officialComparison: "pending",
     };
     await db.prepare(`
@@ -1178,11 +1577,122 @@ async function syncSportteryToD1(db, env) {
       autoLocks,
       resultPages: resultPages.length,
       liveFallbackErrors: liveRows.errors,
+      footballDataContextErrors: footballContext.errors,
       officialOverrides,
     }),
     capturedAt
   ).run();
-  return { ok: true, capturedAt, matchCount: matches.length, resultCount, liveFallbackCount, reviewed, cases, autoLocks, officialOverrides };
+  return { ok: true, capturedAt, matchCount: matches.length, resultCount, liveFallbackCount, reviewed, cases, autoLocks, officialOverrides, footballDataContextErrors: footballContext.errors };
+}
+
+function d1RowToSportteryMatch(row) {
+  const payload = parseObject(row.payload_json);
+  const kickoff = String(row.kickoff_time || "");
+  const [kickoffDate, kickoffTime = ""] = kickoff.split(/\s+/);
+  return {
+    ...payload,
+    matchId: payload.matchId || String(row.match_id || "").replace(/^sporttery-/, ""),
+    issue: payload.issue || row.match_code || "",
+    no: payload.no || compactSportteryNo(row.match_code || ""),
+    ticaiDate: payload.ticaiDate || kickoffDate || "",
+    matchDate: payload.matchDate || kickoffDate || "",
+    kickoffTime: payload.kickoffTime || kickoffTime.slice(0, 5),
+    league: payload.league || row.league || "",
+    home: payload.home || row.home_team || "",
+    away: payload.away || row.away_team || "",
+    cloudMatchId: row.match_id,
+  };
+}
+
+async function syncLiveFallbackToD1(db, env) {
+  const capturedAt = new Date().toISOString();
+  const rows = await db.prepare(`
+    SELECT * FROM matches
+    WHERE league LIKE '%世界杯%' OR league LIKE '%竞彩%'
+    ORDER BY updated_at DESC
+    LIMIT 300
+  `).all();
+  const now = Date.now();
+  const matches = (rows.results || [])
+    .map(d1RowToSportteryMatch)
+    .filter((match) => {
+      const kickoffAt = bjtAt(match.matchDate || match.ticaiDate, match.kickoffTime || "00:00");
+      if (!Number.isFinite(kickoffAt)) return true;
+      return kickoffAt >= now - 14 * 86400000 && kickoffAt <= now + 2 * 86400000;
+    });
+
+  let liveRows = { matches: [], errors: [] };
+  try {
+    liveRows = await fetchLiveFallbackMatches(env, matches);
+  } catch (error) {
+    liveRows = { matches: [], errors: [{ date: "all", message: error.message || "live fallback failed" }] };
+  }
+
+  let liveFallbackCount = 0;
+  let reviewed = 0;
+  let cases = 0;
+  for (const match of matches) {
+    const matchId = match.cloudMatchId || sportteryDbMatchId(match);
+    const live = liveResultForSportteryMatch(match, liveRows.matches);
+    if (!live) continue;
+    const parsed = parseDashScore(live.score);
+    if (!parsed) continue;
+    const existing = await db.prepare("SELECT payload_json FROM match_results WHERE match_id = ?").bind(matchId).first();
+    const existingPayload = parseObject(existing?.payload_json);
+    if (existing && !String(existingPayload.resultSource || "").startsWith("live-fallback")) continue;
+    const result = {
+      ...match,
+      statusCode: "live-finished",
+      statusName: "已完赛",
+      halfScore: live.halfScore || "",
+      fullScoreRaw: `${parsed.home}:${parsed.away}`,
+      score: parsed.text,
+      result: parsed.home > parsed.away ? "胜" : parsed.home < parsed.away ? "负" : "平",
+      liveSource: live.source,
+      liveExternalId: live.externalId,
+      resultSource: `live-fallback-${String(live.source || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown"}`,
+      officialComparison: "pending",
+    };
+    await db.prepare(`
+      INSERT INTO match_results (match_id, full_time_home_goals, full_time_away_goals, result_1x2, total_goals, reviewed_at, payload_json, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(match_id) DO UPDATE SET
+        full_time_home_goals=excluded.full_time_home_goals, full_time_away_goals=excluded.full_time_away_goals,
+        result_1x2=excluded.result_1x2, total_goals=excluded.total_goals, reviewed_at=excluded.reviewed_at,
+        payload_json=excluded.payload_json, updated_at=excluded.updated_at
+    `).bind(
+      matchId,
+      parsed.home,
+      parsed.away,
+      sideFromResult(parsed.home, parsed.away),
+      parsed.home + parsed.away,
+      capturedAt,
+      JSON.stringify({ ...result, cloudMatchId: matchId }),
+      capturedAt
+    ).run();
+    const review = await autoReviewMatch(db, matchId);
+    reviewed += review.reviewed;
+    cases += review.cases;
+    liveFallbackCount += 1;
+  }
+
+  await db.prepare(`
+    INSERT INTO sync_logs (sync_id, source, status, message, payload_json, created_at)
+    VALUES (?, 'live-fallback-api', 'OK', 'live fallback sync completed', ?, ?)
+  `).bind(
+    `live-sync-${Date.now()}-${crypto.randomUUID()}`,
+    JSON.stringify({
+      matchCount: matches.length,
+      liveFallbackCount,
+      reviewed,
+      cases,
+      liveFallbackErrors: liveRows.errors,
+      liveFallbackSources: [...new Set(liveRows.matches.map((match) => match.source).filter(Boolean))],
+    }),
+    capturedAt
+  ).run();
+
+  return { ok: true, capturedAt, matchCount: matches.length, liveFallbackCount, reviewed, cases, liveFallbackErrors: liveRows.errors };
 }
 
 async function listAutoPredictions(db, limit = 300) {
@@ -1285,6 +1795,209 @@ async function d1ResultsScript(db) {
   return javascript(`window.LIVE_SPORTTERY_RESULTS = ${JSON.stringify(data, null, 2)};\n`);
 }
 
+async function d1LiveFootballScoresScript(db, env) {
+  const rows = await db.prepare(`
+    SELECT * FROM matches
+    WHERE league LIKE '%世界杯%' OR league LIKE '%竞彩%'
+    ORDER BY kickoff_time DESC
+    LIMIT 300
+  `).all();
+  const now = Date.now();
+  const sportteryMatches = (rows.results || [])
+    .map(d1RowToSportteryMatch)
+    .filter((match) => {
+      const kickoffAt = bjtAt(match.matchDate || match.ticaiDate, match.kickoffTime || "00:00");
+      if (!Number.isFinite(kickoffAt)) return true;
+      return kickoffAt >= now - 2 * 86400000 && kickoffAt <= now + 2 * 86400000;
+    });
+  let liveRows = { matches: [], errors: [] };
+  try {
+    liveRows = await fetchLiveFallbackMatches(env, sportteryMatches);
+  } catch (error) {
+    liveRows = { matches: [], errors: [{ date: "all", message: error.message || "live score fetch failed" }] };
+  }
+  const matchedRows = liveRows.matches.filter((row) =>
+    (row.live || row.isFinished || Boolean(parseDashScore(row.score))) &&
+    sportteryMatches.some((match) => liveDateMatchesSporttery(match, row) &&
+      liveTeamMatches(match.home, row.home) &&
+      liveTeamMatches(match.away, row.away))
+  );
+  const data = {
+    source: "Cloudflare Pages live football fallback",
+    apiEndpoint: "/api/live-football-scores.js",
+    importedAt: new Date().toISOString(),
+    isLiveSnapshot: true,
+    isCloudSnapshot: true,
+    scope: "current_window_live_and_finished_regular_time",
+    totalCount: matchedRows.length,
+    errors: liveRows.errors,
+    matches: matchedRows,
+  };
+  return javascript(`window.LIVE_FOOTBALL_SCORES = ${JSON.stringify(data, null, 2)};\n`);
+}
+
+function latestSportteryHistoryStamp(list = []) {
+  return list
+    .map((item) => `${item.updateDate || ""} ${item.updateTime || ""}`.trim())
+    .filter(Boolean)
+    .sort()
+    .at(-1) || "";
+}
+
+function normalizeSportterySpHistory(match, history = {}) {
+  const oddsHistory = history.oddsHistory || {};
+  return {
+    orderId: match.orderId || "",
+    issue: match.issue || match.no || "",
+    no: match.no || compactSportteryNo(match.issue, match.matchId),
+    ticaiDate: match.ticaiDate || match.matchDate || "",
+    matchDate: match.matchDate || match.ticaiDate || "",
+    kickoffTime: match.kickoffTime || "",
+    league: match.league || "竞彩",
+    matchId: String(match.matchId || "").replace(/^sporttery-/, ""),
+    home: match.home || "",
+    away: match.away || "",
+    handicap: String(oddsHistory.hhadList?.at(-1)?.goalLine || match.handicap || "0"),
+    updatedAt: latestSportteryHistoryStamp([
+      ...(oddsHistory.hadList || []),
+      ...(oddsHistory.hhadList || []),
+      ...(oddsHistory.ttgList || []),
+      ...(oddsHistory.crsList || []),
+    ]),
+    history: {
+      had: oddsHistory.hadList || [],
+      hhad: oddsHistory.hhadList || [],
+      ttg: oddsHistory.ttgList || [],
+      crs: oddsHistory.crsList || [],
+      hafu: oddsHistory.hafuList || [],
+    },
+  };
+}
+
+function sportterySnapshotStamp(value = "") {
+  const parsed = Date.parse(value);
+  const date = Number.isFinite(parsed) ? new Date(parsed) : new Date();
+  const text = date.toISOString().replace("T", " ").slice(0, 19);
+  return {
+    text,
+    date: text.slice(0, 10),
+    time: text.slice(11, 19),
+  };
+}
+
+async function d1SportterySpHistoryScript(db, env) {
+  const rows = await db.prepare(`
+    SELECT
+      s.match_id, s.captured_at, s.payload_json AS snapshot_payload,
+      m.match_code, m.league, m.home_team, m.away_team, m.kickoff_time, m.payload_json AS match_payload
+    FROM odds_snapshots s
+    LEFT JOIN matches m ON m.match_id = s.match_id
+    ORDER BY s.captured_at ASC
+    LIMIT 1200
+  `).all();
+  const byMatch = new Map();
+  for (const row of rows.results || []) {
+    const payload = parseObject(row.snapshot_payload, {});
+    const matchPayload = parseObject(row.match_payload, {});
+    const base = payload.home && payload.away ? payload : matchPayload;
+    const matchId = String(base.matchId || row.match_id || "").replace(/^sporttery-/, "");
+    if (!matchId) continue;
+    if (!byMatch.has(row.match_id)) {
+      byMatch.set(row.match_id, {
+        orderId: base.orderId || row.match_id || "",
+        issue: base.issue || row.match_code || "",
+        no: base.no || compactSportteryNo(row.match_code, row.match_id),
+        ticaiDate: base.ticaiDate || base.matchDate || String(row.kickoff_time || "").slice(0, 10),
+        matchDate: base.matchDate || base.ticaiDate || String(row.kickoff_time || "").slice(0, 10),
+        kickoffTime: base.kickoffTime || String(row.kickoff_time || "").slice(11, 16),
+        league: base.league || row.league || "竞彩",
+        matchId,
+        home: base.home || row.home_team || "",
+        away: base.away || row.away_team || "",
+        handicap: String(base.handicap || "0"),
+        updatedAt: "",
+        history: { had: [], hhad: [], ttg: [], crs: [], hafu: [] },
+      });
+    }
+    const item = byMatch.get(row.match_id);
+    const stamp = sportterySnapshotStamp(row.captured_at);
+    item.updatedAt = stamp.text || item.updatedAt;
+    const normal = payload.normal || {};
+    if (normal.win || normal.draw || normal.lose) {
+      item.history.had.push({ updateDate: stamp.date, updateTime: stamp.time, h: normal.win, d: normal.draw, a: normal.lose });
+    }
+    const handicapOdds = payload.handicapOdds || {};
+    if (handicapOdds.win || handicapOdds.draw || handicapOdds.lose) {
+      item.history.hhad.push({
+        updateDate: stamp.date,
+        updateTime: stamp.time,
+        goalLine: String(payload.handicap || item.handicap || "0"),
+        h: handicapOdds.win,
+        d: handicapOdds.draw,
+        a: handicapOdds.lose,
+      });
+    }
+    const totalGoals = Array.isArray(payload.totalGoalsOdds) ? payload.totalGoalsOdds : [];
+    if (totalGoals.length) {
+      const row = { updateDate: stamp.date, updateTime: stamp.time };
+      totalGoals.forEach((odd) => {
+        const key = String(odd.goals || "").replace("+", "");
+        if (/^[0-7]$/.test(key)) row[`s${key}`] = odd.odds;
+      });
+      item.history.ttg.push(row);
+    }
+  }
+  const histories = [...byMatch.values()].filter((item) =>
+    item.home && item.away && (item.history.had.length || item.history.hhad.length || item.history.ttg.length)
+  );
+  const data = {
+    source: "Cloudflare D1 odds_snapshots",
+    apiEndpoint: "/api/live-sporttery-sp-history.js",
+    importedAt: new Date().toISOString(),
+    isLiveSnapshot: true,
+    isCloudSnapshot: true,
+    totalCount: histories.length,
+    errors: [],
+    matches: histories,
+  };
+  return javascript(`window.LIVE_SPORTTERY_SP_HISTORY = ${JSON.stringify(data, null, 2)};\n`);
+}
+
+async function d1FootballDataContextScript(db, env) {
+  const rows = await db.prepare(`
+    SELECT * FROM matches
+    WHERE league LIKE '%世界杯%' OR league LIKE '%竞彩%'
+    ORDER BY kickoff_time DESC
+    LIMIT 300
+  `).all();
+  const sportteryMatches = (rows.results || []).map(d1RowToSportteryMatch);
+  const context = await fetchFootballDataContext(env, sportteryMatches);
+  const matchContexts = sportteryMatches.map((match) => ({
+    sportteryKey: sportteryKey(match),
+    matchId: match.matchId || "",
+    issue: match.issue || match.no || "",
+    ticaiDate: match.ticaiDate || "",
+    matchDate: match.matchDate || "",
+    kickoffTime: match.kickoffTime || "",
+    league: match.league || "",
+    home: match.home || "",
+    away: match.away || "",
+    context: footballDataContextForMatch(match, context),
+  }));
+  const data = {
+    source: "football-data.org",
+    importedAt: context.importedAt,
+    competitionCode: context.competitionCode,
+    season: context.season,
+    totalMatches: context.matches.length,
+    totalStandings: context.standings.length,
+    errors: context.errors,
+    standings: context.standings,
+    matches: matchContexts,
+  };
+  return javascript(`window.FOOTBALL_DATA_CONTEXT = ${JSON.stringify(data, null, 2)};\n`);
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -1309,13 +2022,41 @@ export async function onRequest(context) {
       return d1ResultsScript(db);
     }
 
+    if (path === "live-football-scores.js" && request.method === "GET") {
+      return d1LiveFootballScoresScript(db, env);
+    }
+
+    if (path === "live-sporttery-sp-history.js" && request.method === "GET") {
+      return d1SportterySpHistoryScript(db, env);
+    }
+
+    if (path === "football-data-context.js" && request.method === "GET") {
+      return d1FootballDataContextScript(db, env);
+    }
+
     if (path === "sync/sporttery" && request.method === "POST") {
       const requestProxy = request.headers.get("x-sporttery-upstream-proxy") || "";
       const requestApiFootballKey = request.headers.get("x-apifootball-api-key") || "";
+      const requestFootballDataKey = request.headers.get("x-football-data-api-key") || "";
+      const requestTheSportsDbKey = request.headers.get("x-thesportsdb-api-key") || "";
       return json(await syncSportteryToD1(db, {
         ...env,
         REQUEST_UPSTREAM_PROXY: requestProxy,
         REQUEST_APIFOOTBALL_API_KEY: requestApiFootballKey,
+        REQUEST_FOOTBALL_DATA_API_KEY: requestFootballDataKey,
+        REQUEST_THESPORTSDB_API_KEY: requestTheSportsDbKey,
+      }));
+    }
+
+    if (path === "sync/live-results" && request.method === "POST") {
+      const requestApiFootballKey = request.headers.get("x-apifootball-api-key") || "";
+      const requestFootballDataKey = request.headers.get("x-football-data-api-key") || "";
+      const requestTheSportsDbKey = request.headers.get("x-thesportsdb-api-key") || "";
+      return json(await syncLiveFallbackToD1(db, {
+        ...env,
+        REQUEST_APIFOOTBALL_API_KEY: requestApiFootballKey,
+        REQUEST_FOOTBALL_DATA_API_KEY: requestFootballDataKey,
+        REQUEST_THESPORTSDB_API_KEY: requestTheSportsDbKey,
       }));
     }
 

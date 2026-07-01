@@ -1,5 +1,6 @@
 .DS_Store
 .tools/
+.wrangler/
 node_modules/
 local-server/*.log
 local-server/*.out.log

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>体彩足彩模型中心</title>
-    <link rel="stylesheet" href="./styles.css?v=202606290004" />
+    <link rel="stylesheet" href="./styles.css?v=202607010005" />
   </head>
   <body class="home-mode page-loading">
     <header class="home-topbar">
@@ -232,7 +232,7 @@
             <h2>模型介绍</h2>
             <p>
               这套模型不是单纯预测胜负，而是把赛程、盘口、比分形态、赛事动机和赛后复盘放在同一条链路里。
-              世界杯专题当前已经迭代到 V4；每个新接入联赛都从 V1 开始，积累样本后再按联赛单独升级。
+              世界杯专题当前是 V4；芬超和后续新接入联赛都从各自 V1 开始，但联赛 V1 会吸收世界杯 V4 已经验证过的推演经验。
             </p>
           </div>
           <aside>
@@ -285,6 +285,7 @@
             <p>在 V3 之上抽象成全赛事框架，世界杯、联赛和杯赛淘汰赛按不同权重进入同一套锁版流程。</p>
             <ul>
               <li>先识别赛事类型，再切换战意、赛程、路径和轮换权重</li>
+              <li>球队状态、风格对位、盘口和历史样本必须同时参与</li>
               <li>四剧本推演参与最终概率判断，不只作为赛后解释</li>
               <li>路径动机用于杯赛，赛程密度和伤停轮换用于联赛</li>
               <li>跨市场一致性统一校验胜平负、让球、总进球、比分和半全场</li>
@@ -292,6 +293,25 @@
               <li>赛后复盘按错误类型归因，进入下一轮模型修正</li>
             </ul>
           </article>
+        </div>
+
+        <div class="model-decision-flow">
+          <div class="about-section-head">
+            <p class="eyebrow">Decision Flow</p>
+            <h3>统一赛前推演机制</h3>
+          </div>
+          <div class="model-flow-grid">
+            <article><span>01</span><strong>内部概率底盘</strong><p>先判断真实强弱、攻防稳定性、主客场和基础概率，不直接被盘口牵着走。</p></article>
+            <article><span>02</span><strong>赛事规则/动机</strong><p>世界杯看出线路径和淘汰赛 90 分钟目标；联赛看积分、保级、争冠、赛程密度和轮换。</p></article>
+            <article><span>03</span><strong>球队状态</strong><p>近况、伤停、体能、连续主客和心理状态进入判断，联赛 V1 也必须补这一层。</p></article>
+            <article><span>04</span><strong>风格对位</strong><p>看高压、低位、转换、边路、定位球和谁更怕谁，确认比赛脚本能不能成立。</p></article>
+            <article><span>05</span><strong>盘口和样本</strong><p>自建机构线，再对比体彩盘口、SP 历史、赔率数学、历史比分和相似盘口样本。</p></article>
+            <article><span>06</span><strong>状态转移</strong><p>推演 0-0 到 60 分钟、早进球、弱队先进、领先后是否继续追第二球。</p></article>
+            <article><span>07</span><strong>比分/总进球验证</strong><p>用主脚本和反脚本反推两个比分，再校验总进球区间是否和样本、盘口一致。</p></article>
+            <article><span>08</span><strong>让球独立闸门</strong><p>胜平负方向正确不等于让球正确，强队一球胜、深盘卡盘必须单独判断。</p></article>
+            <article><span>09</span><strong>失败方式和值过滤</strong><p>写清楚最可能错在哪里，再决定主打、可选、谨慎或跳过。</p></article>
+            <article><span>10</span><strong>最终锁版</strong><p>只在证据链完整后输出胜平负、让球、总进球双选、两个比分、比赛类型和建议。</p></article>
+          </div>
         </div>
 
         <div class="model-contract-grid">
@@ -308,7 +328,7 @@
           <section>
             <span>后续迭代</span>
             <strong>分联赛升级</strong>
-            <p>后续会继续接入更多赛事池数据、赔率漂移、阵容伤停和回测指标。新联赛先用 V1 记录样本，再根据复盘表现升级到 V2、V3、V4。</p>
+            <p>后续会继续接入更多赛事池数据、赔率漂移、阵容伤停和回测指标。新联赛先用 V1 记录样本，再根据复盘表现独立升级。</p>
           </section>
         </div>
 
@@ -316,17 +336,17 @@
           <section>
             <span>联赛模型原则</span>
             <strong>同结构，不同版本</strong>
-            <p>模型结构保持一致：概率底盘、盘口偏差、比赛脚本、过滤闸门、锁版结论和赛后复盘。但不同联赛不会共用成熟度，新联赛一律从 V1 开始。</p>
+            <p>最终决策步骤保持一致：概率底盘、赛事规则、球队状态、风格对位、盘口样本、状态转移、让球闸门、锁版结论和赛后复盘。但不同联赛不会共用成熟度，新联赛一律从 V1 开始。</p>
           </section>
           <section>
             <span>升级条件</span>
             <strong>靠复盘样本升级</strong>
-            <p>同一联赛积累足够样本后，才根据方向、让球、总进球、比分覆盖和错因归因升级版本，避免把世界杯经验硬套到所有赛事。</p>
+            <p>同一联赛积累足够样本后，才根据方向、让球、总进球、比分覆盖、相似盘口和错因归因升级版本，避免把世界杯版本号硬套到所有赛事。</p>
           </section>
           <section>
             <span>当前状态</span>
             <strong>世界杯 V4 / 芬超 V1</strong>
-            <p>世界杯是当前成熟专题；芬超是今天第一天接入的联赛样本，因此作为芬超 V1 开始记录，后续单独优化。</p>
+            <p>世界杯是当前成熟专题；芬超作为联赛 V1 开始记录。它不是盘口预筛，而是使用世界杯 V4 的经验链，再按联赛规则、状态和样本单独优化。</p>
           </section>
         </div>
 
@@ -339,12 +359,13 @@
             <article><span>01</span><strong>实时赛程</strong><p>来自体彩官方开盘快照，作为比赛池、开赛时间和玩法状态的基础。</p></article>
             <article><span>02</span><strong>SP 历史</strong><p>记录胜平负、让球、总进球的开盘到最新变化，用于识别压热、压冷和冲突。</p></article>
             <article><span>03</span><strong>赛果回填</strong><p>比赛结束后回填官方比分，复盘方向、让球、总进球和比分覆盖。</p></article>
-            <article><span>04</span><strong>赛事动机</strong><p>世界杯读取小组路径，联赛读取争冠、欧战、保级、赛程密度和轮换压力。</p></article>
-            <article><span>05</span><strong>模型输入清单</strong><p>每场详情页会显示盘口、SP、积分动机、近期状态、伤停阵容等输入完整度。</p></article>
-            <article><span>06</span><strong>赔率数学</strong><p>把 SP 转成去水后的隐含概率、返还率和公允赔率，用来校验模型概率是否偏离市场。</p></article>
-            <article><span>07</span><strong>回测指标</strong><p>盘口图谱会持续记录低进球、大球、让球冲突和强异动样本，后续进入模型版本迭代。</p></article>
-            <article><span>08</span><strong>四剧本库</strong><p>强势压制、开放对攻、冷门反转和僵局消耗会参与最终选择。</p></article>
-            <article><span>09</span><strong>数据质量</strong><p>阵容、战意、盘口和赛程证据不足时，自动降低置信或跳过。</p></article>
+            <article><span>04</span><strong>历史样本</strong><p>历届世界杯和联赛样本用于校验平局率、比分形态、总进球区间和相似盘口表现。</p></article>
+            <article><span>05</span><strong>赛事动机</strong><p>世界杯读取小组路径和淘汰赛目标，联赛读取争冠、欧战、保级、赛程密度和轮换压力。</p></article>
+            <article><span>06</span><strong>模型输入清单</strong><p>每场详情页会显示盘口、SP、积分动机、近期状态、伤停阵容等输入完整度。</p></article>
+            <article><span>07</span><strong>赔率数学</strong><p>把 SP 转成去水后的隐含概率、返还率和公允赔率，用来校验模型概率是否偏离市场。</p></article>
+            <article><span>08</span><strong>回测指标</strong><p>盘口图谱会持续记录低进球、大球、让球冲突和强异动样本，后续进入模型版本迭代。</p></article>
+            <article><span>09</span><strong>四剧本库</strong><p>强势压制、开放对攻、冷门反转和僵局消耗会参与最终选择。</p></article>
+            <article><span>10</span><strong>数据质量</strong><p>阵容、战意、盘口、样本和赛程证据不足时，自动降低置信或跳过。</p></article>
           </div>
         </div>
 
@@ -354,8 +375,18 @@
             <h3>V4 更新日志</h3>
           </div>
           <article>
+            <span>2026-06-30</span>
+            <strong>模型口径补全</strong>
+            <ul>
+              <li>世界杯当前为 V4，芬超和后续联赛从各自 V1 起步</li>
+              <li>联赛 V1 吸收世界杯 V4 经验，但保留独立版本历史</li>
+              <li>盘口信息、SP 历史、赔率数学和历史样本正式进入赛前证据链</li>
+              <li>统一最终决策步骤，赛事差异放在规则、动机、赛程和轮换层处理</li>
+            </ul>
+          </article>
+          <article>
             <span>2026-06-29</span>
-            <strong>新增</strong>
+            <strong>案例库新增</strong>
             <ul>
               <li>锁版案例库 Case Base</li>
               <li>正式锁版不可覆盖机制</li>
@@ -612,23 +643,54 @@
       </section>
     </main>
 
-    <script src="./live-sporttery-data.js?v=202606280001"></script>
-    <script src="./live-sporttery-results.js?v=202606290007"></script>
-    <script src="./api/live-sporttery-data.js?v=202606290002"></script>
-    <script src="./api/live-sporttery-results.js?v=202606290002"></script>
-    <script src="./live-sporttery-sp-history.js?v=202606280001"></script>
-    <script src="./live-football-scores.js?v=202606270001"></script>
-    <script src="./odds-data.js?v=202606260001"></script>
-    <script src="./data.js?v=202606290007"></script>
-    <script src="./data/externalHistoricalSamples.js?v=202606300003"></script>
-    <script src="./lib/lockEngine.js?v=202606290001"></script>
-    <script src="./lib/reviewEngine.js?v=202606290004"></script>
-    <script src="./lib/caseBase.js?v=202606290001"></script>
-    <script src="./lib/similarCaseEngine.js?v=202606300001"></script>
-    <script src="./lib/cloudStore.js?v=202606290001"></script>
-    <script src="./auto-sporttery-predictions.js?v=202606270002"></script>
-    <script src="./sporttery-math.js?v=202606260001"></script>
-    <script src="./app.js?v=202606300001"></script>
+    <footer class="site-footer" aria-label="网站底部信息">
+      <div class="site-footer-inner">
+        <section class="site-footer-brand">
+          <strong>⚽ 体彩足彩模型中心</strong>
+          <p>
+            一个赛前锁版和赛后复盘工作台，聚合 2026 世界杯专题、竞彩赛事池、盘口快照、历史样本和模型回测。
+            本站只记录模型推演过程，不提供任何保证性结论。
+          </p>
+        </section>
+        <section>
+          <h3>快速链接</h3>
+          <button type="button" data-sporttery-pool>赛事池</button>
+          <button type="button" data-site-locks>赛事推演锁版</button>
+          <button type="button" data-model-intro>模型介绍</button>
+          <button type="button" data-odds-map>盘口图谱</button>
+          <button type="button" data-model-stats>统计和回测研究</button>
+          <button type="button" data-about-site>关于本站</button>
+        </section>
+        <section>
+          <h3>数据来源</h3>
+          <p>赛程 / 盘口：体彩公开赛事池与本地快照</p>
+          <p>比分 / 赛果：赛果回填与现场比分源</p>
+          <p>样本 / 回测：世界杯历史样本、联赛样本和锁版案例库</p>
+        </section>
+      </div>
+      <div class="site-footer-bottom">
+        <span>© 2026 体彩足彩模型中心 · 非商业研究项目</span>
+        <span>所有模型内容仅代表赛前数据推演，不代表事实结果，也不构成投注建议。</span>
+      </div>
+    </footer>
+
+    <script src="./api/live-sporttery-data.js?v=202607011335"></script>
+    <script src="./api/live-sporttery-results.js?v=202607011335"></script>
+    <script src="./api/live-sporttery-sp-history.js?v=202607011335"></script>
+    <script src="./api/live-football-scores.js?v=202607011335"></script>
+    <script src="./api/football-data-context.js?v=202607011335"></script>
+    <script src="./odds-data.js?v=202607010005"></script>
+    <script src="./data.js?v=202607010005"></script>
+    <script src="./data/externalHistoricalSamples.js?v=202607010005"></script>
+    <script src="./data/caseBase.js?v=202607010005"></script>
+    <script src="./lib/lockEngine.js?v=202607010005"></script>
+    <script src="./lib/reviewEngine.js?v=202607010005"></script>
+    <script src="./lib/caseBase.js?v=202607010005"></script>
+    <script src="./lib/similarCaseEngine.js?v=202607010005"></script>
+    <script src="./lib/cloudStore.js?v=202607010005"></script>
+    <script src="./auto-sporttery-predictions.js?v=202607010005"></script>
+    <script src="./sporttery-math.js?v=202607010005"></script>
+    <script src="./app.js?v=202607011335"></script>
 <button type="button" class="back-to-top" id="back-to-top" aria-label="返回顶部">&#8593;</button>
   </body>
 </html>

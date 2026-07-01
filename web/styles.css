@@ -1819,6 +1819,49 @@ select {
   font-weight: 950;
 }
 
+.combined-stats-filterbar {
+  align-items: stretch;
+}
+
+.combined-stats-filterbar section {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.combined-stats-filterbar section + section {
+  padding-left: 14px;
+  border-left: 1px solid rgba(14, 76, 146, 0.14);
+}
+
+.combined-stats-filterbar select {
+  flex: 0 0 190px;
+}
+
+@media (max-width: 860px) {
+  .combined-stats-filterbar {
+    flex-direction: column;
+  }
+
+  .combined-stats-filterbar section {
+    width: 100%;
+  }
+
+  .combined-stats-filterbar section + section {
+    padding-top: 12px;
+    padding-left: 0;
+    border-top: 1px solid rgba(14, 76, 146, 0.14);
+    border-left: 0;
+  }
+
+  .combined-stats-filterbar select {
+    flex-basis: 180px;
+  }
+}
+
 .review-version-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -7333,6 +7376,51 @@ body::before {
   padding: 0 22px 22px;
 }
 
+.model-decision-flow {
+  margin: 0 22px 22px;
+  padding: 22px;
+  border: 1px solid #d6e3f0;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f9fbff, #ffffff);
+}
+
+.model-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.model-flow-grid article {
+  min-height: 162px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(8, 32, 82, 0.06);
+}
+
+.model-flow-grid span {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.model-flow-grid strong {
+  display: block;
+  margin: 8px 0;
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.model-flow-grid p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.65;
+}
+
 .model-contract-grid strong {
   display: block;
   margin: 14px 0 8px;
@@ -8083,6 +8171,104 @@ body {
 .back-to-top:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(8, 32, 82, 0.3);
+}
+
+.site-footer {
+  margin-top: 44px;
+  border-top: 4px solid var(--gold);
+  background:
+    linear-gradient(135deg, var(--ink) 0%, var(--blue) 58%, var(--blue-2) 100%);
+  color: rgba(247, 251, 255, 0.82);
+}
+
+.site-footer-inner {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.35fr) minmax(180px, 0.8fr) minmax(260px, 1fr);
+  gap: clamp(28px, 6vw, 92px);
+  width: min(1480px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 34px 0 30px;
+}
+
+.site-footer section {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.site-footer-brand strong {
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 950;
+}
+
+.site-footer h3 {
+  margin: 0 0 4px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.site-footer p {
+  margin: 0;
+  max-width: 520px;
+  color: rgba(247, 251, 255, 0.72);
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.62;
+}
+
+.site-footer button {
+  width: max-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(247, 251, 255, 0.78);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.42;
+  cursor: pointer;
+}
+
+.site-footer button:hover {
+  color: #ffffff;
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-underline-offset: 5px;
+}
+
+.site-footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  width: min(1480px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 14px 0 16px;
+  border-top: 1px solid rgba(247, 251, 255, 0.18);
+  color: rgba(247, 251, 255, 0.58);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 860px) {
+  .site-footer {
+    margin-top: 32px;
+  }
+
+  .site-footer-inner {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    width: min(100% - 32px, 620px);
+    padding: 28px 0 24px;
+  }
+
+  .site-footer-bottom {
+    flex-direction: column;
+    gap: 8px;
+    width: min(100% - 32px, 620px);
+    padding: 12px 0 14px;
+  }
 }
 
 /* ── 加载时页面淡入 ── */
@@ -9528,4 +9714,19 @@ body.dashboard-mode .home-topbar nav button.active {
   .similar-case-practical {
     grid-template-columns: 1fr;
   }
+}
+
+/* 首页首屏标题以可读性优先，避免全局渐变文字在深色背景上发灰。 */
+.home-hero .home-copy h1 {
+  background: none;
+  color: #f7fbff;
+  -webkit-text-fill-color: #f7fbff;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.38), 0 0 1px rgba(255, 255, 255, 0.72);
+  animation: none;
+}
+
+.home-hero .home-copy h1 strong {
+  color: #ffd978;
+  -webkit-text-fill-color: #ffd978;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.42), 0 0 1px rgba(255, 255, 255, 0.64);
 }
