@@ -51,6 +51,7 @@ let activeReviewDate = "all";
 let activeGlobalStatsDate = "all";
 let activeGlobalStatsLeague = "all";
 let activeSportteryPoolView = "open";
+let activeOddsMapView = "pre";
 let matchDetailReturnTarget = "today";
 let homeCountdownTimer;
 let matchFlowTimer;
@@ -3245,10 +3246,10 @@ function openSportteryMatchPage(key, returnTarget = "sporttery") {
 
 function closeMatchPage() {
   if (window.location.hash.startsWith("#match-") || window.location.hash.startsWith("#sporttery-match-")) {
-    const hash = matchDetailReturnTarget === "review" ? "#worldcup-review" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : "#worldcup";
+    const hash = matchDetailReturnTarget === "review" ? "#worldcup-review" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "odds-map" ? "#odds-map" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : "#worldcup";
     history.pushState("", document.title, `${window.location.pathname}${window.location.search}${hash}`);
   }
-  activateTab(matchDetailReturnTarget === "review" ? "review" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : "today");
+  activateTab(matchDetailReturnTarget === "review" ? "review" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "odds-map" ? "odds-map" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : "today");
 }
 
 function handleRouteFromHash() {
@@ -5790,13 +5791,102 @@ function renderSpRadarPanel(no, variant = "card") {
   `;
 }
 
+function oddsMapRowKey(row = {}) {
+  return sportteryItemKey(row) || `odds-${row.no || row.issue || ""}-${row.ticaiDate || row.matchDate || ""}`;
+}
+
+function findOddsMapRowByKey(key = "") {
+  const decoded = decodeURIComponent(key || "");
+  return oddsMapRows().find((row) => oddsMapRowKey(row) === decoded);
+}
+
+function oddsMapScoreForRow(row = {}) {
+  const result = resultForSportteryItem(row);
+  const resultScore = normalizeResultScore(result?.score);
+  if (resultScore) return { scoreText: resultScore, score: parseScore(resultScore), source: "体彩赛果", item: result };
+
+  const liveScore = liveScoreForSportteryItem(row);
+  const liveScoreText = liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "";
+  if (liveScoreText) return { scoreText: liveScoreText, score: parseScore(liveScoreText), source: "实时完赛", item: liveScore };
+
+  const match = matchFromOddsItem(row) || matchFromResultItem(row) || matches.find((item) => item.no === row.no);
+  const matchScore = normalizeResultScore(match?.score);
+  if (matchScore) return { scoreText: matchScore, score: parseScore(matchScore), source: "本地赛果", item: match };
+
+  return null;
+}
+
+function oddsMapPredictionForRow(row = {}) {
+  return sportteryPredictionForItem(row) || latestPredictionFor(row.no);
+}
+
+function splitOddsMapRows(rows) {
+  const backtestRows = [];
+  const preRows = [];
+  rows.forEach((row) => {
+    const scoreData = oddsMapScoreForRow(row);
+    if (scoreData?.score) {
+      backtestRows.push(row);
+    } else {
+      preRows.push(row);
+    }
+  });
+  return { preRows, backtestRows };
+}
+
+function oddsMapRowReview(row = {}) {
+  const scoreData = oddsMapScoreForRow(row);
+  const pred = oddsMapPredictionForRow(row);
+  if (!scoreData?.score) return { row, pred, scoreData: null };
+
+  const scoreText = scoreData.scoreText;
+  const actualDirection = direction(scoreText);
+  const handicap = row.handicap || reviewHandicapLine(pred);
+  const actualHandicap = handicapDirection(scoreText, handicap);
+  const goalPickText = `${pred?.totalGoalsPick || ""} ${pred?.goals || ""}`;
+  const scorePickText = `${pred?.mainScore || ""} ${pred?.counterScore || ""}`;
+  const total = scoreData.score.total;
+  const directionHit = pred?.pick ? pred.pick.includes(actualDirection) : null;
+  const handicapHit = pred?.hPick && actualHandicap ? pred.hPick.includes(actualHandicap) : null;
+  const totalGoalsHit = goalPickText ? goalPickText.includes(`${total}球`) || goalPickText.includes(`${total}`) : null;
+  const scoreHit = scorePickText ? scorePickText.includes(scoreText) : null;
+  const driftHits = [];
+  if (row.riskFlags.includes("低进球权重抬升")) driftHits.push(total <= 2 ? "低进球命中" : "低进球偏离");
+  if (row.riskFlags.includes("大球权重抬升")) driftHits.push(total >= 4 ? "大球命中" : "大球偏离");
+  if (actualHandicap && row.riskFlags.some((flag) => flag.includes(actualHandicap))) driftHits.push("让球冲突命中");
+  return {
+    row,
+    pred,
+    scoreData,
+    actualDirection,
+    actualHandicap,
+    handicap,
+    directionHit,
+    handicapHit,
+    totalGoalsHit,
+    scoreHit,
+    driftHits,
+  };
+}
+
+function boolText(value) {
+  if (value === true) return "命中";
+  if (value === false) return "未中";
+  return "未锁";
+}
+
+function boolTone(value) {
+  if (value === true) return "hit";
+  if (value === false) return "miss";
+  return "pending";
+}
+
 function spBacktestRows(rows) {
   const verified = rows
     .map((row) => {
-      const match = matches.find((item) => item.no === row.no);
-      const score = parseScore(match?.score);
-      if (!score) return null;
-      return { row, match, score };
+      const review = oddsMapRowReview(row);
+      if (!review.scoreData?.score) return null;
+      return { row, score: review.scoreData.score, review };
     })
     .filter(Boolean);
   const lowGoalRows = verified.filter(({ row }) => row.riskFlags.includes("低进球权重抬升"));
@@ -5805,12 +5895,7 @@ function spBacktestRows(rows) {
   const strongRows = verified.filter(({ row }) => row.pressureLevel === "强异动");
   const lowGoalHits = lowGoalRows.filter(({ score }) => score.total <= 2).length;
   const highGoalHits = highGoalRows.filter(({ score }) => score.total >= 4).length;
-  const conflictHits = conflictRows.filter(({ row, score }) => {
-    const match = matches.find((item) => item.no === row.no);
-    const hLine = handicapLine(row.no) || row.handicap;
-    const result = handicapDirection(match?.score, hLine);
-    return row.riskFlags.some((flag) => flag.includes(result));
-  }).length;
+  const conflictHits = conflictRows.filter(({ row, review }) => row.riskFlags.some((flag) => review.actualHandicap && flag.includes(review.actualHandicap))).length;
   return [
     ["低进球权重抬升", lowGoalHits, lowGoalRows.length, "验证小比分是否被提前识别"],
     ["大球权重抬升", highGoalHits, highGoalRows.length, "验证开放局和打花局温度"],
@@ -5845,8 +5930,167 @@ function renderSpBacktest(rows) {
   `;
 }
 
+function renderOddsPreTable(rows) {
+  const tableRows = rows
+    .map(
+      (row) => `
+        <tr>
+          <td>${row.issue || row.no}</td>
+          <td>${row.league}</td>
+          <td class="text-cell">${row.home} vs ${row.away}</td>
+          <td>${formatDate(row.ticaiDate)}</td>
+          <td>${row.handicap}</td>
+          <td>${row.analyses.map(renderPlayTrend).join("")}</td>
+          <td><strong>${row.pressureLevel}</strong></td>
+          ${(() => {
+            const metrics = oddsMapResearchMetrics(row);
+            return `
+              <td><span class="market-metric ${metrics.tone}">${metrics.spreadText}</span></td>
+              <td><span class="market-metric ${metrics.tone}">${metrics.gapText} / ${metrics.valueText}</span></td>
+            `;
+          })()}
+          <td>${row.riskFlags.length ? row.riskFlags.join(" / ") : "结构正常"}</td>
+        </tr>
+      `
+    )
+    .join("") || `<tr><td colspan="10" class="empty-cell">暂无赛前 SP 历史，先运行体彩实时抓取。</td></tr>`;
+
+  return `
+    <div class="review-record-wrap compact odds-map-wrap">
+      <table class="review-record-table odds-map-record-table">
+        <thead>
+          <tr>
+            <th>场次</th>
+            <th>赛事</th>
+            <th>对阵</th>
+            <th>日期</th>
+            <th>让球</th>
+            <th>市场变化</th>
+            <th>强度</th>
+            <th>离散度</th>
+            <th>模型缺口 / 凯利</th>
+            <th>提示</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderOddsBacktestTable(rows) {
+  const tableRows = rows
+    .map((row) => {
+      const review = oddsMapRowReview(row);
+      const key = encodeURIComponent(oddsMapRowKey(row));
+      const predText = review.pred
+        ? `${dash(review.pred.pick)} / ${dash(review.pred.hPick)} / ${dash(review.pred.totalGoalsPick)}`
+        : "未锁版";
+      const driftText = row.riskFlags.length ? row.riskFlags.join(" / ") : row.pressureLevel;
+      const modelText = [
+        `胜平负${boolText(review.directionHit)}`,
+        `让球${boolText(review.handicapHit)}`,
+        `进球${boolText(review.totalGoalsHit)}`,
+      ].join(" · ");
+      return `
+        <tr>
+          <td>${row.issue || row.no}</td>
+          <td class="text-cell">${row.home} vs ${row.away}</td>
+          <td><strong>${review.scoreData?.scoreText || "-"}</strong><em class="odds-score-source">${review.scoreData?.source || ""}</em></td>
+          <td>${predText}</td>
+          <td>${driftText}</td>
+          <td>${modelText}</td>
+          <td>${review.driftHits.length ? review.driftHits.join(" / ") : "记录为样本"}</td>
+          <td><button type="button" class="odds-backtest-detail-btn" data-odds-backtest-detail="${key}">查看</button></td>
+        </tr>
+      `;
+    })
+    .join("") || `<tr><td colspan="8" class="empty-cell">暂无可回测赛果。</td></tr>`;
+
+  return `
+    <div class="review-record-wrap compact odds-map-wrap">
+      <table class="review-record-table odds-map-record-table odds-backtest-record-table">
+        <thead>
+          <tr>
+            <th>场次</th>
+            <th>对阵</th>
+            <th>比分</th>
+            <th>锁版</th>
+            <th>漂移信号</th>
+            <th>模型校验</th>
+            <th>提示</th>
+            <th>单场</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function openOddsBacktestModal(encodedKey = "") {
+  const row = findOddsMapRowByKey(encodedKey);
+  if (!row) return;
+  const review = oddsMapRowReview(row);
+  const metrics = oddsMapResearchMetrics(row);
+  const pred = review.pred;
+  const key = oddsMapRowKey(row);
+  document.querySelector(".odds-backtest-modal")?.remove();
+  const modal = document.createElement("div");
+  modal.className = "odds-backtest-modal";
+  modal.innerHTML = `
+    <div class="odds-backtest-dialog" role="dialog" aria-modal="true" aria-label="${row.home} vs ${row.away} 回测详情">
+      <header>
+        <div>
+          <span>${row.issue || row.no} · ${row.league || "世界杯"}</span>
+          <strong>${row.home} vs ${row.away}</strong>
+          <em>${formatDate(row.ticaiDate)} · 让球 ${row.handicap || review.handicap || "-"}</em>
+        </div>
+        <button type="button" aria-label="关闭" data-odds-backtest-close>×</button>
+      </header>
+      <section class="odds-backtest-dialog-grid">
+        <article>
+          <span>赛果</span>
+          <strong>${review.scoreData?.scoreText || "-"}</strong>
+          <em>${review.scoreData?.source || "未命中赛果"}</em>
+        </article>
+        <article>
+          <span>锁版结论</span>
+          <strong>${pred ? `${dash(pred.pick)} / ${dash(pred.hPick)}` : "未锁版"}</strong>
+          <em>${pred ? dash(pred.totalGoalsPick) : "未写入锁版"}</em>
+        </article>
+        <article>
+          <span>市场漂移</span>
+          <strong>${row.strongest ? `${row.strongest.market} ${row.strongest.label}` : "-"}</strong>
+          <em>${row.strongest ? `${deltaText(row.strongest.weightDelta)} · SP ${row.strongest.openingSp} → ${row.strongest.sp}` : "快照不足"}</em>
+        </article>
+        <article>
+          <span>概率缺口</span>
+          <strong>${metrics.gapText}</strong>
+          <em>离散度 ${metrics.spreadText} · 凯利 ${metrics.valueText}</em>
+        </article>
+      </section>
+      <section class="odds-backtest-status-grid">
+        <span class="${boolTone(review.directionHit)}">胜平负：${boolText(review.directionHit)}</span>
+        <span class="${boolTone(review.handicapHit)}">让球：${boolText(review.handicapHit)}</span>
+        <span class="${boolTone(review.totalGoalsHit)}">进球：${boolText(review.totalGoalsHit)}</span>
+        <span class="${boolTone(review.scoreHit)}">比分：${boolText(review.scoreHit)}</span>
+      </section>
+      <section class="odds-backtest-notes">
+        <p><b>漂移提示：</b>${row.riskFlags.length ? row.riskFlags.join(" / ") : row.pressureLevel}</p>
+        <p><b>回测结论：</b>${review.driftHits.length ? review.driftHits.join(" / ") : "本场作为盘口漂移样本保留，后续扩大样本后再统计稳定性。"}</p>
+      </section>
+      <footer>
+        <button type="button" class="secondary" data-odds-backtest-close>关闭</button>
+        <button type="button" data-odds-open-detail="${key}">进入单场详情</button>
+      </footer>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
 function oddsMapResearchMetrics(row) {
-  const pred = latestPredictionFor(row.no);
+  const pred = oddsMapPredictionForRow(row);
   const math = oddsMathForMatch(row.no, pred);
   if (!math?.normal.entries.length) {
     return {
@@ -5872,25 +6116,45 @@ function renderOddsMap() {
   if (!cards || !table) return;
 
   const rows = oddsMapRows();
-  renderSpBacktest(rows);
+  const { preRows, backtestRows } = splitOddsMapRows(rows);
+  document.querySelectorAll("[data-odds-map-view]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.oddsMapView === activeOddsMapView);
+  });
+  const panel = document.querySelector("#odds-map");
+  panel?.classList.toggle("odds-map-backtest-view", activeOddsMapView === "backtest");
+  panel?.classList.toggle("odds-map-pre-view", activeOddsMapView !== "backtest");
+  renderSpBacktest(backtestRows);
   const liveCount = document.querySelector("#odds-map-live-count");
   const updated = document.querySelector("#odds-map-updated");
-  if (liveCount) liveCount.textContent = `${rows.length} 场`;
+  if (liveCount) liveCount.textContent = `${preRows.length} 赛前 / ${backtestRows.length} 回测`;
   if (updated) updated.textContent = formatCapturedAt(spHistoryData.importedAt) || "等待 SP 历史";
 
-  const hotRows = rows
+  if (activeOddsMapView === "backtest") {
+    cards.innerHTML = `
+      <div class="odds-radar-summary">
+        <article><span>回测样本</span><strong>${backtestRows.length}</strong><em>已有赛果场次</em></article>
+        <article><span>已锁版</span><strong>${backtestRows.filter((row) => oddsMapPredictionForRow(row)).length}</strong><em>可校验模型结论</em></article>
+        <article><span>漂移命中</span><strong>${backtestRows.filter((row) => oddsMapRowReview(row).driftHits.length).length}</strong><em>SP 信号对上赛果</em></article>
+        <article><span>强异动</span><strong>${backtestRows.filter((row) => row.pressureLevel === "强异动").length}</strong><em>优先复盘样本</em></article>
+      </div>
+    `;
+    table.innerHTML = renderOddsBacktestTable(backtestRows);
+    return;
+  }
+
+  const hotRows = preRows
     .filter((row) => row.strongest)
     .sort((a, b) => b.volatility - a.volatility)
     .slice(0, 4);
-  const highCount = rows.filter((row) => row.pressureLevel === "强异动").length;
-  const conflictCount = rows.filter((row) => row.riskFlags.length).length;
-  const hadHomeHot = rows.filter((row) =>
+  const highCount = preRows.filter((row) => row.pressureLevel === "强异动").length;
+  const conflictCount = preRows.filter((row) => row.riskFlags.length).length;
+  const hadHomeHot = preRows.filter((row) =>
     row.analyses.some((item) => item.playType === "had" && item.strongest?.code === "H" && item.strongest?.trend === "strengthening")
   ).length;
 
   cards.innerHTML = `
     <div class="odds-radar-summary">
-      <article><span>当前监控</span><strong>${rows.length}</strong><em>体彩开盘场次</em></article>
+      <article><span>赛前监控</span><strong>${preRows.length}</strong><em>未完场开盘场次</em></article>
       <article><span>强异动</span><strong>${highCount}</strong><em>SP 变化超过 8%</em></article>
       <article><span>冲突信号</span><strong>${conflictCount}</strong><em>胜平负 / 让球不一致</em></article>
       <article><span>主胜升温</span><strong>${hadHomeHot}</strong><em>胜平负主胜权重抬升</em></article>
@@ -5918,51 +6182,7 @@ function renderOddsMap() {
     </div>
   `;
 
-  const tableRows = rows
-    .map(
-      (row) => `
-        <tr>
-          <td>${row.issue || row.no}</td>
-          <td>${row.league}</td>
-          <td class="text-cell">${row.home} vs ${row.away}</td>
-          <td>${formatDate(row.ticaiDate)}</td>
-          <td>${row.handicap}</td>
-          <td>${row.analyses.map(renderPlayTrend).join("")}</td>
-          <td><strong>${row.pressureLevel}</strong></td>
-          ${(() => {
-            const metrics = oddsMapResearchMetrics(row);
-            return `
-              <td><span class="market-metric ${metrics.tone}">${metrics.spreadText}</span></td>
-              <td><span class="market-metric ${metrics.tone}">${metrics.gapText} / ${metrics.valueText}</span></td>
-            `;
-          })()}
-          <td>${row.riskFlags.length ? row.riskFlags.join(" / ") : "结构正常"}</td>
-        </tr>
-      `
-    )
-    .join("") || `<tr><td colspan="10" class="empty-cell">暂无 SP 历史，先运行体彩实时抓取。</td></tr>`;
-
-  table.innerHTML = `
-    <div class="review-record-wrap compact odds-map-wrap">
-      <table class="review-record-table odds-map-record-table">
-        <thead>
-          <tr>
-            <th>场次</th>
-            <th>赛事</th>
-            <th>对阵</th>
-            <th>日期</th>
-            <th>让球</th>
-            <th>市场变化</th>
-            <th>强度</th>
-            <th>离散度</th>
-            <th>模型缺口 / 凯利</th>
-            <th>提示</th>
-          </tr>
-        </thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-    </div>
-  `;
+  table.innerHTML = renderOddsPreTable(preRows);
 }
 
 function renderAll() {
@@ -6088,6 +6308,39 @@ document.querySelector("#sporttery-pool")?.addEventListener("click", (event) => 
   const card = event.target.closest("[data-sporttery-match-key]");
   if (!card) return;
   openSportteryMatchPage(card.dataset.sportteryMatchKey);
+});
+
+document.querySelector("#odds-map")?.addEventListener("click", (event) => {
+  const viewButton = event.target.closest("[data-odds-map-view]");
+  if (viewButton) {
+    activeOddsMapView = viewButton.dataset.oddsMapView || "pre";
+    renderOddsMap();
+    return;
+  }
+  const detailButton = event.target.closest("[data-odds-backtest-detail]");
+  if (detailButton) {
+    openOddsBacktestModal(detailButton.dataset.oddsBacktestDetail);
+  }
+});
+
+document.body.addEventListener("click", (event) => {
+  const closeButton = event.target.closest("[data-odds-backtest-close]");
+  const modalBackdrop = event.target.classList?.contains("odds-backtest-modal") ? event.target : null;
+  if (closeButton || modalBackdrop) {
+    document.querySelector(".odds-backtest-modal")?.remove();
+    return;
+  }
+  const detailButton = event.target.closest("[data-odds-open-detail]");
+  if (detailButton) {
+    document.querySelector(".odds-backtest-modal")?.remove();
+    openSportteryMatchPage(detailButton.dataset.oddsOpenDetail, "odds-map");
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    document.querySelector(".odds-backtest-modal")?.remove();
+  }
 });
 
 document.querySelector("#site-locks")?.addEventListener("click", (event) => {

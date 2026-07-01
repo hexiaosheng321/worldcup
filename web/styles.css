@@ -6689,6 +6689,44 @@ body::before {
   line-height: 1.1;
 }
 
+.odds-map-subnav {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 6px;
+  margin: 18px 22px 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f7fbff;
+}
+
+.odds-map-subnav button {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.odds-map-subnav button.active {
+  border-color: rgba(217, 154, 22, 0.7);
+  background: var(--blue);
+  color: white;
+  box-shadow: inset 0 -3px 0 var(--gold);
+}
+
+.odds-map-pre-view .odds-backtest {
+  display: none;
+}
+
+.odds-map-backtest-view .odds-backtest {
+  display: block;
+}
+
 .odds-map-cards {
   padding: 22px 22px 0;
 }
@@ -6821,6 +6859,193 @@ body::before {
   font-size: 12px;
   font-weight: 850;
   line-height: 1.5;
+}
+
+.odds-score-source {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.odds-backtest-detail-btn {
+  min-width: 64px;
+  min-height: 32px;
+  border: 1px solid rgba(7, 60, 135, 0.35);
+  border-radius: 6px;
+  background: #f8fbff;
+  color: var(--blue);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.odds-backtest-detail-btn:hover {
+  border-color: var(--gold);
+  background: var(--blue);
+  color: white;
+}
+
+.odds-backtest-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(8, 32, 82, 0.5);
+}
+
+.odds-backtest-dialog {
+  width: min(860px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: auto;
+  border: 1px solid rgba(207, 221, 239, 0.95);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 26px 70px rgba(8, 32, 82, 0.28);
+}
+
+.odds-backtest-dialog header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  background: linear-gradient(115deg, rgba(8, 32, 82, 0.98), rgba(7, 60, 135, 0.94));
+  color: white;
+}
+
+.odds-backtest-dialog header span,
+.odds-backtest-dialog header em {
+  display: block;
+  color: rgba(255, 255, 255, 0.72);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.odds-backtest-dialog header strong {
+  display: block;
+  margin: 7px 0;
+  color: white;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 34px;
+  line-height: 1.15;
+}
+
+.odds-backtest-dialog header button {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.odds-backtest-dialog-grid,
+.odds-backtest-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 24px 0;
+}
+
+.odds-backtest-dialog-grid article {
+  min-height: 116px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.odds-backtest-dialog-grid span,
+.odds-backtest-dialog-grid em {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.odds-backtest-dialog-grid strong {
+  display: block;
+  margin: 7px 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.odds-backtest-status-grid span {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f8fbff;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 950;
+}
+
+.odds-backtest-status-grid .hit {
+  border-color: rgba(28, 132, 90, 0.35);
+  background: #edf9f4;
+  color: #116846;
+}
+
+.odds-backtest-status-grid .miss {
+  border-color: rgba(184, 54, 54, 0.3);
+  background: #fff2f2;
+  color: #9f2f2f;
+}
+
+.odds-backtest-status-grid .pending {
+  border-color: rgba(217, 154, 22, 0.36);
+  background: #fff8e6;
+  color: #9b6400;
+}
+
+.odds-backtest-notes {
+  display: grid;
+  gap: 10px;
+  padding: 18px 24px;
+}
+
+.odds-backtest-notes p {
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-weight: 850;
+  line-height: 1.65;
+}
+
+.odds-backtest-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 24px 22px;
+}
+
+.odds-backtest-dialog footer button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  background: var(--blue);
+  color: white;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.odds-backtest-dialog footer button.secondary {
+  background: white;
+  color: var(--blue);
 }
 
 .odds-map-table {
@@ -7489,6 +7714,8 @@ body::before {
   .odds-radar-summary,
   .odds-spotlight-grid,
   .sp-backtest-grid,
+  .odds-backtest-dialog-grid,
+  .odds-backtest-status-grid,
   .triad-grid,
   .odds-math-grid,
   .calibration-grid,
@@ -9398,6 +9625,29 @@ body::before {
   .global-stats-record-table th,
   .global-stats-record-table td {
     padding: 8px 6px;
+  }
+
+  .odds-map-subnav {
+    display: grid;
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .odds-backtest-modal {
+    padding: 10px;
+  }
+
+  .odds-backtest-dialog header,
+  .odds-backtest-dialog-grid,
+  .odds-backtest-status-grid,
+  .odds-backtest-notes,
+  .odds-backtest-dialog footer {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .odds-backtest-dialog header strong {
+    font-size: 26px;
   }
 
   .draw-rate-table,
