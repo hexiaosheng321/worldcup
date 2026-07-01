@@ -1,27 +1,19 @@
 # 云端自动更新方案
 
-当前方案：Cloudflare Pages 托管页面，GitHub Actions 定时触发线上 Pages API 完成体彩数据同步、自动推演锁版、赛果采集和复盘入库。**不依赖 Mac 在线。**
+当前方案：Cloudflare Pages 托管页面，GitHub Actions 定时触发线上 Pages API 完成体彩数据同步、赛果采集和复盘入库。**不依赖 Mac 在线。**
 
 体彩官方接口可能对云服务器请求返回 `567`，因此线上同步通过 `SPORTTERY_UPSTREAM_PROXY` 中转；浏览器直连官方接口保留为前端兜底。
 
-## 自动推演时间规则
+## 锁版口径
 
 系统按 `ticaiDate/businessDate` 识别体彩销售日，不按自然比赛日 `matchDate` 识别当日赛程。比如 `ticaiDate=2026-06-30`、`matchDate=2026-07-01`、`kickoffTime=03:00` 的凌晨比赛，归属 6 月 30 日体彩销售日，必须在 6 月 30 日完成推演和锁版。
 
-每场比赛最终锁版时间：
+自动推演功能已关闭。云端只同步赛程、盘口、赛果、实时比分和历史快照；正式赛前推演必须由人工确认后写入 `locked_predictions`，页面只展示人工 FINAL_LOCK。
+
+建议的人工最终锁版时间：
 
 ```text
 finalLockAt = min(matchDate + kickoffTime - 60分钟, ticaiDate 19:50)
-```
-
-状态规则：
-
-```text
-DRAFT_AUTO      19:50 前，未到最终锁版点时的自动初推演
-FINAL_LOCK      到达最终锁版点后生成最终锁版
-RISK_WATCH      20:00 后只记录风险，不新增可买推荐
-SALE_CLOSED     22:00 后停售冻结，只允许赛果复盘
-RESULT_REVIEW   赛果出来后自动复盘入库
 ```
 
 ## 运行方式
@@ -30,15 +22,15 @@ RESULT_REVIEW   赛果出来后自动复盘入库
 
 - 每次 `main` 分支有新提交时直接部署一次，确保 Codex 更新模型、赛程或页面后，线上网站自动同步。
 - 北京时间 08:00-22:30 每 30 分钟触发一次线上同步。
-- 北京时间 19:50 额外触发最终锁版检查。
+- 北京时间 19:50 额外触发盘口快照和人工锁版检查窗口，不自动生成推演。
 - 北京时间 21:40 记录停售前最后盘口快照。
 - 北京时间 22:05 执行停售冻结和赛后复盘检查。
 
 1. 安装 Node 22 和项目依赖
 2. 定时任务调用 `https://worldcup-dashboard-4hr.pages.dev/api/sync/sporttery`
 3. Pages API 采集体彩赛程、盘口和赛果，写入 D1
-4. Pages API 按销售日和 19:50 规则生成自动锁版
-5. 网站打开后从 `/api/bootstrap` 和 `/api/auto-predictions` 读取云端自动推演
+4. 人工赛前锁版通过 `/api/locks` 写入 D1
+5. 网站打开后从 `/api/bootstrap` 读取云端赛程、人工锁版、赛果和案例库
 
 ## 比分回填来源
 
@@ -65,7 +57,7 @@ RESULT_REVIEW   赛果出来后自动复盘入库
 当前已接入的数据层：
 
 - `/api/football-data-context.js` 输出 `window.FOOTBALL_DATA_CONTEXT`，包含赛事阶段、积分/状态表、每场比赛匹配到的球队状态和 90 分钟比分上下文。
-- 云端自动锁版会把 `footballDataContext` 写入比赛 payload，并把球队状态、赛事阶段、半全场口径写入自动预测的 `teamState`、`competitionStage`、`halftimeDecision`、`objectiveDataLayer`。
+- 人工锁版可以把 `footballDataContext` 写入比赛 payload，并把球队状态、赛事阶段、半全场口径写入 `teamState`、`competitionStage`、`halftimeDecision`、`objectiveDataLayer`。
 - 前端单场详情页展示“客观数据层”，与体彩盘口数据支撑分开展示。
 
 ## GitHub Secrets
@@ -102,4 +94,4 @@ npm run cloudflare:deploy
 ```
 
 > 本地运行 `npm run sporttery:auto-deploy` 仍可手动刷新静态快照，但线上闭环以 Pages API + D1 为准。
-> 网站自动发布和自动推演以 GitHub Actions 定时触发线上 API 为准，不需要 Mac 在线。
+> 网站自动发布和数据同步以 GitHub Actions 定时触发线上 API 为准，不需要 Mac 在线；正式推演不再自动生成。

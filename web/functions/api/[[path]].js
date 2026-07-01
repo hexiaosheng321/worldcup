@@ -1439,7 +1439,7 @@ async function syncSportteryToD1(db, env) {
       JSON.stringify(match)
     ).run();
   }
-  const autoLocks = await createAutoLocks(db, matches, capturedAt);
+  const autoLocks = { created: 0, skipped: 0, disabled: true, reason: "automatic predictions are disabled; use manual locks only" };
 
   const resultSeen = new Set();
   const currentMatchIds = new Set(matches.map((match) => sportteryDbMatchId(match)));
@@ -2061,18 +2061,17 @@ export async function onRequest(context) {
     }
 
     if (path === "auto-predictions" && request.method === "GET") {
-      return json({ ok: true, predictions: await listAutoPredictions(db) });
+      return json({ ok: true, disabled: true, predictions: [] });
     }
 
     if (path === "bootstrap" && request.method === "GET") {
-      const [matches, locks, results, cases, autoPredictions] = await Promise.all([
+      const [matches, locks, results, cases] = await Promise.all([
         db.prepare("SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT 200").all(),
         db.prepare("SELECT * FROM locked_predictions ORDER BY locked_at DESC LIMIT 200").all(),
         db.prepare("SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT 200").all(),
         listCases(db),
-        listAutoPredictions(db, 200),
       ]);
-      return json({ ok: true, matches: matches.results, locks: locks.results, results: results.results, cases, autoPredictions });
+      return json({ ok: true, matches: matches.results, locks: locks.results, results: results.results, cases, autoPredictions: [] });
     }
 
     if (path === "matches" && request.method === "GET") {

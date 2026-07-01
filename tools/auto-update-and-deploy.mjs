@@ -15,7 +15,6 @@ const DATA_FILES = [
   "web/live-sporttery-results.js",
   "web/live-sporttery-sp-history.js",
   "web/live-football-scores.js",
-  "web/auto-sporttery-predictions.js",
   "web/data/caseBase.js",
 ];
 const FETCH_SCRIPTS = [
