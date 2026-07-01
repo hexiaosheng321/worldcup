@@ -135,8 +135,8 @@ async function trackAnalyticsEvent(db, request) {
 }
 
 async function analyticsSummary(db, request, env) {
-  const token = env.ANALYTICS_ADMIN_TOKEN || "";
-  const requestToken = request.headers.get("x-admin-token") || new URL(request.url).searchParams.get("token") || "";
+  const token = String(env.ANALYTICS_ADMIN_TOKEN || "").trim();
+  const requestToken = String(request.headers.get("x-admin-token") || new URL(request.url).searchParams.get("token") || "").trim();
   if (!token || requestToken !== token) {
     return {
       ok: false,
