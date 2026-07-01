@@ -70,6 +70,116 @@ function isoFromMs(timestamp) {
   return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : new Date().toISOString();
 }
 
+async function sha256Hex(text = "") {
+  const data = new TextEncoder().encode(String(text || ""));
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function ensureAnalyticsSchema(db) {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS analytics_events (
+      event_id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      page_path TEXT NOT NULL,
+      page_title TEXT,
+      session_id TEXT,
+      visitor_hash TEXT,
+      referrer TEXT,
+      country TEXT,
+      user_agent TEXT,
+      payload_json TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at)").run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_analytics_events_page ON analytics_events(page_path, created_at)").run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_analytics_events_type ON analytics_events(event_type, created_at)").run();
+}
+
+async function trackAnalyticsEvent(db, request) {
+  const body = await readJson(request);
+  const eventType = String(body.eventType || body.event_type || "page_view").slice(0, 40);
+  const pagePath = String(body.pagePath || body.page_path || "/").slice(0, 240);
+  const pageTitle = String(body.pageTitle || body.page_title || "").slice(0, 160);
+  const sessionId = String(body.sessionId || body.session_id || "").slice(0, 80);
+  const referrer = String(body.referrer || request.headers.get("referer") || "").slice(0, 240);
+  const country = String(request.headers.get("cf-ipcountry") || "").slice(0, 8);
+  const userAgent = String(request.headers.get("user-agent") || "").slice(0, 220);
+  const ip = request.headers.get("cf-connecting-ip") || "";
+  const visitorHash = await sha256Hex(`${ip}|${userAgent}`);
+  const payload = {
+    route: body.route || "",
+    target: body.target || "",
+    source: "site",
+  };
+  await ensureAnalyticsSchema(db);
+  const eventId = id("evt");
+  await db.prepare(`
+    INSERT INTO analytics_events (
+      event_id, event_type, page_path, page_title, session_id, visitor_hash, referrer, country, user_agent, payload_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    eventId,
+    eventType,
+    pagePath,
+    pageTitle,
+    sessionId,
+    visitorHash,
+    referrer,
+    country,
+    userAgent,
+    JSON.stringify(payload)
+  ).run();
+  return { ok: true, eventId };
+}
+
+async function analyticsSummary(db, request, env) {
+  const token = env.ANALYTICS_ADMIN_TOKEN || "";
+  const requestToken = request.headers.get("x-admin-token") || new URL(request.url).searchParams.get("token") || "";
+  if (!token || requestToken !== token) {
+    return { ok: false, status: 403, error: "analytics summary is private" };
+  }
+  await ensureAnalyticsSchema(db);
+  const since = new URL(request.url).searchParams.get("since") || "-7 days";
+  const total = await db.prepare(`
+    SELECT COUNT(*) AS views, COUNT(DISTINCT visitor_hash) AS visitors
+    FROM analytics_events
+    WHERE created_at >= datetime('now', ?)
+  `).bind(since).first();
+  const pages = await db.prepare(`
+    SELECT page_path AS pagePath, COUNT(*) AS views, COUNT(DISTINCT visitor_hash) AS visitors
+    FROM analytics_events
+    WHERE created_at >= datetime('now', ?)
+    GROUP BY page_path
+    ORDER BY views DESC
+    LIMIT 30
+  `).bind(since).all();
+  const events = await db.prepare(`
+    SELECT event_type AS eventType, COUNT(*) AS count
+    FROM analytics_events
+    WHERE created_at >= datetime('now', ?)
+    GROUP BY event_type
+    ORDER BY count DESC
+  `).bind(since).all();
+  const countries = await db.prepare(`
+    SELECT country, COUNT(*) AS views
+    FROM analytics_events
+    WHERE created_at >= datetime('now', ?) AND country != ''
+    GROUP BY country
+    ORDER BY views DESC
+    LIMIT 20
+  `).bind(since).all();
+  return {
+    ok: true,
+    since,
+    total,
+    pages: pages.results || [],
+    events: events.results || [],
+    countries: countries.results || [],
+  };
+}
+
 function sideFromResult(home, away) {
   if (home > away) return "HOME";
   if (home < away) return "AWAY";
@@ -2067,6 +2177,15 @@ export async function onRequest(context) {
 
     if (path === "football-data-context.js" && request.method === "GET") {
       return d1FootballDataContextScript(db, env);
+    }
+
+    if (path === "analytics/track" && request.method === "POST") {
+      return json(await trackAnalyticsEvent(db, request));
+    }
+
+    if (path === "analytics/summary" && request.method === "GET") {
+      const summary = await analyticsSummary(db, request, env);
+      return json(summary, summary.status || 200);
     }
 
     if (path === "sync/sporttery" && request.method === "POST") {

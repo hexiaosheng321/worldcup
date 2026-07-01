@@ -6592,6 +6592,9 @@ document.querySelector("#match-detail")?.addEventListener("click", (event) => {
       panel.hidden = !active;
       panel.classList.toggle("active", active);
     });
+    if (mode.dataset.matchMode === "full") {
+      sendAnalyticsEvent("click_event", { target: "full_projection" });
+    }
     return;
   }
   const d1Lock = event.target.closest("[data-detail-d1-lock]");
@@ -6756,7 +6759,52 @@ document.querySelector("#odds")?.addEventListener("click", (event) => {
 });
 
 document.querySelector("#show-ended-odds")?.addEventListener("change", renderOdds);
-window.addEventListener("hashchange", handleRouteFromHash);
+
+function analyticsSessionId() {
+  try {
+    const key = "fde_analytics_session";
+    const current = sessionStorage.getItem(key);
+    if (current) return current;
+    const created = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    sessionStorage.setItem(key, created);
+    return created;
+  } catch {
+    return "";
+  }
+}
+
+function analyticsPagePath() {
+  return `${window.location.pathname || "/"}${window.location.hash || "#home"}`;
+}
+
+function sendAnalyticsEvent(eventType = "page_view", payload = {}) {
+  const body = JSON.stringify({
+    eventType,
+    pagePath: analyticsPagePath(),
+    pageTitle: document.title || "",
+    sessionId: analyticsSessionId(),
+    referrer: document.referrer || "",
+    route: window.location.hash || "#home",
+    ...payload,
+  });
+  try {
+    if (navigator.sendBeacon) {
+      const sent = navigator.sendBeacon("/api/analytics/track", new Blob([body], { type: "application/json" }));
+      if (sent) return;
+    }
+  } catch {}
+  fetch("/api/analytics/track", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body,
+    keepalive: true,
+  }).catch(() => {});
+}
+
+window.addEventListener("hashchange", () => {
+  handleRouteFromHash();
+  sendAnalyticsEvent("page_view");
+});
 
 const initialHash = window.location.hash;
 if (initialHash) {
@@ -6766,6 +6814,7 @@ if (initialHash) {
 }
 document.body.classList.remove("page-loading"); document.body.classList.add("page-loaded");
 handleRouteFromHash();
+sendAnalyticsEvent("page_view");
 if (!initialHash) {
   runWhenPageIdle(renderAll, 1800);
 }
