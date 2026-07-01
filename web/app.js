@@ -2427,6 +2427,7 @@ function renderMatchDetail(no) {
           <section class="match-page-section"><span>比赛脚本</span><p>${displayModelText(pred.script)}</p></section>
           ${pred.institutionLine ? `<section class="match-page-section"><span>机构视角</span><p>${displayModelText(pred.institutionLine)}</p></section>` : ""}
           ${pred.noiseFilter ? `<section class="match-page-section"><span>排除因素</span><p>${displayModelText(pred.noiseFilter)}</p></section>` : ""}
+          ${renderD1CaseBasePanel(pred, match)}
           ${renderSimilarCasePanel(pred, match)}
         `
         : `
@@ -2450,11 +2451,13 @@ function renderMatchDetail(no) {
     ${pred ? renderFinalDecisionGatePanel(pred) : ""}
     </div>
     <div class="match-page-actions">
+      ${pred ? `<button type="button" data-detail-d1-lock="${match.no}">写入D1锁版</button>` : ""}
       <button type="button" data-detail-model="${match.no}">锁版室</button>
       <button type="button" class="secondary" data-detail-review="${match.no}">复盘验票台</button>
     </div>
   `;
   activateTab("match-detail");
+  if (pred) refreshD1CaseBasePanel(pred, match);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -2669,7 +2672,7 @@ function lockFromPrediction(pred, match = {}) {
   const modelAwayProb = probabilityNumber(pred.awayProb);
   const confidenceScore = gate.score || 0;
   const result = matchResultFromScore(match);
-  return window.WC_LOCK_ENGINE.buildLockedPrediction(match, {
+  const lock = window.WC_LOCK_ENGINE.buildLockedPrediction(match, {
     lockId: `${match.no || match.matchId}-${predictionModelVersion(pred)}-${pred.date || match.date}`,
     matchId: String(match.matchId || match.no || ""),
     matchCode: match.no || pred.no || "",
@@ -2708,12 +2711,11 @@ function lockFromPrediction(pred, match = {}) {
     downgradeReasons: [pred.decisionConflict, pred.keyFailureRisk, pred.eventRisk].filter(Boolean),
     resultStatus: result ? "PENDING" : "PENDING",
   });
+  lock.modelVersion = predictionModelVersion(pred) || lock.modelVersion;
+  return lock;
 }
 
 function reviewedLockCase(pred, match) {
-  if (predictionModelVersion(pred) !== "V4") {
-    return { lock: null, result: matchResultFromScore(match), review: null, caseItem: null };
-  }
   const lock = lockFromPrediction(pred, match);
   const result = matchResultFromScore(match);
   if (!lock || !result || !window.WC_REVIEW_ENGINE) return { lock, result, review: null, caseItem: null };
@@ -2735,13 +2737,11 @@ function collectReviewedCaseItems() {
   };
   groupedPredictions().forEach(({ match, predictions }) => {
     predictions.forEach((pred) => {
-      if (predictionModelVersion(pred) !== "V4") return;
       const { caseItem } = reviewedLockCase(pred, match);
       addCase(caseItem);
     });
   });
   (data.sportteryPredictions || []).forEach((pred) => {
-    if (predictionModelVersion(pred) !== "V4") return;
     const item = findSportteryItemForPrediction(pred);
     const detail = item ? sportteryDetailRow(item) : null;
     const match = {
@@ -2776,17 +2776,6 @@ function runtimeCaseBase() {
 }
 
 function caseBaseStatus(pred, match) {
-  if (predictionModelVersion(pred) !== "V4") {
-    return {
-      lock: null,
-      review: null,
-      caseItem: null,
-      generated: false,
-      caseId: "-",
-      reviewText: "旧版本不进入 V4 Case Base",
-      hitStatus: "VOID",
-    };
-  }
   const { lock, result, review, caseItem } = reviewedLockCase(pred, match);
   return {
     lock,
@@ -2799,9 +2788,139 @@ function caseBaseStatus(pred, match) {
   };
 }
 
+function d1CasePanelId(pred, match) {
+  return `d1-case-${String(match?.matchId || match?.no || pred?.no || "unknown").replace(/[^a-zA-Z0-9_-]+/g, "-")}`;
+}
+
+function renderD1Rate(hitRateValue, count) {
+  const countText = Number(count || 0);
+  if (!countText) return "等待样本";
+  return `${(Number(hitRateValue || 0) * 100).toFixed(1)}% · ${countText}场`;
+}
+
+function renderD1CaseBaseContent(result) {
+  const stats = result?.stats || {};
+  const failureReasons = stats.failureReasons || [];
+  const advice = result?.downgradeAdvice || {};
+  const warningFlags = result?.warningFlags || [];
+  return `
+    <div class="similar-case-summary d1-case-summary">
+      <article><small>相似历史样本数</small><strong>${Number(result?.sampleCount || stats.sampleCount || 0)}场</strong></article>
+      <article><small>同联赛同盘口命中率</small><strong>${renderD1Rate(stats.sameLeagueHandicapHitRate, stats.sameLeagueHandicapCount)}</strong></article>
+      <article><small>同模型版本命中率</small><strong>${renderD1Rate(stats.sameModelVersionHitRate, stats.sameModelVersionCount)}</strong></article>
+      <article><small>是否建议降级</small><strong>${advice.level || (advice.downgrade ? "降级" : "维持")}</strong></article>
+    </div>
+    <div class="similar-case-practical">
+      <article><small>常见失败原因</small><strong>${
+        failureReasons.length
+          ? failureReasons.map((item) => `${item.label} ${item.count}次`).join(" / ")
+          : "暂无失败样本"
+      }</strong></article>
+      <article><small>样本使用规则</small><strong>${stats.samplePolicyLabel || "只展示不修正"}：${stats.samplePolicyNote || "等待 D1 样本补齐"}</strong></article>
+      <article><small>降级说明</small><strong>${advice.reason || "暂无触发降级条件"}</strong></article>
+      <article><small>风险提示</small><strong>${warningFlags.length ? warningFlags.join(" / ") : "暂无 D1 风险提示"}</strong></article>
+    </div>
+    <p class="similar-case-summary-text">${result?.summaryText || "D1 Case Base 已接入，等待样本扩充。"}</p>
+  `;
+}
+
+function renderD1CaseBasePanel(pred, match) {
+  if (!pred || !match) return "";
+  return `
+    <section class="match-page-section similar-case-panel d1-case-panel" id="${d1CasePanelId(pred, match)}" data-d1-case-panel>
+      <span>D1 Case Base 诊断</span>
+      <div class="similar-case-summary">
+        <article><small>相似历史样本数</small><strong>读取中</strong></article>
+        <article><small>同联赛同盘口命中率</small><strong>读取中</strong></article>
+        <article><small>同模型版本命中率</small><strong>读取中</strong></article>
+        <article><small>是否建议降级</small><strong>读取中</strong></article>
+      </div>
+      <p class="similar-case-summary-text">正在从 D1 Case Base 读取相似案例。</p>
+    </section>
+  `;
+}
+
+async function refreshD1CaseBasePanel(pred, match) {
+  const panel = document.querySelector(`#${d1CasePanelId(pred, match)}`);
+  if (!panel || !pred || !match) return;
+  const lock = lockFromPrediction(pred, match);
+  if (!lock || !window.WC_CLOUD_STORE?.similarCases) {
+    panel.innerHTML = `<span>D1 Case Base 诊断</span><p class="similar-case-summary-text">D1 接口暂不可用，本页只显示本地相似样本。</p>`;
+    return;
+  }
+  const result = await window.WC_CLOUD_STORE.similarCases({
+    ...lock,
+    threshold: 55,
+    sampleLimit: 80,
+    topLimit: 6,
+    modelVersion: predictionModelVersion(pred),
+  });
+  if (!result?.ok) {
+    panel.innerHTML = `<span>D1 Case Base 诊断</span><p class="similar-case-summary-text">D1 暂未返回可用 Case Base：${result?.data?.error || result?.error || "等待云端同步"}</p>`;
+    return;
+  }
+  panel.innerHTML = `<span>D1 Case Base 诊断</span>${renderD1CaseBaseContent(result)}`;
+}
+
+async function writePredictionLockToD1(pred, match, button) {
+  if (!pred || !match || !window.WC_CLOUD_STORE?.createLock) return;
+  const lock = lockFromPrediction(pred, match);
+  if (!lock) return;
+  const originalText = button?.textContent || "写入D1锁版";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "写入中...";
+  }
+  try {
+    const created = await window.WC_CLOUD_STORE.createLock(lock);
+    const duplicate = created?.status === 409 || /already exists/i.test(created?.data?.error || "");
+    if (!created?.ok && !duplicate) {
+      if (button) button.textContent = "写入失败";
+      return;
+    }
+    const result = matchResultFromScore(match);
+    if (!result) {
+      if (button) button.textContent = duplicate ? "D1已存在，等待赛果" : "已写入，等待赛果";
+      await refreshD1CaseBasePanel(pred, match);
+      return;
+    }
+    if (window.WC_CLOUD_STORE.upsertResult) {
+      await window.WC_CLOUD_STORE.upsertResult(result);
+    }
+    if (window.WC_CLOUD_STORE.runReview) {
+      await window.WC_CLOUD_STORE.runReview(lock.lockId);
+    }
+    const caseResult = window.WC_CLOUD_STORE.generateCase
+      ? await window.WC_CLOUD_STORE.generateCase(lock.lockId)
+      : null;
+    if (button) button.textContent = caseResult?.ok || caseResult?.duplicated ? "已生成Case" : "已写入D1";
+    await refreshD1CaseBasePanel(pred, match);
+  } finally {
+    if (button) {
+      setTimeout(() => {
+        button.disabled = false;
+        button.textContent = originalText;
+      }, 2200);
+    }
+  }
+}
+
+function writeWorldCupLockToD1(no, button) {
+  const match = matches.find((item) => item.no === no);
+  const pred = latestPredictionFor(no);
+  return writePredictionLockToD1(pred, match, button);
+}
+
+function writeSportteryLockToD1(key, button) {
+  const base = findSportteryItemByKey(key);
+  if (!base) return null;
+  const item = sportteryDetailRow(base);
+  const pred = sportteryPredictionForItem(item) || (item.linkedNo ? latestPredictionFor(item.linkedNo) : null);
+  return writePredictionLockToD1(pred, item, button);
+}
+
 function renderSimilarCasePanel(pred, match) {
   if (!pred || !match || !window.WC_SIMILAR_CASE_ENGINE) return "";
-  if (predictionModelVersion(pred) !== "V4") return "";
   const lock = lockFromPrediction(pred, match);
   if (!lock) return "";
   const result = window.WC_SIMILAR_CASE_ENGINE.findSimilarCases(lock, runtimeCaseBase());
@@ -3065,6 +3184,7 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
     ${modelPred.institutionLine ? `<section class="match-page-section"><span>机构视角</span><p>${displayModelText(modelPred.institutionLine)}</p></section>` : ""}
     ${modelPred.noiseFilter ? `<section class="match-page-section"><span>排除因素</span><p>${displayModelText(modelPred.noiseFilter)}</p></section>` : ""}
     ${renderFinalDecisionGatePanel(modelPred)}
+    ${renderD1CaseBasePanel(modelPred, item)}
     ${renderSimilarCasePanel(modelPred, item)}
   `;
 }
@@ -3225,6 +3345,7 @@ function renderSportteryMatchDetail(key) {
       ${renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreOdds, sourceStamp)}
     </div>
     <div class="match-page-actions">
+      ${modelPred ? `<button type="button" data-detail-d1-sporttery-lock="${sportteryItemKey(item)}">写入D1锁版</button>` : ""}
       ${item.linkedNo ? `<button type="button" data-detail-model="${item.linkedNo}">世界杯模型页</button>` : ""}
       ${modelPred && !item.linkedNo ? `<button type="button" data-detail-global-stats>统计和回测</button>` : ""}
       <button type="button" class="secondary" data-detail-back>${backLabel.replace("← ", "返回")}</button>
@@ -3234,6 +3355,7 @@ function renderSportteryMatchDetail(key) {
   document.body.classList.add("sporttery-detail-mode");
   document.querySelectorAll(".home-topbar nav button").forEach((button) => button.classList.remove("active"));
   document.querySelector(".home-topbar [data-sporttery-pool]")?.classList.add("active");
+  if (modelPred) refreshD1CaseBasePanel(modelPred, item);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -6456,6 +6578,16 @@ document.querySelector("#match-detail")?.addEventListener("click", (event) => {
       panel.hidden = !active;
       panel.classList.toggle("active", active);
     });
+    return;
+  }
+  const d1Lock = event.target.closest("[data-detail-d1-lock]");
+  if (d1Lock) {
+    writeWorldCupLockToD1(d1Lock.dataset.detailD1Lock, d1Lock);
+    return;
+  }
+  const d1SportteryLock = event.target.closest("[data-detail-d1-sporttery-lock]");
+  if (d1SportteryLock) {
+    writeSportteryLockToD1(d1SportteryLock.dataset.detailD1SportteryLock, d1SportteryLock);
     return;
   }
   const model = event.target.closest("[data-detail-model]");

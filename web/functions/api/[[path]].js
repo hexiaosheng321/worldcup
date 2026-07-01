@@ -302,6 +302,21 @@ function handicapResult(row) {
   return "让负";
 }
 
+function sameHandicapLine(row, current) {
+  const left = Number(row.asianHandicap);
+  const right = Number(current.asianHandicap);
+  return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) <= 0.25;
+}
+
+function failureReasonRows(rows) {
+  const loseRows = rows.filter((item) => item.hitStatus === "LOSE");
+  const tagged = loseRows.flatMap((item) => item.failureTags || []);
+  if (tagged.length) {
+    return countBy(tagged.map((label) => ({ label })), (item) => item.label, 5);
+  }
+  return loseRows.length ? [{ label: "未记录失败标签", count: loseRows.length, rate: 1 }] : [];
+}
+
 function samplePolicy(count) {
   if (count >= 30) return { level: "FULL", label: "可参与置信修正", note: "同赛事样本达到 30 场，允许进入最终置信修正。" };
   if (count >= 10) return { level: "RISK_ONLY", label: "仅做风险提示", note: "同赛事样本 10-29 场，只提示风险，不改最终置信。" };
@@ -311,10 +326,15 @@ function samplePolicy(count) {
 function stats(rows, current) {
   const sameRecommendation = rows.filter((item) => item.recommendationSide === current.recommendationSide);
   const sameGrade = rows.filter((item) => item.finalGrade === current.finalGrade);
+  const sameModelVersion = current.modelVersion
+    ? rows.filter((item) => String(item.modelVersion || "").toUpperCase() === String(current.modelVersion || "").toUpperCase())
+    : [];
+  const sameLeagueHandicap = rows.filter((item) => sameHandicapLine(item, current));
   const policy = samplePolicy(rows.length);
   return {
     sampleCount: rows.length,
     competition: normalizeCompetition(current.league),
+    modelVersion: current.modelVersion || "",
     samplePolicy: policy.level,
     samplePolicyLabel: policy.label,
     samplePolicyNote: policy.note,
@@ -331,6 +351,11 @@ function stats(rows, current) {
     sameRecommendationHitRate: rate(sameRecommendation, (item) => item.hitStatus === "WIN"),
     sameGradeCount: sameGrade.length,
     sameGradeHitRate: rate(sameGrade, (item) => item.hitStatus === "WIN"),
+    sameLeagueHandicapCount: sameLeagueHandicap.length,
+    sameLeagueHandicapHitRate: rate(sameLeagueHandicap, (item) => item.hitStatus === "WIN"),
+    sameModelVersionCount: sameModelVersion.length,
+    sameModelVersionHitRate: rate(sameModelVersion, (item) => item.hitStatus === "WIN"),
+    failureReasons: failureReasonRows(rows),
     avgRiskScore: avg(rows, (item) => Number(item.riskScore)),
     avgConsistencyScore: avg(rows, (item) => Number(item.consistencyScore)),
     upsetRate: rate(rows, (item) => ["C", "D"].includes(item.finalGrade) && item.hitStatus === "WIN"),
@@ -353,10 +378,20 @@ function warnings(s, topCases) {
   if (!s || s.sampleCount < 10) flags.push("同赛事样本不足，不参与修正");
   if (s?.sampleCount >= 10 && s.sampleCount < 30) flags.push("样本只做风险提示，不改置信");
   if (s?.sampleCount >= 10 && s.sameRecommendationHitRate < 0.45) flags.push("当前推荐历史命中率偏低");
+  if (s?.sameLeagueHandicapCount >= 8 && s.sameLeagueHandicapHitRate < 0.45) flags.push("同联赛同盘口命中率偏低");
+  if (s?.sameModelVersionCount >= 8 && s.sameModelVersionHitRate < 0.45) flags.push("同模型版本命中率偏低");
   if (s?.drawRate >= 0.34) flags.push("历史平局率偏高，建议防平");
   if (s?.upsetRate >= 0.3) flags.push("历史冷门率偏高");
   if (topCases.filter((item) => item.hitStatus === "LOSE").length > topCases.filter((item) => item.hitStatus === "WIN").length) flags.push("高相似案例失败较多");
   return flags;
+}
+
+function downgradeAdvice(s, warningFlags) {
+  if (!s || s.sampleCount < 10) return { downgrade: true, level: "观察", reason: "相似样本不足，只展示不修正置信。" };
+  if (s.sameLeagueHandicapCount >= 8 && s.sameLeagueHandicapHitRate < 0.45) return { downgrade: true, level: "降级", reason: "同联赛同盘口历史命中率偏低。" };
+  if (s.sameModelVersionCount >= 8 && s.sameModelVersionHitRate < 0.45) return { downgrade: true, level: "降级", reason: "同模型版本历史命中率偏低。" };
+  if ((warningFlags || []).length >= 2) return { downgrade: true, level: "谨慎", reason: warningFlags.slice(0, 2).join("；") };
+  return { downgrade: false, level: "维持", reason: s.samplePolicyNote || "暂无触发降级条件。" };
 }
 
 async function listCases(db) {
@@ -384,9 +419,9 @@ async function createCaseForLock(db, lockId) {
       value_home_gap, value_draw_gap, value_away_gap, asian_handicap, asian_home_water, asian_away_water,
       euro_home_odds, euro_draw_odds, euro_away_odds, euro_home_prob, euro_draw_prob, euro_away_prob,
       data_quality, actual_result, actual_goals, hit_status, failure_tags_json, success_tags_json, payload_json, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'V4', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
-    caseId, lock.lock_id, lock.match_id, lock.league, lock.home_team, lock.away_team, lock.kickoff_time,
+    caseId, lock.lock_id, lock.match_id, lock.league, lock.home_team, lock.away_team, lock.kickoff_time, lock.model_version || "V1",
     lock.model_home_prob, lock.model_draw_prob, lock.model_away_prob, lock.recommendation, lock.recommendation_side,
     lock.final_grade, lock.final_action, lock.confidence_score, lock.risk_score, lock.consistency_score,
     lock.sporttery_home_sp, lock.sporttery_draw_sp, lock.sporttery_away_sp, lock.sporttery_home_prob, lock.sporttery_draw_prob, lock.sporttery_away_prob,
@@ -2126,10 +2161,10 @@ export async function onRequest(context) {
           sporttery_home_prob, sporttery_draw_prob, sporttery_away_prob, value_home_gap, value_draw_gap, value_away_gap,
           asian_handicap, asian_home_water, asian_away_water, euro_home_odds, euro_draw_odds, euro_away_odds,
           euro_home_prob, euro_draw_prob, euro_away_prob, data_quality, reasoning_summary, downgrade_reasons_json, result_status, payload_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'V4', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
       `).bind(
         lockId, body.matchId || body.match_id, body.matchCode || body.match_code || "", body.homeTeam || body.home_team || "", body.awayTeam || body.away_team || "",
-        body.league || "世界杯", body.kickoffTime || body.kickoff_time || "", body.lockedAt || body.locked_at || new Date().toISOString(), body.lockType || body.lock_type || "FINAL_LOCK",
+        body.league || "世界杯", body.kickoffTime || body.kickoff_time || "", body.lockedAt || body.locked_at || new Date().toISOString(), body.lockType || body.lock_type || "FINAL_LOCK", body.modelVersion || body.model_version || "V1",
         n(body.modelHomeProb ?? body.model_home_prob, 0), n(body.modelDrawProb ?? body.model_draw_prob, 0), n(body.modelAwayProb ?? body.model_away_prob, 0),
         body.recommendation || "", body.recommendationSide || body.recommendation_side || "SKIP", body.finalGrade || body.final_grade || "D", body.finalAction || body.final_action || "谨慎",
         n(body.confidenceScore ?? body.confidence_score, 0), n(body.riskScore ?? body.risk_score, 0), n(body.consistencyScore ?? body.consistency_score, null),
@@ -2191,7 +2226,6 @@ export async function onRequest(context) {
       const current = await readJson(request);
       const cases = await listCases(db);
       const pool = cases
-        .filter((item) => item.modelVersion === "V4")
         .filter((item) => String(item.matchId) !== String(current.matchId))
         .filter((item) => normalizeCompetition(item.league) === normalizeCompetition(current.league))
         .filter((item) => ["HIGH", "MEDIUM"].includes(item.dataQuality || "MEDIUM"))
@@ -2203,6 +2237,7 @@ export async function onRequest(context) {
       const s = stats(pool, current);
       const adjustment = confidenceAdjustment(s);
       const warningFlags = warnings(s, topCases);
+      const advice = downgradeAdvice(s, warningFlags);
       return json({
         ok: true,
         sampleCount: pool.length,
@@ -2210,11 +2245,12 @@ export async function onRequest(context) {
         stats: s,
         confidenceAdjustment: adjustment,
         warningFlags,
+        downgradeAdvice: advice,
         summaryText: pool.length < 10
           ? `当前仅在【${s.competition}】匹配到 ${pool.length} 场相似案例，样本量不足，只展示，不参与置信度修正。`
           : pool.length < 30
-            ? `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%，样本只做风险提示，不调整最终置信。`
-            : `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%。`,
+            ? `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%，同模型版本 ${(s.sameModelVersionHitRate * 100).toFixed(1)}%，样本只做风险提示。`
+            : `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%，同联赛同盘口 ${(s.sameLeagueHandicapHitRate * 100).toFixed(1)}%。`,
       });
     }
 
