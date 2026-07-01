@@ -2430,6 +2430,8 @@ function renderMatchDetail(no) {
         ? "← 赛事推演锁版"
       : matchDetailReturnTarget === "model-stats"
         ? "← 统计和回测"
+      : matchDetailReturnTarget === "knockout"
+        ? "← 淘汰赛签表"
         : "← 比赛流";
   content.innerHTML = `
     <div class="match-page-toolbar">
@@ -3370,10 +3372,10 @@ function openSportteryMatchPage(key, returnTarget = "sporttery") {
 
 function closeMatchPage() {
   if (window.location.hash.startsWith("#match-") || window.location.hash.startsWith("#sporttery-match-")) {
-    const hash = matchDetailReturnTarget === "review" ? "#worldcup-review" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "odds-map" ? "#odds-map" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : "#worldcup";
+    const hash = matchDetailReturnTarget === "review" ? "#worldcup-review" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "odds-map" ? "#odds-map" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : matchDetailReturnTarget === "knockout" ? "#worldcup-knockout" : "#worldcup";
     history.pushState("", document.title, `${window.location.pathname}${window.location.search}${hash}`);
   }
-  activateTab(matchDetailReturnTarget === "review" ? "review" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "odds-map" ? "odds-map" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : "today");
+  activateTab(matchDetailReturnTarget === "review" ? "review" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "odds-map" ? "odds-map" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : matchDetailReturnTarget === "knockout" ? "knockout" : "today");
 }
 
 function handleRouteFromHash() {
@@ -3395,6 +3397,9 @@ function handleRouteFromHash() {
   }
   if (window.location.hash === "#worldcup") {
     activateTab("path");
+  }
+  if (window.location.hash === "#worldcup-knockout") {
+    activateTab("knockout");
   }
   if (window.location.hash === "#worldcup-review") {
     activateTab("review");
@@ -3949,6 +3954,149 @@ function renderPath() {
         <b>32 强边缘线</b>
         ${knockoutBubble
           .map((team) => `<span>${team.group}组 ${team.name} ${pct(team.groupAdvance, 0)}</span>`)
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+const knockoutRoundPlan = [
+  { key: "r32", title: "32强赛", note: "16 场", nos: rangeNos(73, 88) },
+  { key: "r16", title: "16强赛", note: "8 场", nos: rangeNos(89, 96) },
+  { key: "qf", title: "8强赛", note: "4 场", nos: rangeNos(97, 100) },
+  { key: "sf", title: "半决赛", note: "2 场", nos: rangeNos(101, 102) },
+  { key: "final", title: "决赛", note: "1 场", nos: ["104"] },
+];
+
+function rangeNos(start, end) {
+  return Array.from({ length: end - start + 1 }, (_, index) => String(start + index).padStart(3, "0"));
+}
+
+function knockoutMatchByNo(no) {
+  return matches.find((match) => match.no === no);
+}
+
+function knockoutWinner(match) {
+  const parsed = parseScore(match?.score);
+  if (!parsed) return "";
+  if (parsed.home > parsed.away) return match.home;
+  if (parsed.home < parsed.away) return match.away;
+  return match.winner || "";
+}
+
+function previousKnockoutSources(roundIndex, matchIndex) {
+  if (roundIndex <= 0) return [];
+  const previous = knockoutRoundPlan[roundIndex - 1];
+  return [previous.nos[matchIndex * 2], previous.nos[matchIndex * 2 + 1]].filter(Boolean);
+}
+
+function knockoutParticipant(match, side, sources, sourceIndex) {
+  if (match?.[side]) return match[side];
+  const sourceNo = sources[sourceIndex];
+  const sourceWinner = knockoutWinner(knockoutMatchByNo(sourceNo));
+  return sourceWinner || "待定";
+}
+
+function knockoutSlot(round, roundIndex, no, matchIndex) {
+  const match = knockoutMatchByNo(no);
+  const sources = previousKnockoutSources(roundIndex, matchIndex);
+  const home = knockoutParticipant(match, "home", sources, 0);
+  const away = knockoutParticipant(match, "away", sources, 1);
+  const parsed = parseScore(match?.score);
+  const winner = knockoutWinner(match);
+  const status = parsed ? (winner ? "已产生胜者" : "加时/点球待补") : match ? "待赛" : "待定";
+  const date = match?.date ? formatDate(match.date) : "时间待定";
+  return {
+    no,
+    roundKey: round.key,
+    roundTitle: round.title,
+    match,
+    home,
+    away,
+    score: match?.score || "",
+    winner,
+    status,
+    date,
+    sources,
+  };
+}
+
+function renderKnockoutTeam(name, winner) {
+  const isPlaceholder = !name || name === "待定";
+  const flag = !isPlaceholder && teamFlags[name] ? `<em>${teamFlags[name]}</em>` : "";
+  return `
+    <span class="knockout-team ${winner && winner === name ? "winner" : ""} ${isPlaceholder ? "pending" : ""}">
+      ${flag}<b>${name || "待定"}</b>
+    </span>
+  `;
+}
+
+function renderKnockoutCard(slot, index) {
+  const actionable = Boolean(slot.match);
+  const sourceText = slot.sources.length ? slot.sources.map((item) => `${item}胜者`).join(" / ") : "";
+  return `
+    <article class="knockout-card ${slot.winner ? "finished" : ""} ${actionable ? "actionable" : "pending"}"
+      ${actionable ? `data-knockout-match="${slot.no}"` : ""}
+      style="--slot-index:${index}">
+      <div class="knockout-card-meta">
+        <span>${slot.no}</span>
+        <em>${slot.date}</em>
+      </div>
+      <div class="knockout-card-body">
+        ${renderKnockoutTeam(slot.home, slot.winner)}
+        <strong>${slot.score || "vs"}</strong>
+        ${renderKnockoutTeam(slot.away, slot.winner)}
+      </div>
+      <div class="knockout-card-foot">
+        <span>${slot.status}</span>
+        ${sourceText ? `<em>${sourceText}</em>` : `<em>${slot.match?.group || slot.roundTitle}</em>`}
+      </div>
+    </article>
+  `;
+}
+
+function renderKnockout() {
+  const board = document.querySelector("#knockout-board");
+  if (!board) return;
+  const rounds = knockoutRoundPlan.map((round, roundIndex) => ({
+    ...round,
+    slots: round.nos.map((no, matchIndex) => knockoutSlot(round, roundIndex, no, matchIndex)),
+  }));
+  const allSlots = rounds.flatMap((round) => round.slots);
+  const finished = allSlots.filter((slot) => slot.winner).length;
+  const scheduled = allSlots.filter((slot) => slot.match).length;
+  const champion = rounds.at(-1)?.slots[0]?.winner || "待定";
+  const nextSlot =
+    allSlots.find((slot) => slot.match && !parseScore(slot.match.score)) ||
+    allSlots.find((slot) => !slot.match);
+
+  board.innerHTML = `
+    <section class="knockout-hero-card">
+      <div>
+        <p class="eyebrow">Road To Final</p>
+        <h3>世界杯淘汰赛路径</h3>
+        <p>根据已回填赛果自动推进胜者；未产生的对阵、时间和胜者统一以待定展示。</p>
+      </div>
+      <div class="knockout-hero-stats">
+        <article><span>已产生胜者</span><strong>${finished}</strong><em>${scheduled} 场已挂入签表</em></article>
+        <article><span>下一节点</span><strong>${nextSlot?.no || "待定"}</strong><em>${nextSlot?.date || "时间待定"}</em></article>
+        <article><span>冠军</span><strong>${champion}</strong><em>决赛胜者自动更新</em></article>
+      </div>
+    </section>
+    <section class="knockout-bracket-shell" aria-label="世界杯淘汰赛签表">
+      <div class="knockout-bracket">
+        ${rounds
+          .map((round, roundIndex) => `
+            <section class="knockout-round ${round.key}">
+              <div class="knockout-round-head">
+                <strong>${round.title}</strong>
+                <span>${round.note}</span>
+              </div>
+              <div class="knockout-round-list">
+                ${round.slots.map((slot, index) => renderKnockoutCard(slot, roundIndex * 20 + index)).join("")}
+              </div>
+            </section>
+          `)
           .join("")}
       </div>
     </section>
@@ -6320,6 +6468,7 @@ function renderAll() {
   renderToday();
   renderSchedule();
   renderPath();
+  renderKnockout();
   renderStats();
   renderOdds();
   renderModel();
@@ -6445,6 +6594,12 @@ document.querySelector("#sporttery-pool")?.addEventListener("click", (event) => 
   const card = event.target.closest("[data-sporttery-match-key]");
   if (!card) return;
   openSportteryMatchPage(card.dataset.sportteryMatchKey);
+});
+
+document.querySelector("#knockout")?.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-knockout-match]");
+  if (!card) return;
+  openMatchPage(card.dataset.knockoutMatch, "knockout");
 });
 
 document.querySelector("#odds-map")?.addEventListener("click", (event) => {
