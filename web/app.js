@@ -1712,6 +1712,7 @@ function rerenderOddsSurfaces() {
   renderHome();
   renderToday();
   renderSportteryPool();
+  renderSiteLocks();
   renderOddsMap();
   renderSignals();
   renderStats();
