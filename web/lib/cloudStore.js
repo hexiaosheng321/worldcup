@@ -1,5 +1,7 @@
 (function () {
-  const API_BASE = "/api";
+  const API_BASE = window.location.protocol === "file:"
+    ? "https://worldcup-dashboard-4hr.pages.dev/api"
+    : "/api";
 
   async function request(path, options = {}) {
     try {
