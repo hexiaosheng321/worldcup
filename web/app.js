@@ -2301,6 +2301,119 @@ function renderQuickMatchMode(match, pred, filter, finished, hLabel) {
   `;
 }
 
+function compactProjectionValue(value, fallback = "-") {
+  if (value === undefined || value === null || value === "") return fallback;
+  return displayModelText(value);
+}
+
+function projectionScorePick(pred, fallback = "") {
+  const scores = [pred?.mainScore || pred?.score1, pred?.counterScore || pred?.score2].filter(Boolean);
+  return scores.length ? scores.join(" / ") : fallback || pred?.scorePick || "-";
+}
+
+function renderProjectionDecisionDeck(match, pred, filter, options = {}) {
+  const gate = options.gate === false ? null : match?.no ? autoDecisionGate(match.no, pred) : null;
+  const scorePick = projectionScorePick(pred, options.scorePick);
+  const totalPick = pred?.totalGoalsPick || options.totalPick || "-";
+  const handicap = handicapPick(pred) || options.handicapPick || "-";
+  const issue = options.issue || (match ? ticaiIssue(match) : pred?.issue) || "-";
+  const version = pred ? predictionVersionLabel(pred) : "待推演";
+  const summary = finalDecisionActionText(pred) || `单选 ${pred?.pick || "-"}；让球 ${handicap}；总进球 ${totalPick}；比分 ${scorePick}`;
+  const competition = options.competition || pred?.competitionModel || pred?.competitionType || (match?.group ? `${match.group}组` : "");
+  const meta = [
+    competition,
+    gate ? `证据 ${gate.level} / ${gate.score}` : "",
+    filter?.grade ? `置信 ${filter.grade}` : "",
+    filter?.advice ? `动作 ${filter.advice}` : "",
+  ].filter(Boolean);
+  return `
+    <section class="match-page-section projection-deck">
+      <div class="projection-deck-head">
+        <span>完整推演总览</span>
+        <strong>${compactProjectionValue(summary)}</strong>
+        <em>${meta.join(" · ")}</em>
+      </div>
+      <div class="projection-deck-grid">
+        <article><small>体彩期号</small><b>${issue}</b></article>
+        <article><small>模型版本</small><b>${version}</b></article>
+        <article><small>单选</small><b>${pred?.pick || options.directionPick || "-"}</b></article>
+        <article><small>让球</small><b>${handicap}</b></article>
+        <article><small>总进球</small><b>${totalPick}</b></article>
+        <article><small>比分预测</small><b>${scorePick}</b></article>
+      </div>
+    </section>
+  `;
+}
+
+function renderProjectionFlowGrid(pred, filter, options = {}) {
+  const scorePick = projectionScorePick(pred, options.scorePick);
+  const totalPick = pred?.totalGoalsPick || options.totalPick || "-";
+  const cards = [
+    ["概率底盘", `主胜 ${pred?.homeProb || "-"} ｜ 平 ${pred?.drawProb || "-"} ｜ 客胜 ${pred?.awayProb || "-"} ｜ xG ${pred?.xg || "-"}`, pred?.poisson ? `泊松比分簇：${pred.poisson}` : ""],
+    ["盘口偏差", pred?.marketGap || options.marketGap, "赔率预期与比赛脚本是否同向"],
+    ["比赛脚本", pred?.script || options.script, "优先看第一球、半场状态和节奏转移"],
+    ["赛事权重", pred?.groupSituation || pred?.pathMotive || filter?.favoriteIntent, "积分、出线收益、赛程动机和必要性"],
+    ["对位/近况", pred?.recentAnalysis || pred?.styleMatchup || filter?.underdogResistance, "球队状态、风格对位和真实场景"],
+    ["让球闸门", pred?.handicapGate || filter?.lineMovement || `让球选择：${handicapPick(pred) || options.handicapPick || "-"}`, "单选与让球盘分开判断"],
+    ["总进球/比分", `总进球 ${totalPick}；比分 ${scorePick}`, pred?.scoreElimination || filter?.scoreElimination || "只保留最顺的两个比分峰值"],
+    ["风险排除", pred?.noiseFilter || filter?.excludedNoise || filter?.keyFailureRisk, filter?.eventRisk || "用于降级或跳过，不覆盖核心脚本"],
+  ].filter(([, value]) => Boolean(value));
+  return `
+    <section class="match-page-section projection-flow">
+      <span>推演链路</span>
+      <div class="projection-flow-grid">
+        ${cards
+          .map(
+            ([label, value, note], index) => `
+              <article>
+                <small>${String(index + 1).padStart(2, "0")} · ${label}</small>
+                <p>${compactProjectionValue(value)}</p>
+                ${note ? `<em>${compactProjectionValue(note)}</em>` : ""}
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderWorldCupFullProjection(match, pred, filter, odds) {
+  if (!pred) {
+    return `
+      <section class="match-page-section">
+        <span>模型状态</span>
+        <p>这场还没有赛前锁版记录。</p>
+      </section>
+    `;
+  }
+  return `
+    ${renderProjectionDecisionDeck(match, pred, filter)}
+    ${renderProjectionFlowGrid(pred, filter)}
+    ${renderDecisionGatePanel(match.no, pred)}
+    ${renderSpRadarPanel(match.no, "detail")}
+    ${renderModelTriadPanel(match.no, pred)}
+    ${renderMarketConsistencyPanel(match.no, pred)}
+    ${renderOddsMathPanel(match.no, pred)}
+    ${renderTotalGoalsDistribution(match.no, pred)}
+    ${renderModelInputChecklist(match.no, pred)}
+    ${
+      odds
+        ? `
+          <section class="match-page-section">
+            <span>赔率面</span>
+            <p>胜 ${odds.normal?.win || "-"} ｜ 平 ${odds.normal?.draw || "-"} ｜ 负 ${odds.normal?.lose || "-"} ｜ 让球 ${odds.handicap || "0"}</p>
+          </section>
+        `
+        : ""
+    }
+    ${renderUniversalModelPanel(pred)}
+    ${renderD1CaseBasePanel(pred, match)}
+    ${renderSimilarCasePanel(pred, match)}
+    ${renderFinalDecisionGatePanel(pred)}
+  `;
+}
+
 function renderMatchDetail(no) {
   const content = document.querySelector("#match-detail-body");
   const match = matches.find((item) => item.no === no);
@@ -2347,108 +2460,7 @@ function renderMatchDetail(no) {
       ${renderQuickMatchMode(match, pred, filter, finished, hLabel)}
     </div>
     <div class="match-mode-panel" data-match-mode-panel="full" hidden>
-    ${
-      pred
-        ? `
-          <div class="match-page-columns">
-            <section class="match-page-section primary">
-              <span>概率底盘</span>
-              <div class="prob-grid">
-                <span>主胜 ${pred.homeProb}</span>
-                <span>平 ${pred.drawProb}</span>
-                <span>客胜 ${pred.awayProb}</span>
-                <span>xG ${pred.xg}</span>
-              </div>
-              <p><b>泊松比分簇：</b>${pred.poisson}</p>
-            </section>
-            <section class="match-page-section decision-panel">
-              <span>赛前筛选结论</span>
-              <div class="decision-grid">
-                <article>
-                  <small>比赛类型</small>
-                  <strong>${filter.type}</strong>
-                </article>
-                <article>
-                  <small>置信等级</small>
-                  <strong>${filter.grade}</strong>
-                </article>
-                <article>
-                  <small>建议动作</small>
-                  <strong>${filter.advice}</strong>
-                </article>
-                <article>
-                  <small>候选池</small>
-                  <strong>${filter.scorePool}</strong>
-                </article>
-              </div>
-            </section>
-          </div>
-          <section class="match-page-section filter-board">
-            <span>八层筛选器</span>
-            <div class="filter-board-grid">
-              <div><b>1 比赛类型：</b>${filter.type}</div>
-              <div><b>2 强队意图：</b>${filter.favoriteIntent}</div>
-              <div><b>3 弱队抵抗：</b>${filter.underdogResistance}</div>
-              <div><b>4 总进球前置：</b>${pred.totalGoalsPick || "暂无"}</div>
-              <div><b>5 两个比分峰值：</b>${pred.mainScore} / ${pred.counterScore}</div>
-              <div><b>6 机构最怕：</b>${filter.institutionFear}</div>
-              <div><b>7 排噪状态：</b>${filter.excludedNoise}</div>
-              <div><b>8 复盘方式：</b>赛后单独验证类型命中</div>
-            </div>
-          </section>
-          <section class="match-page-section upgrade-board">
-            <span>补短板检查</span>
-            <div class="filter-board-grid">
-              <div><b>盘口变化：</b>${filter.lineMovement}</div>
-              <div><b>事件风险：</b>${filter.eventRisk}</div>
-              <div><b>比分淘汰：</b>${filter.scoreElimination}</div>
-              <div><b>错层风险：</b>${filter.keyFailureRisk}</div>
-            </div>
-          </section>
-          ${renderDecisionGatePanel(no, pred)}
-          ${renderSpRadarPanel(no, "detail")}
-          ${renderModelTriadPanel(no, pred)}
-          ${renderMarketConsistencyPanel(no, pred)}
-          ${renderOddsMathPanel(no, pred)}
-          ${renderTotalGoalsDistribution(no, pred)}
-          ${renderModelInputChecklist(no, pred)}
-          <section class="match-page-section lock">
-            <span>锁版结论</span>
-            <div class="pick-row">
-              <strong>单选 ${pred.pick}</strong>
-              <span>让球 ${handicapPick(pred) || "暂无"}</span>
-              <span>总进球 ${pred.totalGoalsPick || "暂无"}</span>
-              <span>比分预测 ${pred.mainScore} / ${pred.counterScore}</span>
-            </div>
-          </section>
-          ${pred.groupSituation ? `<section class="match-page-section"><span>小组形势</span><p>${displayModelText(pred.groupSituation)}</p></section>` : ""}
-          ${pred.recentAnalysis ? `<section class="match-page-section"><span>近况与推演思路</span><p>${displayModelText(pred.recentAnalysis)}</p></section>` : ""}
-          <section class="match-page-section"><span>盘口偏差</span><p>${displayModelText(pred.marketGap)}</p></section>
-          <section class="match-page-section"><span>比赛脚本</span><p>${displayModelText(pred.script)}</p></section>
-          ${pred.institutionLine ? `<section class="match-page-section"><span>机构视角</span><p>${displayModelText(pred.institutionLine)}</p></section>` : ""}
-          ${pred.noiseFilter ? `<section class="match-page-section"><span>排除因素</span><p>${displayModelText(pred.noiseFilter)}</p></section>` : ""}
-          ${renderD1CaseBasePanel(pred, match)}
-          ${renderSimilarCasePanel(pred, match)}
-        `
-        : `
-          <section class="match-page-section">
-            <span>模型状态</span>
-            <p>这场还没有赛前锁版记录。</p>
-          </section>
-        `
-    }
-    ${
-      odds
-        ? `
-          <section class="match-page-section">
-            <span>赔率面</span>
-            <p>胜 ${odds.normal?.win || "-"} ｜ 平 ${odds.normal?.draw || "-"} ｜ 负 ${odds.normal?.lose || "-"} ｜ 让球 ${odds.handicap || "0"}</p>
-          </section>
-        `
-        : ""
-    }
-    ${pred ? renderUniversalModelPanel(pred) : ""}
-    ${pred ? renderFinalDecisionGatePanel(pred) : ""}
+      ${renderWorldCupFullProjection(match, pred, filter, odds)}
     </div>
     <div class="match-page-actions">
       ${pred ? `<button type="button" data-detail-d1-lock="${match.no}">写入D1锁版</button>` : ""}
@@ -3154,71 +3166,27 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
   }
   const filter = sportteryV4Filter(modelPred, research);
   return `
-    <div class="match-page-columns">
-      <section class="match-page-section primary">
-        <span>概率底盘</span>
-        <div class="prob-grid">
-          <span>主胜 ${modelPred.homeProb || "-"}</span>
-          <span>平 ${modelPred.drawProb || "-"}</span>
-          <span>客胜 ${modelPred.awayProb || "-"}</span>
-          <span>xG ${modelPred.xg || "-"}</span>
-        </div>
-        <p><b>泊松比分簇：</b>${modelPred.poisson || research.scorePick || "-"}</p>
-      </section>
-      <section class="match-page-section decision-panel">
-        <span>赛前筛选结论</span>
-        <div class="decision-grid">
-          <article><small>比赛类型</small><strong>${filter.type}</strong></article>
-          <article><small>置信等级</small><strong>${filter.grade}</strong></article>
-          <article><small>建议动作</small><strong>${filter.advice}</strong></article>
-          <article><small>候选池</small><strong>${filter.scorePool}</strong></article>
-        </div>
-      </section>
-    </div>
-    <section class="match-page-section filter-board">
-      <span>九层筛选器</span>
-      <div class="filter-board-grid">
-        <div><b>1 比赛类型：</b>${displayModelText(filter.type)}</div>
-        <div><b>2 强队意图：</b>${displayModelText(filter.favoriteIntent)}</div>
-        <div><b>3 弱队抵抗：</b>${displayModelText(filter.underdogResistance)}</div>
-        <div><b>4 总进球前置：</b>${modelPred.totalGoalsPick || research.totalPick || "-"}</div>
-        <div><b>5 两个比分峰值：</b>${filter.scorePool}</div>
-        <div><b>6 机构最怕：</b>${displayModelText(filter.institutionFear)}</div>
-        <div><b>7 淘汰赛状态转移：</b>${displayModelText(filter.stateTransfer)}</div>
-        <div><b>8 排噪状态：</b>${displayModelText(filter.excludedNoise)}</div>
-        <div><b>9 复盘方式：</b>赛后按联赛、模型版本、胜平负、让球、总进球和比分分别核验。</div>
-      </div>
-    </section>
-    <section class="match-page-section upgrade-board">
-      <span>补短板检查</span>
-      <div class="filter-board-grid">
-        <div><b>盘口变化：</b>${displayModelText(filter.lineMovement)}</div>
-        <div><b>事件风险：</b>${displayModelText(filter.eventRisk)}</div>
-        <div><b>比分淘汰：</b>${displayModelText(filter.scoreElimination)}</div>
-        <div><b>错层风险：</b>${displayModelText(filter.keyFailureRisk)}</div>
-        <div><b>失败方式：</b>${displayModelText(filter.failureMode)}</div>
-      </div>
-    </section>
+    ${renderProjectionDecisionDeck(item, modelPred, filter, {
+      gate: false,
+      issue: item.issue || item.no || "-",
+      competition: item.league || modelPred.competitionModel || modelPred.competitionType || "体彩赛事",
+      totalPick: research.totalPick,
+      scorePick: research.scorePick,
+      handicapPick: research.handicapPick,
+      directionPick: research.directionPick,
+    })}
+    ${renderProjectionFlowGrid(modelPred, filter, {
+      totalPick: research.totalPick,
+      scorePick: research.scorePick,
+      handicapPick: research.handicapPick,
+      marketGap: research.marketNote,
+      script: research.script,
+    })}
     ${renderSportteryEvidenceGate(item, modelPred, research)}
     ${renderUniversalModelPanel(modelPred)}
-    <section class="match-page-section lock">
-      <span>锁版结论</span>
-      <div class="pick-row">
-        <strong>单选 ${modelPred.pick || research.directionPick}</strong>
-        <span>让球 ${handicapPick(modelPred) || research.handicapPick}</span>
-        <span>总进球 ${modelPred.totalGoalsPick || research.totalPick}</span>
-        <span>比分预测 ${research.scorePick}</span>
-      </div>
-    </section>
-    ${modelPred.groupSituation ? `<section class="match-page-section"><span>赛事权重</span><p>${displayModelText(modelPred.groupSituation)}</p></section>` : ""}
-    ${modelPred.recentAnalysis ? `<section class="match-page-section"><span>近况与推演思路</span><p>${displayModelText(modelPred.recentAnalysis)}</p></section>` : ""}
-    ${modelPred.marketGap ? `<section class="match-page-section"><span>盘口偏差</span><p>${displayModelText(modelPred.marketGap)}</p></section>` : ""}
-    ${modelPred.script ? `<section class="match-page-section"><span>比赛脚本</span><p>${displayModelText(modelPred.script)}</p></section>` : ""}
-    ${modelPred.institutionLine ? `<section class="match-page-section"><span>机构视角</span><p>${displayModelText(modelPred.institutionLine)}</p></section>` : ""}
-    ${modelPred.noiseFilter ? `<section class="match-page-section"><span>排除因素</span><p>${displayModelText(modelPred.noiseFilter)}</p></section>` : ""}
-    ${renderFinalDecisionGatePanel(modelPred)}
     ${renderD1CaseBasePanel(modelPred, item)}
     ${renderSimilarCasePanel(modelPred, item)}
+    ${renderFinalDecisionGatePanel(modelPred)}
   `;
 }
 
