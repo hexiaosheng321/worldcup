@@ -2775,6 +2775,29 @@ function runtimeCaseBase() {
   return refreshRuntimeCaseBase();
 }
 
+let externalHistoricalSamplesLoading = null;
+
+function ensureExternalHistoricalSamplesLoaded(callback) {
+  if (Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES)) {
+    if (typeof callback === "function") callback();
+    return Promise.resolve(true);
+  }
+  if (!externalHistoricalSamplesLoading) {
+    externalHistoricalSamplesLoading = new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "./data/externalHistoricalSamples.js?v=202607010005";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+  return externalHistoricalSamplesLoading.then((loaded) => {
+    if (loaded && typeof callback === "function") callback();
+    return loaded;
+  });
+}
+
 function caseBaseStatus(pred, match) {
   const { lock, result, review, caseItem } = reviewedLockCase(pred, match);
   return {
@@ -2923,6 +2946,16 @@ function renderSimilarCasePanel(pred, match) {
   if (!pred || !match || !window.WC_SIMILAR_CASE_ENGINE) return "";
   const lock = lockFromPrediction(pred, match);
   if (!lock) return "";
+  const externalReady = Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES);
+  if (!externalReady) {
+    ensureExternalHistoricalSamplesLoaded(() => {
+      const hash = window.location.hash || "";
+      const currentWorldCup = hash.match(/^#match-(.+)$/);
+      const currentSporttery = hash.match(/^#sporttery-match-(.+)$/);
+      if (currentWorldCup) renderMatchDetail(currentWorldCup[1]);
+      if (currentSporttery) renderSportteryMatchDetail(decodeURIComponent(currentSporttery[1]));
+    });
+  }
   const result = window.WC_SIMILAR_CASE_ENGINE.findSimilarCases(lock, runtimeCaseBase());
   const stats = result.stats || {};
   const pct = (value) => `${((Number(value) || 0) * 100).toFixed(1)}%`;
@@ -6310,7 +6343,6 @@ function renderOddsMap() {
 
 function renderAll() {
   applyResultBackfill();
-  refreshRuntimeCaseBase();
   renderHome();
   renderSignals();
   renderSportteryPool();
@@ -6324,6 +6356,20 @@ function renderAll() {
   renderOdds();
   renderModel();
   renderReview();
+}
+
+function renderInitialHomeOnly() {
+  applyResultBackfill();
+  renderHome();
+  renderSignals();
+}
+
+function runWhenPageIdle(task, timeout = 2200) {
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(task, { timeout });
+    return;
+  }
+  setTimeout(task, Math.min(timeout, 1200));
 }
 
 tabs.forEach((tab) => {
@@ -6744,9 +6790,18 @@ document.querySelector("#odds")?.addEventListener("click", (event) => {
 document.querySelector("#show-ended-odds")?.addEventListener("change", renderOdds);
 window.addEventListener("hashchange", handleRouteFromHash);
 
-renderAll(); document.body.classList.remove("page-loading"); document.body.classList.add("page-loaded");
+const initialHash = window.location.hash;
+if (initialHash) {
+  renderAll();
+} else {
+  renderInitialHomeOnly();
+}
+document.body.classList.remove("page-loading"); document.body.classList.add("page-loaded");
 handleRouteFromHash();
-refreshSportteryCloudData();
+if (!initialHash) {
+  runWhenPageIdle(renderAll, 1800);
+}
+runWhenPageIdle(refreshSportteryCloudData, initialHash ? 900 : 2400);
 setInterval(refreshSportteryCloudData, 5 * 60 * 1000);
 
 /* ── 返回顶部 ── */
