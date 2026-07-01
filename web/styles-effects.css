@@ -70,6 +70,144 @@
 }
 .stat-chart-bar .bar-value { min-width: 48px; font-weight: 950; font-size: 13px; color: var(--ink); }
 
+.goal-decision-panel {
+  min-height: auto;
+  padding: 18px;
+  border-color: #c6d8ea;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.96), rgba(238,246,255,0.92)),
+    radial-gradient(circle at 92% 12%, rgba(217,154,22,0.16), transparent 34%);
+}
+
+.goal-decision-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #cfdeed;
+}
+
+.goal-decision-head span {
+  color: var(--ink);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 24px;
+  font-weight: 950;
+}
+
+.goal-decision-head em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.goal-decision-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.goal-decision-grid article {
+  padding: 14px;
+  border: 1px solid #c9d9eb;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.72);
+  box-shadow: 0 10px 26px rgba(8,32,82,0.05);
+}
+
+.goal-decision-grid small,
+.goal-zone span,
+.goal-decision-note b {
+  display: block;
+  color: #d99a16;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.goal-decision-grid strong {
+  display: block;
+  margin: 6px 0 2px;
+  color: var(--ink);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.goal-decision-grid span,
+.goal-zone p,
+.goal-decision-note span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.goal-zone-stack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.goal-zone {
+  padding: 14px;
+  border: 1px solid #d5e2ef;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.goal-zone div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.goal-zone strong {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.goal-zone em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.goal-zone i {
+  display: block;
+  height: 9px;
+  margin: 12px 0 10px;
+  border-radius: 999px;
+  background: #e9eff6;
+  overflow: hidden;
+}
+
+.goal-zone i b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue-2);
+}
+
+.goal-zone.mid i b { background: #d99a16; }
+.goal-zone.high i b { background: #c1121f; }
+
+.goal-decision-note {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(217,154,22,0.35);
+  border-radius: 8px;
+  background: rgba(255,247,224,0.72);
+}
+
 /* ── 洞察卡片 ── */
 .insight-card {
   padding: 16px; background: linear-gradient(135deg, #f0f7ff, #e8f2fe);
@@ -164,6 +302,11 @@
   .chart-container { min-height: 200px; padding: 10px; }
   .viz-grid { grid-template-columns: 1fr; }
   .insight-card .insight-value { font-size: 22px; }
+  .goal-decision-head { align-items: flex-start; flex-direction: column; }
+  .goal-decision-grid,
+  .goal-zone-stack,
+  .goal-decision-note { grid-template-columns: 1fr; }
+  .goal-decision-grid strong { font-size: 24px; }
 }
 
 /* ── 主页顶部渐变动画 ── */
