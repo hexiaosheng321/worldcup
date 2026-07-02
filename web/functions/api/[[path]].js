@@ -1073,6 +1073,33 @@ async function fetchLiveFallbackMatches(env, sportteryMatches = []) {
   };
 }
 
+function liveRowDedupeKey(row = {}) {
+  const teams = [row.homeZh || row.home, row.awayZh || row.away].map(normalizeTeamName).join("-");
+  if (row.date && teams.replace("-", "")) return `${row.date}:${teams}`;
+  if (row.source && row.externalId) return `${row.source}:${row.externalId}`;
+  return `${row.date || ""}:${teams}:${row.score || ""}`;
+}
+
+function liveRowPriority(row = {}) {
+  if (row.source === "football-data.org" && (row.stage || row.scoreDuration || row.winnerSide)) return 4;
+  if (row.source === "football-data.org") return 3;
+  if (row.source === "APIfootball") return 2;
+  if (row.source === "TheSportsDB") return 1;
+  return 0;
+}
+
+function dedupeLiveRows(rows = []) {
+  const byKey = new Map();
+  rows.forEach((row) => {
+    const key = liveRowDedupeKey(row);
+    const existing = byKey.get(key);
+    if (!existing || liveRowPriority(row) > liveRowPriority(existing)) {
+      byKey.set(key, row);
+    }
+  });
+  return [...byKey.values()];
+}
+
 function standingForTeam(teamName = "", standings = []) {
   return standings.find((row) => row.type === "TOTAL" && liveTeamMatches(teamName, row.team)) ||
     standings.find((row) => liveTeamMatches(teamName, row.team)) ||
@@ -1728,6 +1755,10 @@ async function syncSportteryToD1(db, env) {
       fullScoreRaw: `${parsed.home}:${parsed.away}`,
       score: parsed.text,
       result: parsed.home > parsed.away ? "胜" : parsed.home < parsed.away ? "负" : "平",
+      winner: live.winnerZh || "",
+      winnerSide: live.winnerSide || "",
+      penaltyScore: live.penaltyScore || "",
+      scoreDuration: live.scoreDuration || "",
       liveSource: live.source,
       liveExternalId: live.externalId,
       resultSource: `live-fallback-${String(live.source || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown"}`,
@@ -1840,6 +1871,10 @@ async function syncLiveFallbackToD1(db, env) {
       fullScoreRaw: `${parsed.home}:${parsed.away}`,
       score: parsed.text,
       result: parsed.home > parsed.away ? "胜" : parsed.home < parsed.away ? "负" : "平",
+      winner: live.winnerZh || "",
+      winnerSide: live.winnerSide || "",
+      penaltyScore: live.penaltyScore || "",
+      scoreDuration: live.scoreDuration || "",
       liveSource: live.source,
       liveExternalId: live.externalId,
       resultSource: `live-fallback-${String(live.source || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown"}`,
@@ -2014,6 +2049,7 @@ async function d1LiveFootballScoresScript(db, env) {
       liveTeamMatches(match.home, row.home) &&
       liveTeamMatches(match.away, row.away))
   );
+  const dedupedRows = dedupeLiveRows(matchedRows);
   const data = {
     source: "Cloudflare Pages live football fallback",
     apiEndpoint: "/api/live-football-scores.js",
@@ -2021,9 +2057,9 @@ async function d1LiveFootballScoresScript(db, env) {
     isLiveSnapshot: true,
     isCloudSnapshot: true,
     scope: "current_window_live_and_finished_regular_time",
-    totalCount: matchedRows.length,
+    totalCount: dedupedRows.length,
     errors: liveRows.errors,
-    matches: matchedRows,
+    matches: dedupedRows,
   };
   return javascript(`window.LIVE_FOOTBALL_SCORES = ${JSON.stringify(data, null, 2)};\n`);
 }
