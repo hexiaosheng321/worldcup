@@ -1414,11 +1414,13 @@ function sportteryPoolItems() {
       const resultScore = normalizeResultScore(item.score) || normalizeResultScore(result?.score);
       const liveScoreText = normalizeResultScore(liveScore?.score);
       const score = resultScore || (liveScore?.isFinished ? liveScoreText : "");
-      const displayScore = score || liveScoreText;
       const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
       const elapsed = kickoffElapsedMinutes(kickoffAt);
       const likelyPastLiveWindow = !score && elapsed !== null && elapsed > 105 && !liveScoreText;
-      const isLive = !score && !likelyPastLiveWindow && (Boolean(liveScoreText) || (Number.isFinite(kickoffAt) && now >= kickoffAt));
+      const liveSignal = Boolean(liveScore?.live || liveScoreStatusText(liveScore));
+      const kickoffStarted = Number.isFinite(kickoffAt) && now >= kickoffAt;
+      const isLive = !score && !likelyPastLiveWindow && ((Boolean(liveScoreText) && liveSignal) || kickoffStarted);
+      const displayScore = score || (isLive ? liveScoreText : "");
       const modelPred = sportteryPredictionForItem(item);
       return {
         ...item,
