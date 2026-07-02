@@ -732,12 +732,13 @@ function officialScoreForMatch(match) {
   const result = resultForWorldCupMatch(match);
   const odds = oddsMatch(match);
   const liveScore = liveScoreForSportteryItem({ ...match, ...odds });
-  return (
-    normalizeResultScore(result?.score) ||
-    (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "") ||
-    normalizeResultScore(odds?.score) ||
-    normalizeResultScore(match?.score)
-  );
+  const resultScore = normalizeResultScore(result?.score);
+  if (resultScore) return resultScore;
+  const finishedLiveScore = liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "";
+  if (finishedLiveScore) return finishedLiveScore;
+  const isSportteryBacked = Boolean(match?.sportteryKey || match?.matchId || odds?.matchId);
+  if (isSportteryBacked) return "";
+  return normalizeResultScore(odds?.score) || normalizeResultScore(match?.score);
 }
 
 function applyResultBackfill() {
@@ -5184,6 +5185,10 @@ function modelAuditRows() {
     const item = findSportteryItemForPrediction(pred);
     if (hasOfficialWorldCupLock(pred, item)) return null;
     const result = item ? sportteryDetailRow(item) : null;
+    const liveScore = item ? liveScoreForSportteryItem(item) : null;
+    const actualScore =
+      normalizeResultScore(result?.result?.score) ||
+      (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "");
     const match = {
       no: pred.no,
       date: pred.date || pred.matchDate,
@@ -5193,7 +5198,7 @@ function modelAuditRows() {
       group: pred.competition || "体彩",
       home: pred.home,
       away: pred.away,
-      score: normalizeResultScore(result?.score || item?.score || pred.score),
+      score: actualScore,
       sportteryKey: pred.sportteryKey || (item ? sportteryItemKey(item) : ""),
       matchId: pred.matchId || item?.matchId || "",
     };
