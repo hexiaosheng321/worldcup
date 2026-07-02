@@ -623,13 +623,43 @@ const apiFootballTeamZh = {
 };
 
 function sportteryProxyUrl(env, targetUrl) {
-  let proxy = (env.REQUEST_UPSTREAM_PROXY || env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || "").trim();
+  let proxy = (env.REQUEST_UPSTREAM_PROXY || env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || "http://114.55.11.209:8787/proxy?url=").trim();
   if (!proxy) return targetUrl;
   if (!/^https?:\/\//i.test(proxy)) proxy = `https://${proxy}`;
+  if (proxy.includes("114.55.11.209:8787")) {
+    const base = "http://114.55.11.209:8787";
+    const target = new URL(targetUrl);
+    if (target.pathname.includes("getMatchCalculatorV1")) return `${base}/sporttery/calculator.json`;
+    if (target.pathname.includes("getMatchDataPageListV1")) {
+      const pageNo = target.searchParams.get("pageNo") || "1";
+      return `${base}/sporttery/results-page-${pageNo}.json`;
+    }
+  }
   if (proxy.includes("{url}")) return proxy.replace("{url}", encodeURIComponent(targetUrl));
   if (/[?&]url=$/.test(proxy)) return `${proxy}${encodeURIComponent(targetUrl)}`;
   const delimiter = proxy.includes("?") ? "&" : "?";
   return `${proxy}${delimiter}url=${encodeURIComponent(targetUrl)}`;
+}
+
+function sportteryProxyDiagnostics(env, targetUrl) {
+  const source = env.REQUEST_UPSTREAM_PROXY
+    ? "request"
+    : env.SPORTTERY_UPSTREAM_PROXY
+      ? "cloudflare"
+      : env.UPSTREAM_PROXY
+        ? "upstream"
+        : "direct";
+  const resolved = sportteryProxyUrl(env, targetUrl);
+  let host = "";
+  let protocol = "";
+  let path = "";
+  try {
+    const url = new URL(resolved);
+    host = url.host;
+    protocol = url.protocol;
+    path = url.pathname;
+  } catch {}
+  return { source, host, protocol, path, targetHost: new URL(targetUrl).host };
 }
 
 async function fetchSportteryJson(env, targetUrl) {
@@ -1613,12 +1643,14 @@ async function autoReviewMatch(db, matchId) {
   return { reviewed, cases };
 }
 
-async function syncSportteryToD1(db, env) {
+async function syncSportteryToD1(db, env, supplied = null) {
   const capturedAt = new Date().toISOString();
-  const [calculatorRaw, resultPages] = await Promise.all([
-    fetchSportteryJson(env, sportteryApis.calculator),
-    fetchSportteryResultPages(env),
-  ]);
+  const [calculatorRaw, resultPages] = supplied
+    ? [supplied.calculatorRaw, supplied.resultPages || []]
+    : await Promise.all([
+        fetchSportteryJson(env, sportteryApis.calculator),
+        fetchSportteryResultPages(env),
+      ]);
   const days = calculatorRaw?.value?.matchInfoList || [];
   const rawMatches = days.flatMap((day) =>
     (day.subMatchList || []).map((match) => normalizeSportteryMatch(match, day.businessDate))
@@ -2275,6 +2307,32 @@ export async function onRequest(context) {
       return json(summary, summary.status || 200);
     }
 
+    if (path === "sync/sporttery-proxy-diagnostics" && request.method === "GET") {
+      const requestProxy = request.headers.get("x-sporttery-upstream-proxy") || "";
+      const diagnosticEnv = {
+        ...env,
+        REQUEST_UPSTREAM_PROXY: requestProxy,
+      };
+      async function probe(targetUrl) {
+        const url = sportteryProxyUrl(diagnosticEnv, targetUrl);
+        const response = await fetch(url, { headers: sportteryHeaders });
+        const text = await response.text();
+        return {
+          ok: response.ok,
+          status: response.status,
+          contentType: response.headers.get("content-type") || "",
+          bodyPrefix: text.slice(0, 160),
+        };
+      }
+      return json({
+        ok: true,
+        calculator: sportteryProxyDiagnostics(diagnosticEnv, sportteryApis.calculator),
+        results: sportteryProxyDiagnostics(diagnosticEnv, sportteryApis.resultPage(1)),
+        calculatorProbe: await probe(sportteryApis.calculator),
+        resultsProbe: await probe(sportteryApis.resultPage(1)),
+      });
+    }
+
     if (path === "sync/sporttery" && request.method === "POST") {
       const requestProxy = request.headers.get("x-sporttery-upstream-proxy") || "";
       const requestApiFootballKey = request.headers.get("x-apifootball-api-key") || "";
@@ -2286,6 +2344,22 @@ export async function onRequest(context) {
         REQUEST_APIFOOTBALL_API_KEY: requestApiFootballKey,
         REQUEST_FOOTBALL_DATA_API_KEY: requestFootballDataKey,
         REQUEST_THESPORTSDB_API_KEY: requestTheSportsDbKey,
+      }));
+    }
+
+    if (path === "sync/sporttery-cache" && request.method === "POST") {
+      const requestApiFootballKey = request.headers.get("x-apifootball-api-key") || "";
+      const requestFootballDataKey = request.headers.get("x-football-data-api-key") || "";
+      const requestTheSportsDbKey = request.headers.get("x-thesportsdb-api-key") || "";
+      const body = await request.json();
+      return json(await syncSportteryToD1(db, {
+        ...env,
+        REQUEST_APIFOOTBALL_API_KEY: requestApiFootballKey,
+        REQUEST_FOOTBALL_DATA_API_KEY: requestFootballDataKey,
+        REQUEST_THESPORTSDB_API_KEY: requestTheSportsDbKey,
+      }, {
+        calculatorRaw: body.calculatorRaw || body.calculator,
+        resultPages: body.resultPages || [],
       }));
     }
 

@@ -1,11 +1,27 @@
-# 阿里云体彩中继
+# 阿里云体彩缓存中继
 
-这是给网站自动更新用的极简中继，只转发中国体育彩票官方足球接口，避免 GitHub / Cloudflare 直连官方接口时被 `567` 拦截。
+这是给网站自动更新用的体彩官方数据缓存中继。
+
+核心原则：
+
+```text
+阿里云服务器后台定时抓体彩官方接口
+↓
+写入服务器本地 JSON 缓存
+↓
+GitHub / Cloudflare 只读取缓存
+```
+
+这样 GitHub / Cloudflare 不再实时穿透请求体彩官方，稳定性比普通代理更高。
 
 ## 功能
 
 - `GET /health`：健康检查。
-- `GET /fetch?url={encoded-url}`：转发白名单内的体彩官方接口。
+- `GET /refresh`：手动刷新缓存。
+- `GET /sporttery/calculator.json`：读取赛程和开盘缓存。
+- `GET /sporttery/results-page-1.json`：读取赛果缓存，最多默认缓存 5 页。
+- `GET /fetch?url={encoded-url}`：兼容旧地址，返回对应缓存。
+- `GET /proxy?url={encoded-url}`：兼容当前 GitHub Secret，返回对应缓存。
 - 可选 `RELAY_TOKEN`：开启后必须带 `?token=...` 或请求头 `x-relay-token`。
 - 只允许 `https://webapi.sporttery.cn` 下的以下路径：
   - `/gateway/uniform/football/getMatchCalculatorV1.qry`
@@ -13,43 +29,59 @@
   - `/gateway/uniform/football/getFixedBonusV1.qry`
   - `/gateway/jc/football/getMatchCalculatorV1.qry`
 
-## 阿里云函数计算部署
+## 阿里云服务器部署
 
-在阿里云函数计算创建一个 HTTP/Web 函数：
+适合轻量应用服务器 / ECS。服务器只需要 Node.js 20 或更新。
 
-1. 运行环境：Node.js 20 或更新。
-2. 上传本目录代码，或把 `index.mjs` 和 `package.json` 放到函数代码目录。
-3. 启动命令：`npm start` 或 `node index.mjs`。
-4. 监听端口：代码会自动读取 `PORT` / `FC_SERVER_PORT` / `CA_PORT`，默认 `9000`。
-5. 环境变量：
-   - `RELAY_TOKEN`：建议设置一个长随机字符串。
-   - `REQUEST_TIMEOUT_MS`：默认 `12000`。
-6. 触发器：HTTP 触发器，允许公网访问。
-
-部署后先访问：
+推荐安装位置：
 
 ```bash
-curl "https://你的函数域名/health"
+/opt/sporttery-proxy/index.mjs
+/opt/sporttery-proxy/package.json
+/opt/sporttery-proxy/cache/
 ```
 
-如果返回 `{"ok":true,...}`，说明中继运行正常。
+systemd 服务建议：
+
+```ini
+[Unit]
+Description=Sporttery cache relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/sporttery-proxy
+Environment=PORT=8787
+Environment=DATA_DIR=/opt/sporttery-proxy/cache
+Environment=REFRESH_INTERVAL_MS=180000
+ExecStart=/usr/bin/node /opt/sporttery-proxy/index.mjs
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+部署后验证：
+
+```bash
+curl "http://114.55.11.209:8787/health"
+curl "http://114.55.11.209:8787/sporttery/calculator.json"
+```
+
+`/health` 里的 `service` 应该是：
+
+```json
+"sporttery-cache-relay"
+```
 
 ## 接入 GitHub Actions
 
-把函数地址写入 GitHub Secret：
+当前 Secret 可以继续使用：
 
 ```bash
-gh secret set SPORTTERY_UPSTREAM_PROXY \
-  --repo hexiaosheng321/worldcup \
-  --body "https://你的函数域名/fetch?token=你的RELAY_TOKEN&url={url}"
-```
-
-如果没有设置 `RELAY_TOKEN`，则使用：
-
-```bash
-gh secret set SPORTTERY_UPSTREAM_PROXY \
-  --repo hexiaosheng321/worldcup \
-  --body "https://你的函数域名/fetch?url={url}"
+SPORTTERY_UPSTREAM_PROXY=http://114.55.11.209:8787/proxy?url=
 ```
 
 然后触发 GitHub Actions 手动测试：

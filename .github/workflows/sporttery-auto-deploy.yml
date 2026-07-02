@@ -51,12 +51,38 @@ jobs:
         shell: bash
         run: |
           if [ "$RUN_DATA_UPDATE" = "true" ]; then
-            if ! curl --fail-with-body -sS -X POST \
-              -H "x-sporttery-upstream-proxy: $SPORTTERY_UPSTREAM_PROXY" \
-              -H "x-apifootball-api-key: $APIFOOTBALL_API_KEY" \
-              -H "x-football-data-api-key: $FOOTBALL_DATA_API_KEY" \
-              -H "x-thesportsdb-api-key: $THESPORTSDB_API_KEY" \
-              "https://worldcup-dashboard-4hr.pages.dev/api/sync/sporttery"; then
+            cat > /tmp/sporttery-cache-sync.mjs <<'NODE'
+const cacheBase = "http://114.55.11.209:8787";
+const apiBase = "https://worldcup-dashboard-4hr.pages.dev";
+
+async function getJson(url) {
+  const response = await fetch(url);
+  const text = await response.text();
+  if (!response.ok) throw new Error(`${url} ${response.status}: ${text.slice(0, 160)}`);
+  return JSON.parse(text);
+}
+
+const calculatorRaw = await getJson(`${cacheBase}/sporttery/calculator.json`);
+const resultPages = [];
+for (let pageNo = 1; pageNo <= 5; pageNo += 1) {
+  resultPages.push(await getJson(`${cacheBase}/sporttery/results-page-${pageNo}.json`));
+}
+
+const response = await fetch(`${apiBase}/api/sync/sporttery-cache`, {
+  method: "POST",
+  headers: {
+    "content-type": "application/json",
+    "x-apifootball-api-key": process.env.APIFOOTBALL_API_KEY || "",
+    "x-football-data-api-key": process.env.FOOTBALL_DATA_API_KEY || "",
+    "x-thesportsdb-api-key": process.env.THESPORTSDB_API_KEY || "",
+  },
+  body: JSON.stringify({ calculatorRaw, resultPages }),
+});
+const text = await response.text();
+console.log(text);
+if (!response.ok) process.exit(1);
+NODE
+            if ! node /tmp/sporttery-cache-sync.mjs; then
               echo "Sporttery sync failed; running live-result fallback only."
               curl --fail-with-body -sS -X POST \
                 -H "x-apifootball-api-key: $APIFOOTBALL_API_KEY" \
