@@ -3976,15 +3976,48 @@ const knockoutRoundPlan = [
   { key: "final", title: "决赛", note: "1 场", nos: ["104"] },
 ];
 
+const knockoutSourceMap = {
+  "089": ["073", "076"],
+  "090": ["074", "075"],
+};
+
+const knockoutAdvanceWinners = {
+  "076": "摩洛哥",
+};
+
 function rangeNos(start, end) {
   return Array.from({ length: end - start + 1 }, (_, index) => String(start + index).padStart(3, "0"));
 }
 
 function knockoutMatchByNo(no) {
-  return matches.find((match) => match.no === no);
+  const targetNo = normalizedIssueNo(no);
+  const staticMatch = matches.find((match) => normalizedIssueNo(match.no) === targetNo);
+  if (staticMatch) return staticMatch;
+  const sportteryMatch = findOddsRow([...(resultsData.results || []), ...(oddsData.matches || [])], targetNo);
+  if (!sportteryMatch || !/世界杯/.test(String(sportteryMatch.league || sportteryMatch.competition || ""))) return null;
+  const score = normalizeResultScore(sportteryMatch.score);
+  return {
+    no: targetNo,
+    date: sportteryMatch.matchDate || sportteryMatch.ticaiDate || sportteryMatch.date || "",
+    group: "32强",
+    home: sportteryMatch.home || "",
+    away: sportteryMatch.away || "",
+    score,
+    matchId: sportteryMatch.matchId || "",
+    issue: sportteryMatch.issue || "",
+    ticaiDate: sportteryMatch.ticaiDate || "",
+    matchDate: sportteryMatch.matchDate || "",
+    halfScore: sportteryMatch.halfScore || "",
+    winner: sportteryMatch.winner || "",
+    winnerSide: sportteryMatch.winnerSide || "",
+    penaltyScore: sportteryMatch.penaltyScore || "",
+    scoreDuration: sportteryMatch.scoreDuration || "",
+  };
 }
 
 function knockoutWinner(match) {
+  const advanceWinner = knockoutAdvanceWinners[normalizedIssueNo(match?.no)];
+  if (advanceWinner) return advanceWinner;
   const parsed = parseScore(match?.score);
   const odds = match ? oddsMatch(match) : null;
   const liveScore = match ? liveScoreForSportteryItem({ ...match, ...odds }) : null;
@@ -4001,6 +4034,8 @@ function knockoutWinner(match) {
 
 function previousKnockoutSources(roundIndex, matchIndex) {
   if (roundIndex <= 0) return [];
+  const current = knockoutRoundPlan[roundIndex]?.nos?.[matchIndex];
+  if (current && knockoutSourceMap[current]) return knockoutSourceMap[current];
   const previous = knockoutRoundPlan[roundIndex - 1];
   return [previous.nos[matchIndex * 2], previous.nos[matchIndex * 2 + 1]].filter(Boolean);
 }
@@ -4009,7 +4044,7 @@ function knockoutParticipant(match, side, sources, sourceIndex) {
   if (match?.[side]) return match[side];
   const sourceNo = sources[sourceIndex];
   const sourceWinner = knockoutWinner(knockoutMatchByNo(sourceNo));
-  return sourceWinner || "待定";
+  return sourceWinner || (sourceNo ? `${sourceNo}胜者` : "待定");
 }
 
 function knockoutSlot(round, roundIndex, no, matchIndex) {
