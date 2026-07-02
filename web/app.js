@@ -873,6 +873,50 @@ function groupedPredictions() {
     });
 }
 
+function sportteryWorldCupGroupedPredictions() {
+  const staticKeys = new Set(
+    groupedPredictions().map(({ match }) => `${match.no}-${match.date}-${normalizeText(match.home)}-${normalizeText(match.away)}`)
+  );
+  return (data.sportteryPredictions || [])
+    .map((pred) => {
+      const item = findSportteryItemForPrediction(pred);
+      const competition = pred.competition || pred.competitionModel || item?.league || "";
+      if (!/世界杯|world\s*cup/i.test(competition)) return null;
+      if (hasOfficialWorldCupLock(pred, item)) return null;
+      const result = item ? sportteryDetailRow(item) : null;
+      const liveScore = item ? liveScoreForSportteryItem(item) : null;
+      const actualScore =
+        normalizeResultScore(result?.result?.score) ||
+        (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "");
+      const match = {
+        no: pred.no || item?.no || "",
+        date: pred.date || pred.matchDate || item?.ticaiDate || item?.matchDate || "",
+        matchDate: pred.matchDate || item?.matchDate || pred.date || item?.ticaiDate || "",
+        kickoffTime: pred.kickoffTime || item?.kickoffTime || "",
+        group: pred.group || pred.competition || item?.league || "世界杯",
+        competition: pred.competition || item?.league || "世界杯",
+        league: pred.competition || item?.league || "世界杯",
+        home: pred.home || item?.home || "",
+        away: pred.away || item?.away || "",
+        score: actualScore,
+        sportteryKey: pred.sportteryKey || (item ? sportteryItemKey(item) : ""),
+        matchId: pred.matchId || item?.matchId || "",
+      };
+      const key = `${match.no}-${match.date}-${normalizeText(match.home)}-${normalizeText(match.away)}`;
+      if (!match.home || !match.away || staticKeys.has(key)) return null;
+      return { match, predictions: [pred] };
+    })
+    .filter(Boolean);
+}
+
+function groupedWorldCupPredictions() {
+  return [...groupedPredictions(), ...sportteryWorldCupGroupedPredictions()].sort((a, b) => {
+    const dateCompare = String(b.match.date || "").localeCompare(String(a.match.date || ""));
+    if (dateCompare !== 0) return dateCompare;
+    return Number(b.match.no || 0) - Number(a.match.no || 0);
+  });
+}
+
 function latestPredictionFor(no) {
   return data.predictions
     .filter((pred) => pred.no === no)
@@ -4257,7 +4301,7 @@ function renderKnockout() {
 function renderModel() {
   const versionPill = document.querySelector("#model-current-version");
   if (versionPill) versionPill.textContent = `当前 ${data.currentModelVersion || "V4"}`;
-  document.querySelector("#model-list").innerHTML = groupedPredictions()
+  document.querySelector("#model-list").innerHTML = groupedWorldCupPredictions()
     .map(({ match, predictions }) => {
       const actualScore = match ? officialScoreForMatch(match) : "";
       const actual = actualScore || "未完赛";
@@ -4908,7 +4952,7 @@ function versionPickCell(pred, match) {
 }
 
 function renderReview() {
-  const groupedRows = groupedPredictions()
+  const groupedRows = groupedWorldCupPredictions()
     .slice()
     .sort((a, b) => a.match.date.localeCompare(b.match.date) || Number(a.match.no) - Number(b.match.no))
     .map(({ match, predictions }) => {
