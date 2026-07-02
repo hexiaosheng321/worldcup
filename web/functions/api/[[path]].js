@@ -804,6 +804,17 @@ function winnerFromSide(side = "", home = "", away = "") {
   return "";
 }
 
+async function upstreamErrorMessage(response, label) {
+  let detail = "";
+  try {
+    detail = await response.text();
+  } catch {
+    detail = "";
+  }
+  const compact = String(detail || "").replace(/\s+/g, " ").trim().slice(0, 220);
+  return `${label} ${response.status}${compact ? ` ${compact}` : ""}`;
+}
+
 async function fetchApiFootballDay(env, date) {
   const key = apiFootballKey(env);
   if (!key) return [];
@@ -848,7 +859,7 @@ async function fetchFootballDataDay(env, date) {
     headers: { "X-Auth-Token": key },
     signal: AbortSignal.timeout(12000),
   });
-  if (!response.ok) throw new Error(`football-data ${response.status}`);
+  if (!response.ok) throw new Error(await upstreamErrorMessage(response, "football-data"));
   const raw = await response.json();
   const rows = Array.isArray(raw?.matches) ? raw.matches : [];
   return rows.map((match) => {
@@ -884,7 +895,7 @@ async function fetchFootballDataCompetition(env, code, season = "") {
     headers: { "X-Auth-Token": key },
     signal: AbortSignal.timeout(12000),
   });
-  if (!response.ok) throw new Error(`football-data ${code} ${response.status}`);
+  if (!response.ok) throw new Error(await upstreamErrorMessage(response, `football-data ${code}`));
   const raw = await response.json();
   const rows = Array.isArray(raw?.matches) ? raw.matches : [];
   return rows.map((match) => {
@@ -923,7 +934,7 @@ async function fetchFootballDataStandings(env, code, season = "") {
     headers: { "X-Auth-Token": key },
     signal: AbortSignal.timeout(12000),
   });
-  if (!response.ok) throw new Error(`football-data standings ${code} ${response.status}`);
+  if (!response.ok) throw new Error(await upstreamErrorMessage(response, `football-data standings ${code}`));
   const raw = await response.json();
   const standings = Array.isArray(raw?.standings) ? raw.standings : [];
   return standings.flatMap((standing) =>
@@ -959,7 +970,7 @@ async function fetchFootballDataMatches(env, sportteryMatches = []) {
   }
   const needsWorldCup = sportteryMatches.some((match) => /世界杯|World Cup/i.test(String(match.league || "")));
   const settled = await Promise.allSettled([
-    ...(needsWorldCup ? [fetchFootballDataCompetition(env, "WC", "2026")] : []),
+    ...(needsWorldCup ? [fetchFootballDataCompetition(env, "WC")] : []),
     ...dates.slice(0, 4).map((date) => fetchFootballDataDay(env, date)),
   ]);
   return {
@@ -967,7 +978,7 @@ async function fetchFootballDataMatches(env, sportteryMatches = []) {
     errors: settled
       .map((item, index) => item.status === "rejected" ? {
         source: "football-data.org",
-        date: needsWorldCup && index === 0 ? "WC-2026" : dates[needsWorldCup ? index - 1 : index],
+        date: needsWorldCup && index === 0 ? "WC" : dates[needsWorldCup ? index - 1 : index],
         message: item.reason?.message || "unknown",
       } : null)
       .filter(Boolean),

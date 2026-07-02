@@ -3987,11 +3987,6 @@ const knockoutSourceMap = {
   "096": ["087", "088"],
 };
 
-const knockoutAdvanceWinners = {
-  "075": "德国",
-  "076": "摩洛哥",
-};
-
 function rangeNos(start, end) {
   return Array.from({ length: end - start + 1 }, (_, index) => String(start + index).padStart(3, "0"));
 }
@@ -4023,8 +4018,6 @@ function knockoutMatchByNo(no) {
 }
 
 function knockoutWinner(match) {
-  const advanceWinner = knockoutAdvanceWinners[normalizedIssueNo(match?.no)];
-  if (advanceWinner) return advanceWinner;
   const parsed = parseScore(match?.score);
   const odds = match ? oddsMatch(match) : null;
   const liveScore = match ? liveScoreForSportteryItem({ ...match, ...odds }) : null;
