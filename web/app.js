@@ -492,7 +492,9 @@ function resultForSportteryItem(item) {
 
 function verifiedSportteryScore(item = {}) {
   const result = resultForSportteryItem(item);
-  const resultScore = normalizeResultScore(result?.score);
+  const itemScore = sportteryResultIsFinished(item) ? normalizeResultScore(item.score) : "";
+  const resultScore = sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "";
+  if (itemScore) return itemScore;
   if (resultScore) return resultScore;
   const liveScore = liveScoreForSportteryItem(item);
   return liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "";
@@ -547,6 +549,11 @@ function liveScoreStatusText(row) {
   if (row.minute) return `进行中 ${row.minute}`;
   if (row.statusLabel) return row.statusLabel;
   return row.live ? "进行中" : "";
+}
+
+function sportteryResultIsFinished(row = {}) {
+  const status = `${row.statusCode || ""} ${row.statusName || ""} ${row.statusLabel || ""}`;
+  return Boolean(normalizeResultScore(row.score)) && /已完成|已完赛|完场|全场|开奖|finished|finish|ft\b/i.test(status);
 }
 
 function sportteryItemKey(item = {}) {
@@ -740,7 +747,7 @@ function officialScoreForMatch(match) {
   const result = resultForWorldCupMatch(match);
   const odds = oddsMatch(match);
   const liveScore = liveScoreForSportteryItem({ ...match, ...odds });
-  const resultScore = normalizeResultScore(result?.score);
+  const resultScore = sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "";
   if (resultScore) return resultScore;
   const finishedLiveScore = liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "";
   if (finishedLiveScore) return finishedLiveScore;
@@ -753,7 +760,7 @@ function applyResultBackfill() {
   (oddsData.matches || []).forEach((item) => {
     const result = resultForSportteryItem(item);
     const liveScore = liveScoreForSportteryItem(item);
-    const score = normalizeResultScore(result?.score) || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
+    const score = (sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "") || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
     if (!score) return;
     item.score = score;
     item.result = result?.result || direction(score);
@@ -770,7 +777,7 @@ function applyResultBackfill() {
     const result = resultForWorldCupMatch(match);
     const odds = oddsMatch(match);
     const liveScore = liveScoreForSportteryItem({ ...match, ...odds });
-    const score = normalizeResultScore(result?.score) || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
+    const score = (sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "") || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
     if (!score) return;
     match.score = score;
     match.officialResultSource = result?.score ? "sporttery" : liveScore?.source || "live-fallback";
@@ -1036,9 +1043,7 @@ function homeUpcomingMatches() {
   const sportteryOnly = (oddsData.matches || [])
     .filter((item) => !matchFromOddsItem(item))
     .filter((item) => {
-      const result = resultForSportteryItem(item);
-      const liveScore = liveScoreForSportteryItem(item);
-      const score = normalizeResultScore(item.score) || normalizeResultScore(result?.score) || (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "");
+      const score = verifiedSportteryScore(item);
       if (score) return false;
       const saleDate = item.ticaiDate || item.matchDate || "";
       return saleDate >= baseDate || item.matchDate >= baseDate || itemMatchesDateSet(item, recentPoolDates);
@@ -1562,7 +1567,7 @@ function sportteryPoolItems() {
       const linkedMatch = matchFromOddsItem(item);
       const result = resultForSportteryItem(item);
       const liveScore = liveScoreForSportteryItem(item);
-      const resultScore = normalizeResultScore(item.score) || normalizeResultScore(result?.score);
+      const resultScore = verifiedSportteryScore(item);
       const liveScoreText = normalizeResultScore(liveScore?.score);
       const score = resultScore || (liveScore?.isFinished ? liveScoreText : "");
       const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
@@ -1610,7 +1615,7 @@ function sportteryPoolItems() {
 
   const resultKeys = new Set(
     resultRows
-      .filter((item) => normalizeResultScore(item.score))
+      .filter((item) => sportteryResultIsFinished(item))
       .map((item) =>
         [
           normalizedIssueNo(item.no || item.issue),
@@ -1655,7 +1660,7 @@ function sportteryPoolItems() {
       return !resultKeys.has(key);
     });
   const liveFinishedFallbackRows = openItems
-    .filter((item) => normalizeResultScore(item.score))
+    .filter((item) => sportteryResultIsFinished(item))
     .filter((item) => {
       const key = [
         normalizedIssueNo(item.no || item.issue),
@@ -2695,12 +2700,15 @@ function oddsPairList(label, odds = {}) {
 function sportteryDetailRow(item = {}) {
   const result = resultForSportteryItem(item);
   const liveScore = liveScoreForSportteryItem(item);
-  const resultScore = normalizeResultScore(item.score) || normalizeResultScore(result?.score);
+  const itemFinalScore = sportteryResultIsFinished(item) ? normalizeResultScore(item.score) : "";
+  const resultFinalScore = sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "";
+  const resultScore = itemFinalScore || resultFinalScore || (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "");
   const liveScoreText = normalizeResultScore(liveScore?.score);
   const score = resultScore || liveScoreText;
   const linkedMatch = matchFromOddsItem(item) || matchFromResultItem(item);
   const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
   const hasStarted = Number.isFinite(kickoffAt) && Date.now() >= kickoffAt;
+  const liveStatus = liveScoreStatusText(liveScore);
   return {
     ...item,
     linkedNo: linkedMatch?.no || "",
@@ -2710,11 +2718,11 @@ function sportteryDetailRow(item = {}) {
     displayGroup: linkedMatch ? `${linkedMatch.group}组` : item.league || "竞彩",
     score,
     liveScore: liveScoreText,
-    liveStatus: liveScoreStatusText(liveScore),
+    liveStatus,
     liveHalfScore: liveScore?.halfScore || result?.halfScore || item.halfScore || "",
     liveSource: liveScore?.source || "",
     result,
-    status: score ? liveScoreStatusText(liveScore) || result?.statusName || item.statusName || "已完赛" : hasStarted ? "进行中" : item.statusName || "待赛",
+    status: resultScore ? "已完赛" : (liveScoreText || hasStarted) ? liveStatus || "进行中" : item.statusName || "待赛",
   };
 }
 
@@ -6335,7 +6343,7 @@ function findOddsMapRowByKey(key = "") {
 
 function oddsMapScoreForRow(row = {}) {
   const result = resultForSportteryItem(row);
-  const resultScore = normalizeResultScore(result?.score);
+  const resultScore = sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "";
   if (resultScore) return { scoreText: resultScore, score: parseScore(resultScore), source: "体彩赛果", item: result };
 
   const liveScore = liveScoreForSportteryItem(row);
