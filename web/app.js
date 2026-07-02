@@ -1,5 +1,6 @@
 const data = window.WC_DATA;
-const matches = data.matches;
+let matches = mergeWorldCupSportteryMatches(data.matches || [], window.LIVE_SPORTTERY_ODDS?.matches || []);
+data.matches = matches;
 const predictionMap = new Map(data.predictions.map((item) => [item.no, item]));
 const SPORTTERY_CLOUD_API_URL = "";
 const SPORTTERY_API_URL = "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c";
@@ -403,6 +404,11 @@ function looseTeamMatch(fullName = "", sourceName = "") {
 }
 
 function matchFromOddsItem(item) {
+  const targetNo = normalizedIssueNo(item.no || item.issue || item.orderId);
+  if (targetNo && isWorldCupSportteryItem(item)) {
+    const byNo = matches.find((match) => normalizedIssueNo(match.no) === targetNo);
+    if (byNo) return byNo;
+  }
   return matches.find(
     (match) =>
       match.date === item.ticaiDate &&
@@ -423,6 +429,47 @@ function matchFromResultItem(item) {
 function normalizeResultScore(score = "") {
   const text = String(score || "").trim().replace(":", "-");
   return parseScore(text) ? text : "";
+}
+
+function isWorldCupSportteryItem(item = {}) {
+  return /世界杯|world\s*cup/i.test(String(item.league || item.competition || item.tournament || ""));
+}
+
+function sportteryWorldCupMatchNo(item = {}) {
+  return normalizedIssueNo(item.no || item.issue || item.orderId || item.matchCode || "");
+}
+
+function mergeWorldCupSportteryMatches(baseMatches = [], sportteryMatches = []) {
+  const byNo = new Map(baseMatches.map((match) => [normalizedIssueNo(match.no), { ...match }]));
+  (sportteryMatches || [])
+    .filter(isWorldCupSportteryItem)
+    .forEach((item) => {
+      const no = sportteryWorldCupMatchNo(item);
+      if (!no || !item.home || !item.away) return;
+      const current = byNo.get(no);
+      const next = {
+        no,
+        date: item.matchDate || item.ticaiDate || item.date || current?.date || "",
+        group: current?.group || item.group || (Number(no) >= 73 ? "32强" : ""),
+        home: current?.home || item.home,
+        away: current?.away || item.away,
+        score: normalizeResultScore(current?.score) || normalizeResultScore(item.score),
+        issue: current?.issue || item.issue || "",
+        matchId: current?.matchId || item.matchId || "",
+        ticaiDate: current?.ticaiDate || item.ticaiDate || "",
+        matchDate: current?.matchDate || item.matchDate || "",
+        kickoffTime: current?.kickoffTime || item.kickoffTime || "",
+        statusName: current?.statusName || item.statusName || "",
+        source: current?.source || "sporttery-official",
+      };
+      byNo.set(no, next);
+    });
+
+  return [...byNo.values()].sort((a, b) => {
+    const dateCompare = String(a.date || "").localeCompare(String(b.date || ""));
+    if (dateCompare) return dateCompare;
+    return Number(normalizedIssueNo(a.no)) - Number(normalizedIssueNo(b.no));
+  });
 }
 
 function resultForSportteryItem(item) {
@@ -686,10 +733,10 @@ function officialScoreForMatch(match) {
   const odds = oddsMatch(match);
   const liveScore = liveScoreForSportteryItem({ ...match, ...odds });
   return (
-    normalizeResultScore(match?.score) ||
     normalizeResultScore(result?.score) ||
+    (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "") ||
     normalizeResultScore(odds?.score) ||
-    (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "")
+    normalizeResultScore(match?.score)
   );
 }
 
@@ -3739,9 +3786,17 @@ function teamHash(name) {
   return [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0);
 }
 
+function isWorldCupGroupStageMatch(match = {}) {
+  return /^[A-L]$/.test(String(match.group || ""));
+}
+
+function worldCupGroupStageMatches() {
+  return matches.filter(isWorldCupGroupStageMatch);
+}
+
 function buildTeamTable() {
   const teamMap = new Map();
-  matches.forEach((match) => {
+  worldCupGroupStageMatches().forEach((match) => {
     [match.home, match.away].forEach((team) => {
       if (!teamMap.has(team)) {
         teamMap.set(team, {
@@ -3838,6 +3893,7 @@ function renderPath() {
   const board = document.querySelector("#path-board");
   if (!board) return;
   const teams = buildTeamTable();
+  const groupStageMatches = worldCupGroupStageMatches();
   const groupRows = [...teams.reduce((acc, team) => {
     if (!acc.has(team.group)) acc.set(team.group, []);
     acc.get(team.group).push(team);
@@ -3857,8 +3913,8 @@ function renderPath() {
     .sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
   const bestThirdNames = new Set(thirdTeams.slice(0, 8).map((team) => `${team.group}-${team.name}`));
   const groupCount = new Set(teams.map((team) => team.group)).size;
-  const alreadyPlayed = matches.filter((match) => parseScore(officialScoreForMatch(match))).length;
-  const finishedGoals = matches
+  const alreadyPlayed = groupStageMatches.filter((match) => parseScore(officialScoreForMatch(match))).length;
+  const finishedGoals = groupStageMatches
     .filter((match) => parseScore(officialScoreForMatch(match)))
     .reduce((sum, match) => sum + parseScore(officialScoreForMatch(match)).total, 0);
   const averageGoals = alreadyPlayed ? (finishedGoals / alreadyPlayed).toFixed(2) : "0.00";
@@ -3879,7 +3935,7 @@ function renderPath() {
   };
 
   const formDots = (team) => {
-    const results = matches
+    const results = groupStageMatches
       .filter((match) => (match.home === team.name || match.away === team.name) && parseScore(officialScoreForMatch(match)))
       .map((match) => {
         const parsed = parseScore(officialScoreForMatch(match));
@@ -3924,12 +3980,12 @@ function renderPath() {
                   .map((team, index) => {
                     const rank = index + 1;
                     const zone = zoneLabel(rank, team);
-                    const wins = matches.filter((match) => {
+                    const wins = groupStageMatches.filter((match) => {
                       const parsed = parseScore(officialScoreForMatch(match));
                       if (!parsed) return false;
                       return (match.home === team.name && parsed.home > parsed.away) || (match.away === team.name && parsed.away > parsed.home);
                     }).length;
-                    const draws = matches.filter((match) => {
+                    const draws = groupStageMatches.filter((match) => {
                       const parsed = parseScore(officialScoreForMatch(match));
                       return parsed && (match.home === team.name || match.away === team.name) && parsed.home === parsed.away;
                     }).length;

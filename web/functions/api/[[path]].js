@@ -634,8 +634,9 @@ function sportteryProxyUrl(env, targetUrl) {
 
 async function fetchSportteryJson(env, targetUrl) {
   const response = await fetch(sportteryProxyUrl(env, targetUrl), { headers: sportteryHeaders });
-  if (!response.ok) throw new Error(`Sporttery API ${response.status}`);
-  const raw = await response.json();
+  const text = await response.text();
+  if (!response.ok) throw new Error(`Sporttery API ${response.status}: ${text.slice(0, 240)}`);
+  const raw = JSON.parse(text);
   if (!raw.success) throw new Error(raw.errorMessage || "Sporttery API returned an error");
   return raw;
 }
