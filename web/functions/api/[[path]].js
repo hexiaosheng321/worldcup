@@ -623,7 +623,7 @@ const apiFootballTeamZh = {
 };
 
 function sportteryProxyUrl(env, targetUrl) {
-  let proxy = (env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || env.REQUEST_UPSTREAM_PROXY || "").trim();
+  let proxy = (env.REQUEST_UPSTREAM_PROXY || env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || "").trim();
   if (!proxy) return targetUrl;
   if (!/^https?:\/\//i.test(proxy)) proxy = `https://${proxy}`;
   if (proxy.includes("{url}")) return proxy.replace("{url}", encodeURIComponent(targetUrl));
