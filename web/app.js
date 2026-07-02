@@ -2266,7 +2266,7 @@ function renderSignals() {
 }
 
 function renderToday() {
-  const today = currentSportteryBusinessDate(dashboardToday());
+  const today = currentSportteryBusinessDate(calendarToday());
   const tomorrow = addDays(today, 1);
   const targetMatches = worldCupMatchFlowMatches(today, tomorrow);
   const fallbackDates = [...new Set([
