@@ -683,7 +683,14 @@ function resultForWorldCupMatch(match) {
 
 function officialScoreForMatch(match) {
   const result = resultForWorldCupMatch(match);
-  return normalizeResultScore(match?.score) || normalizeResultScore(result?.score) || normalizeResultScore(oddsMatch(match)?.score);
+  const odds = oddsMatch(match);
+  const liveScore = liveScoreForSportteryItem({ ...match, ...odds });
+  return (
+    normalizeResultScore(match?.score) ||
+    normalizeResultScore(result?.score) ||
+    normalizeResultScore(odds?.score) ||
+    (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "")
+  );
 }
 
 function applyResultBackfill() {
@@ -835,7 +842,7 @@ function getFilteredMatches() {
   const status = statusFilter?.value || "all";
   return matches.filter((match) => {
     const textHit = !keyword || `${match.home}${match.away}${match.group}`.includes(keyword);
-    const isFinished = Boolean(parseScore(match.score));
+    const isFinished = Boolean(parseScore(officialScoreForMatch(match)));
     const hasPrediction = predictionMap.has(match.no);
     const statusHit =
       status === "all" ||
@@ -1184,7 +1191,7 @@ function renderHomeResearchLab() {
   const teams = buildTeamTable();
   const topPath = teams.slice().sort((a, b) => b.title - a.title)[0];
   const locked = data.predictions.length;
-  const verified = matches.filter((match) => parseScore(match.score) && latestPredictionFor(match.no)).length;
+  const verified = matches.filter((match) => parseScore(officialScoreForMatch(match)) && latestPredictionFor(match.no)).length;
   const services = [
     {
       label: "实时数据服务",
@@ -1470,9 +1477,10 @@ function sportteryPoolItems() {
       )
   );
   const worldCupFinishedFallbackRows = matches
-    .filter((match) => normalizeResultScore(match.score))
+    .filter((match) => normalizeResultScore(officialScoreForMatch(match)))
     .map((match) => {
       const odds = oddsMatch(match) || {};
+      const score = officialScoreForMatch(match);
       return {
         ...odds,
         orderId: odds.orderId || "",
@@ -1487,8 +1495,8 @@ function sportteryPoolItems() {
         away: match.away,
         statusCode: odds.statusCode || "11",
         statusName: "已完成",
-        score: match.score,
-        result: direction(match.score),
+        score,
+        result: direction(score),
         resultSource: "worldcup-data-fallback",
         linkedMatch: match,
       };
@@ -1844,6 +1852,18 @@ async function refreshSportterySpHistoryData(sourceMatches = oddsData.matches ||
     matches: histories,
   };
   window.LIVE_SPORTTERY_SP_HISTORY = spHistoryData;
+  rerenderOddsSurfaces();
+}
+
+function oddsMapNeedsSpHistoryRefresh() {
+  if (!oddsData.matches?.some((match) => match.matchId)) return false;
+  if (!spHistoryData.matches?.length) return true;
+  return !oddsMapRows().some((row) => !oddsMapScoreForRow(row)?.score);
+}
+
+function scheduleSportterySpHistoryRefresh(delay = 400) {
+  if (!oddsMapNeedsSpHistoryRefresh()) return;
+  runWhenPageIdle(() => refreshSportterySpHistoryData(oddsData.matches || []), delay);
 }
 
 function loadScriptOnce(src) {
@@ -2035,14 +2055,19 @@ async function loadCloudBootstrapData({ rerender = false } = {}) {
 
 async function refreshSportteryCloudData() {
   const loadedCloud = await loadCloudBootstrapData({ rerender: true });
-  if (loadedCloud) return;
+  if (loadedCloud) {
+    scheduleSportterySpHistoryRefresh();
+    return;
+  }
   if (oddsData.isCloudSnapshot || resultsData.isCloudSnapshot || liveFootballData.isCloudSnapshot) {
     rerenderOddsSurfaces();
+    scheduleSportterySpHistoryRefresh();
     return;
   }
   if (!SPORTTERY_CLOUD_API_URL) {
     await loadStaticSnapshotFallback({ rerender: true });
     rerenderOddsSurfaces();
+    scheduleSportterySpHistoryRefresh();
     return;
   }
   try {
@@ -2076,16 +2101,18 @@ async function refreshSportteryCloudData() {
         sourceNode.textContent = `数据源：Cloudflare 云端数据同步 · ${stamp || "最新快照"}`;
       }
       rerenderOddsSurfaces();
+      scheduleSportterySpHistoryRefresh();
     }
   } catch (error) {
     console.warn("Cloudflare 云端数据刷新失败，尝试使用本地静态兜底。", error);
     await loadStaticSnapshotFallback({ rerender: true });
+    scheduleSportterySpHistoryRefresh();
   }
 }
 
 function renderSignals() {
-  const finished = matches.filter((match) => parseScore(match.score));
-  const totalGoals = finished.reduce((sum, match) => sum + parseScore(match.score).total, 0);
+  const finished = matches.filter((match) => parseScore(officialScoreForMatch(match)));
+  const totalGoals = finished.reduce((sum, match) => sum + parseScore(officialScoreForMatch(match)).total, 0);
   document.querySelector("#signal-finished").textContent = finished.length;
   document.querySelector("#signal-upcoming").textContent = matches.length - finished.length;
   document.querySelector("#signal-predicted").textContent = uniquePredictionCount();
@@ -2098,7 +2125,7 @@ function renderToday() {
   const today = dashboardToday();
   const tomorrow = addDays(today, 1);
   const targetMatches = matches.filter((m) => m.date === today || m.date === tomorrow);
-  const fallbackDates = [...new Set(matches.filter((m) => !parseScore(m.score)).map((m) => m.date))].slice(0, 2);
+  const fallbackDates = [...new Set(matches.filter((m) => !parseScore(officialScoreForMatch(m))).map((m) => m.date))].slice(0, 2);
   const fallbackMatches = targetMatches.length
     ? targetMatches
     : matches.filter((m) => fallbackDates.includes(m.date));
@@ -2132,10 +2159,10 @@ const signalPageCopy = {
 
 function signalMatches(type) {
   if (type === "finished") {
-    return matches.filter((match) => parseScore(match.score));
+    return matches.filter((match) => parseScore(officialScoreForMatch(match)));
   }
   if (type === "upcoming") {
-    return matches.filter((match) => !parseScore(match.score));
+    return matches.filter((match) => !parseScore(officialScoreForMatch(match)));
   }
   if (type === "predicted") {
     return matches.filter((match) => latestPredictionFor(match.no));
@@ -2253,13 +2280,14 @@ function reviewMatchButton(match) {
 }
 
 function renderQuickMatchMode(match, pred, filter, finished, hLabel) {
+  const scoreText = officialScoreForMatch(match);
   if (!pred) {
     return `
       <section class="quick-decision-board">
         <article class="quick-main-card">
           <span>当前状态</span>
           <strong>${finished ? "已完赛" : "待锁版"}</strong>
-          <p>${finished ? `赛果 ${match.score}` : "这场还没有模型输出，先保留赛程和盘口信息。"}</p>
+          <p>${finished ? `赛果 ${scoreText}` : "这场还没有模型输出，先保留赛程和盘口信息。"}</p>
         </article>
         <article>
           <span>盘口</span>
@@ -2429,7 +2457,7 @@ function renderMatchDetail(no) {
   const match = matches.find((item) => item.no === no);
   if (!content || !match) return;
   const pred = latestPredictionFor(no);
-  const finished = Boolean(parseScore(match.score));
+  const finished = Boolean(parseScore(officialScoreForMatch(match)));
   const odds = oddsMatch(no);
   const hLabel = pred ? handicapLabel(pred) : handicapLine(no) ? `${match.home}${handicapLine(no)}` : "";
   const filter = pred ? advancedFilter(pred) : null;
@@ -2654,7 +2682,7 @@ function simpleConsistencyScore(pred = {}) {
 }
 
 function matchResultFromScore(match = {}) {
-  const score = parseScore(match.score);
+  const score = parseScore(officialScoreForMatch(match));
   if (!score) return null;
   return {
     matchId: String(match.matchId || match.no || ""),
@@ -3439,12 +3467,13 @@ function renderSchedule() {
   document.querySelector("#schedule-list").innerHTML = renderGoalTrendTable(filtered, {
     dateFormatter: (match) => formatDate(ticaiDate(match)),
     issueFormatter: ticaiIssue,
+    scoreFormatter: officialScoreForMatch,
   });
-  var schFinished = filtered.filter(function(m){ return parseScore(m.score); });
+  var schFinished = filtered.filter(function(m){ return parseScore(officialScoreForMatch(m)); });
   if (schFinished.length > 0) {
     var goalData = { labels: [], values: [] };
     schFinished.slice().sort(function(a,b){ return a.date.localeCompare(b.date); }).forEach(function(m){
-      var p = parseScore(m.score);
+      var p = parseScore(officialScoreForMatch(m));
       if (p) { goalData.labels.push(formatDate(m.date).slice(-5)); goalData.values.push(p.total); }
     });
     renderGoalTrendChart(goalData, "已完成场次进球走势");
@@ -3458,7 +3487,8 @@ function renderGoalTrendTable(sourceMatches, options = {}) {
   const buckets = ["0球", "1球", "2球", "3球", "4球", "5球", "6球", "7+球"];
   const rows = sourceMatches
     .map((match) => {
-      const parsed = parseScore(match.score);
+      const scoreText = options.scoreFormatter ? options.scoreFormatter(match) : match.score;
+      const parsed = parseScore(scoreText);
       const activeBucket = parsed ? goalBucket(parsed.total) : "";
       const issue = options.issueFormatter ? options.issueFormatter(match) : match.no;
       const date = options.dateFormatter ? options.dateFormatter(match) : formatDate(match.date);
@@ -3470,7 +3500,7 @@ function renderGoalTrendTable(sourceMatches, options = {}) {
           <td>${date}</td>
           <td class="mono">${issue}</td>
           <td class="home-cell">${match.home}</td>
-          <td class="score-cell">${match.score || ""}</td>
+          <td class="score-cell">${scoreText || ""}</td>
           <td class="away-cell">${match.away}</td>
           ${bucketCells}
           <td>${parsed ? parsed.total : ""}</td>
@@ -3500,7 +3530,7 @@ function renderGoalTrendTable(sourceMatches, options = {}) {
 }
 
 function renderStats() {
-  const finished = matches.filter((m) => parseScore(m.score));
+  const finished = matches.filter((m) => parseScore(officialScoreForMatch(m)));
   const tournamentTotal = data.tournamentTotalMatches || matches.length;
   const buckets = ["0球", "1球", "2球", "3球", "4球", "5球", "6球", "7+球"];
   const bucketCounts = Object.fromEntries(buckets.map((bucket) => [bucket, 0]));
@@ -3509,10 +3539,11 @@ function renderStats() {
   let draws = 0;
 
   finished.forEach((match) => {
-    const parsed = parseScore(match.score);
+    const scoreText = officialScoreForMatch(match);
+    const parsed = parseScore(scoreText);
     totalGoals += parsed.total;
     bucketCounts[goalBucket(parsed.total)] += 1;
-    const shape = scoreShape(match.score);
+    const shape = scoreShape(scoreText);
     scoreCounts.set(shape, (scoreCounts.get(shape) || 0) + 1);
     if (parsed.home === parsed.away) draws += 1;
   });
@@ -3723,7 +3754,7 @@ function buildTeamTable() {
         });
       }
     });
-    const parsed = parseScore(match.score);
+    const parsed = parseScore(officialScoreForMatch(match));
     if (!parsed) return;
     const home = teamMap.get(match.home);
     const away = teamMap.get(match.away);
@@ -3826,10 +3857,10 @@ function renderPath() {
     .sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
   const bestThirdNames = new Set(thirdTeams.slice(0, 8).map((team) => `${team.group}-${team.name}`));
   const groupCount = new Set(teams.map((team) => team.group)).size;
-  const alreadyPlayed = matches.filter((match) => parseScore(match.score)).length;
+  const alreadyPlayed = matches.filter((match) => parseScore(officialScoreForMatch(match))).length;
   const finishedGoals = matches
-    .filter((match) => parseScore(match.score))
-    .reduce((sum, match) => sum + parseScore(match.score).total, 0);
+    .filter((match) => parseScore(officialScoreForMatch(match)))
+    .reduce((sum, match) => sum + parseScore(officialScoreForMatch(match)).total, 0);
   const averageGoals = alreadyPlayed ? (finishedGoals / alreadyPlayed).toFixed(2) : "0.00";
   const pathLeaders = teams
     .slice()
@@ -3849,9 +3880,9 @@ function renderPath() {
 
   const formDots = (team) => {
     const results = matches
-      .filter((match) => (match.home === team.name || match.away === team.name) && parseScore(match.score))
+      .filter((match) => (match.home === team.name || match.away === team.name) && parseScore(officialScoreForMatch(match)))
       .map((match) => {
-        const parsed = parseScore(match.score);
+        const parsed = parseScore(officialScoreForMatch(match));
         const homeSide = match.home === team.name;
         const goalsFor = homeSide ? parsed.home : parsed.away;
         const goalsAgainst = homeSide ? parsed.away : parsed.home;
@@ -3894,12 +3925,12 @@ function renderPath() {
                     const rank = index + 1;
                     const zone = zoneLabel(rank, team);
                     const wins = matches.filter((match) => {
-                      const parsed = parseScore(match.score);
+                      const parsed = parseScore(officialScoreForMatch(match));
                       if (!parsed) return false;
                       return (match.home === team.name && parsed.home > parsed.away) || (match.away === team.name && parsed.away > parsed.home);
                     }).length;
                     const draws = matches.filter((match) => {
-                      const parsed = parseScore(match.score);
+                      const parsed = parseScore(officialScoreForMatch(match));
                       return parsed && (match.home === team.name || match.away === team.name) && parsed.home === parsed.away;
                     }).length;
                     const losses = team.played - wins - draws;
@@ -4020,7 +4051,8 @@ function knockoutMatchByNo(no) {
 }
 
 function knockoutWinner(match) {
-  const parsed = parseScore(match?.score);
+  const scoreText = match ? officialScoreForMatch(match) : "";
+  const parsed = parseScore(scoreText);
   const odds = match ? oddsMatch(match) : null;
   const liveScore = match ? liveScoreForSportteryItem({ ...match, ...odds }) : null;
   const explicitWinner = match?.winner || liveScore?.winnerZh || "";
@@ -4054,7 +4086,8 @@ function knockoutSlot(round, roundIndex, no, matchIndex) {
   const sources = previousKnockoutSources(roundIndex, matchIndex);
   const home = knockoutParticipant(match, "home", sources, 0);
   const away = knockoutParticipant(match, "away", sources, 1);
-  const parsed = parseScore(match?.score);
+  const scoreText = match ? officialScoreForMatch(match) : "";
+  const parsed = parseScore(scoreText);
   const winner = knockoutWinner(match);
   const liveScore = match ? liveScoreForSportteryItem({ ...match, ...oddsMatch(match) }) : null;
   const penaltyScore = match?.penaltyScore || liveScore?.penaltyScore || "";
@@ -4072,7 +4105,7 @@ function knockoutSlot(round, roundIndex, no, matchIndex) {
     match,
     home,
     away,
-    score: match?.score || "",
+    score: scoreText || "",
     winner,
     status,
     date,
@@ -4128,7 +4161,7 @@ function renderKnockout() {
   const scheduled = allSlots.filter((slot) => slot.match).length;
   const champion = rounds.at(-1)?.slots[0]?.winner || "待定";
   const nextSlot =
-    allSlots.find((slot) => slot.match && !parseScore(slot.match.score)) ||
+    allSlots.find((slot) => slot.match && !parseScore(officialScoreForMatch(slot.match))) ||
     allSlots.find((slot) => !slot.match);
 
   board.innerHTML = `
@@ -4169,8 +4202,9 @@ function renderModel() {
   if (versionPill) versionPill.textContent = `当前 ${data.currentModelVersion || "V4"}`;
   document.querySelector("#model-list").innerHTML = groupedPredictions()
     .map(({ match, predictions }) => {
-      const actual = match?.score || "未完赛";
-      const actualDirection = direction(match?.score);
+      const actualScore = match ? officialScoreForMatch(match) : "";
+      const actual = actualScore || "未完赛";
+      const actualDirection = direction(actualScore);
       const versionBlocks = predictions
         .slice()
         .sort((a, b) => predictionVersionRank(a) - predictionVersionRank(b))
@@ -4656,8 +4690,9 @@ function advancedFilter(pred) {
 }
 
 function predictionReviewData(pred, match) {
-  const actualDirection = direction(match?.score);
-  const actualHandicapDirection = handicapDirection(match?.score, reviewHandicapLine(pred));
+  const scoreText = match ? officialScoreForMatch(match) : "";
+  const actualDirection = direction(scoreText);
+  const actualHandicapDirection = handicapDirection(scoreText, reviewHandicapLine(pred));
   const hPick = handicapPick(pred);
   return {
     pred,
@@ -4666,13 +4701,13 @@ function predictionReviewData(pred, match) {
     hPick,
     directionHit: actualDirection ? pred.pick === actualDirection : null,
     handicapHit: actualHandicapDirection ? hPick === actualHandicapDirection : null,
-    totalGoalsHit: totalGoalsHit(pred.totalGoalsPick, match?.score),
-    mainHit: match?.score ? pred.mainScore === match.score : null,
-    counterHit: match?.score ? pred.counterScore === match.score : null,
-    scoreHit: match?.score ? pred.mainScore === match.score || pred.counterScore === match.score : null,
+    totalGoalsHit: totalGoalsHit(pred.totalGoalsPick, scoreText),
+    mainHit: scoreText ? pred.mainScore === scoreText : null,
+    counterHit: scoreText ? pred.counterScore === scoreText : null,
+    scoreHit: scoreText ? pred.mainScore === scoreText || pred.counterScore === scoreText : null,
     matchType: modelMatchType(pred),
-    actualMatchType: actualMatchType(match?.score),
-    matchTypeHit: matchTypeHit(pred, match?.score),
+    actualMatchType: actualMatchType(scoreText),
+    matchTypeHit: matchTypeHit(pred, scoreText),
     confidence: confidenceGrade(pred),
     advice: confidenceAdvice(confidenceGrade(pred)),
   };
@@ -4693,7 +4728,7 @@ function reviewAttribution(pred, match, review = predictionReviewData(pred, matc
     };
   }
   const reasons = [];
-  const parsed = parseScore(match?.score);
+  const parsed = parseScore(match ? officialScoreForMatch(match) : "");
   const gate = autoDecisionGate(match?.no, pred);
   const consistency = marketConsistency(match?.no, pred);
   const expectedGoals = predictedGoalAverage(pred);
@@ -4935,6 +4970,7 @@ function renderReview() {
   const ticketRows = visibleRows
     .map(({ match, pred, review }) => {
       const caseStatus = caseBaseStatus(pred, match);
+      const scoreText = officialScoreForMatch(match);
       const tags = [
         ...(caseStatus.caseItem?.failureTags || []),
         ...(caseStatus.caseItem?.successTags || []),
@@ -4945,7 +4981,7 @@ function renderReview() {
           <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
           <td>${match.no}</td>
           <td class="match-name-cell">${reviewMatchButton(match)}</td>
-          <td class="actual-cell">${dash(match.score)}</td>
+          <td class="actual-cell">${dash(scoreText)}</td>
           <td><b>${dash(pred.pick)}</b>${hitCell(review.directionHit)}</td>
           <td><b>${dash(review.hPick)}</b>${hitCell(review.handicapHit)}</td>
           <td><b>${dash(pred.totalGoalsPick)}</b>${hitCell(review.totalGoalsHit)}</td>
@@ -4960,6 +4996,7 @@ function renderReview() {
 
   const diagnosticRows = visibleRows
     .map(({ match, pred, review }) => {
+      const scoreText = officialScoreForMatch(match);
       const filter = advancedFilter(pred);
       const gate = autoDecisionGate(match.no, pred);
       const attribution = reviewAttribution(pred, match, review);
@@ -4975,7 +5012,7 @@ function renderReview() {
           <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
           <td>${match.no}</td>
           <td class="match-name-cell">${reviewMatchButton(match)}</td>
-          <td class="actual-cell">${dash(match.score)}</td>
+          <td class="actual-cell">${dash(scoreText)}</td>
           <td><b>${dash(review.matchType)}</b>${hitCell(review.matchTypeHit)}</td>
           <td>${dash(review.actualMatchType)}</td>
           <td>${dash(review.confidence)}</td>
@@ -5242,6 +5279,7 @@ function renderGlobalStats() {
     .map(({ match, pred, review, competition, playType }) => {
       const attribution = reviewAttribution(pred, match, review);
       const confidence = confidenceGrade(pred);
+      const scoreText = officialScoreForMatch(match);
       return `
         <tr>
           <td>${dash(competition)}</td>
@@ -5250,7 +5288,7 @@ function renderGlobalStats() {
           <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
           <td>${match.no}</td>
           <td class="text-cell match-name-cell">${reviewMatchButton(match)}</td>
-          <td class="actual-cell">${dash(match.score)}</td>
+          <td class="actual-cell">${dash(scoreText)}</td>
           <td><span class="gate-badge ${confidenceTone(confidence)}">${dash(confidence)}</span></td>
           <td><b>${dash(pred.pick)}</b>${hitCell(review.directionHit)}</td>
           <td><b>${dash(review.hPick)}</b>${hitCell(review.handicapHit)}</td>
@@ -5646,7 +5684,7 @@ function modelEvidenceChecks(no, pred) {
     ["状态转移", Boolean(pred?.stateTransfer || pred?.knockoutStateTransfer || pred?.timeStateTransfer), "90分钟目标、第一球后行为和失败方式"],
     ["数据质量", Boolean(pred?.dataQuality || pred?.dataQualityGate), "证据不足时降级"],
     ["机构视角", Boolean(pred?.institutionLine), "自建盘口 vs 体彩盘口"],
-    ["赛果回填", Boolean(parseScore(match?.score)), "赛后复盘使用"],
+    ["赛果回填", Boolean(parseScore(match ? officialScoreForMatch(match) : "")), "赛后复盘使用"],
     ["阵容伤停", Boolean(pred?.recentAnalysis || pred?.keyJudgement || pred?.changeNote) && /伤|缺阵|停赛|复出|回归|伤愈|伤病|缺席/.test([pred.recentAnalysis, pred.keyJudgement, pred.script, pred.noiseFilter, pred.changeNote].filter(Boolean).join(' ')), "阵容/伤停信息（来自推演文本扫描）"],
   ];
 }
