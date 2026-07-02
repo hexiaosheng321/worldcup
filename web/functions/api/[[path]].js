@@ -626,7 +626,9 @@ function sportteryProxyUrl(env, targetUrl) {
   const proxy = (env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || env.REQUEST_UPSTREAM_PROXY || "").trim();
   if (!proxy) return targetUrl;
   if (proxy.includes("{url}")) return proxy.replace("{url}", encodeURIComponent(targetUrl));
-  return `${proxy}${targetUrl}`;
+  if (/[?&]url=$/.test(proxy)) return `${proxy}${encodeURIComponent(targetUrl)}`;
+  const delimiter = proxy.includes("?") ? "&" : "?";
+  return `${proxy}${delimiter}url=${encodeURIComponent(targetUrl)}`;
 }
 
 async function fetchSportteryJson(env, targetUrl) {
