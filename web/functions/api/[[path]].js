@@ -586,6 +586,9 @@ const apiFootballTeamZh = {
   Argentina: "阿根廷",
   Australia: "澳大利亚",
   Belgium: "比利时",
+  "Bosnia and Herzegovina": "波黑",
+  "Bosnia-Herzegovina": "波黑",
+  Bosnia: "波黑",
   Brazil: "巴西",
   Canada: "加拿大",
   Croatia: "克罗地亚",
@@ -775,12 +778,30 @@ function footballDataScoreParts(score = {}) {
     halfHome: scorePartValue(half.home),
     halfAway: scorePartValue(half.away),
     duration: score.duration || "",
+    winner: score.winner || "",
   };
 }
 
 function dashScoreText(home, away) {
   if (!Number.isFinite(Number(home)) || !Number.isFinite(Number(away))) return "";
   return `${Number(home)}-${Number(away)}`;
+}
+
+function penaltyScoreText(home, away) {
+  return dashScoreText(home, away);
+}
+
+function sideFromPenalty(home, away) {
+  const h = scorePartValue(home);
+  const a = scorePartValue(away);
+  if (!Number.isFinite(h) || !Number.isFinite(a) || h === a) return "";
+  return h > a ? "HOME_TEAM" : "AWAY_TEAM";
+}
+
+function winnerFromSide(side = "", home = "", away = "") {
+  if (/HOME/i.test(side)) return home;
+  if (/AWAY/i.test(side)) return away;
+  return "";
 }
 
 async function fetchApiFootballDay(env, date) {
@@ -808,6 +829,9 @@ async function fetchApiFootballDay(env, date) {
     awayZh: apiFootballTeamZh[match.match_awayteam_name] || "",
     score: dashScoreText(match.match_hometeam_score, match.match_awayteam_score),
     halfScore: dashScoreText(match.match_hometeam_halftime_score, match.match_awayteam_halftime_score),
+    penaltyScore: penaltyScoreText(match.match_hometeam_penalty_score, match.match_awayteam_penalty_score),
+    winnerSide: sideFromPenalty(match.match_hometeam_penalty_score, match.match_awayteam_penalty_score),
+    winnerZh: winnerFromSide(sideFromPenalty(match.match_hometeam_penalty_score, match.match_awayteam_penalty_score), apiFootballTeamZh[match.match_hometeam_name] || match.match_hometeam_name || "", apiFootballTeamZh[match.match_awayteam_name] || match.match_awayteam_name || ""),
     status: match.match_status || "",
     isFinished: /finished|after/i.test(String(match.match_status || "")),
     live: String(match.match_live || "") === "1",
@@ -843,6 +867,8 @@ async function fetchFootballDataDay(env, date) {
       awayZh: apiFootballTeamZh[away] || "",
       score: dashScoreText(score.home, score.away),
       halfScore: dashScoreText(score.halfHome, score.halfAway),
+      winnerSide: score.winner,
+      winnerZh: winnerFromSide(score.winner, apiFootballTeamZh[home] || home, apiFootballTeamZh[away] || away),
       status: match.status || "",
       isFinished: match.status === "FINISHED",
       live: ["IN_PLAY", "PAUSED"].includes(match.status),
@@ -877,6 +903,8 @@ async function fetchFootballDataCompetition(env, code, season = "") {
       awayZh: apiFootballTeamZh[away] || "",
       score: dashScoreText(score.home, score.away),
       halfScore: dashScoreText(score.halfHome, score.halfAway),
+      winnerSide: score.winner,
+      winnerZh: winnerFromSide(score.winner, apiFootballTeamZh[home] || home, apiFootballTeamZh[away] || away),
       status: match.status || "",
       isFinished: match.status === "FINISHED",
       live: ["IN_PLAY", "PAUSED"].includes(match.status),
@@ -968,6 +996,8 @@ async function fetchTheSportsDbDay(env, date) {
     awayZh: apiFootballTeamZh[match.strAwayTeam] || "",
     score: dashScoreText(match.intHomeScore, match.intAwayScore),
     halfScore: "",
+    winnerSide: "",
+    winnerZh: "",
     status: match.strStatus || match.strProgress || "",
     isFinished: Boolean(parseDashScore(`${match.intHomeScore ?? ""}-${match.intAwayScore ?? ""}`)) &&
       /finish|ft|after|ended/i.test(String(match.strStatus || match.strProgress || "finished")),

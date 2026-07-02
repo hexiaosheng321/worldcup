@@ -11,6 +11,9 @@ const TEAM_ZH = {
   Australia: "澳大利亚",
   Austria: "奥地利",
   Belgium: "比利时",
+  "Bosnia and Herzegovina": "波黑",
+  "Bosnia-Herzegovina": "波黑",
+  Bosnia: "波黑",
   Brazil: "巴西",
   Canada: "加拿大",
   Colombia: "哥伦比亚",
@@ -66,6 +69,20 @@ function normalizeScore(home, away) {
   return `${home}-${away}`;
 }
 
+function penaltyWinnerSide(home, away) {
+  if (home === undefined || away === undefined || home === "" || away === "") return "";
+  const homeScore = Number(home);
+  const awayScore = Number(away);
+  if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore) || homeScore === awayScore) return "";
+  return homeScore > awayScore ? "HOME_TEAM" : "AWAY_TEAM";
+}
+
+function winnerFromSide(side = "", home = "", away = "") {
+  if (/HOME/i.test(side)) return home;
+  if (/AWAY/i.test(side)) return away;
+  return "";
+}
+
 function statusLabel(status = "") {
   const text = String(status || "").trim();
   if (!text) return "";
@@ -84,6 +101,7 @@ function isFinished(status = "") {
 function normalizeMatch(match) {
   const home = match.match_hometeam_name || "";
   const away = match.match_awayteam_name || "";
+  const winnerSide = penaltyWinnerSide(match.match_hometeam_penalty_score, match.match_awayteam_penalty_score);
   return {
     source: "APIfootball",
     externalId: String(match.match_id || ""),
@@ -96,6 +114,9 @@ function normalizeMatch(match) {
     awayZh: TEAM_ZH[away] || away,
     score: normalizeScore(match.match_hometeam_score, match.match_awayteam_score),
     halfScore: normalizeScore(match.match_hometeam_halftime_score, match.match_awayteam_halftime_score),
+    penaltyScore: normalizeScore(match.match_hometeam_penalty_score, match.match_awayteam_penalty_score),
+    winnerSide,
+    winnerZh: winnerFromSide(winnerSide, TEAM_ZH[home] || home, TEAM_ZH[away] || away),
     status: match.match_status || "",
     statusLabel: statusLabel(match.match_status),
     isFinished: isFinished(match.match_status),

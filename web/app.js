@@ -233,7 +233,7 @@ const teamAliases = {
   阿尔及利: ["阿尔及利亚", "Algeria"],
   科特迪瓦: ["象牙海岸", "Ivory Coast", "Cote dIvoire", "Côte dIvoire"],
   佛得角: ["佛得角共和国", "Cape Verde", "Cabo Verde"],
-  波黑: ["波斯尼亚", "波斯尼亚和黑塞哥维那", "Bosnia", "Bosnia Herzegovina"],
+  波黑: ["波斯尼亚", "波斯尼亚和黑塞哥维那", "Bosnia", "Bosnia Herzegovina", "Bosnia and Herzegovina", "Bosnia-Herzegovina"],
   坦山猫: ["Ilves", "Tampereen Ilves", "Ilves Tampere"],
   塞伊奈: ["SJK", "Seinajoen JK", "Seinäjoen JK", "SJK Seinajoki"],
   赫尔辛基: ["HJK", "HJK Helsinki"],
@@ -698,6 +698,10 @@ function applyResultBackfill() {
     item.statusName = result?.statusName || liveScore?.statusLabel || item.statusName || "已完成";
     item.halfScore = result?.halfScore || liveScore?.halfScore || item.halfScore || "";
     item.liveScoreSource = liveScore?.source || item.liveScoreSource || "";
+    item.winner = liveScore?.winnerZh || item.winner || "";
+    item.winnerSide = liveScore?.winnerSide || item.winnerSide || "";
+    item.penaltyScore = liveScore?.penaltyScore || item.penaltyScore || "";
+    item.scoreDuration = liveScore?.scoreDuration || item.scoreDuration || "";
   });
   matches.forEach((match) => {
     const result = resultForWorldCupMatch(match);
@@ -708,6 +712,10 @@ function applyResultBackfill() {
     match.score = score;
     match.officialResultSource = result?.score ? "sporttery" : liveScore?.source || "live-fallback";
     match.halfScore = result?.halfScore || liveScore?.halfScore || match.halfScore || "";
+    match.winner = liveScore?.winnerZh || match.winner || "";
+    match.winnerSide = liveScore?.winnerSide || match.winnerSide || "";
+    match.penaltyScore = liveScore?.penaltyScore || match.penaltyScore || "";
+    match.scoreDuration = liveScore?.scoreDuration || match.scoreDuration || "";
   });
 }
 
@@ -3978,10 +3986,17 @@ function knockoutMatchByNo(no) {
 
 function knockoutWinner(match) {
   const parsed = parseScore(match?.score);
-  if (!parsed) return "";
+  const odds = match ? oddsMatch(match) : null;
+  const liveScore = match ? liveScoreForSportteryItem({ ...match, ...odds }) : null;
+  const explicitWinner = match?.winner || liveScore?.winnerZh || "";
+  if (!parsed) return explicitWinner;
   if (parsed.home > parsed.away) return match.home;
   if (parsed.home < parsed.away) return match.away;
-  return match.winner || "";
+  if (explicitWinner) return explicitWinner;
+  const winnerSide = match?.winnerSide || liveScore?.winnerSide || "";
+  if (/HOME/i.test(winnerSide)) return match.home;
+  if (/AWAY/i.test(winnerSide)) return match.away;
+  return "";
 }
 
 function previousKnockoutSources(roundIndex, matchIndex) {
@@ -4004,7 +4019,14 @@ function knockoutSlot(round, roundIndex, no, matchIndex) {
   const away = knockoutParticipant(match, "away", sources, 1);
   const parsed = parseScore(match?.score);
   const winner = knockoutWinner(match);
-  const status = parsed ? (winner ? "已产生胜者" : "加时/点球待补") : match ? "待赛" : "待定";
+  const liveScore = match ? liveScoreForSportteryItem({ ...match, ...oddsMatch(match) }) : null;
+  const penaltyScore = match?.penaltyScore || liveScore?.penaltyScore || "";
+  const duration = match?.scoreDuration || liveScore?.scoreDuration || "";
+  const status = parsed
+    ? (winner
+        ? (penaltyScore || /PENALTY/i.test(duration) ? `点球胜者 ${winner}` : `已产生胜者 ${winner}`)
+        : "加时/点球待补")
+    : match ? "待赛" : "待定";
   const date = match?.date ? formatDate(match.date) : "时间待定";
   return {
     no,
@@ -4017,6 +4039,8 @@ function knockoutSlot(round, roundIndex, no, matchIndex) {
     winner,
     status,
     date,
+    penaltyScore,
+    scoreDuration: duration,
     sources,
   };
 }
@@ -4049,7 +4073,7 @@ function renderKnockoutCard(slot, index) {
       </div>
       <div class="knockout-card-foot">
         <span>${slot.status}</span>
-        ${sourceText ? `<em>${sourceText}</em>` : `<em>${slot.match?.group || slot.roundTitle}</em>`}
+        ${slot.penaltyScore ? `<em>点球 ${slot.penaltyScore}</em>` : sourceText ? `<em>${sourceText}</em>` : `<em>${slot.match?.group || slot.roundTitle}</em>`}
       </div>
     </article>
   `;
