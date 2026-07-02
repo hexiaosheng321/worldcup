@@ -1981,6 +1981,11 @@ async function listAutoPredictions(db, limit = 300) {
 
 async function d1OddsScript(db) {
   const rows = await db.prepare("SELECT * FROM matches ORDER BY kickoff_time ASC LIMIT 300").all();
+  const updatedTimes = (rows.results || [])
+    .map((row) => row.updated_at)
+    .filter(Boolean)
+    .sort();
+  const latestUpdatedAt = updatedTimes.at(-1) || new Date().toISOString();
   const matches = (rows.results || [])
     .map((row) => {
       const payload = parseObject(row.payload_json, null);
@@ -2004,11 +2009,11 @@ async function d1OddsScript(db) {
   const data = {
     source: "Cloudflare D1 + 中国体育彩票官方接口",
     apiEndpoint: "/api/live-sporttery-data.js",
-    importedAt: rows.results?.[0]?.updated_at || new Date().toISOString(),
+    importedAt: latestUpdatedAt,
     isLiveSnapshot: true,
     isCloudSnapshot: true,
     totalCount: matches.length,
-    lastUpdateTime: rows.results?.[0]?.updated_at || "",
+    lastUpdateTime: latestUpdatedAt,
     matchDates: [...new Set(matches.map((item) => item.ticaiDate || item.matchDate).filter(Boolean))],
     matches,
   };
