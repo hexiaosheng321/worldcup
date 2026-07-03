@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./styles.css?v=202607011805" />
     <link rel="stylesheet" href="./styles-effects.css?v=202607011825" />
     <link rel="preload" href="./data.js?v=202607032320" as="script" />
-    <link rel="preload" href="./app.js?v=202607032345" as="script" />
+    <link rel="preload" href="./app.js?v=202607040010" as="script" />
   </head>
   <body class="home-mode page-loading">
     <header class="home-topbar">
@@ -251,7 +251,7 @@
             <h2>模型介绍</h2>
             <p>
               这套模型不是单纯预测胜负，而是把赛程、盘口、比分形态、赛事动机和赛后复盘放在同一条链路里。
-              世界杯专题当前是 V4；芬超和后续新接入联赛都从各自 V1 开始，但联赛 V1 会吸收世界杯 V4 已经验证过的推演经验。
+              名称统一为世界杯 V4 模型、芬超联赛 V1、瑞超联赛 V1 等；世界杯使用当前版本，其它联赛从各自 V1 起步。
             </p>
           </div>
           <aside>
@@ -398,7 +398,7 @@
             <strong>模型口径补全</strong>
             <ul>
               <li>世界杯当前为 V4，芬超和后续联赛从各自 V1 起步</li>
-              <li>联赛 V1 吸收世界杯 V4 经验，但保留独立版本历史</li>
+              <li>世界杯显示“世界杯 Vx 模型”，其它联赛显示“联赛名 V1”</li>
               <li>盘口信息、SP 历史、赔率数学和历史样本正式进入赛前证据链</li>
               <li>统一最终决策步骤，赛事差异放在规则、动机、赛程和轮换层处理</li>
             </ul>
@@ -708,7 +708,7 @@
     <script defer src="./lib/cloudStore.js?v=202607032320"></script>
     <script defer src="./sporttery-math.js?v=202607010005"></script>
     <script defer src="./app-charts.js?v=202607021125"></script>
-    <script defer src="./app.js?v=202607032345"></script>
+    <script defer src="./app.js?v=202607040010"></script>
 <button type="button" class="back-to-top" id="back-to-top" aria-label="返回顶部">&#8593;</button>
   </body>
 </html>

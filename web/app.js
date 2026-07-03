@@ -879,6 +879,59 @@ function displayModelText(value) {
     .replaceAll("反比分", "比分预测");
 }
 
+function modelVersionFromText(...values) {
+  const text = values.filter(Boolean).join(" ");
+  const match = text.match(/\bV\s*(\d+)\b/i);
+  return match ? `V${match[1]}` : "";
+}
+
+function baseCompetitionLabel(value = "") {
+  const text = String(value || "")
+    .replace(/（.*?）|\(.*?\)/g, "")
+    .replace(/\bV\s*\d+\b/gi, "")
+    .replace(/32强|淘汰赛|联赛模型|模型|专题|当前/g, "")
+    .trim();
+  return text || "";
+}
+
+function modelDisplayName(pred = {}, match = {}, fallback = "") {
+  const rawVersion =
+    pred.modelVersion ||
+    modelVersionFromText(pred.type, pred.competitionModel, pred.eventModel, pred.competitionType, fallback);
+  const explicitCompetition =
+    baseCompetitionLabel(pred.competition) ||
+    baseCompetitionLabel(match.league) ||
+    baseCompetitionLabel(match.competition);
+  const version = rawVersion || "V1";
+  if (explicitCompetition && !/世界杯|World Cup/i.test(explicitCompetition)) {
+    if (/联赛$/.test(explicitCompetition)) return `${explicitCompetition} ${version}`;
+    if (/体彩|竞彩/.test(explicitCompetition)) return `${explicitCompetition} ${version}`;
+    return `${explicitCompetition}联赛 ${version}`;
+  }
+  const text = [
+    pred.competition,
+    pred.competitionModel,
+    pred.eventModel,
+    pred.competitionType,
+    match.competition,
+    match.league,
+    fallback,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  if (/世界杯|World Cup/i.test(text)) {
+    const version = rawVersion || data.currentModelVersion || "V4";
+    return `世界杯 ${version} 模型`;
+  }
+  const competition =
+    explicitCompetition ||
+    baseCompetitionLabel(fallback) ||
+    "体彩联赛";
+  if (/联赛$/.test(competition)) return `${competition} ${version}`;
+  if (/体彩|竞彩/.test(competition)) return `${competition} ${version}`;
+  return `${competition}联赛 ${version}`;
+}
+
 function handicapLabel(pred) {
   const match = matches.find((item) => item.no === pred.no);
   const line = reviewHandicapLine(pred);
@@ -2581,7 +2634,9 @@ function renderProjectionDecisionDeck(match, pred, filter, options = {}) {
   const issue = options.issue || (match ? ticaiIssue(match) : pred?.issue) || "-";
   const version = pred ? predictionVersionLabel(pred) : "待推演";
   const summary = finalDecisionActionText(pred) || `单选 ${pred?.pick || "-"}；让球 ${handicap}；总进球 ${totalPick}；比分 ${scorePick}`;
-  const competition = options.competition || pred?.competitionModel || pred?.competitionType || (match?.group ? `${match.group}组` : "");
+  const competition = pred
+    ? modelDisplayName(pred, match, options.competition || pred?.competitionModel || pred?.competitionType || (match?.group ? `${match.group}组` : ""))
+    : options.competition || (match?.group ? `${match.group}组` : "");
   const meta = [
     competition,
     gate ? `证据 ${gate.level} / ${gate.score}` : "",
@@ -2804,6 +2859,7 @@ function sportteryOddsLeader(odds = {}, labels = [["胜", "win"], ["平", "draw"
 function sportteryResearchSnapshot(item, modelPred) {
   const score = normalizeResultScore(item.score);
   if (modelPred) {
+    const modelName = modelDisplayName(modelPred, item, modelPred.competitionModel || modelPred.competitionType || item?.league);
     const actualTotal = parseScore(score)?.total;
     const riskNotes = [
       modelPred.decisionConflict,
@@ -2812,7 +2868,7 @@ function sportteryResearchSnapshot(item, modelPred) {
       modelPred.dataQuality,
     ].filter(Boolean);
     return {
-      statusLabel: score ? "赛后复盘" : `${modelPred.competitionModel || "联赛V4模型"}锁版`,
+      statusLabel: score ? "赛后复盘" : `${modelName}锁版`,
       action: modelPred.advice || "已锁版",
       directionPick: modelPred.pick || "-",
       handicapPick: handicapPick(modelPred) || "-",
@@ -3708,6 +3764,7 @@ function renderSportteryMatchDetail(key) {
   const totalGoals = item.totalGoalsOdds || [];
   const scoreOdds = item.scoreOdds || [];
   const sourceStamp = formatCapturedAt(oddsData.importedAt || resultsData.importedAt);
+  const modelName = modelPred ? modelDisplayName(modelPred, item, modelPred.competitionModel || modelPred.competitionType || item.league) : "";
   content.innerHTML = `
     <div class="match-page-toolbar">
       <button type="button" data-detail-back>${backLabel}</button>
@@ -3715,7 +3772,7 @@ function renderSportteryMatchDetail(key) {
     </div>
     <section class="match-page-hero sporttery-detail-hero">
       <div>
-        <p class="eyebrow">${modelPred?.competitionModel || "Sporttery Research"}</p>
+        <p class="eyebrow">${modelName || "Sporttery Research"}</p>
         <h2>${item.displayHome} vs ${item.displayAway}</h2>
         <p>${modelPred?.keyJudgement || `${item.league || "体彩赛事"} · ${item.kickoffTime || "--:--"} 开赛 · 让球 ${item.handicap || "0"} · ${research.action}`}</p>
       </div>
@@ -3753,11 +3810,11 @@ function renderSportteryMatchDetail(key) {
         <article>
           <span>模型版本</span>
           <strong>${modelPred ? predictionVersionLabel(modelPred) : "未锁版"}</strong>
-          <p>${modelPred?.competitionModel || "盘口预筛，不计入正式模型版本"}</p>
+          <p>${modelName || "盘口预筛，不计入正式模型版本"}</p>
         </article>
       </section>
       <section class="match-page-section sporttery-research-panel">
-        <span>${modelPred ? `${modelPred.competitionModel || "联赛模型"}快速判断` : research.score ? "复盘验票" : "盘口预筛"}</span>
+        <span>${modelPred ? `${modelName}快速判断` : research.score ? "复盘验票" : "盘口预筛"}</span>
         <p>${
           research.score
             ? `实际比分 ${research.score}，赛果 ${research.actualDirection || "-"}，让球结果 ${research.actualHandicap || "-"}，总进球 ${research.actualTotal ?? "-"}。`
@@ -5528,7 +5585,7 @@ function modelAuditRows() {
         match,
         pred,
         review,
-        competition: match.competition || match.league || "世界杯",
+        competition: modelDisplayName(pred, match, match.competition || match.league || "世界杯"),
         playType: pred.playType || "竞彩足球",
       };
     });
@@ -5553,7 +5610,7 @@ function modelAuditRows() {
       match,
       pred,
       review: predictionReviewData(pred, match),
-      competition: pred.competitionModel || pred.competition || "体彩联赛",
+      competition: modelDisplayName(pred, match, pred.competitionModel || pred.competition || "体彩联赛"),
       playType: pred.playType || "竞彩足球",
     };
   }).filter(Boolean);
@@ -6328,6 +6385,7 @@ function normalizeScriptSet(scriptSet, fallbackText) {
 function renderUniversalModelPanel(pred) {
   if (!pred) return "";
   const modelTemplate = pred.competitionModel || pred.eventModel || pred.competitionType || "通用赛前模板";
+  const modelName = modelDisplayName(pred, {}, modelTemplate);
   const motiveItems = [
     ["统一流程", pred.decisionProcess || pred.modelDecisionProcess],
     ["赛事规则", pred.competitionRules || pred.eventWeighting || pred.competitionWeight],
@@ -6348,8 +6406,8 @@ function renderUniversalModelPanel(pred) {
     <section class="match-page-section universal-model-panel">
       <div class="universal-model-head">
         <span>V4 通用模型</span>
-        <strong>${displayModelText(modelTemplate)}</strong>
-        <em>世界杯当前为V4；联赛和杯赛从各自V1开始，但吸收世界杯V4的最终决策经验，差异放在赛事规则、动机和赛程约束层处理。</em>
+        <strong>${modelName}</strong>
+        <em>世界杯使用当前版本；其它联赛从各自 V1 起步，差异放在赛事规则、动机和赛程约束层处理。</em>
       </div>
       ${
         motiveItems.length
