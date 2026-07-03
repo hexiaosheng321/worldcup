@@ -23,6 +23,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   }
 
   const competitionRules = [
+    ["女足世界杯", /女足世界杯|World Cup - Women|Women's World Cup|Women World Cup/i],
     ["世界杯", /世界杯|World Cup/i],
     ["芬超", /芬超|Finland|Veikkausliiga/i],
     ["日职", /日职|J1|J联赛|Japan/i],
