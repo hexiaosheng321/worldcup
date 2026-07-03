@@ -2216,9 +2216,9 @@ function cloudResultRowsToResultsData(rows = [], matchRows = [], capturedAt = ne
   };
 }
 
-async function loadCloudBootstrapData({ rerender = false } = {}) {
+async function loadCloudBootstrapData({ rerender = false, includeCases = false } = {}) {
   if (!window.WC_CLOUD_STORE?.bootstrap) return false;
-  const payload = await window.WC_CLOUD_STORE.bootstrap();
+  const payload = await window.WC_CLOUD_STORE.bootstrap({ includeCases });
   if (!payload?.ok) return false;
   window.WC_CLOUD_BOOTSTRAP = payload;
   const capturedAt =
@@ -2248,6 +2248,24 @@ async function loadCloudBootstrapData({ rerender = false } = {}) {
   }
   if (changed && rerender) rerenderOddsSurfaces();
   return changed;
+}
+
+let cloudCaseBaseLoaded = false;
+
+async function loadCloudCaseBaseData({ rerender = false } = {}) {
+  if (cloudCaseBaseLoaded || !window.WC_CLOUD_STORE?.listCases || !window.WC_CASE_BASE?.appendCases) return false;
+  const payload = await window.WC_CLOUD_STORE.listCases();
+  if (!payload?.ok || !payload.cases?.length) return false;
+  cloudCaseBaseLoaded = true;
+  const added = window.WC_CASE_BASE.appendCases(payload.cases);
+  if (added) {
+    runtimeCaseBaseCache = null;
+    if (rerender) {
+      renderReview();
+      renderGlobalStats();
+    }
+  }
+  return Boolean(added);
 }
 
 async function refreshSportteryCloudData() {
@@ -7425,6 +7443,7 @@ if (!initialHash) {
   runWhenPageIdle(renderAll, 1800);
 }
 runWhenPageIdle(refreshSportteryCloudData, initialHash ? 500 : 500);
+runWhenPageIdle(() => loadCloudCaseBaseData({ rerender: Boolean(initialHash) }), initialHash ? 2200 : 3600);
 setInterval(refreshSportteryCloudData, 5 * 60 * 1000);
 
 /* ── 返回顶部 ── */

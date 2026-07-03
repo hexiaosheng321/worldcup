@@ -2604,11 +2604,12 @@ export async function onRequest(context) {
     }
 
     if (path === "bootstrap" && request.method === "GET") {
+      const includeCases = url.searchParams.get("includeCases") === "1";
       const [matches, locks, results, cases] = await Promise.all([
         db.prepare("SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT 200").all(),
         db.prepare("SELECT * FROM locked_predictions ORDER BY locked_at DESC LIMIT 200").all(),
         db.prepare("SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT 200").all(),
-        listCases(db),
+        includeCases ? listCases(db) : Promise.resolve([]),
       ]);
       return json({ ok: true, matches: matches.results, locks: locks.results, results: results.results, cases, autoPredictions: [] });
     }

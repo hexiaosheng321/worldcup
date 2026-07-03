@@ -31,7 +31,10 @@
 
   window.WC_CLOUD_STORE = {
     health: () => request("/health"),
-    bootstrap: () => request("/bootstrap"),
+    bootstrap: (options = {}) => {
+      const includeCases = options.includeCases === true ? "1" : "0";
+      return request(`/bootstrap?includeCases=${includeCases}`);
+    },
     listMatches: () => request("/matches"),
     upsertMatch: (match) => post("/matches", match),
     listAutoPredictions: () => request("/auto-predictions"),
