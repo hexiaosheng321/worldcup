@@ -2998,7 +2998,7 @@ function ensureExternalHistoricalSamplesLoaded(callback) {
   if (!externalHistoricalSamplesLoading) {
     externalHistoricalSamplesLoading = new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = "./data/externalHistoricalSamples.js?v=202607031323";
+      script.src = "./data/externalHistoricalSamples.js?v=202607031335";
       script.async = true;
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
