@@ -142,14 +142,15 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
 
   function sampleIdentityKey(sample) {
     const matchId = String(sample.matchId || "").trim();
-    if (matchId && !isExternalSample(sample)) return `lock:${matchId}`;
-    return [
+    const fixtureKey = [
       normalizeCompetition(sample.league),
-      matchDateKey(sample.kickoffTime || sample.matchDate),
-      normalizeText(sample.homeTeam),
-      normalizeText(sample.awayTeam),
+      matchDateKey(sample.kickoffTime || sample.matchDate || sample.date),
+      normalizeText(sample.homeTeam || sample.home),
+      normalizeText(sample.awayTeam || sample.away),
       formatScore(sample.actualHomeGoals, sample.actualAwayGoals) || normalizeText(sample.score),
-    ].join("|");
+    ];
+    if (fixtureKey[2] && fixtureKey[3]) return fixtureKey.join("|");
+    return matchId ? `match:${matchId}` : fixtureKey.join("|");
   }
 
   function sampleHasOdds(sample) {

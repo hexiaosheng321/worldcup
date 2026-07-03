@@ -761,7 +761,7 @@ function cloudLockRowsToPredictions(rows = []) {
         date: prediction.date || String(row.kickoff_time || "").slice(0, 10),
         matchDate: prediction.matchDate || String(row.kickoff_time || "").slice(0, 10),
         kickoffTime: prediction.kickoffTime || String(row.kickoff_time || "").slice(11, 16),
-        competition: prediction.competition || row.league || "世界杯",
+        competition: prediction.competition || row.league || "竞彩",
         home: prediction.home || row.home_team || "",
         away: prediction.away || row.away_team || "",
         modelVersion: prediction.modelVersion || row.model_version || "V4",
@@ -2924,20 +2924,36 @@ function matchResultFromScore(match = {}) {
 }
 
 function competitionBucketForCase(pred = {}, match = {}) {
-  const text = [
+  const candidates = [
+    match.league,
+    match.competition,
     pred.competition,
     pred.competitionModel,
-    match.competition,
-    match.league,
     match.group,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  ].filter(Boolean);
+  const normalize = (value) => {
+    const text = String(value || "").trim();
+    if (!text) return "";
+    if (window.WC_SIMILAR_CASE_ENGINE?.normalizeCompetition) {
+      return window.WC_SIMILAR_CASE_ENGINE.normalizeCompetition(text);
+    }
+    if (/世界杯/.test(text)) return "世界杯";
+    if (/瑞超|Allsvenskan|Sweden/i.test(text)) return "瑞超";
+    if (/芬超/.test(text)) return "芬超";
+    return text;
+  };
+  const normalized = candidates.map(normalize).filter(Boolean);
+  const generic = new Set(["竞彩", "体彩", "未分类赛事"]);
+  const specificNonWorldCup = normalized.find((item) => item !== "世界杯" && !generic.has(item));
+  if (specificNonWorldCup) return specificNonWorldCup;
+  const worldCup = normalized.find((item) => item === "世界杯");
+  if (worldCup) return worldCup;
+  const specific = normalized.find((item) => !generic.has(item));
+  if (specific) return specific;
+  const text = candidates.join(" ");
   if (window.WC_SIMILAR_CASE_ENGINE?.normalizeCompetition) {
     return window.WC_SIMILAR_CASE_ENGINE.normalizeCompetition(text);
   }
-  if (/世界杯/.test(text)) return "世界杯";
-  if (/芬超/.test(text)) return "芬超";
   return text || "未分类赛事";
 }
 
@@ -5524,9 +5540,9 @@ function modelAuditRows() {
       no: pred.no,
       date: pred.date || pred.matchDate,
       matchDate: pred.matchDate || pred.date,
-      competition: pred.competition || "体彩",
-      league: pred.competition || "体彩",
-      group: pred.competition || "体彩",
+      competition: pred.competition || item?.league || "体彩",
+      league: item?.league || pred.competition || "体彩",
+      group: pred.competition || item?.league || "体彩",
       home: pred.home,
       away: pred.away,
       score: actualScore,
