@@ -3,14 +3,23 @@ import path from "node:path";
 import vm from "node:vm";
 
 const root = process.cwd();
-const inputPath = path.join(root, "web/data/externalHistoricalSamples.js");
+const inputPaths = [
+  "web/data/externalHistoricalSamples.js",
+  "web/data/externalHistoricalSamplesBig5England.js",
+  "web/data/externalHistoricalSamplesBig5Spain.js",
+  "web/data/externalHistoricalSamplesBig5Germany.js",
+  "web/data/externalHistoricalSamplesBig5Italy.js",
+  "web/data/externalHistoricalSamplesBig5France.js",
+].map((item) => path.join(root, item));
 const outputPath = path.join(root, "web/data/leagueProfiles.js");
 
-function readSamples(filePath) {
-  const code = fs.readFileSync(filePath, "utf8");
+function readSamples(filePaths) {
   const sandbox = { window: {} };
   vm.createContext(sandbox);
-  vm.runInContext(code, sandbox, { filename: filePath });
+  filePaths.filter((filePath) => fs.existsSync(filePath)).forEach((filePath) => {
+    const code = fs.readFileSync(filePath, "utf8");
+    vm.runInContext(code, sandbox, { filename: filePath });
+  });
   const samples = sandbox.window.WC_EXTERNAL_HISTORICAL_SAMPLES;
   if (!Array.isArray(samples)) {
     throw new Error("WC_EXTERNAL_HISTORICAL_SAMPLES was not found.");
@@ -153,7 +162,7 @@ function buildProfile(league, rows) {
   return profile;
 }
 
-const samples = readSamples(inputPath);
+const samples = readSamples(inputPaths);
 const grouped = new Map();
 samples.forEach((row) => {
   const league = String(row.league || row.competition || "未分类赛事").trim();
@@ -168,7 +177,7 @@ const profiles = [...grouped.entries()]
 
 const payload = {
   generatedAt: new Date().toISOString(),
-  source: "web/data/externalHistoricalSamples.js",
+  source: inputPaths.map((item) => path.relative(root, item)),
   profileCount: profiles.length,
   profiles,
 };

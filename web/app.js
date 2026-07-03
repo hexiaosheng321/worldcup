@@ -3058,21 +3058,35 @@ function runtimeCaseBase() {
 
 let externalHistoricalSamplesLoading = null;
 let leagueProfilesLoading = null;
+const EXTERNAL_HISTORICAL_SAMPLE_SCRIPTS = [
+  "./data/externalHistoricalSamples.js?v=202607032000",
+  "./data/externalHistoricalSamplesBig5England.js?v=202607032000",
+  "./data/externalHistoricalSamplesBig5Spain.js?v=202607032000",
+  "./data/externalHistoricalSamplesBig5Germany.js?v=202607032000",
+  "./data/externalHistoricalSamplesBig5Italy.js?v=202607032000",
+  "./data/externalHistoricalSamplesBig5France.js?v=202607032000",
+];
 
 function ensureExternalHistoricalSamplesLoaded(callback) {
-  if (Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES)) {
+  if (window.WC_EXTERNAL_HISTORICAL_SAMPLES_READY && Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES)) {
     if (typeof callback === "function") callback();
     return Promise.resolve(true);
   }
   if (!externalHistoricalSamplesLoading) {
-    externalHistoricalSamplesLoading = new Promise((resolve) => {
+    const loadScript = (src) => new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = "./data/externalHistoricalSamples.js?v=202607031920";
+      script.src = src;
       script.async = true;
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
+    externalHistoricalSamplesLoading = EXTERNAL_HISTORICAL_SAMPLE_SCRIPTS
+      .reduce((promise, src) => promise.then((ok) => (ok ? loadScript(src) : false)), Promise.resolve(true))
+      .then((loaded) => {
+        window.WC_EXTERNAL_HISTORICAL_SAMPLES_READY = Boolean(loaded && Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES));
+        return window.WC_EXTERNAL_HISTORICAL_SAMPLES_READY;
+      });
   }
   return externalHistoricalSamplesLoading.then((loaded) => {
     if (loaded && typeof callback === "function") callback();
