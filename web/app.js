@@ -573,6 +573,9 @@ function sportteryItemKey(item = {}) {
 }
 
 function sportteryLookupKeys(item = {}) {
+  const issue = normalizedIssueNo(item.issue || item.no || item.orderId);
+  const dates = [item.ticaiDate, item.matchDate, item.date].filter(Boolean);
+  const teamKey = [item.league, item.home, item.away].map((value) => String(value || "").trim()).join("__");
   const keys = [
     sportteryItemKey(item),
     item.sportteryKey,
@@ -581,6 +584,9 @@ function sportteryLookupKeys(item = {}) {
     item.matchId,
     item.cloudMatchId,
     `issue-${item.issue || item.no || item.orderId || ""}-${item.ticaiDate || item.matchDate || ""}`,
+    issue ? `issue-${issue}` : "",
+    ...dates.map((date) => (issue ? `issue-${issue}-${date}` : "")),
+    teamKey.replace(/_/g, "") ? `teams-${teamKey}-${dates[0] || ""}` : "",
   ];
   return [...new Set(keys.map((value) => String(value || "").trim()).filter(Boolean))];
 }
@@ -628,7 +634,10 @@ function findSportteryItemByKey(key = "") {
     sameSportteryIdentity(item.sportteryKey, lookupKey) ||
     sameSportteryIdentity(item.matchId, lookupKey) ||
     sameSportteryIdentity(item.cloudMatchId, lookupKey)
-  );
+  ) || rows.find((item) => {
+    const normalizedLookup = normalizedIssueNo(lookupKey);
+    return Boolean(normalizedLookup && normalizedIssueNo(item.issue || item.no || item.orderId) === normalizedLookup);
+  });
 }
 
 function sportteryPredictionForItem(item = {}) {
@@ -2900,8 +2909,8 @@ function sportteryResearchSnapshot(item, modelPred) {
   if (!item.scoreOdds?.length) riskNotes.push("缺少比分赔率，比分推演暂不完整");
 
   return {
-    statusLabel: score ? "赛后复盘" : "赛前推演",
-    action: score ? "进入核验" : hasEnough ? "可进入推演" : "等待更多盘口",
+    statusLabel: score ? "赛后复盘" : "待锁版",
+    action: score ? "进入核验" : hasEnough ? "待推演" : "待锁版",
     directionPick: normalLeader ? `${normalLeader.label} ${normalLeader.odd.toFixed(2)}` : "-",
     handicapPick: handicapLeader ? `${handicapLeader.label} ${handicapLeader.odd.toFixed(2)}` : "-",
     totalPick: totalLow ? `${totalLow}球低位` : "-",
@@ -3634,8 +3643,12 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
     return `
       <section class="match-page-section sporttery-model-panel">
         <span>模型状态</span>
-        <p>这场还没有正式锁版，只显示盘口数据和预筛方向。正式推演不会自动生成，需要人工确认后写入锁版记录。</p>
+        <h3>待推演 / 待锁版</h3>
+        <p>这场比赛已经可以进入详情页，但还没有写入真实模型锁版记录。当前只展示体彩盘口、联赛画像和数据支持；正式推演完成后，这里会替换为模型真实推演链和锁版结论。</p>
       </section>
+      ${renderSportteryEvidenceGate(item, modelPred, research)}
+      ${renderLeagueProfilePanel(item, modelPred)}
+      ${renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp)}
     `;
   }
   const filter = sportteryV4Filter(modelPred, research);
@@ -3793,9 +3806,9 @@ function renderSportteryMatchDetail(key) {
     <div class="match-mode-panel active" data-match-mode-panel="quick">
       <section class="quick-decision-board sporttery-quick-board">
         <article class="quick-main-card">
-          <span>${modelPred ? "锁版结论" : "盘口预筛"}</span>
-          <strong>${research.directionPick}</strong>
-          <p>让球 ${research.handicapPick} · 总进球 ${research.totalPick} · 比分 ${research.scorePick}</p>
+          <span>${modelPred ? "锁版结论" : "模型状态"}</span>
+          <strong>${modelPred ? research.directionPick : "待锁版"}</strong>
+          <p>${modelPred ? `让球 ${research.handicapPick} · 总进球 ${research.totalPick} · 比分 ${research.scorePick}` : `盘口预筛 ${research.directionPick} · 让球 ${research.handicapPick}`}</p>
         </article>
         <article>
           <span>比赛状态</span>
@@ -3805,22 +3818,22 @@ function renderSportteryMatchDetail(key) {
         <article>
           <span>建议动作</span>
           <strong>${research.action}</strong>
-          <p>${modelPred?.advice || "等待模型锁版或人工确认"}</p>
+          <p>${modelPred?.advice || "等待模型真实推演后写入锁版记录"}</p>
         </article>
         <article>
           <span>模型版本</span>
           <strong>${modelPred ? predictionVersionLabel(modelPred) : "未锁版"}</strong>
-          <p>${modelName || "盘口预筛，不计入正式模型版本"}</p>
+          <p>${modelName || `${item.league || "该赛事"}待锁版，不计入正式模型版本`}</p>
         </article>
       </section>
       <section class="match-page-section sporttery-research-panel">
-        <span>${modelPred ? `${modelName}快速判断` : research.score ? "复盘验票" : "盘口预筛"}</span>
+        <span>${modelPred ? `${modelName}快速判断` : research.score ? "复盘验票" : "待推演"}</span>
         <p>${
           research.score
             ? `实际比分 ${research.score}，赛果 ${research.actualDirection || "-"}，让球结果 ${research.actualHandicap || "-"}，总进球 ${research.actualTotal ?? "-"}。`
             : modelPred
               ? displayModelText(modelPred.finalDecisionAction || modelPred.marketGap || modelPred.script)
-              : "这里先基于体彩开盘赔率做赛前过滤，后续模型锁版后可继续补入完整推演文本和最终结论。"
+              : "这场比赛还没有真实模型推演记录。当前只显示盘口预筛信息，完成推演并锁版后会展示完整模型链路和最终结论。"
         }</p>
       </section>
       <section class="match-page-section sporttery-risk-panel">
