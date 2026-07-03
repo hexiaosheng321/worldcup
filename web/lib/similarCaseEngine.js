@@ -130,7 +130,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     return Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES) ? window.WC_EXTERNAL_HISTORICAL_SAMPLES : [];
   }
 
-  function calculateSimilarity(current, sample) {
+  function similarityParts(current, sample) {
     const parts = [];
     function add(key, score) {
       if (!Number.isFinite(score)) return;
@@ -182,6 +182,17 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       const diff = Math.abs((gradeRank[current.finalGrade] || 1) - (gradeRank[sample.finalGrade] || 1));
       add("grade", diff === 0 ? 100 : diff === 1 ? 70 : diff === 2 ? 40 : 20);
     }
+    return parts;
+  }
+
+  function isDistributionOnlySample(current, sample, parts = similarityParts(current, sample)) {
+    const comparableKeys = parts.map((item) => item.key).filter((key) => key !== "league");
+    return comparableKeys.length === 0 && sameCompetition(current, sample) && isExternalSample(sample);
+  }
+
+  function calculateSimilarity(current, sample) {
+    const parts = similarityParts(current, sample);
+    if (isDistributionOnlySample(current, sample, parts)) return 0;
     const weightTotal = parts.reduce((sum, item) => sum + item.weight, 0);
     if (!weightTotal) return 0;
     return Math.round(parts.reduce((sum, item) => sum + item.score * item.weight, 0) / weightTotal);
@@ -309,10 +320,11 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       .map((item) => ({
         ...item,
         similarityScore: calculateSimilarity(currentMatch, item),
+        distributionOnly: isDistributionOnlySample(currentMatch, item),
         keyReasons: keyReasons(currentMatch, item),
       }))
-      .filter((item) => item.similarityScore >= threshold)
-      .sort((a, b) => b.similarityScore - a.similarityScore);
+      .filter((item) => item.similarityScore >= threshold || item.distributionOnly)
+      .sort((a, b) => Number(a.distributionOnly) - Number(b.distributionOnly) || b.similarityScore - a.similarityScore);
     const samples = pool.slice(0, options.sampleLimit || 50);
     const topCases = samples.slice(0, options.topLimit || 5).map((item) => ({
       caseId: item.caseId,
@@ -323,6 +335,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       awayTeam: item.awayTeam,
       kickoffTime: item.kickoffTime,
       similarityScore: item.similarityScore,
+      distributionOnly: item.distributionOnly,
       recommendation: item.recommendation,
       finalGrade: item.finalGrade,
       hitStatus: item.hitStatus,

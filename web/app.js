@@ -3432,11 +3432,16 @@ function renderSimilarCasePanel(pred, match) {
   const caseSummaryText = hasAnyOddsSample
     ? "这里只记录历史相似盘口当时怎么开、低位落在哪里、最后打成什么比分；不按命中或失败评价当前模型。"
     : "这些外部样本目前以赛果为主，用来校验联赛胜平负、比分和总进球分布，不直接推断盘口低位。";
+  const referenceHeader = hasAnyOddsSample ? "相似度" : "参考类型";
+  const referenceText = (item) => {
+    if (item.distributionOnly || !hasAnyOddsSample) return "同赛事分布";
+    return item.similarityScore;
+  };
   const rows = result.topCases
     .map(
       (item) => `
         <tr>
-          <td>${item.similarityScore}</td>
+          <td>${referenceText(item)}</td>
           <td>${item.homeTeam} vs ${item.awayTeam}</td>
           <td>${item.league}</td>
           <td>${oddsText(item)}</td>
@@ -3472,7 +3477,7 @@ function renderSimilarCasePanel(pred, match) {
         <table class="review-record-table similar-case-table">
           <thead>
             <tr>
-              <th>相似度</th>
+              <th>${referenceHeader}</th>
               <th>比赛</th>
               <th>联赛</th>
               <th>当时胜/平/负SP</th>
