@@ -39,6 +39,15 @@ const LEAGUE_PRESETS = {
   "西甲": { label: "西甲", apiFootballLeagueId: 140, sourceName: "La Liga" },
   "德甲": { label: "德甲", apiFootballLeagueId: 78, sourceName: "Bundesliga" },
   "意甲": { label: "意甲", apiFootballLeagueId: 135, sourceName: "Serie A" },
+  "荷甲": { label: "荷甲", apiFootballLeagueId: 88, sourceName: "Eredivisie" },
+  "葡超": { label: "葡超", apiFootballLeagueId: 94, sourceName: "Primeira Liga" },
+  "美职": { label: "美职", apiFootballLeagueId: 253, sourceName: "Major League Soccer" },
+  "中超": { label: "中超", apiFootballLeagueId: 169, sourceName: "Chinese Super League" },
+  "澳超": { label: "澳超", apiFootballLeagueId: 188, sourceName: "A-League" },
+  "欧冠": { label: "欧冠", apiFootballLeagueId: 2, sourceName: "UEFA Champions League" },
+  "欧联": { label: "欧联", apiFootballLeagueId: 3, sourceName: "UEFA Europa League" },
+  "亚冠精英": { label: "亚冠精英", apiFootballLeagueId: 17, sourceName: "AFC Champions League Elite" },
+  "亚冠二级": { label: "亚冠二级", apiFootballLeagueId: 18, sourceName: "AFC Champions League Two" },
 };
 
 function usage() {
