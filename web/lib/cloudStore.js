@@ -33,7 +33,8 @@
     health: () => request("/health"),
     bootstrap: (options = {}) => {
       const includeCases = options.includeCases === true ? "1" : "0";
-      return request(`/bootstrap?includeCases=${includeCases}`);
+      const scope = options.scope || "initial";
+      return request(`/bootstrap?includeCases=${includeCases}&scope=${encodeURIComponent(scope)}`);
     },
     listMatches: () => request("/matches"),
     upsertMatch: (match) => post("/matches", match),

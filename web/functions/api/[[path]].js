@@ -2605,10 +2605,14 @@ export async function onRequest(context) {
 
     if (path === "bootstrap" && request.method === "GET") {
       const includeCases = url.searchParams.get("includeCases") === "1";
+      const initialScope = url.searchParams.get("scope") !== "full";
+      const matchLimit = initialScope ? 80 : 200;
+      const lockLimit = initialScope ? 80 : 200;
+      const resultLimit = initialScope ? 80 : 200;
       const [matches, locks, results, cases] = await Promise.all([
-        db.prepare("SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT 200").all(),
-        db.prepare("SELECT * FROM locked_predictions ORDER BY locked_at DESC LIMIT 200").all(),
-        db.prepare("SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT 200").all(),
+        db.prepare(`SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT ${matchLimit}`).all(),
+        db.prepare(`SELECT * FROM locked_predictions ORDER BY locked_at DESC LIMIT ${lockLimit}`).all(),
+        db.prepare(`SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT ${resultLimit}`).all(),
         includeCases ? listCases(db) : Promise.resolve([]),
       ]);
       return json({ ok: true, matches: matches.results, locks: locks.results, results: results.results, cases, autoPredictions: [] });
