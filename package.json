@@ -3,6 +3,7 @@
     "dev": "node server.mjs",
     "sporttery:fetch": "node tools/fetch-sporttery-live.mjs && node tools/fetch-sporttery-results.mjs && node tools/fetch-sporttery-sp-history.mjs && node tools/fetch-live-football-scores.mjs",
     "case-base:generate": "node tools/generate-case-base.mjs",
+    "league-profiles:generate": "node tools/generate-league-profiles.mjs",
     "history:import-api": "node tools/import-free-history-api.mjs",
     "history:import-api-football": "node tools/import-api-football-history.mjs",
     "live-scores:fetch": "node tools/fetch-live-football-scores.mjs",

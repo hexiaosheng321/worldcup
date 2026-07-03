@@ -2586,6 +2586,7 @@ function renderWorldCupFullProjection(match, pred, filter, odds) {
   return `
     ${renderProjectionDecisionDeck(match, pred, filter)}
     ${renderProjectionFlowGrid(pred, filter)}
+    ${renderLeagueProfilePanel(match, pred)}
     ${renderDecisionGatePanel(match.no, pred)}
     ${renderSpRadarPanel(match.no, "detail")}
     ${renderModelTriadPanel(match.no, pred)}
@@ -2989,6 +2990,7 @@ function runtimeCaseBase() {
 }
 
 let externalHistoricalSamplesLoading = null;
+let leagueProfilesLoading = null;
 
 function ensureExternalHistoricalSamplesLoaded(callback) {
   if (Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES)) {
@@ -3009,6 +3011,108 @@ function ensureExternalHistoricalSamplesLoaded(callback) {
     if (loaded && typeof callback === "function") callback();
     return loaded;
   });
+}
+
+function ensureLeagueProfilesLoaded(callback) {
+  if (Array.isArray(window.WC_LEAGUE_PROFILES?.profiles)) {
+    if (typeof callback === "function") callback();
+    return Promise.resolve(true);
+  }
+  if (!leagueProfilesLoading) {
+    leagueProfilesLoading = new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "./data/leagueProfiles.js?v=202607031620";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+  return leagueProfilesLoading.then((loaded) => {
+    if (loaded && typeof callback === "function") callback();
+    return loaded;
+  });
+}
+
+function leagueProfileCandidates(match = {}, pred = {}) {
+  return [
+    match.league,
+    match.displayGroup,
+    match.group,
+    match.competition,
+    pred.competitionModel,
+    pred.competition,
+    pred.competitionType,
+    pred.eventWeighting,
+  ].filter(Boolean);
+}
+
+function normalizeLeagueProfileLabel(value) {
+  if (window.WC_SIMILAR_CASE_ENGINE?.normalizeCompetition) {
+    return window.WC_SIMILAR_CASE_ENGINE.normalizeCompetition(value);
+  }
+  return String(value || "").trim();
+}
+
+function leagueProfileForMatch(match = {}, pred = {}) {
+  const profiles = Array.isArray(window.WC_LEAGUE_PROFILES?.profiles) ? window.WC_LEAGUE_PROFILES.profiles : [];
+  if (!profiles.length) return null;
+  const byLeague = new Map(profiles.map((profile) => [normalizeLeagueProfileLabel(profile.league), profile]));
+  for (const candidate of leagueProfileCandidates(match, pred)) {
+    const normalized = normalizeLeagueProfileLabel(candidate);
+    if (byLeague.has(normalized)) return byLeague.get(normalized);
+  }
+  return null;
+}
+
+function renderLeagueProfilePanel(match, pred) {
+  const ready = Array.isArray(window.WC_LEAGUE_PROFILES?.profiles);
+  if (!ready) {
+    ensureLeagueProfilesLoaded(() => {
+      const hash = window.location.hash || "";
+      const currentWorldCup = hash.match(/^#match-(.+)$/);
+      const currentSporttery = hash.match(/^#sporttery-match-(.+)$/);
+      if (currentWorldCup) renderMatchDetail(currentWorldCup[1]);
+      if (currentSporttery) renderSportteryMatchDetail(decodeURIComponent(currentSporttery[1]));
+    });
+    return `
+      <section class="match-page-section similar-case-panel league-profile-panel">
+        <span>联赛画像</span>
+        <p class="similar-case-summary-text">正在读取联赛画像，模型会先匹配赛事环境再进入 V4 推演。</p>
+      </section>
+    `;
+  }
+  const profile = leagueProfileForMatch(match, pred);
+  if (!profile) return "";
+  const pct = (value) => `${((Number(value) || 0) * 100).toFixed(1)}%`;
+  const distText = (rows = [], empty = "等待样本") =>
+    rows.length ? rows.map((item) => `${item.label} ${item.count}场/${pct(item.rate)}`).join(" · ") : empty;
+  const sourceText = (profile.sourceCounts || []).map((item) => `${item.label} ${item.count}`).join(" / ") || "external-history";
+  const seasonText = (profile.seasons || []).slice(0, 4).join(" / ") || "近两年";
+  return `
+    <section class="match-page-section similar-case-panel league-profile-panel">
+      <span>联赛画像</span>
+      <div class="similar-case-summary">
+        <article><small>匹配联赛</small><strong>${profile.league}</strong></article>
+        <article><small>画像等级</small><strong>${profile.sampleQuality}</strong></article>
+        <article><small>可用样本</small><strong>${profile.usableSampleCount} / ${profile.sampleCount}</strong></article>
+        <article><small>赔率样本</small><strong>${profile.withOddsCount}</strong></article>
+        <article><small>主 / 平 / 客</small><strong>${pct(profile.homeWinRate)} / ${pct(profile.drawRate)} / ${pct(profile.awayWinRate)}</strong></article>
+        <article><small>均球 / BTTS</small><strong>${Number(profile.avgGoals || 0).toFixed(2)} / ${pct(profile.bttsRate)}</strong></article>
+      </div>
+      <p class="similar-case-summary-text">${displayModelText(profile.modelHint || profile.sampleQualityLabel || "联赛画像已匹配。")}</p>
+      <div class="similar-case-distribution">
+        <article><small>常见比分</small><strong>${distText(profile.commonScores)}</strong></article>
+        <article><small>总进球分布</small><strong>${distText(profile.totalGoalDistribution)}</strong></article>
+        <article><small>画像标签</small><strong>${(profile.styleTags || []).join(" / ") || "等待标签"}</strong></article>
+      </div>
+      <div class="similar-case-practical">
+        <article><small>样本年份</small><strong>${seasonText}</strong></article>
+        <article><small>样本来源</small><strong>${sourceText}</strong></article>
+        <article><small>模型用法</small><strong>${profile.sampleQualityLabel || "只展示，不修正"}</strong></article>
+      </div>
+    </section>
+  `;
 }
 
 function caseBaseStatus(pred, match) {
@@ -3253,6 +3357,14 @@ function renderSimilarCasePanel(pred, match) {
   const totalLineText = (item) => Number(item.over25Odds) || Number(item.under25Odds)
     ? `大2.5 ${Number(item.over25Odds) ? Number(item.over25Odds).toFixed(2) : "-"} / 小2.5 ${Number(item.under25Odds) ? Number(item.under25Odds).toFixed(2) : "-"}`
     : "-";
+  const hasAnyOddsSample = result.topCases.some((item) =>
+    [item.sportteryHomeSp, item.sportteryDrawSp, item.sportteryAwaySp, item.euroHomeOdds, item.euroDrawOdds, item.euroAwayOdds].some((value) => Number(value))
+  );
+  const casePanelTitle = hasAnyOddsSample ? "相似盘口历史样本" : "联赛历史分布样本";
+  const caseUsageText = hasAnyOddsSample ? "盘口形态 + 赛果分布" : "赛果、比分和总进球分布";
+  const caseSummaryText = hasAnyOddsSample
+    ? "这里只记录历史相似盘口当时怎么开、低位落在哪里、最后打成什么比分；不按命中或失败评价当前模型。"
+    : "这些外部样本目前以赛果为主，用来校验联赛胜平负、比分和总进球分布，不直接推断盘口低位。";
   const rows = result.topCases
     .map(
       (item) => `
@@ -3268,19 +3380,19 @@ function renderSimilarCasePanel(pred, match) {
         </tr>
       `
     )
-    .join("") || `<tr><td colspan="8" class="empty-cell">相似盘口样本不足，先作为观察项。</td></tr>`;
+    .join("") || `<tr><td colspan="8" class="empty-cell">${casePanelTitle}不足，先作为观察项。</td></tr>`;
   return `
     <section class="match-page-section similar-case-panel">
-      <span>相似盘口历史样本</span>
+      <span>${casePanelTitle}</span>
       <div class="similar-case-summary">
         <article><small>样本范围</small><strong>${stats.competition || "同赛事"}</strong></article>
-        <article><small>使用方式</small><strong>只看盘口形态</strong></article>
+        <article><small>使用方式</small><strong>${caseUsageText}</strong></article>
         <article><small>匹配样本</small><strong>${result.sampleCount}</strong></article>
         <article><small>锁版 / 外部</small><strong>${stats.lockedSampleCount || 0} / ${stats.externalSampleCount || 0}</strong></article>
         <article><small>主 / 平 / 客</small><strong>${pct(stats.homeWinRate)} / ${pct(stats.drawRate)} / ${pct(stats.awayWinRate)}</strong></article>
         <article><small>平均进球</small><strong>${Number(stats.avgGoals || 0).toFixed(2)}</strong></article>
       </div>
-      <p class="similar-case-summary-text">这里只记录历史相似盘口当时怎么开、低位落在哪里、最后打成什么比分；不按命中或失败评价当前模型。</p>
+      <p class="similar-case-summary-text">${caseSummaryText}</p>
       <div class="similar-case-distribution">
         <article><small>总进球分布</small><strong>${totalText}</strong></article>
         <article><small>常见比分</small><strong>${scoreText}</strong></article>
@@ -3321,6 +3433,7 @@ function renderSportteryEvidenceGate(item, modelPred, research) {
     ["半场触发", Boolean(modelPred?.halftimeDecision || modelPred?.halftimeTrigger)],
     ["状态转移", Boolean(modelPred?.stateTransfer || modelPred?.knockoutStateTransfer || modelPred?.timeStateTransfer)],
     ["最终闸门", Boolean(modelPred?.finalDecisionAction || modelPred?.decisionConflict)],
+    ["联赛画像", Boolean(leagueProfileForMatch(item, modelPred)?.usableSampleCount >= 30)],
   ];
   const ready = checks.filter(([, ok]) => ok).length;
   const score = Math.round((ready / checks.length) * 100);
@@ -3384,6 +3497,7 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
       script: research.script,
     })}
     ${renderSportteryEvidenceGate(item, modelPred, research)}
+    ${renderLeagueProfilePanel(item, modelPred)}
     ${renderUniversalModelPanel(modelPred)}
     ${renderD1CaseBasePanel(modelPred, item)}
     ${renderSimilarCasePanel(modelPred, item)}
@@ -3541,6 +3655,7 @@ function renderSportteryMatchDetail(key) {
         </div>
       </section>
       ${renderFootballDataLayerPanel(item, modelPred)}
+      ${renderLeagueProfilePanel(item, modelPred)}
       ${renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp)}
     </div>
     <div class="match-mode-panel" data-match-mode-panel="full" hidden>
@@ -5823,6 +5938,7 @@ function hasModelAnalysis(value) {
 function hasHistoricalSample(no, pred) {
   const match = matches.find((item) => item.no === no);
   const worldCupSample = Boolean(match && ((data.historicalDrawRates || []).length || (data.historicalScoreFrequencies || []).length));
+  const leagueProfileReady = Boolean(match && leagueProfileForMatch(match, pred)?.usableSampleCount >= 30);
   return Boolean(
     pred?.historicalSample ||
       pred?.sampleCompare ||
@@ -5830,6 +5946,7 @@ function hasHistoricalSample(no, pred) {
       pred?.leagueSampleCompare ||
       pred?.scoreSampleCompare ||
       pred?.totalGoalsSampleCompare ||
+      leagueProfileReady ||
       worldCupSample
   );
 }
