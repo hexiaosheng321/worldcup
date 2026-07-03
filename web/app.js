@@ -496,6 +496,10 @@ function verifiedSportteryScore(item = {}) {
   const resultScore = sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "";
   if (itemScore) return itemScore;
   if (resultScore) return resultScore;
+  const usableResultScore = sportteryScoreIsUsable(result) ? normalizeResultScore(result?.score) : "";
+  if (usableResultScore) return usableResultScore;
+  const usableItemScore = sportteryScoreIsUsable(item) ? normalizeResultScore(item?.score) : "";
+  if (usableItemScore) return usableItemScore;
   const liveScore = liveScoreForSportteryItem(item);
   return liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "";
 }
@@ -553,7 +557,11 @@ function liveScoreStatusText(row) {
 
 function sportteryResultIsFinished(row = {}) {
   const status = `${row.statusCode || ""} ${row.statusName || ""} ${row.statusLabel || ""}`;
-  return Boolean(normalizeResultScore(row.score)) && /已完成|已完赛|完场|全场|开奖|finished|finish|ft\b/i.test(status);
+  return Boolean(normalizeResultScore(row.score)) && (/已完成|已完赛|完场|全场|开奖|finished|finish|ft\b/i.test(status) || String(row.statusCode || "") === "11");
+}
+
+function sportteryScoreIsUsable(row = {}) {
+  return Boolean(normalizeResultScore(row.score)) && !/取消|延期|腰斩|推迟|cancel|postpon/i.test(`${row.statusName || ""} ${row.statusLabel || ""}`);
 }
 
 function sportteryItemKey(item = {}) {
@@ -749,6 +757,8 @@ function officialScoreForMatch(match) {
   const liveScore = liveScoreForSportteryItem({ ...match, ...odds });
   const resultScore = sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "";
   if (resultScore) return resultScore;
+  const usableResultScore = sportteryScoreIsUsable(result) ? normalizeResultScore(result?.score) : "";
+  if (usableResultScore) return usableResultScore;
   const finishedLiveScore = liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "";
   if (finishedLiveScore) return finishedLiveScore;
   const isSportteryBacked = Boolean(match?.sportteryKey || match?.matchId || odds?.matchId);
@@ -760,7 +770,7 @@ function applyResultBackfill() {
   (oddsData.matches || []).forEach((item) => {
     const result = resultForSportteryItem(item);
     const liveScore = liveScoreForSportteryItem(item);
-    const score = (sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "") || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
+    const score = verifiedSportteryScore(item) || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
     if (!score) return;
     item.score = score;
     item.result = result?.result || direction(score);
@@ -777,7 +787,7 @@ function applyResultBackfill() {
     const result = resultForWorldCupMatch(match);
     const odds = oddsMatch(match);
     const liveScore = liveScoreForSportteryItem({ ...match, ...odds });
-    const score = (sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "") || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
+    const score = verifiedSportteryScore({ ...match, ...odds }) || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
     if (!score) return;
     match.score = score;
     match.officialResultSource = result?.score ? "sporttery" : liveScore?.source || "live-fallback";
@@ -2703,7 +2713,9 @@ function sportteryDetailRow(item = {}) {
   const liveScore = liveScoreForSportteryItem(item);
   const itemFinalScore = sportteryResultIsFinished(item) ? normalizeResultScore(item.score) : "";
   const resultFinalScore = sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "";
-  const resultScore = itemFinalScore || resultFinalScore || (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "");
+  const usableItemScore = sportteryScoreIsUsable(item) ? normalizeResultScore(item.score) : "";
+  const usableResultScore = sportteryScoreIsUsable(result) ? normalizeResultScore(result?.score) : "";
+  const resultScore = itemFinalScore || resultFinalScore || usableResultScore || usableItemScore || (liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "");
   const liveScoreText = normalizeResultScore(liveScore?.score);
   const score = resultScore || liveScoreText;
   const linkedMatch = matchFromOddsItem(item) || matchFromResultItem(item);
@@ -2723,7 +2735,7 @@ function sportteryDetailRow(item = {}) {
     liveHalfScore: liveScore?.halfScore || result?.halfScore || item.halfScore || "",
     liveSource: liveScore?.source || "",
     result,
-    status: resultScore ? "已完赛" : (liveScoreText || hasStarted) ? liveStatus || "进行中" : item.statusName || "待赛",
+    status: resultScore ? (itemFinalScore || resultFinalScore ? "已完赛" : "比分待确认") : (liveScoreText || hasStarted) ? liveStatus || "进行中" : item.statusName || "待赛",
   };
 }
 
@@ -7366,7 +7378,7 @@ sendAnalyticsEvent("page_view");
 if (!initialHash) {
   runWhenPageIdle(renderAll, 1800);
 }
-runWhenPageIdle(refreshSportteryCloudData, initialHash ? 900 : 2400);
+runWhenPageIdle(refreshSportteryCloudData, initialHash ? 500 : 500);
 setInterval(refreshSportteryCloudData, 5 * 60 * 1000);
 
 /* ── 返回顶部 ── */
