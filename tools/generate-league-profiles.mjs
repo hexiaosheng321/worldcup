@@ -72,9 +72,9 @@ function hasOdds(row) {
   return [row.sportteryHomeSp, row.sportteryDrawSp, row.sportteryAwaySp, row.euroHomeOdds, row.euroDrawOdds, row.euroAwayOdds].some((value) => number(value) !== null);
 }
 
-function sampleQuality(usableCount) {
-  if (usableCount >= 100) return "FULL";
-  if (usableCount >= 30) return "CALIBRATION";
+function sampleQuality(count) {
+  if (count >= 100) return "FULL";
+  if (count >= 30) return "CALIBRATION";
   return "DISPLAY";
 }
 
@@ -94,7 +94,7 @@ function buildStyleTags(profile) {
   if (profile.bttsRate >= 0.55) tags.push("双方进球偏高");
   if (profile.over25Rate >= 0.56) tags.push("大2.5偏高");
   if (profile.under25Rate >= 0.56) tags.push("小2.5偏高");
-  tags.push(profile.withOddsCount >= 30 ? "含赔率样本" : "数据以赛果为主");
+  tags.push(profile.marketSampleQuality === "FULL" || profile.marketSampleQuality === "CALIBRATION" ? "含赔率样本" : "数据以赛果为主");
   return tags.slice(0, 6);
 }
 
@@ -104,8 +104,9 @@ function buildProfile(league, rows) {
     .filter((item) => item.score);
   const usableRows = completeRows.filter((item) => ["HIGH", "MEDIUM"].includes(item.row.dataQuality || "MEDIUM"));
   const statsRows = usableRows.length >= 10 ? usableRows : completeRows;
-  const level = sampleQuality(usableRows.length);
+  const resultLevel = sampleQuality(usableRows.length);
   const withOddsCount = rows.filter(hasOdds).length;
+  const marketLevel = sampleQuality(withOddsCount);
   const sourceCounts = countBy(rows, (item) => item.source || item.dataSource || "unknown", 10);
   const seasons = countBy(rows, seasonLabel, 10).map((item) => item.label);
   const profile = {
@@ -117,8 +118,17 @@ function buildProfile(league, rows) {
     excludedLowQualityCount: completeRows.length - usableRows.length,
     withOddsCount,
     resultOnlyCount: rows.length - withOddsCount,
-    sampleQuality: level,
-    sampleQualityLabel: qualityLabel(level),
+    sampleQuality: resultLevel,
+    sampleQualityLabel: qualityLabel(resultLevel),
+    resultSampleQuality: resultLevel,
+    resultSampleQualityLabel: qualityLabel(resultLevel),
+    marketSampleQuality: marketLevel,
+    marketSampleQualityLabel:
+      marketLevel === "FULL"
+        ? "盘口样本可作为市场画像基准"
+        : marketLevel === "CALIBRATION"
+          ? "盘口样本可作为市场校准参考"
+          : "盘口样本不足，只能使用赛果画像",
     seasons,
     sourceCounts,
     homeWinRate: rate(statsRows, (item) => resultSide(item.score) === "HOME"),
@@ -136,7 +146,10 @@ function buildProfile(league, rows) {
   profile.styleTags = buildStyleTags(profile);
   const topScores = profile.commonScores.map((item) => `${item.label} ${item.count}场`).join(" / ") || "等待比分样本";
   const totalHint = profile.avgGoals >= 2.85 ? "总进球先按开放局校验" : profile.avgGoals <= 2.35 ? "总进球先按收紧局校验" : "总进球按常规区间校验";
-  profile.modelHint = `联赛画像：${league} 可用样本 ${profile.usableSampleCount} 场，主胜 ${pct(profile.homeWinRate)}，平 ${pct(profile.drawRate)}，客胜 ${pct(profile.awayWinRate)}，均球 ${profile.avgGoals.toFixed(2)}；常见比分 ${topScores}；模型使用：${totalHint}，${profile.sampleQualityLabel}。`;
+  const marketHint = marketLevel === "DISPLAY"
+    ? `盘口样本 ${withOddsCount} 场，不参与盘口相似推演`
+    : `盘口样本 ${withOddsCount} 场，${profile.marketSampleQualityLabel}`;
+  profile.modelHint = `联赛画像：${league} 可用赛果样本 ${profile.usableSampleCount} 场，主胜 ${pct(profile.homeWinRate)}，平 ${pct(profile.drawRate)}，客胜 ${pct(profile.awayWinRate)}，均球 ${profile.avgGoals.toFixed(2)}；常见比分 ${topScores}；模型使用：${totalHint}，${profile.resultSampleQualityLabel}；${marketHint}。`;
   return profile;
 }
 

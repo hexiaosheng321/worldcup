@@ -3021,7 +3021,7 @@ function ensureLeagueProfilesLoaded(callback) {
   if (!leagueProfilesLoading) {
     leagueProfilesLoading = new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = "./data/leagueProfiles.js?v=202607031735";
+      script.src = "./data/leagueProfiles.js?v=202607031810";
       script.async = true;
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
@@ -3094,9 +3094,9 @@ function renderLeagueProfilePanel(match, pred) {
       <span>联赛画像</span>
       <div class="similar-case-summary">
         <article><small>匹配联赛</small><strong>${profile.league}</strong></article>
-        <article><small>画像等级</small><strong>${profile.sampleQuality}</strong></article>
+        <article><small>赛果画像</small><strong>${profile.resultSampleQuality || profile.sampleQuality}</strong></article>
         <article><small>可用样本</small><strong>${profile.usableSampleCount} / ${profile.sampleCount}</strong></article>
-        <article><small>赔率样本</small><strong>${profile.withOddsCount}</strong></article>
+        <article><small>盘口画像</small><strong>${profile.marketSampleQuality || "DISPLAY"} · ${profile.withOddsCount || 0}场</strong></article>
         <article><small>主 / 平 / 客</small><strong>${pct(profile.homeWinRate)} / ${pct(profile.drawRate)} / ${pct(profile.awayWinRate)}</strong></article>
         <article><small>均球 / BTTS</small><strong>${Number(profile.avgGoals || 0).toFixed(2)} / ${pct(profile.bttsRate)}</strong></article>
       </div>
@@ -3109,7 +3109,7 @@ function renderLeagueProfilePanel(match, pred) {
       <div class="similar-case-practical">
         <article><small>样本年份</small><strong>${seasonText}</strong></article>
         <article><small>样本来源</small><strong>${sourceText}</strong></article>
-        <article><small>模型用法</small><strong>${profile.sampleQualityLabel || "只展示，不修正"}</strong></article>
+        <article><small>模型用法</small><strong>${profile.marketSampleQualityLabel || profile.sampleQualityLabel || "只展示，不修正"}</strong></article>
       </div>
     </section>
   `;
@@ -3423,6 +3423,7 @@ function renderSimilarCasePanel(pred, match) {
 }
 
 function renderSportteryEvidenceGate(item, modelPred, research) {
+  const leagueProfile = leagueProfileForMatch(item, modelPred);
   const checks = [
     ["锁版结果", Boolean(modelPred?.pick && modelPred?.totalGoalsPick && (modelPred?.mainScore || modelPred?.counterScore))],
     ["体彩当前盘", Boolean(item?.normal || item?.handicapOdds)],
@@ -3433,7 +3434,8 @@ function renderSportteryEvidenceGate(item, modelPred, research) {
     ["半场触发", Boolean(modelPred?.halftimeDecision || modelPred?.halftimeTrigger)],
     ["状态转移", Boolean(modelPred?.stateTransfer || modelPred?.knockoutStateTransfer || modelPred?.timeStateTransfer)],
     ["最终闸门", Boolean(modelPred?.finalDecisionAction || modelPred?.decisionConflict)],
-    ["联赛画像", Boolean(leagueProfileForMatch(item, modelPred)?.usableSampleCount >= 30)],
+    ["赛果画像", Boolean(leagueProfile?.usableSampleCount >= 30)],
+    ["盘口样本", Boolean(leagueProfile?.withOddsCount >= 30)],
   ];
   const ready = checks.filter(([, ok]) => ok).length;
   const score = Math.round((ready / checks.length) * 100);

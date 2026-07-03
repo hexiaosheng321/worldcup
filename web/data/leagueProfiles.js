@@ -1,11 +1,11 @@
 window.WC_LEAGUE_PROFILES = {
-  "generatedAt": "2026-07-03T05:39:07.239Z",
+  "generatedAt": "2026-07-03T05:45:57.130Z",
   "source": "web/data/externalHistoricalSamples.js",
   "profileCount": 22,
   "profiles": [
     {
       "league": "世界杯",
-      "generatedAt": "2026-07-03T05:39:07.238Z",
+      "generatedAt": "2026-07-03T05:45:57.129Z",
       "sampleCount": 1013,
       "completedSampleCount": 1013,
       "usableSampleCount": 899,
@@ -14,6 +14,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 256,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "FULL",
+      "marketSampleQualityLabel": "盘口样本可作为市场画像基准",
       "seasons": [
         "2022",
         "2010",
@@ -113,11 +117,11 @@ window.WC_LEAGUE_PROFILES = {
       "styleTags": [
         "含赔率样本"
       ],
-      "modelHint": "联赛画像：世界杯 可用样本 899 场，主胜 45.3%，平 21.9%，客胜 32.8%，均球 2.66；常见比分 1-0 97场 / 1-1 89场 / 0-1 84场 / 0-0 71场 / 2-0 68场；模型使用：总进球按常规区间校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：世界杯 可用赛果样本 899 场，主胜 45.3%，平 21.9%，客胜 32.8%，均球 2.66；常见比分 1-0 97场 / 1-1 89场 / 0-1 84场 / 0-0 71场 / 2-0 68场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 757 场，盘口样本可作为市场画像基准。"
     },
     {
       "league": "韩职",
-      "generatedAt": "2026-07-03T05:39:07.231Z",
+      "generatedAt": "2026-07-03T05:45:57.123Z",
       "sampleCount": 410,
       "completedSampleCount": 410,
       "usableSampleCount": 410,
@@ -126,6 +130,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 410,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2025",
         "2026"
@@ -225,11 +233,11 @@ window.WC_LEAGUE_PROFILES = {
         "主场优势弱",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：韩职 可用样本 410 场，主胜 34.6%，平 30.2%，客胜 35.1%，均球 2.48；常见比分 0-1 52场 / 1-1 52场 / 0-0 43场 / 1-0 35场 / 1-2 34场；模型使用：总进球按常规区间校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：韩职 可用赛果样本 410 场，主胜 34.6%，平 30.2%，客胜 35.1%，均球 2.48；常见比分 0-1 52场 / 1-1 52场 / 0-0 43场 / 1-0 35场 / 1-2 34场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "芬超",
-      "generatedAt": "2026-07-03T05:39:07.230Z",
+      "generatedAt": "2026-07-03T05:45:57.122Z",
       "sampleCount": 274,
       "completedSampleCount": 274,
       "usableSampleCount": 274,
@@ -238,6 +246,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 176,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "CALIBRATION",
+      "marketSampleQualityLabel": "盘口样本可作为市场校准参考",
       "seasons": [
         "2025",
         "2026"
@@ -338,11 +350,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "含赔率样本"
       ],
-      "modelHint": "联赛画像：芬超 可用样本 274 场，主胜 41.2%，平 27.4%，客胜 31.4%，均球 3.12；常见比分 1-1 41场 / 2-1 30场 / 1-0 20场 / 3-2 19场 / 1-2 16场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：芬超 可用赛果样本 274 场，主胜 41.2%，平 27.4%，客胜 31.4%，均球 3.12；常见比分 1-1 41场 / 2-1 30场 / 1-0 20场 / 3-2 19场 / 1-2 16场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 98 场，盘口样本可作为市场校准参考。"
     },
     {
       "league": "法甲",
-      "generatedAt": "2026-07-03T05:39:07.232Z",
+      "generatedAt": "2026-07-03T05:45:57.124Z",
       "sampleCount": 247,
       "completedSampleCount": 247,
       "usableSampleCount": 247,
@@ -351,6 +363,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "CALIBRATION",
+      "marketSampleQualityLabel": "盘口样本可作为市场校准参考",
       "seasons": [
         "2025",
         "2024"
@@ -451,11 +467,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "含赔率样本"
       ],
-      "modelHint": "联赛画像：法甲 可用样本 247 场，主胜 41.7%，平 23.9%，客胜 34.4%，均球 2.94；常见比分 1-1 27场 / 2-1 26场 / 0-0 19场 / 1-0 19场 / 0-1 16场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：法甲 可用赛果样本 247 场，主胜 41.7%，平 23.9%，客胜 34.4%，均球 2.94；常见比分 1-1 27场 / 2-1 26场 / 0-0 19场 / 1-0 19场 / 0-1 16场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 47 场，盘口样本可作为市场校准参考。"
     },
     {
       "league": "澳超",
-      "generatedAt": "2026-07-03T05:39:07.236Z",
+      "generatedAt": "2026-07-03T05:45:57.128Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -464,6 +480,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -561,11 +581,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：澳超 可用样本 200 场，主胜 35.5%，平 31.0%，客胜 33.5%，均球 3.13；常见比分 1-1 27场 / 2-2 24场 / 1-0 16场 / 1-2 16场 / 0-1 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：澳超 可用赛果样本 200 场，主胜 35.5%，平 31.0%，客胜 33.5%，均球 3.13；常见比分 1-1 27场 / 2-2 24场 / 1-0 16场 / 1-2 16场 / 0-1 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "丹超",
-      "generatedAt": "2026-07-03T05:39:07.236Z",
+      "generatedAt": "2026-07-03T05:45:57.128Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -574,6 +594,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -669,11 +693,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：丹超 可用样本 200 场，主胜 41.5%，平 25.5%，客胜 33.0%，均球 3.10；常见比分 2-1 22场 / 1-1 19场 / 1-2 18场 / 2-2 14场 / 0-0 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：丹超 可用赛果样本 200 场，主胜 41.5%，平 25.5%，客胜 33.0%，均球 3.10；常见比分 2-1 22场 / 1-1 19场 / 1-2 18场 / 2-2 14场 / 0-0 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "德甲",
-      "generatedAt": "2026-07-03T05:39:07.233Z",
+      "generatedAt": "2026-07-03T05:45:57.125Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -682,6 +706,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -778,11 +806,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：德甲 可用样本 200 场，主胜 32.0%，平 27.5%，客胜 40.5%，均球 3.17；常见比分 1-2 24场 / 1-1 21场 / 0-1 16场 / 2-2 16场 / 1-0 12场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：德甲 可用赛果样本 200 场，主胜 32.0%，平 27.5%，客胜 40.5%，均球 3.17；常见比分 1-2 24场 / 1-1 21场 / 0-1 16场 / 2-2 16场 / 1-0 12场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "荷甲",
-      "generatedAt": "2026-07-03T05:39:07.236Z",
+      "generatedAt": "2026-07-03T05:45:57.127Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -791,6 +819,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -886,11 +918,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：荷甲 可用样本 200 场，主胜 46.0%，平 27.5%，客胜 26.5%，均球 2.98；常见比分 1-1 28场 / 2-0 19场 / 2-1 15场 / 0-0 13场 / 0-2 12场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：荷甲 可用赛果样本 200 场，主胜 46.0%，平 27.5%，客胜 26.5%，均球 2.98；常见比分 1-1 28场 / 2-0 19场 / 2-1 15场 / 0-0 13场 / 0-2 12场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "美职",
-      "generatedAt": "2026-07-03T05:39:07.235Z",
+      "generatedAt": "2026-07-03T05:45:57.127Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -899,6 +931,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2025",
         "2026"
@@ -994,11 +1030,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：美职 可用样本 200 场，主胜 46.5%，平 23.5%，客胜 30.0%，均球 3.33；常见比分 1-1 22场 / 2-1 18场 / 1-0 17场 / 2-2 14场 / 2-0 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：美职 可用赛果样本 200 场，主胜 46.5%，平 23.5%，客胜 30.0%，均球 3.33；常见比分 1-1 22场 / 2-1 18场 / 1-0 17场 / 2-2 14场 / 2-0 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "欧冠",
-      "generatedAt": "2026-07-03T05:39:07.232Z",
+      "generatedAt": "2026-07-03T05:45:57.124Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1007,6 +1043,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -1103,11 +1143,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：欧冠 可用样本 200 场，主胜 51.5%，平 14.5%，客胜 34.0%，均球 3.41；常见比分 2-1 16场 / 1-2 14场 / 2-0 14场 / 1-0 13场 / 3-0 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：欧冠 可用赛果样本 200 场，主胜 51.5%，平 14.5%，客胜 34.0%，均球 3.41；常见比分 2-1 16场 / 1-2 14场 / 2-0 14场 / 1-0 13场 / 3-0 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "欧联",
-      "generatedAt": "2026-07-03T05:39:07.237Z",
+      "generatedAt": "2026-07-03T05:45:57.128Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1116,6 +1156,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -1211,11 +1255,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：欧联 可用样本 200 场，主胜 53.5%，平 18.0%，客胜 28.5%，均球 2.92；常见比分 1-0 25场 / 2-1 18场 / 1-1 17场 / 2-0 16场 / 0-1 15场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：欧联 可用赛果样本 200 场，主胜 53.5%，平 18.0%，客胜 28.5%，均球 2.92；常见比分 1-0 25场 / 2-1 18场 / 1-1 17场 / 2-0 16场 / 0-1 15场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "葡超",
-      "generatedAt": "2026-07-03T05:39:07.232Z",
+      "generatedAt": "2026-07-03T05:45:57.124Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1224,6 +1268,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -1311,11 +1359,11 @@ window.WC_LEAGUE_PROFILES = {
       "styleTags": [
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：葡超 可用样本 200 场，主胜 39.0%，平 28.0%，客胜 33.0%，均球 2.54；常见比分 0-1 24场 / 1-1 24场 / 1-2 19场 / 2-2 19场 / 1-0 18场；模型使用：总进球按常规区间校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：葡超 可用赛果样本 200 场，主胜 39.0%，平 28.0%，客胜 33.0%，均球 2.54；常见比分 0-1 24场 / 1-1 24场 / 1-2 19场 / 2-2 19场 / 1-0 18场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "日职",
-      "generatedAt": "2026-07-03T05:39:07.232Z",
+      "generatedAt": "2026-07-03T05:45:57.123Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1324,6 +1372,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2025",
         "2026"
@@ -1416,11 +1468,11 @@ window.WC_LEAGUE_PROFILES = {
       "styleTags": [
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：日职 可用样本 200 场，主胜 42.0%，平 27.5%，客胜 30.5%，均球 2.56；常见比分 1-0 28场 / 1-1 28场 / 0-1 19场 / 0-0 16场 / 2-1 15场；模型使用：总进球按常规区间校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：日职 可用赛果样本 200 场，主胜 42.0%，平 27.5%，客胜 30.5%，均球 2.56；常见比分 1-0 28场 / 1-1 28场 / 0-1 19场 / 0-0 16场 / 2-1 15场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "西甲",
-      "generatedAt": "2026-07-03T05:39:07.235Z",
+      "generatedAt": "2026-07-03T05:45:57.127Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1429,6 +1481,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -1522,11 +1578,11 @@ window.WC_LEAGUE_PROFILES = {
         "主场优势强",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：西甲 可用样本 200 场，主胜 48.0%，平 20.0%，客胜 32.0%，均球 2.67；常见比分 1-0 31场 / 1-1 24场 / 1-2 18场 / 0-1 17场 / 2-1 16场；模型使用：总进球按常规区间校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：西甲 可用赛果样本 200 场，主胜 48.0%，平 20.0%，客胜 32.0%，均球 2.67；常见比分 1-0 31场 / 1-1 24场 / 1-2 18场 / 0-1 17场 / 2-1 16场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "亚冠二级",
-      "generatedAt": "2026-07-03T05:39:07.237Z",
+      "generatedAt": "2026-07-03T05:45:57.128Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1535,6 +1591,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -1630,11 +1690,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：亚冠二级 可用样本 200 场，主胜 45.5%，平 19.0%，客胜 35.5%，均球 3.10；常见比分 0-1 19场 / 2-1 19场 / 1-0 18场 / 1-2 17场 / 1-1 15场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：亚冠二级 可用赛果样本 200 场，主胜 45.5%，平 19.0%，客胜 35.5%，均球 3.10；常见比分 0-1 19场 / 2-1 19场 / 1-0 18场 / 1-2 17场 / 1-1 15场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "亚冠精英",
-      "generatedAt": "2026-07-03T05:39:07.237Z",
+      "generatedAt": "2026-07-03T05:45:57.128Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1643,6 +1703,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -1736,11 +1800,11 @@ window.WC_LEAGUE_PROFILES = {
         "主场优势强",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：亚冠精英 可用样本 200 场，主胜 50.5%，平 22.0%，客胜 27.5%，均球 2.83；常见比分 1-0 25场 / 0-0 17场 / 1-1 17场 / 1-2 14场 / 2-0 14场；模型使用：总进球按常规区间校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：亚冠精英 可用赛果样本 200 场，主胜 50.5%，平 22.0%，客胜 27.5%，均球 2.83；常见比分 1-0 25场 / 0-0 17场 / 1-1 17场 / 1-2 14场 / 2-0 14场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "意甲",
-      "generatedAt": "2026-07-03T05:39:07.236Z",
+      "generatedAt": "2026-07-03T05:45:57.127Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1749,6 +1813,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -1843,11 +1911,11 @@ window.WC_LEAGUE_PROFILES = {
         "小2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：意甲 可用样本 200 场，主胜 39.0%，平 25.0%，客胜 36.0%，均球 2.33；常见比分 1-0 25场 / 1-1 24场 / 0-1 23场 / 2-1 18场 / 0-2 17场；模型使用：总进球先按收紧局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：意甲 可用赛果样本 200 场，主胜 39.0%，平 25.0%，客胜 36.0%，均球 2.33；常见比分 1-0 25场 / 1-1 24场 / 0-1 23场 / 2-1 18场 / 0-2 17场；模型使用：总进球先按收紧局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "英超",
-      "generatedAt": "2026-07-03T05:39:07.236Z",
+      "generatedAt": "2026-07-03T05:45:57.127Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1856,6 +1924,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 200,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2024",
         "2025"
@@ -1948,11 +2020,11 @@ window.WC_LEAGUE_PROFILES = {
       "styleTags": [
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：英超 可用样本 200 场，主胜 43.0%，平 26.5%，客胜 30.5%，均球 2.71；常见比分 1-1 23场 / 0-1 18场 / 1-2 18场 / 1-0 17场 / 2-2 17场；模型使用：总进球按常规区间校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：英超 可用赛果样本 200 场，主胜 43.0%，平 26.5%，客胜 30.5%，均球 2.71；常见比分 1-1 23场 / 0-1 18场 / 1-2 18场 / 1-0 17场 / 2-2 17场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "中超",
-      "generatedAt": "2026-07-03T05:39:07.229Z",
+      "generatedAt": "2026-07-03T05:45:57.121Z",
       "sampleCount": 200,
       "completedSampleCount": 200,
       "usableSampleCount": 200,
@@ -1961,6 +2033,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 192,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2025",
         "2026"
@@ -2056,11 +2132,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：中超 可用样本 200 场，主胜 41.5%，平 27.5%，客胜 31.0%，均球 3.21；常见比分 1-1 22场 / 1-0 20场 / 1-2 18场 / 2-2 18场 / 2-1 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：中超 可用赛果样本 200 场，主胜 41.5%，平 27.5%，客胜 31.0%，均球 3.21；常见比分 1-1 22场 / 1-0 20场 / 1-2 18场 / 2-2 18场 / 2-1 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 8 场，不参与盘口相似推演。"
     },
     {
       "league": "女足世界杯",
-      "generatedAt": "2026-07-03T05:39:07.237Z",
+      "generatedAt": "2026-07-03T05:45:57.128Z",
       "sampleCount": 196,
       "completedSampleCount": 196,
       "usableSampleCount": 196,
@@ -2069,6 +2145,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 196,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2023",
         "2019",
@@ -2164,11 +2244,11 @@ window.WC_LEAGUE_PROFILES = {
         "主场优势强",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：女足世界杯 可用样本 196 场，主胜 53.1%，平 15.3%，客胜 31.6%，均球 2.71；常见比分 1-0 27场 / 2-1 25场 / 0-1 20场 / 2-0 16场 / 0-0 15场；模型使用：总进球按常规区间校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：女足世界杯 可用赛果样本 196 场，主胜 53.1%，平 15.3%，客胜 31.6%，均球 2.71；常见比分 1-0 27场 / 2-1 25场 / 0-1 20场 / 2-0 16场 / 0-0 15场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "瑞超",
-      "generatedAt": "2026-07-03T05:39:07.232Z",
+      "generatedAt": "2026-07-03T05:45:57.124Z",
       "sampleCount": 191,
       "completedSampleCount": 191,
       "usableSampleCount": 191,
@@ -2177,6 +2257,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 191,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2025",
         "2026"
@@ -2277,11 +2361,11 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：瑞超 可用样本 191 场，主胜 39.3%，平 25.1%，客胜 35.6%，均球 3.01；常见比分 1-1 28场 / 0-1 18场 / 2-1 17场 / 1-2 13场 / 2-0 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：瑞超 可用赛果样本 191 场，主胜 39.3%，平 25.1%，客胜 35.6%，均球 3.01；常见比分 1-1 28场 / 0-1 18场 / 2-1 17场 / 1-2 13场 / 2-0 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     },
     {
       "league": "挪超",
-      "generatedAt": "2026-07-03T05:39:07.232Z",
+      "generatedAt": "2026-07-03T05:45:57.124Z",
       "sampleCount": 189,
       "completedSampleCount": 189,
       "usableSampleCount": 189,
@@ -2290,6 +2374,10 @@ window.WC_LEAGUE_PROFILES = {
       "resultOnlyCount": 189,
       "sampleQuality": "FULL",
       "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
       "seasons": [
         "2025",
         "2026"
@@ -2386,7 +2474,7 @@ window.WC_LEAGUE_PROFILES = {
         "大2.5偏高",
         "数据以赛果为主"
       ],
-      "modelHint": "联赛画像：挪超 可用样本 189 场，主胜 52.4%，平 19.0%，客胜 28.6%，均球 3.16；常见比分 2-1 20场 / 1-1 19场 / 2-0 17场 / 1-0 14场 / 3-1 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准。"
+      "modelHint": "联赛画像：挪超 可用赛果样本 189 场，主胜 52.4%，平 19.0%，客胜 28.6%，均球 3.16；常见比分 2-1 20场 / 1-1 19场 / 2-0 17场 / 1-0 14场 / 3-1 13场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 0 场，不参与盘口相似推演。"
     }
   ]
 };
