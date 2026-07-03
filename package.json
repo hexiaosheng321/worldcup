@@ -7,6 +7,7 @@
     "history:import-api": "node tools/import-free-history-api.mjs",
     "history:import-api-football": "node tools/import-api-football-history.mjs",
     "history:import-football-data": "node tools/import-football-data-history.mjs",
+    "history:import-footiqo": "node tools/import-footiqo-history.mjs",
     "live-scores:fetch": "node tools/fetch-live-football-scores.mjs",
     "sporttery:auto-deploy": "node tools/auto-update-and-deploy.mjs",
     "cloudflare:login": "node scripts/cloudflare-pages.mjs login",
