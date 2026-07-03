@@ -90,6 +90,15 @@ npm run history:import-api -- --provider thesportsdb --league-id ID --season 202
 npm run history:import-api-football -- --leagues 瑞超,韩职,韩职2 --seasons 2026,2025 --limit 100 --api-key "$APISPORTS_API_KEY"
 ```
 
+赔率和盘口样本入口：
+
+```bash
+npm run history:import-football-data -- --leagues 英超,西甲,德甲,意甲,法甲,荷甲,葡超,瑞超,挪超,芬超,丹超,日职,中超,美职
+npm run history:import-football-data -- --input-dir ./tmp/football-data-csv --leagues 瑞超,挪超,芬超,丹超,日职,中超,美职
+```
+
+`history:import-football-data` 使用 Football-Data.co.uk CSV，写入 `external-history` 赔率/盘口样本。它会提取 1X2、大小球 2.5、亚洲盘口让球线和主客水位，用于补强 `盘口画像`，但仍然不生成锁版、不进入 D1 Case Base。
+
 ## 样本资产目标
 
 下一阶段的重点，是确认每一场赛果是否能自动保存为可复用样本。

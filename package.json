@@ -6,6 +6,7 @@
     "league-profiles:generate": "node tools/generate-league-profiles.mjs",
     "history:import-api": "node tools/import-free-history-api.mjs",
     "history:import-api-football": "node tools/import-api-football-history.mjs",
+    "history:import-football-data": "node tools/import-football-data-history.mjs",
     "live-scores:fetch": "node tools/fetch-live-football-scores.mjs",
     "sporttery:auto-deploy": "node tools/auto-update-and-deploy.mjs",
     "cloudflare:login": "node scripts/cloudflare-pages.mjs login",
