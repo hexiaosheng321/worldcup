@@ -179,6 +179,7 @@ const samples = oddsRows.map((oddsRow, index) => {
   const recommendationSide = marketSide(homeOdds, drawOdds, awayOdds);
   const has1x2 = [homeOdds, drawOdds, awayOdds].every(Number.isFinite);
   const hasTotal = [over25Odds, under25Odds].every(Number.isFinite);
+  if (!has1x2 || !hasTotal) return null;
   const kickoffTime = parseFootiqoDate(oddsRow.matchDate);
   const season = cleanText(oddsRow.Season);
   const score = Number.isFinite(homeGoals) && Number.isFinite(awayGoals) ? `${homeGoals}-${awayGoals}` : "";
