@@ -2672,7 +2672,6 @@ function renderMatchDetail(no) {
       ${renderWorldCupFullProjection(match, pred, filter, odds)}
     </div>
     <div class="match-page-actions">
-      ${pred ? `<button type="button" data-detail-d1-lock="${match.no}">写入D1锁版</button>` : ""}
       <button type="button" data-detail-model="${match.no}">锁版室</button>
       <button type="button" class="secondary" data-detail-review="${match.no}">复盘验票台</button>
     </div>
@@ -3218,7 +3217,7 @@ async function writePredictionLockToD1(pred, match, button) {
   if (!pred || !match || !window.WC_CLOUD_STORE?.createLock) return;
   const lock = lockFromPrediction(pred, match);
   if (!lock) return;
-  const originalText = button?.textContent || "写入D1锁版";
+  const originalText = button?.textContent || "同步D1锁版";
   if (button) {
     button.disabled = true;
     button.textContent = "写入中...";
@@ -3676,7 +3675,6 @@ function renderSportteryMatchDetail(key) {
       ${renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreOdds, sourceStamp)}
     </div>
     <div class="match-page-actions">
-      ${modelPred ? `<button type="button" data-detail-d1-sporttery-lock="${sportteryItemKey(item)}">写入D1锁版</button>` : ""}
       ${item.linkedNo ? `<button type="button" data-detail-model="${item.linkedNo}">世界杯模型页</button>` : ""}
       ${modelPred && !item.linkedNo ? `<button type="button" data-detail-global-stats>统计和回测</button>` : ""}
       <button type="button" class="secondary" data-detail-back>${backLabel.replace("← ", "返回")}</button>
@@ -7155,16 +7153,6 @@ document.querySelector("#match-detail")?.addEventListener("click", (event) => {
     if (mode.dataset.matchMode === "full") {
       sendAnalyticsEvent("click_event", { target: "full_projection" });
     }
-    return;
-  }
-  const d1Lock = event.target.closest("[data-detail-d1-lock]");
-  if (d1Lock) {
-    writeWorldCupLockToD1(d1Lock.dataset.detailD1Lock, d1Lock);
-    return;
-  }
-  const d1SportteryLock = event.target.closest("[data-detail-d1-sporttery-lock]");
-  if (d1SportteryLock) {
-    writeSportteryLockToD1(d1SportteryLock.dataset.detailD1SportteryLock, d1SportteryLock);
     return;
   }
   const model = event.target.closest("[data-detail-model]");
