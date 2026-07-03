@@ -87,6 +87,7 @@ Case Base 只接收我们自己的 `FINAL_LOCK -> 赛果回填 -> 复盘诊断` 
 ```bash
 npm run history:import-api -- --provider football-data --competition-code CODE --season 2026 --league 瑞超 --api-key "$FOOTBALL_DATA_API_KEY"
 npm run history:import-api -- --provider thesportsdb --league-id ID --season 2026 --league 瑞超
+npm run history:import-api-football -- --leagues 瑞超,韩职,韩职2 --seasons 2026,2025 --limit 100 --api-key "$APISPORTS_API_KEY"
 ```
 
 ## 样本资产目标
