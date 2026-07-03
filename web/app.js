@@ -3742,17 +3742,21 @@ function renderFootballDataLayerPanel(item, modelPred) {
 
 function renderSportteryMatchDetail(key) {
   const content = document.querySelector("#match-detail-body");
+  if (!sportteryPoolItemCache.size) cacheSportteryPoolItems(sportteryPoolItems());
   const base = findSportteryItemByKey(key);
   if (!content) return;
   if (!base) {
+    const lookupKey = sportteryLookupKeyFromHash(key);
     content.innerHTML = `
       <div class="match-page-toolbar">
         <button type="button" data-detail-back>← 赛事池</button>
         <span>体彩详情</span>
       </div>
       <section class="match-page-section sporttery-model-panel">
-        <span>赛事数据未匹配</span>
-        <p>这场比赛已进入详情页，但当前前端快照没有找到对应的体彩原始行。请返回赛事池刷新快照后再进入。</p>
+        <span>模型状态</span>
+        <h3>待推演 / 待锁版</h3>
+        <p>这场比赛已进入详情页，但当前快照没有找到完整原始行。后续数据刷新或模型锁版写入后，会在这里展示盘口、联赛画像和真实推演记录。</p>
+        <p>当前识别键：${lookupKey || "-"}</p>
       </section>
       <div class="match-page-actions">
         <button type="button" class="secondary" data-detail-back>返回赛事池</button>
@@ -7153,6 +7157,20 @@ aboutSiteButtons.forEach((button) => {
     activateTab("about-site");
   });
 });
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const sportteryCard = event.target.closest("[data-sporttery-match-key], [data-home-sporttery-key]");
+    if (!sportteryCard) return;
+    const key = sportteryCard.dataset.sportteryMatchKey || sportteryCard.dataset.homeSportteryKey;
+    if (!key) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openSportteryMatchPage(key);
+  },
+  true
+);
 
 document.querySelector(".home-screen")?.addEventListener("click", (event) => {
   const card = event.target.closest("[data-home-match-no], [data-home-sporttery-key]");
