@@ -130,6 +130,60 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     return Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES) ? window.WC_EXTERNAL_HISTORICAL_SAMPLES : [];
   }
 
+  function normalizeText(value = "") {
+    return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+  }
+
+  function matchDateKey(value = "") {
+    const text = String(value || "").trim();
+    const date = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || text.match(/^\d{2}-\d{2}-\d{2,4}/)?.[0] || text;
+    return date || "unknown-date";
+  }
+
+  function sampleIdentityKey(sample) {
+    const matchId = String(sample.matchId || "").trim();
+    if (matchId && !isExternalSample(sample)) return `lock:${matchId}`;
+    return [
+      normalizeCompetition(sample.league),
+      matchDateKey(sample.kickoffTime || sample.matchDate),
+      normalizeText(sample.homeTeam),
+      normalizeText(sample.awayTeam),
+      formatScore(sample.actualHomeGoals, sample.actualAwayGoals) || normalizeText(sample.score),
+    ].join("|");
+  }
+
+  function sampleHasOdds(sample) {
+    return hasNumbers(sample.sportteryHomeSp, sample.sportteryDrawSp, sample.sportteryAwaySp) ||
+      hasNumbers(sample.euroHomeOdds, sample.euroDrawOdds, sample.euroAwayOdds);
+  }
+
+  function dataQualityRank(value = "MEDIUM") {
+    return { HIGH: 3, MEDIUM: 2, LOW: 1 }[String(value || "MEDIUM").toUpperCase()] || 2;
+  }
+
+  function compareSamplePriority(left, right) {
+    return (
+      Number(left.distributionOnly) - Number(right.distributionOnly) ||
+      Number(sampleHasOdds(right)) - Number(sampleHasOdds(left)) ||
+      (right.similarityScore || 0) - (left.similarityScore || 0) ||
+      dataQualityRank(right.dataQuality) - dataQualityRank(left.dataQuality) ||
+      Number(isExternalSample(left)) - Number(isExternalSample(right))
+    );
+  }
+
+  function dedupeSimilarSamples(samples) {
+    const byMatch = new Map();
+    samples.forEach((sample) => {
+      const key = sampleIdentityKey(sample);
+      const current = byMatch.get(key);
+      if (!current || compareSamplePriority(current, sample) > 0) {
+        byMatch.set(key, sample);
+      }
+    });
+    return [...byMatch.values()]
+      .sort((a, b) => Number(a.distributionOnly) - Number(b.distributionOnly) || b.similarityScore - a.similarityScore);
+  }
+
   function similarityParts(current, sample) {
     const parts = [];
     function add(key, score) {
@@ -325,7 +379,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       }))
       .filter((item) => item.similarityScore >= threshold || item.distributionOnly)
       .sort((a, b) => Number(a.distributionOnly) - Number(b.distributionOnly) || b.similarityScore - a.similarityScore);
-    const samples = pool.slice(0, options.sampleLimit || 50);
+    const samples = dedupeSimilarSamples(pool).slice(0, options.sampleLimit || 50);
     const topCases = samples.slice(0, options.topLimit || 5).map((item) => ({
       caseId: item.caseId,
       matchId: item.matchId,
