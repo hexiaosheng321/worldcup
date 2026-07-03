@@ -53,10 +53,24 @@ curl https://worldcup-dashboard-4hr.pages.dev/api/health
 - `POST /api/cases/generate`
 - `POST /api/review/run`
 - `POST /api/similar-cases`
+- `GET /api/model-upgrade-notes`
+- `POST /api/model-upgrade-notes`
 
 ## 数据原则
 
 - 赛前锁版不可覆盖；重复 `lockId` 会返回 409。
+- 非世界杯联赛必须先写 `PRE_LOCK` 补齐模型；没有 `finalApproval=true` 时，API 会拒绝写入联赛 `FINAL_LOCK`。
 - 只有 `FINAL_LOCK` 且已有赛果的记录，才能进入 Case Base。
+- `/api/results` 写入或更新赛果后，会自动触发该场锁版复盘和 Case Base 生成，避免手工比分回填断链。
+- Case Base 的 `payload_json` 固定保存比分覆盖、总进球覆盖、让球覆盖、半场比分、失败模式和诊断摘要。
+- 每条新 Case 会同步生成一条 `model_upgrade_notes` 记录，用于把赛后诊断沉淀为模型升级候选项。
 - 样本不足时只展示参考，不参与置信度修正。
 - 前端默认继续使用本地静态数据；云端接口可用后再逐步切换具体页面。
+
+## 增量迁移
+
+已有 D1 库如果已经执行过 `0001_case_base_schema.sql`，只需要补跑：
+
+```bash
+npm run d1:migrate:upgrade-notes
+```

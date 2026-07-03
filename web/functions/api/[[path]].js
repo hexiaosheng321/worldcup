@@ -304,6 +304,14 @@ function parseObject(text, fallback = {}) {
   }
 }
 
+function isWorldCupLeague(league = "") {
+  return /世界杯|World Cup/i.test(String(league || ""));
+}
+
+function hasFinalApproval(body = {}) {
+  return body.finalApproval === true || body.final_approval === true || body.payload?.finalApproval === true;
+}
+
 const weights = {
   league: 0.1,
   modelProb: 0.22,
@@ -515,6 +523,219 @@ async function listCases(db) {
   return results.map(rowToCase);
 }
 
+async function ensureModelUpgradeSchema(db) {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS model_upgrade_notes (
+      note_id TEXT PRIMARY KEY,
+      source_case_id TEXT NOT NULL UNIQUE,
+      source_lock_id TEXT NOT NULL,
+      match_id TEXT NOT NULL,
+      model_version TEXT NOT NULL DEFAULT 'V4',
+      league TEXT,
+      trigger_type TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'LOW',
+      status TEXT NOT NULL DEFAULT 'OPEN',
+      title TEXT NOT NULL,
+      diagnosis_json TEXT,
+      recommendation_json TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      adopted_at TEXT
+    )
+  `).run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_model_upgrade_notes_model_status ON model_upgrade_notes(model_version, status, created_at)").run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_model_upgrade_notes_match ON model_upgrade_notes(match_id, created_at)").run();
+}
+
+function firstText(...values) {
+  return values.find((value) => String(value || "").trim()) || "";
+}
+
+function scoreText(home, away) {
+  if (!Number.isFinite(Number(home)) || !Number.isFinite(Number(away))) return "";
+  return `${Number(home)}-${Number(away)}`;
+}
+
+function scorePicksFromPayload(payload = {}) {
+  const text = [
+    payload.score,
+    payload.scorePick,
+    payload.scorePrediction,
+    payload.predictedScore,
+    payload.predictedScores,
+    payload.twoScores,
+    payload.mainScore,
+    payload.counterScore,
+    payload.finalScore,
+    payload.finalDecisionAction,
+    payload.reasoningSummary,
+  ].map((item) => Array.isArray(item) ? item.join(" / ") : String(item || "")).join(" / ");
+  return [...new Set((text.match(/\b\d+\s*[-:]\s*\d+\b/g) || []).map((item) => item.replace(/\s+/g, "").replace(":", "-")))];
+}
+
+function totalGoalPickFromPayload(payload = {}) {
+  const text = firstText(payload.totalGoalsPick, payload.totalGoalPick, payload.totalGoals, payload.totalGoal, payload.goalRange);
+  const picks = [...new Set((String(text).match(/\d+/g) || []).map(Number).filter(Number.isFinite))];
+  return { text: String(text || ""), picks };
+}
+
+function handicapPickFromPayload(payload = {}) {
+  const text = firstText(payload.handicapPick, payload.handicapResult, payload.letBallPick, payload.letBallResult, payload.handicapFinal);
+  if (/让胜/.test(text)) return "让胜";
+  if (/让平/.test(text)) return "让平";
+  if (/让负/.test(text)) return "让负";
+  return "";
+}
+
+function actualHandicapResult(lock, result) {
+  const home = Number(result.full_time_home_goals);
+  const away = Number(result.full_time_away_goals);
+  const line = Number(lock.asian_handicap);
+  if (![home, away, line].every(Number.isFinite)) return "";
+  const adjusted = home + line - away;
+  if (adjusted > 0) return "让胜";
+  if (adjusted === 0) return "让平";
+  return "让负";
+}
+
+function caseDiagnosticPayload(lock, result, review, tags) {
+  const lockPayload = parseObject(lock.payload_json);
+  const resultPayload = parseObject(result.payload_json);
+  const actualScore = scoreText(result.full_time_home_goals, result.full_time_away_goals);
+  const scorePicks = scorePicksFromPayload(lockPayload);
+  const totalGoalPick = totalGoalPickFromPayload(lockPayload);
+  const handicapPick = handicapPickFromPayload(lockPayload);
+  const actualHandicap = actualHandicapResult(lock, result);
+  const totalGoalsHit = totalGoalPick.picks.length ? totalGoalPick.picks.includes(Number(result.total_goals)) : null;
+  const scoreCovered = scorePicks.length ? scorePicks.includes(actualScore) : null;
+  const handicapHit = handicapPick && actualHandicap ? handicapPick === actualHandicap : null;
+  const failureMode = review.hitStatus === "WIN"
+    ? "命中样本"
+    : tags.failureTags[0] || (handicapHit === false ? "让球判断偏差" : totalGoalsHit === false ? "总进球判断偏差" : scoreCovered === false ? "比分路径未覆盖" : "方向判断偏差");
+  return {
+    reviewText: review.reviewText,
+    failureMode,
+    actualHomeGoals: result.full_time_home_goals,
+    actualAwayGoals: result.full_time_away_goals,
+    actualScore,
+    halfTimeScore: firstText(resultPayload.halfScore, resultPayload.half_time_score, resultPayload.halfTimeScore),
+    actualResult: result.result_1x2,
+    actualGoals: result.total_goals,
+    actualHandicapResult: actualHandicap,
+    predictedHandicapResult: handicapPick,
+    handicapHit,
+    predictedTotalGoals: totalGoalPick.text,
+    totalGoalsHit,
+    predictedScores: scorePicks,
+    scoreCovered,
+    matchType: firstText(lockPayload.matchType, lockPayload.gameType, lockPayload.predictedMatchType),
+    matchTypeHit: null,
+    diagnosisSummary: review.hitStatus === "WIN"
+      ? "赛前方向命中，保留为正样本。"
+      : `${failureMode}；后续复盘需检查盘口、进球区间和比分路径是否提前暴露。`,
+  };
+}
+
+function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayload) {
+  const isLose = review.hitStatus === "LOSE";
+  const isHighGradeLose = isLose && ["A", "B"].includes(String(lock.final_grade || "").toUpperCase());
+  const triggerType = isLose ? "MODEL_FAILURE" : "CASE_OBSERVATION";
+  const severity = isHighGradeLose ? "HIGH" : isLose ? "MEDIUM" : "LOW";
+  const title = isLose
+    ? `${lock.model_version || "V4"} ${diagnosticPayload.failureMode}`
+    : `${lock.model_version || "V4"} 命中样本沉淀`;
+  const recommendations = [];
+  if (diagnosticPayload.handicapHit === false) recommendations.push("复查让球独立闸门，避免胜平负方向覆盖让球风险。");
+  if (diagnosticPayload.totalGoalsHit === false) recommendations.push("复查总进球区间和半场触发脚本。");
+  if (diagnosticPayload.scoreCovered === false) recommendations.push("补充反向比分路径，避免两个比分落在同一比赛脚本。");
+  if (isLose && !recommendations.length) recommendations.push("复查相似案例、盘口偏差和风险排除层，确认是否需要降级规则。");
+  if (!isLose) recommendations.push("保留为同模型版本正样本，用于相似案例分布校验。");
+  return {
+    noteId: `upgrade-${caseId}`,
+    sourceCaseId: caseId,
+    sourceLockId: lock.lock_id,
+    matchId: lock.match_id,
+    modelVersion: lock.model_version || "V4",
+    league: lock.league,
+    triggerType,
+    severity,
+    status: isLose ? "OPEN" : "OBSERVED",
+    title,
+    diagnosis: {
+      homeTeam: lock.home_team,
+      awayTeam: lock.away_team,
+      hitStatus: review.hitStatus,
+      finalGrade: lock.final_grade,
+      finalAction: lock.final_action,
+      ...diagnosticPayload,
+    },
+    recommendation: {
+      nextActions: recommendations,
+      shouldUpgradeModel: isHighGradeLose || recommendations.length >= 2,
+    },
+  };
+}
+
+async function createModelUpgradeNoteForCase(db, lock, result, review, caseId, diagnosticPayload) {
+  await ensureModelUpgradeSchema(db);
+  const note = upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayload);
+  await db.prepare(`
+    INSERT OR IGNORE INTO model_upgrade_notes (
+      note_id, source_case_id, source_lock_id, match_id, model_version, league, trigger_type,
+      severity, status, title, diagnosis_json, recommendation_json, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    note.noteId,
+    note.sourceCaseId,
+    note.sourceLockId,
+    note.matchId,
+    note.modelVersion,
+    note.league,
+    note.triggerType,
+    note.severity,
+    note.status,
+    note.title,
+    JSON.stringify(note.diagnosis),
+    JSON.stringify(note.recommendation),
+    new Date().toISOString()
+  ).run();
+  return note;
+}
+
+function rowToUpgradeNote(row) {
+  return {
+    noteId: row.note_id,
+    sourceCaseId: row.source_case_id,
+    sourceLockId: row.source_lock_id,
+    matchId: row.match_id,
+    modelVersion: row.model_version,
+    league: row.league,
+    triggerType: row.trigger_type,
+    severity: row.severity,
+    status: row.status,
+    title: row.title,
+    diagnosis: parseObject(row.diagnosis_json),
+    recommendation: parseObject(row.recommendation_json),
+    createdAt: row.created_at,
+    adoptedAt: row.adopted_at,
+  };
+}
+
+async function listModelUpgradeNotes(db, params) {
+  await ensureModelUpgradeSchema(db);
+  const modelVersion = params.get("modelVersion") || "";
+  const status = params.get("status") || "";
+  let stmt = db.prepare("SELECT * FROM model_upgrade_notes ORDER BY created_at DESC LIMIT 300");
+  if (modelVersion && status) {
+    stmt = db.prepare("SELECT * FROM model_upgrade_notes WHERE model_version = ? AND status = ? ORDER BY created_at DESC LIMIT 300").bind(modelVersion, status);
+  } else if (modelVersion) {
+    stmt = db.prepare("SELECT * FROM model_upgrade_notes WHERE model_version = ? ORDER BY created_at DESC LIMIT 300").bind(modelVersion);
+  } else if (status) {
+    stmt = db.prepare("SELECT * FROM model_upgrade_notes WHERE status = ? ORDER BY created_at DESC LIMIT 300").bind(status);
+  }
+  const { results } = await stmt.all();
+  return (results || []).map(rowToUpgradeNote);
+}
+
 async function createCaseForLock(db, lockId) {
   const lock = await db.prepare("SELECT * FROM locked_predictions WHERE lock_id = ?").bind(lockId).first();
   if (!lock) return { ok: false, status: 404, error: "lock not found" };
@@ -526,6 +747,7 @@ async function createCaseForLock(db, lockId) {
   const review = evaluateLock(lock, result);
   const tags = caseTags(lock, result, review);
   const caseId = `case-${lock.lock_id}`;
+  const diagnosticPayload = caseDiagnosticPayload(lock, result, review, tags);
   await db.prepare(`
     INSERT INTO case_base (
       case_id, source_lock_id, match_id, league, home_team, away_team, kickoff_time, model_version,
@@ -546,15 +768,12 @@ async function createCaseForLock(db, lockId) {
     lock.data_quality, result.result_1x2, result.total_goals, review.hitStatus,
     JSON.stringify(tags.failureTags),
     JSON.stringify(tags.successTags),
-    JSON.stringify({
-      reviewText: review.reviewText,
-      actualHomeGoals: result.full_time_home_goals,
-      actualAwayGoals: result.full_time_away_goals,
-    }),
+    JSON.stringify(diagnosticPayload),
     new Date().toISOString()
   ).run();
   await db.prepare("UPDATE locked_predictions SET result_status = ? WHERE lock_id = ?").bind(review.hitStatus, lock.lock_id).run();
-  return { ok: true, caseId, review };
+  const upgradeNote = await createModelUpgradeNoteForCase(db, lock, result, review, caseId, diagnosticPayload);
+  return { ok: true, caseId, review, upgradeNote };
 }
 
 const sportteryApis = {
@@ -2436,6 +2655,15 @@ export async function onRequest(context) {
     if (path === "locks" && request.method === "POST") {
       const body = await readJson(request);
       const lockId = body.lockId || body.lock_id || `${body.matchId || body.match_id}-${body.lockType || "FINAL_LOCK"}-${Date.now()}`;
+      const lockType = body.lockType || body.lock_type || "FINAL_LOCK";
+      const league = body.league || "世界杯";
+      if (lockType === "FINAL_LOCK" && !isWorldCupLeague(league) && !hasFinalApproval(body)) {
+        return json({
+          ok: false,
+          error: "league model must be completed as PRE_LOCK before FINAL_LOCK",
+          hint: "For non-World-Cup leagues, write PRE_LOCK first. Add finalApproval=true only after manual confirmation.",
+        }, 400);
+      }
       const exists = await db.prepare("SELECT lock_id FROM locked_predictions WHERE lock_id = ?").bind(lockId).first();
       if (exists) return json({ ok: false, error: "lockId already exists; locked records cannot be overwritten" }, 409);
       await db.prepare(`
@@ -2449,7 +2677,7 @@ export async function onRequest(context) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
       `).bind(
         lockId, body.matchId || body.match_id, body.matchCode || body.match_code || "", body.homeTeam || body.home_team || "", body.awayTeam || body.away_team || "",
-        body.league || "世界杯", body.kickoffTime || body.kickoff_time || "", body.lockedAt || body.locked_at || new Date().toISOString(), body.lockType || body.lock_type || "FINAL_LOCK", body.modelVersion || body.model_version || "V1",
+        league, body.kickoffTime || body.kickoff_time || "", body.lockedAt || body.locked_at || new Date().toISOString(), lockType, body.modelVersion || body.model_version || "V1",
         n(body.modelHomeProb ?? body.model_home_prob, 0), n(body.modelDrawProb ?? body.model_draw_prob, 0), n(body.modelAwayProb ?? body.model_away_prob, 0),
         body.recommendation || "", body.recommendationSide || body.recommendation_side || "SKIP", body.finalGrade || body.final_grade || "D", body.finalAction || body.final_action || "谨慎",
         n(body.confidenceScore ?? body.confidence_score, 0), n(body.riskScore ?? body.risk_score, 0), n(body.consistencyScore ?? body.consistency_score, null),
@@ -2480,7 +2708,8 @@ export async function onRequest(context) {
           result_1x2=excluded.result_1x2, total_goals=excluded.total_goals, reviewed_at=excluded.reviewed_at,
           payload_json=excluded.payload_json, updated_at=CURRENT_TIMESTAMP
       `).bind(matchId, home, away, result1x2, total, body.reviewedAt || body.reviewed_at || new Date().toISOString(), JSON.stringify(body)).run();
-      return json({ ok: true, matchId, result1x2, totalGoals: total });
+      const autoReview = await autoReviewMatch(db, matchId);
+      return json({ ok: true, matchId, result1x2, totalGoals: total, autoReview });
     }
 
     if (path === "cases" && request.method === "GET") {
@@ -2505,6 +2734,48 @@ export async function onRequest(context) {
       const review = evaluateLock(lock, result);
       await db.prepare("UPDATE locked_predictions SET result_status = ? WHERE lock_id = ?").bind(review.hitStatus, lockId).run();
       return json({ ok: true, review });
+    }
+
+    if (path === "model-upgrade-notes" && request.method === "GET") {
+      return json({ ok: true, notes: await listModelUpgradeNotes(db, url.searchParams) });
+    }
+
+    if (path === "model-upgrade-notes" && request.method === "POST") {
+      await ensureModelUpgradeSchema(db);
+      const body = await readJson(request);
+      const noteId = body.noteId || body.note_id || `upgrade-note-${crypto.randomUUID()}`;
+      const sourceCaseId = body.sourceCaseId || body.source_case_id || "";
+      const sourceLockId = body.sourceLockId || body.source_lock_id || "";
+      const matchId = body.matchId || body.match_id || "";
+      if (!sourceCaseId || !sourceLockId || !matchId) {
+        return json({ ok: false, error: "sourceCaseId, sourceLockId and matchId required" }, 400);
+      }
+      await db.prepare(`
+        INSERT INTO model_upgrade_notes (
+          note_id, source_case_id, source_lock_id, match_id, model_version, league, trigger_type,
+          severity, status, title, diagnosis_json, recommendation_json, created_at, adopted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(source_case_id) DO UPDATE SET
+          trigger_type=excluded.trigger_type, severity=excluded.severity, status=excluded.status,
+          title=excluded.title, diagnosis_json=excluded.diagnosis_json, recommendation_json=excluded.recommendation_json,
+          adopted_at=excluded.adopted_at
+      `).bind(
+        noteId,
+        sourceCaseId,
+        sourceLockId,
+        matchId,
+        body.modelVersion || body.model_version || "V4",
+        body.league || "",
+        body.triggerType || body.trigger_type || "MANUAL_REVIEW",
+        body.severity || "MEDIUM",
+        body.status || "OPEN",
+        body.title || "人工复盘升级建议",
+        JSON.stringify(body.diagnosis || {}),
+        JSON.stringify(body.recommendation || {}),
+        body.createdAt || body.created_at || new Date().toISOString(),
+        body.adoptedAt || body.adopted_at || null
+      ).run();
+      return json({ ok: true, noteId });
     }
 
     if (path === "similar-cases" && request.method === "POST") {

@@ -10,6 +10,7 @@
     "cloudflare:deploy": "node scripts/cloudflare-pages.mjs deploy",
     "deploy:pages": "node scripts/cloudflare-pages.mjs deploy",
     "d1:migrate": "wrangler d1 execute worldcup-case-base --file migrations/0001_case_base_schema.sql --remote",
+    "d1:migrate:upgrade-notes": "wrangler d1 execute worldcup-case-base --file migrations/0003_model_upgrade_notes.sql --remote",
     "api:health": "curl -s https://worldcup-dashboard-4hr.pages.dev/api/health"
   },
   "devDependencies": {

@@ -1,6 +1,8 @@
-# World Cup V4 Experience and League V1 Flow
+# World Cup V4 Base Flow for Every League
 
-The World Cup model is currently V4. Other leagues start their own model history from V1. League V1 is not an odds-only model: it applies the lessons learned from the World Cup V4 workflow, while keeping league version history separate.
+The World Cup model is currently V4. Every league and cup model must use this V4 decision flow as its base.
+
+Other leagues start their own model history from V1, but League V1 is not an odds-only model. It is the World Cup V4 decision chain adapted to that league's rules, tempo, team context, and sample base.
 
 Future leagues should also start from V1, then evolve independently as their own samples and reviews accumulate.
 
@@ -11,11 +13,15 @@ Future leagues should also start from V1, then evolve independently as their own
 3. Check both teams' recent state.
 4. Classify style and tactical matchup.
 5. Build the internal institution line, then compare it with the Sporttery line and historical samples.
-6. Test state transfer: half-time, 0-0 at 60 minutes, first goal, and post-lead behavior.
-7. Validate score and total-goals range.
-8. Decide handicap independently from win/draw/loss.
-9. Name the likely failure mode and apply the value filter.
-10. Lock the final package: win/draw/loss, handicap, total goals, two scores, match type, confidence, and action.
+6. Read odds movement as a defensive signal, not as the answer.
+7. Build the normal match script.
+8. Test state transfer: half-time, 0-0 at 60 minutes, first goal, and post-lead behavior.
+9. Resolve decision conflicts before any final recommendation.
+10. Validate score and total-goals range.
+11. Decide handicap independently from win/draw/loss.
+12. Name the likely failure mode.
+13. Apply the value filter.
+14. After manual confirmation, lock the final package: win/draw/loss, handicap, total goals, two scores, match type, confidence, and action.
 
 ## Competition Rules Layer
 
@@ -35,5 +41,14 @@ League models must not rely on odds alone. A league V1 prediction is incomplete 
 - market expectation versus match script
 - historical sample comparison for draw rate, score shape, total-goals range, and similar handicap patterns
 - final failure mode
+- value-filter result
 
 Automatic league rows are only V1 prefilters until those fields are filled with real analysis.
+
+## League Lock Rule
+
+League models must be completed as `PRE_LOCK` first. Do not write a league `FINAL_LOCK` in the same step as model creation.
+
+A league `FINAL_LOCK` requires manual confirmation after the model has filled the league rule layer, team state, style matchup, market comparison, similar-case check, half/full branch, score/total-goals validation, handicap gate, failure mode, and value filter.
+
+For non-World-Cup leagues, the cloud API rejects `FINAL_LOCK` unless the request explicitly includes `finalApproval=true`.

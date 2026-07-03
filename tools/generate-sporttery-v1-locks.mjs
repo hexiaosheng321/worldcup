@@ -5,7 +5,7 @@ const ODDS_FILE = path.resolve("web/live-sporttery-data.js");
 const MANUAL_FILE = path.resolve("web/data.js");
 const OUTPUT = path.resolve("web/auto-sporttery-predictions.js");
 const LEAGUE_V1_DECISION_STEPS =
-  "联赛V1步骤吸收世界杯V4经验：1内部概率底盘；2赛事规则/动机；3球队状态；4风格对位；5机构线、体彩盘口和历史样本对比；6状态转移和半全场；7比分与总进球验证；8让球独立闸门；9失败方式和值过滤；10最终锁版。";
+  "联赛V1必须以世界杯V4推演链为基础：1内部概率底盘；2赛事规则/动机；3球队状态；4风格对位；5机构线与体彩盘口偏差；6赔率动态防守层；7常规比赛脚本；8半场/60分钟触发脚本；9决策冲突闸门；10比分与总进球校验；11让球独立闸门；12失败方式识别；13价值过滤；14人工确认后锁版。自动生成只能作为PRE_LOCK草稿。";
 
 function jsonFromJs(content, varName) {
   const matched = content.match(new RegExp(`${varName}\\s*=\\s*(\\{[\\s\\S]*\\});?\\s*$`));
@@ -69,6 +69,13 @@ function leagueProfile(league = "") {
       risk: "最容易错在总进球和让球幅度：早球、定位球和后段体能下滑会把2球局推成3/4球。",
     };
   }
+  if (/瑞超|瑞典超|Allsvenskan|Sweden/i.test(text)) {
+    return {
+      tempo: "瑞典超处于夏季联赛节奏，主场、人造草皮、转换速度和定位球权重偏高；强队低赔仍要单独检查让球穿盘能力。",
+      style: "优先补当前排名、主客场差异、边路推进、定位球、人工草适应和60分钟后换人强度。",
+      risk: "最容易错在主胜低位与让球不穿之间：热门队能赢但可能被1球差、1-1或2-1卡住。",
+    };
+  }
   if (/日职|J1|J联赛|Japan/i.test(text)) {
     return {
       tempo: "日职更看重转换节奏、边路推进和轮换强度，强队未必持续压穿，让球需单独过滤。",
@@ -92,7 +99,7 @@ function leagueProfile(league = "") {
 
 function competitionRuleTemplate(item) {
   const league = item.league || "联赛";
-  return `${league}从联赛V1开始，但应用世界杯V4复盘经验；不同点只在赛事规则层：联赛要核查积分排名、争冠/欧战/保级、赛程密度、主客场和轮换，杯赛要核查90分钟目标、加时/点球接受度和回合制规则。`;
+  return `${league}从联赛V1开始，但必须以世界杯V4推演链为基础；差异只放在赛事规则、联赛节奏、球队样本和赛程动机层：联赛要核查积分排名、争冠/欧战/保级、赛程密度、主客场和轮换，杯赛要核查90分钟目标、加时/点球接受度和回合制规则。`;
 }
 
 function totalGoalBand(goalTexts = []) {
@@ -121,7 +128,7 @@ function stateTransferFor(item, normalPick, handicapPick, totalGoals) {
 }
 
 function teamStateTemplate(item) {
-  return `待人工补充：${item.home || "主队"}与${item.away || "客队"}近3-5场真实状态、伤停停赛、主客场强弱、体能和赛程压力。自动预筛不能把盘口低位当作球队状态。`;
+  return `待人工补充：${item.home || "主队"}与${item.away || "客队"}近3-5场真实状态、伤停停赛、主客场强弱、体能和赛程压力。模型草稿不能把盘口低位当作球队状态。`;
 }
 
 function styleMatchupTemplate(item) {
@@ -199,12 +206,12 @@ const rows = (oddsData.matches || [])
       playType: "竞彩足球",
       home: item.home || "",
       away: item.away || "",
-      type: `${league}V1自动赛前预筛`,
+      type: `${league}V1模型草稿`,
       modelVersion: "V1",
       confidence,
       advice: adviceFor(confidence),
       matchType,
-      competitionModel: `${league} V1 联赛自动预筛（吸收世界杯V4经验）`,
+      competitionModel: `${league} V1 联赛模型草稿（以世界杯V4推演链为基础）`,
       homeProb: normal?.label === "胜" ? "盘口低位" : "待回测",
       drawProb: normal?.label === "平" ? "盘口低位" : "待回测",
       awayProb: normal?.label === "负" ? "盘口低位" : "待回测",
@@ -212,23 +219,23 @@ const rows = (oddsData.matches || [])
       poisson: scores.length ? scores.join(" / ") : "待接入",
       decisionProcess: LEAGUE_V1_DECISION_STEPS,
       competitionRules: competitionRuleTemplate(item),
-      groupSituation: `${competitionRuleTemplate(item)} 自动预筛先记录盘口、比分低赔、总进球结构和联赛节奏，球队状态和规则动机补足后再做正式锁版。`,
+      groupSituation: `${competitionRuleTemplate(item)} 模型草稿先记录盘口、比分低赔、总进球结构和联赛节奏，球队状态和规则动机补足后只能进入PRE_LOCK；人工确认后才允许FINAL_LOCK。`,
       teamState: teamStateTemplate(item),
       styleMatchup: styleMatchupTemplate(item),
-      recentAnalysis: `联赛V1自动预筛仅根据体彩开盘结构生成，球队状态和风格对位待人工补充。联赛节奏提示：${profile.tempo}`,
+      recentAnalysis: `联赛V1模型草稿仅根据体彩开盘结构生成，球队状态和风格对位待人工补充。联赛节奏提示：${profile.tempo}`,
       institutionLine: `胜平负低位 ${normal ? `${normal.label}${normal.odd}` : "-"}；让球低位 ${handicap ? `${handicap.label}${handicap.odd}` : "-"}。`,
       noiseFilter: "自动锁版不做名气追热，低置信场次只作观察样本。",
-      keyJudgement: "联赛V1自动预筛先检查世界杯V4经验链是否完整：球队状态、风格对位、赛事规则、盘口、状态转移、比分/总进球、让球闸门缺一项都不能升主推。",
-      marketGap: `联赛V1暂以体彩盘口结构作为市场温度，不替代人工深度推演。${conflict}`,
+      keyJudgement: "联赛V1模型草稿先检查世界杯V4推演链是否完整：球队状态、风格对位、赛事规则、盘口、赔率动态、常规脚本、触发脚本、冲突闸门、比分/总进球、让球闸门、失败方式、价值过滤缺一项都不能进入FINAL_LOCK。",
+      marketGap: `联赛V1暂以体彩盘口结构作为市场温度，不替代完整V4链路推演。${conflict}`,
       script: "比赛脚本等待该联赛样本、球队状态、风格对位、阵容和半全场走势补足后继续细化。",
       scriptSet: scenarioSetFor(normal, handicap, scoreA, scoreB),
       halfFullScenario: halfFullScenarioFor(item, normal, handicap, scoreA, scoreB),
       halftimeDecision: halfFullScenarioFor(item, normal, handicap, scoreA, scoreB),
       stateTransfer,
       failureMode: profile.risk,
-      dataQuality: "联赛V1自动预筛已接入体彩盘口；阵容、伤停、近期状态和联赛风格仍待人工补全。样本不足时只展示，不上调置信。",
+      dataQuality: "联赛V1模型草稿已接入体彩盘口；阵容、伤停、近期状态、联赛风格和相似案例仍待人工补全。样本不足时只展示，不上调置信。",
       decisionConflict: conflict,
-      finalDecisionAction: `联赛V1自动预筛：按吸收世界杯V4经验的流程先给临时方向，胜平负选${normal?.label || "-"}；让球选${handicap?.label || "-"}；总进球选${totalGoals}；比分预测${scoreA} / ${scoreB}。球队状态、风格、赛事规则和半全场未补足前只作观察，不当主推。`,
+      finalDecisionAction: `联赛V1模型草稿：按世界杯V4推演链先给临时方向，胜平负倾向${normal?.label || "-"}；让球倾向${handicap?.label || "-"}；总进球倾向${totalGoals}；比分候选${scoreA} / ${scoreB}。球队状态、风格、赛事规则、相似案例、半全场和价值过滤未补足前只能作为PRE_LOCK草稿，不得当作FINAL_LOCK。`,
       pick: normal?.label || "",
       handicapPick: handicap?.label || "",
       totalGoalsPick: totalGoals,
