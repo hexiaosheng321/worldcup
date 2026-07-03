@@ -45,6 +45,19 @@ League models must not rely on odds alone. A league V1 prediction is incomplete 
 
 Automatic league rows are only V1 prefilters until those fields are filled with real analysis.
 
+## External History Reference
+
+For new leagues or leagues without enough internal locks, pull free/API historical results into `external-history / EXTERNAL_HISTORY` samples first.
+
+External history may support:
+
+- same-league result distribution
+- draw rate and upset shape
+- score and total-goals range
+- rough tempo comparison before the league model has its own Case Base
+
+External history must not be treated as a locked prediction. It cannot become Case Base until the project has produced its own `FINAL_LOCK`, result backfill, and review diagnosis for that match.
+
 ## League Lock Rule
 
 League models must be completed as `PRE_LOCK` first. Do not write a league `FINAL_LOCK` in the same step as model creation.

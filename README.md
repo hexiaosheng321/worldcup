@@ -74,6 +74,21 @@
 
 联赛模型补齐阶段只能写 `PRE_LOCK`。只有完成球队状态、风格对位、赛事规则、相似案例、半全场分支、比分/总进球、让球闸门、失败方式和价值过滤后，才允许人工确认升级为 `FINAL_LOCK`。
 
+## 外部历史样本
+
+新联赛或样本不足的联赛，优先通过免费数据源或 API 拉取历史赛果，统一写入 `web/data/externalHistoricalSamples.js`。
+
+外部历史只作为 `external-history / EXTERNAL_HISTORY` 参考样本进入相似案例引擎，用来校验同赛事的胜平负分布、平局率、进球区间和常见比分。它不能直接生成锁版，也不能直接进入 D1 Case Base。
+
+Case Base 只接收我们自己的 `FINAL_LOCK -> 赛果回填 -> 复盘诊断` 之后生成的样本。这样可以避免把外部赛果误当成模型命中记录。
+
+通用 API 导入入口：
+
+```bash
+npm run history:import-api -- --provider football-data --competition-code CODE --season 2026 --league 瑞超 --api-key "$FOOTBALL_DATA_API_KEY"
+npm run history:import-api -- --provider thesportsdb --league-id ID --season 2026 --league 瑞超
+```
+
 ## 样本资产目标
 
 下一阶段的重点，是确认每一场赛果是否能自动保存为可复用样本。

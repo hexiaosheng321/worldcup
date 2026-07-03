@@ -109,6 +109,12 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     return item?.sampleType === "external-history" || item?.modelVersion === "EXTERNAL_HISTORY";
   }
 
+  function externalSampleLabel(item) {
+    if (!isExternalSample(item)) return "";
+    const hasOdds = hasNumbers(item.sportteryHomeSp, item.sportteryDrawSp, item.sportteryAwaySp) || hasNumbers(item.euroHomeOdds, item.euroDrawOdds, item.euroAwayOdds);
+    return hasOdds ? "外部历史赔率样本" : "外部历史赛果样本";
+  }
+
   function loadExternalSamples() {
     return Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES) ? window.WC_EXTERNAL_HISTORICAL_SAMPLES : [];
   }
@@ -197,7 +203,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       lockedCases.length >= 30
         ? policy.note
         : externalCases.length >= 30
-          ? "外部历史赔率样本达到 30 场，可参与赛果、进球、比分分布校验，但不直接修正模型命中率。"
+          ? "外部历史样本达到 30 场，可参与赛果、进球、比分分布校验，但不直接修正模型命中率。"
           : policy.note;
     return {
       sampleCount: cases.length,
@@ -259,7 +265,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     if (stats.lockedSampleCount < 30) {
       const hitRate = (stats.sameRecommendationHitRate * 100).toFixed(1);
       const warning = flags.length ? ` ${flags.join("；")}。` : "";
-      return `【${stats.competition}】同赛事匹配到 ${stats.sampleCount} 场，其中锁版案例 ${stats.lockedSampleCount} 场、外部赔率样本 ${stats.externalSampleCount} 场。外部样本参与赛果、进球和比分分布校验；锁版样本不足 30 场，暂不调整模型置信。当前推荐锁版命中率 ${hitRate}%。${warning}`;
+      return `【${stats.competition}】同赛事匹配到 ${stats.sampleCount} 场，其中锁版案例 ${stats.lockedSampleCount} 场、外部历史样本 ${stats.externalSampleCount} 场。外部样本参与赛果、进球和比分分布校验；锁版样本不足 30 场，暂不调整模型置信。当前推荐锁版命中率 ${hitRate}%。${warning}`;
     }
     const hitRate = (stats.sameRecommendationHitRate * 100).toFixed(1);
     const direction = adjustment > 0 ? "置信度小幅上调" : adjustment < 0 ? "置信度下调" : "置信度不调整";
@@ -270,7 +276,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   function keyReasons(current, sample) {
     const reasons = [];
     if (sameCompetition(current, sample)) reasons.push("赛事类型一致");
-    if (isExternalSample(sample)) reasons.push("外部历史赔率样本");
+    if (isExternalSample(sample)) reasons.push(externalSampleLabel(sample));
     if (current.finalGrade === sample.finalGrade) reasons.push("等级一致");
     if (current.recommendationSide === sample.recommendationSide) reasons.push("推荐方向一致");
     if (hasNumbers(current.sportteryHomeSp, sample.sportteryHomeSp, current.sportteryDrawSp, sample.sportteryDrawSp, current.sportteryAwaySp, sample.sportteryAwaySp)) {
