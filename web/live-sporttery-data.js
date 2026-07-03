@@ -2,10 +2,10 @@ window.LIVE_SPORTTERY_ODDS = {
   "source": "中国体育彩票官方接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c",
   "lotterNo": "2026-07-03",
-  "importedAt": "2026-07-03T04:53:11.333Z",
+  "importedAt": "2026-07-03T06:53:16.575Z",
   "isLiveSnapshot": true,
   "totalCount": 14,
-  "lastUpdateTime": "2026-07-03 12:37:54",
+  "lastUpdateTime": "2026-07-03 14:49:50",
   "matchDates": [
     "2026-07-03",
     "2026-07-04",
@@ -28,25 +28,20 @@ window.LIVE_SPORTTERY_ODDS = {
       "score": "",
       "handicap": "+1",
       "normal": {
-        "win": "3.15",
-        "draw": "2.65",
-        "lose": "2.30"
+        "win": "3.28",
+        "draw": "2.70",
+        "lose": "2.20"
       },
       "handicapOdds": {
-        "win": "1.48",
-        "draw": "3.55",
-        "lose": "5.80"
+        "win": "1.52",
+        "draw": "3.43",
+        "lose": "5.55"
       },
       "scoreOdds": [
         {
           "score": "1:1",
-          "odds": "4.75",
+          "odds": "4.50",
           "bucket": "平"
-        },
-        {
-          "score": "0:1",
-          "odds": "5.75",
-          "bucket": "负"
         },
         {
           "score": "0:0",
@@ -54,8 +49,13 @@ window.LIVE_SPORTTERY_ODDS = {
           "bucket": "平"
         },
         {
+          "score": "0:1",
+          "odds": "6.00",
+          "bucket": "负"
+        },
+        {
           "score": "1:0",
-          "odds": "7.30",
+          "odds": "7.50",
           "bucket": "胜"
         },
         {
@@ -74,14 +74,14 @@ window.LIVE_SPORTTERY_ODDS = {
           "bucket": "负"
         },
         {
-          "score": "2:0",
+          "score": "2:2",
           "odds": "15.00",
-          "bucket": "胜"
+          "bucket": "平"
         },
         {
-          "score": "2:2",
-          "odds": "16.00",
-          "bucket": "平"
+          "score": "2:0",
+          "odds": "15.50",
+          "bucket": "胜"
         },
         {
           "score": "1:3",
@@ -95,7 +95,7 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "score": "3:1",
-          "odds": "33.00",
+          "odds": "35.00",
           "bucket": "胜"
         }
       ],
@@ -106,7 +106,7 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "goals": "1",
-          "odds": "3.35"
+          "odds": "3.50"
         },
         {
           "goals": "2",
@@ -114,7 +114,7 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "goals": "3",
-          "odds": "4.20"
+          "odds": "4.00"
         },
         {
           "goals": "4",
@@ -133,7 +133,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "60.00"
         }
       ],
-      "updatedAt": "2026-07-03 11:36:32"
+      "updatedAt": "2026-07-03 14:49:50"
     },
     {
       "orderId": "5087",
@@ -152,29 +152,29 @@ window.LIVE_SPORTTERY_ODDS = {
       "handicap": "-2",
       "normal": null,
       "handicapOdds": {
-        "win": "2.13",
-        "draw": "3.62",
-        "lose": "2.62"
+        "win": "2.10",
+        "draw": "3.55",
+        "lose": "2.69"
       },
       "scoreOdds": [
         {
           "score": "2:0",
-          "odds": "4.50",
+          "odds": "4.30",
           "bucket": "胜"
         },
         {
           "score": "3:0",
-          "odds": "4.80",
+          "odds": "4.50",
           "bucket": "胜"
         },
         {
           "score": "1:0",
-          "odds": "6.70",
+          "odds": "7.00",
           "bucket": "胜"
         },
         {
           "score": "4:0",
-          "odds": "8.00",
+          "odds": "8.10",
           "bucket": "胜"
         },
         {
@@ -184,22 +184,22 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "score": "3:1",
-          "odds": "11.00",
+          "odds": "10.00",
           "bucket": "胜"
         },
         {
           "score": "胜其它",
-          "odds": "11.50",
+          "odds": "12.00",
           "bucket": "胜"
         },
         {
           "score": "1:1",
-          "odds": "13.00",
+          "odds": "15.00",
           "bucket": "平"
         },
         {
           "score": "5:0",
-          "odds": "14.00",
+          "odds": "15.00",
           "bucket": "胜"
         },
         {
@@ -209,12 +209,12 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "score": "4:1",
-          "odds": "19.00",
+          "odds": "21.00",
           "bucket": "胜"
         },
         {
           "score": "5:1",
-          "odds": "32.00",
+          "odds": "34.00",
           "bucket": "胜"
         }
       ],
@@ -252,7 +252,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "18.00"
         }
       ],
-      "updatedAt": "2026-07-03 12:33:10"
+      "updatedAt": "2026-07-03 14:12:15"
     },
     {
       "orderId": "5088",
@@ -270,60 +270,60 @@ window.LIVE_SPORTTERY_ODDS = {
       "score": "",
       "handicap": "-1",
       "normal": {
-        "win": "1.29",
-        "draw": "4.20",
-        "lose": "8.60"
+        "win": "1.27",
+        "draw": "4.30",
+        "lose": "9.10"
       },
       "handicapOdds": {
-        "win": "2.20",
-        "draw": "2.95",
-        "lose": "2.98"
+        "win": "2.17",
+        "draw": "2.92",
+        "lose": "3.07"
       },
       "scoreOdds": [
         {
           "score": "2:0",
-          "odds": "5.00",
-          "bucket": "胜"
-        },
-        {
-          "score": "1:0",
-          "odds": "5.25",
+          "odds": "4.25",
           "bucket": "胜"
         },
         {
           "score": "2:1",
-          "odds": "5.25",
+          "odds": "4.50",
           "bucket": "胜"
         },
         {
-          "score": "3:0",
-          "odds": "7.50",
+          "score": "1:0",
+          "odds": "5.75",
           "bucket": "胜"
         },
         {
           "score": "1:1",
-          "odds": "7.55",
+          "odds": "8.00",
           "bucket": "平"
         },
         {
+          "score": "3:0",
+          "odds": "8.55",
+          "bucket": "胜"
+        },
+        {
           "score": "0:0",
-          "odds": "9.50",
+          "odds": "10.50",
           "bucket": "平"
         },
         {
           "score": "3:1",
-          "odds": "12.50",
-          "bucket": "胜"
-        },
-        {
-          "score": "4:0",
-          "odds": "17.00",
+          "odds": "11.00",
           "bucket": "胜"
         },
         {
           "score": "0:1",
-          "odds": "17.50",
+          "odds": "19.00",
           "bucket": "负"
+        },
+        {
+          "score": "4:0",
+          "odds": "21.00",
+          "bucket": "胜"
         },
         {
           "score": "2:2",
@@ -332,31 +332,31 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "score": "1:2",
-          "odds": "25.00",
+          "odds": "30.00",
           "bucket": "负"
         },
         {
-          "score": "4:1",
-          "odds": "30.00",
+          "score": "3:2",
+          "odds": "35.00",
           "bucket": "胜"
         }
       ],
       "totalGoalsOdds": [
         {
           "goals": "0",
-          "odds": "9.50"
+          "odds": "10.50"
         },
         {
           "goals": "1",
-          "odds": "4.05"
+          "odds": "4.45"
         },
         {
           "goals": "2",
-          "odds": "3.15"
+          "odds": "3.00"
         },
         {
           "goals": "3",
-          "odds": "3.60"
+          "odds": "3.45"
         },
         {
           "goals": "4",
@@ -368,14 +368,14 @@ window.LIVE_SPORTTERY_ODDS = {
         },
         {
           "goals": "6",
-          "odds": "23.00"
+          "odds": "22.00"
         },
         {
           "goals": "7+",
-          "odds": "40.00"
+          "odds": "36.00"
         }
       ],
-      "updatedAt": "2026-07-03 12:18:28"
+      "updatedAt": "2026-07-03 14:08:03"
     },
     {
       "orderId": "5201",
@@ -621,7 +621,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "40.00"
         }
       ],
-      "updatedAt": "2026-07-03 11:24:16"
+      "updatedAt": "2026-07-03 13:31:54"
     },
     {
       "orderId": "6090",
@@ -1127,14 +1127,14 @@ window.LIVE_SPORTTERY_ODDS = {
       "score": "",
       "handicap": "-1",
       "normal": {
-        "win": "1.73",
-        "draw": "3.40",
-        "lose": "3.90"
+        "win": "1.70",
+        "draw": "3.42",
+        "lose": "4.02"
       },
       "handicapOdds": {
-        "win": "3.35",
-        "draw": "3.45",
-        "lose": "1.85"
+        "win": "3.25",
+        "draw": "3.35",
+        "lose": "1.91"
       },
       "scoreOdds": [
         {
@@ -1232,7 +1232,7 @@ window.LIVE_SPORTTERY_ODDS = {
           "odds": "25.00"
         }
       ],
-      "updatedAt": "2026-07-03 09:36:50"
+      "updatedAt": "2026-07-03 13:30:10"
     },
     {
       "orderId": "7092",
