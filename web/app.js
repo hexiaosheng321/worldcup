@@ -54,6 +54,7 @@ let activeGlobalStatsLeague = "all";
 let activeSportteryPoolView = "open";
 let activeOddsMapView = "pre";
 let matchDetailReturnTarget = "today";
+let sportteryPoolItemCache = new Map();
 let homeCountdownTimer;
 let matchFlowTimer;
 const teamFlags = {
@@ -566,7 +567,40 @@ function sportteryScoreIsUsable(row = {}) {
 
 function sportteryItemKey(item = {}) {
   if (item.matchId) return `id-${item.matchId}`;
+  const cloudMatchId = String(item.cloudMatchId || "").replace(/^sporttery-/, "");
+  if (cloudMatchId) return `id-${cloudMatchId}`;
   return `issue-${item.issue || item.no || item.orderId || ""}-${item.ticaiDate || item.matchDate || ""}`;
+}
+
+function sportteryLookupKeys(item = {}) {
+  const keys = [
+    sportteryItemKey(item),
+    item.sportteryKey,
+    item.matchId ? `id-${item.matchId}` : "",
+    item.cloudMatchId ? `id-${String(item.cloudMatchId).replace(/^sporttery-/, "")}` : "",
+    item.matchId,
+    item.cloudMatchId,
+    `issue-${item.issue || item.no || item.orderId || ""}-${item.ticaiDate || item.matchDate || ""}`,
+  ];
+  return [...new Set(keys.map((value) => String(value || "").trim()).filter(Boolean))];
+}
+
+function sportteryLookupKeyFromHash(value = "") {
+  const raw = String(value || "").replace(/^#?sporttery-match-/, "").trim();
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function cacheSportteryPoolItems(items = []) {
+  sportteryPoolItemCache = new Map();
+  items.forEach((item) => {
+    sportteryLookupKeys(item).forEach((key) => {
+      sportteryPoolItemCache.set(key, item);
+    });
+  });
 }
 
 function sportteryComparableId(value = "") {
@@ -584,14 +618,16 @@ function sameSportteryIdentity(left = "", right = "") {
 }
 
 function findSportteryItemByKey(key = "") {
-  const rows = [...(oddsData.matches || []), ...(resultsData.results || [])];
+  const lookupKey = sportteryLookupKeyFromHash(key);
+  const cached = sportteryPoolItemCache.get(lookupKey);
+  if (cached) return cached;
+  const rows = [...sportteryPoolItemCache.values(), ...(oddsData.matches || []), ...(resultsData.results || [])];
   return rows.find((item) =>
-    sportteryItemKey(item) === key ||
-    item.sportteryKey === key ||
-    sameSportteryIdentity(sportteryItemKey(item), key) ||
-    sameSportteryIdentity(item.sportteryKey, key) ||
-    sameSportteryIdentity(item.matchId, key) ||
-    sameSportteryIdentity(item.cloudMatchId, key)
+    sportteryLookupKeys(item).includes(lookupKey) ||
+    sameSportteryIdentity(sportteryItemKey(item), lookupKey) ||
+    sameSportteryIdentity(item.sportteryKey, lookupKey) ||
+    sameSportteryIdentity(item.matchId, lookupKey) ||
+    sameSportteryIdentity(item.cloudMatchId, lookupKey)
   );
 }
 
@@ -1406,7 +1442,7 @@ function renderHome() {
       const groupLabel = match.sportteryOnly ? match.group || "竞彩" : `${match.group} 组`;
       const hasPrediction = match.sportteryOnly ? sportteryPredictionForItem(match) : latestPredictionFor(match.no);
       const cardTarget = match.sportteryOnly
-        ? `data-home-sporttery-key="${match.sportteryKey}"`
+        ? `data-home-sporttery-key="${encodeURIComponent(match.sportteryKey || sportteryItemKey(match))}"`
         : `data-home-match-no="${match.no}"`;
       const kickoffLabel = kickoffAt
         ? new Date(kickoffAt).toLocaleTimeString("zh-CN", {
@@ -1502,7 +1538,7 @@ function matchCard(match, options = {}) {
       ? `<strong data-match-countdown data-kickoff-at="${liveStatus.kickoffAt}">${formatMatchCountdown(liveStatus.kickoffAt)}</strong>`
       : `<strong>${liveStatus.value}</strong>`;
   const cardTarget = match.sportteryOnly
-    ? `data-sporttery-match-key="${match.sportteryKey || sportteryItemKey(match)}"`
+    ? `data-sporttery-match-key="${encodeURIComponent(match.sportteryKey || sportteryItemKey(match))}"`
     : `data-match-no="${match.no}"`;
   return `
     <article class="match-card ${finished ? "finished" : "upcoming"} ${liveStatus.tone === "live" ? "is-live" : ""} ${pred ? "has-model" : "no-model"}" ${cardTarget}>
@@ -1761,6 +1797,7 @@ function sportteryPoolItems() {
 
 function sportteryPoolCard(item) {
   const linked = Boolean(item.linkedNo);
+  const cardKey = encodeURIComponent(item.sportteryKey || sportteryItemKey(item));
   const handicap = item.handicap || "0";
   const normalText = item.normal
     ? `胜 ${item.normal.win} · 平 ${item.normal.draw} · 负 ${item.normal.lose}`
@@ -1781,7 +1818,7 @@ function sportteryPoolCard(item) {
           : "实时源未匹配，等待官方比分回填"
         : item.pendingResultNote || normalText;
   return `
-    <article class="match-card sporttery-card ${score ? "finished" : ""} ${isLive ? "is-live" : ""}" data-sporttery-match-key="${item.sportteryKey || sportteryItemKey(item)}" ${linked ? `data-pool-match-no="${item.linkedNo}"` : ""}>
+    <article class="match-card sporttery-card ${score ? "finished" : ""} ${isLive ? "is-live" : ""}" data-sporttery-match-key="${cardKey}" ${linked ? `data-pool-match-no="${item.linkedNo}"` : ""}>
       <div class="match-meta">
         <span>${item.issue || item.no} · ${item.displayGroup}</span>
         <span>${formatDate(item.displayDate)}</span>
@@ -1807,6 +1844,7 @@ function renderSportteryPool() {
   const target = document.querySelector("#sporttery-pool-grid");
   if (!target) return;
   const items = sportteryPoolItems();
+  cacheSportteryPoolItems(items);
   const grouped = items.reduce((acc, item) => {
     if (!acc.has(item.displayDate)) acc.set(item.displayDate, []);
     acc.get(item.displayDate).push(item);
@@ -1822,11 +1860,11 @@ function renderSportteryPool() {
   if (countNode) countNode.textContent = `${items.length} 场`;
   if (labelNode) {
     const labelMap = {
-      open: `${linkedCount}/${items.length} 可进详情`,
+      open: `${linkedCount}/${items.length} 已匹配模型`,
       live: `${items.length} 场实时`,
       finished: `${items.length} 场完赛`,
     };
-    labelNode.textContent = labelMap[activeSportteryPoolView] || `${linkedCount}/${items.length} 可进详情`;
+    labelNode.textContent = labelMap[activeSportteryPoolView] || `${linkedCount}/${items.length} 已匹配模型`;
   }
   if (sourceNode) {
     const stamp = oddsData.lastUpdateTime || formatCapturedAt(oddsData.importedAt) || "等待刷新";
@@ -3583,7 +3621,25 @@ function renderFootballDataLayerPanel(item, modelPred) {
 function renderSportteryMatchDetail(key) {
   const content = document.querySelector("#match-detail-body");
   const base = findSportteryItemByKey(key);
-  if (!content || !base) return;
+  if (!content) return;
+  if (!base) {
+    content.innerHTML = `
+      <div class="match-page-toolbar">
+        <button type="button" data-detail-back>← 赛事池</button>
+        <span>体彩详情</span>
+      </div>
+      <section class="match-page-section sporttery-model-panel">
+        <span>赛事数据未匹配</span>
+        <p>这场比赛已进入详情页，但当前前端快照没有找到对应的体彩原始行。请返回赛事池刷新快照后再进入。</p>
+      </section>
+      <div class="match-page-actions">
+        <button type="button" class="secondary" data-detail-back>返回赛事池</button>
+      </div>
+    `;
+    activateTab("match-detail");
+    document.body.classList.add("sporttery-detail-mode");
+    return;
+  }
   const item = sportteryDetailRow(base);
   const modelPred = sportteryPredictionForItem(item) || (item.linkedNo ? latestPredictionFor(item.linkedNo) : null);
   const research = sportteryResearchSnapshot(item, modelPred);
@@ -3690,10 +3746,12 @@ function renderSportteryMatchDetail(key) {
 
 function openSportteryMatchPage(key, returnTarget = "sporttery") {
   matchDetailReturnTarget = returnTarget;
-  if (window.location.hash !== `#sporttery-match-${key}`) {
-    window.location.hash = `sporttery-match-${key}`;
+  const lookupKey = sportteryLookupKeyFromHash(key);
+  const hashKey = encodeURIComponent(lookupKey);
+  if (window.location.hash !== `#sporttery-match-${hashKey}`) {
+    window.location.hash = `sporttery-match-${hashKey}`;
   }
-  renderSportteryMatchDetail(key);
+  renderSportteryMatchDetail(lookupKey);
 }
 
 function closeMatchPage() {
