@@ -189,6 +189,14 @@ window.WC_DATA = {
     { no: "077", date: "2026-06-30", group: "32强", home: "科特迪瓦", away: "挪威", score: "" },
     { no: "078", date: "2026-06-30", group: "32强", home: "法国", away: "瑞典", score: "" },
     { no: "079", date: "2026-07-01", group: "32强", home: "墨西哥", away: "厄瓜多尔", score: "" },
+    { no: "089", date: "2026-07-05", group: "16强", home: "加拿大", away: "摩洛哥", score: "" },
+    { no: "090", date: "2026-07-05", group: "16强", home: "巴拉圭", away: "法国", score: "" },
+    { no: "091", date: "2026-07-06", group: "16强", home: "巴西", away: "挪威", score: "" },
+    { no: "092", date: "2026-07-06", group: "16强", home: "墨西哥", away: "英格兰", score: "" },
+    { no: "093", date: "2026-07-07", group: "16强", home: "葡萄牙", away: "西班牙", score: "" },
+    { no: "094", date: "2026-07-07", group: "16强", home: "美国", away: "比利时", score: "" },
+    { no: "095", date: "2026-07-08", group: "16强", home: "埃及", away: "阿根廷", score: "" },
+    { no: "096", date: "2026-07-08", group: "16强", home: "瑞士", away: "哥伦比亚", score: "" },
   ],
   predictions: [
     {

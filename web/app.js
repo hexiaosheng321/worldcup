@@ -70,7 +70,7 @@ let activeGlobalStatsDate = "all";
 let activeGlobalStatsLeague = "all";
 let activeSportteryPoolView = "open";
 let activeOddsMapView = "pre";
-let matchDetailReturnTarget = "today";
+let matchDetailReturnTarget = "path";
 let sportteryPoolItemCache = new Map();
 let homeCountdownTimer;
 let matchFlowTimer;
@@ -100,6 +100,9 @@ const teamFlags = {
   荷兰: "🇳🇱",
   美国: "🇺🇸",
   澳大利亚: "🇦🇺",
+  挪威: "🇳🇴",
+  巴拉圭: "🇵🇾",
+  埃及: "🇪🇬",
   葡萄牙: "🇵🇹",
   乌兹别克斯坦: "🇺🇿",
   英格兰: "🏴",
@@ -2172,7 +2175,6 @@ function rerenderOddsSurfaces() {
   applyResultBackfill();
   refreshRuntimeCaseBase();
   renderHome();
-  renderToday();
   renderSportteryPool();
   renderSiteLocks();
   renderOddsMap();
@@ -2216,7 +2218,6 @@ function renderCurrentRouteSurfaces() {
     return;
   }
   if (hash === "#worldcup") {
-    renderToday();
     renderSchedule();
     renderPath();
     return;
@@ -2802,11 +2803,13 @@ function renderSignals() {
 }
 
 function renderToday() {
+  const grid = document.querySelector("#today-grid");
+  if (!grid) return;
   if (!worldCupStaticDataLoaded && !matches.length) {
     document.querySelector("#today-count").textContent = "同步中";
     document.querySelector("#today-date").textContent = "正在读取世界杯赛程";
     document.querySelector("#next-label").textContent = "世界杯";
-    document.querySelector("#today-grid").innerHTML = dataLoadingMarkup(
+    grid.innerHTML = dataLoadingMarkup(
       "正在同步世界杯赛程",
       "正在读取完整赛程、赛果和模型锁版数据。"
     );
@@ -2831,7 +2834,7 @@ function renderToday() {
   document.querySelector("#today-count").textContent = `${fallbackMatches.length} 场`;
   document.querySelector("#today-date").textContent = `${formatDate(today)}-${formatDate(tomorrow)} · 北京时间`;
   document.querySelector("#next-label").textContent = `${formatDate(today)} / ${formatDate(tomorrow)}`;
-  document.querySelector("#today-grid").innerHTML = renderMatchLanes(fallbackMatches, { dateGetter: (match) => match.date });
+  grid.innerHTML = renderMatchLanes(fallbackMatches, { dateGetter: (match) => match.date });
   startMatchFlowTimers();
 }
 
@@ -3177,7 +3180,7 @@ function renderMatchDetail(no) {
         ? "← 统计和回测"
       : matchDetailReturnTarget === "knockout"
         ? "← 淘汰赛签表"
-        : "← 比赛流";
+        : "← 积分榜";
   content.innerHTML = `
     <div class="match-page-toolbar">
       <button type="button" data-detail-back>${backLabel}</button>
@@ -4920,17 +4923,6 @@ const knockoutRoundPlan = [
   { key: "final", title: "决赛", note: "1 场", nos: ["104"] },
 ];
 
-const knockoutSourceMap = {
-  "089": ["073", "076"],
-  "090": ["075", "078"],
-  "091": ["074", "077"],
-  "092": ["079", "080"],
-  "093": ["081", "082"],
-  "094": ["083", "084"],
-  "095": ["085", "086"],
-  "096": ["087", "088"],
-};
-
 function rangeNos(start, end) {
   return Array.from({ length: end - start + 1 }, (_, index) => String(start + index).padStart(3, "0"));
 }
@@ -4978,18 +4970,12 @@ function knockoutWinner(match) {
 }
 
 function previousKnockoutSources(roundIndex, matchIndex) {
-  if (roundIndex <= 0) return [];
-  const current = knockoutRoundPlan[roundIndex]?.nos?.[matchIndex];
-  if (current && knockoutSourceMap[current]) return knockoutSourceMap[current];
-  const previous = knockoutRoundPlan[roundIndex - 1];
-  return [previous.nos[matchIndex * 2], previous.nos[matchIndex * 2 + 1]].filter(Boolean);
+  return [];
 }
 
 function knockoutParticipant(match, side, sources, sourceIndex) {
   if (match?.[side]) return match[side];
-  const sourceNo = sources[sourceIndex];
-  const sourceWinner = knockoutWinner(knockoutMatchByNo(sourceNo));
-  return sourceWinner || (sourceNo ? `${sourceNo}胜者` : "待定");
+  return "待定";
 }
 
 function knockoutSlot(round, roundIndex, no, matchIndex) {
@@ -5080,12 +5066,12 @@ function renderKnockout() {
       <div>
         <p class="eyebrow">Road To Final</p>
         <h3>世界杯淘汰赛路径</h3>
-        <p>根据已回填赛果自动推进胜者；未产生的对阵、时间和胜者统一以待定展示。</p>
+        <p>八分之一按已确认赛程展示；后续未确认对阵统一待定，不做自动推导。</p>
       </div>
       <div class="knockout-hero-stats">
         <article><span>已产生胜者</span><strong>${finished}</strong><em>${scheduled} 场已挂入签表</em></article>
         <article><span>下一节点</span><strong>${nextSlot?.no || "待定"}</strong><em>${nextSlot?.date || "时间待定"}</em></article>
-        <article><span>冠军</span><strong>${champion}</strong><em>决赛胜者自动更新</em></article>
+        <article><span>冠军</span><strong>${champion}</strong><em>待决赛结果确认</em></article>
       </div>
     </section>
     <section class="knockout-bracket-shell" aria-label="世界杯淘汰赛签表">
@@ -6922,7 +6908,6 @@ function renderAll() {
   renderSiteLocks();
   renderGlobalStats();
   renderOddsMap();
-  renderToday();
   renderSchedule();
   renderPath();
   renderKnockout();
@@ -6938,7 +6923,6 @@ function renderInitialHomeOnly() {
 function renderPanelForTab(tabName) {
   if (tabName === "path") renderPath();
   else if (tabName === "knockout") renderKnockout();
-  else if (tabName === "today") renderToday();
   else if (tabName === "schedule") renderSchedule();
   else if (tabName === "stats") renderStats();
   else if (tabName === "sporttery-pool") renderSportteryPool();
