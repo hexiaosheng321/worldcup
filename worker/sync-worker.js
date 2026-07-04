@@ -2,6 +2,7 @@ const CALCULATOR_API = "https://webapi.sporttery.cn/gateway/uniform/football/get
 const RESULTS_API =
   "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
 const DEFAULT_PAGES_API_BASE = "https://worldcup-dashboard-4hr.pages.dev";
+const DEFAULT_SPORTTERY_CACHE_BASE = "http://114.55.11.209:8787";
 
 const SPORTTERY_HEADERS = {
   accept: "application/json, text/plain, */*",
@@ -429,14 +430,45 @@ function pagesApiBase(env) {
   return String(env.PAGES_API_BASE || DEFAULT_PAGES_API_BASE).replace(/\/+$/, "");
 }
 
-async function postPagesApi(env, path) {
+function sportteryCacheBase(env) {
+  return String(env.SPORTTERY_CACHE_BASE || DEFAULT_SPORTTERY_CACHE_BASE).replace(/\/+$/, "");
+}
+
+async function fetchJson(url) {
+  const response = await fetch(url, { headers: { accept: "application/json" } });
+  const text = await response.text();
+  if (!response.ok) throw new Error(`${url} ${response.status}: ${text.slice(0, 160)}`);
+  const data = JSON.parse(text);
+  if (data?.ok === false) throw new Error(`${url}: ${data.error || "upstream returned ok=false"}`);
+  return data;
+}
+
+async function sportteryCachePayload(env) {
+  const base = sportteryCacheBase(env);
+  const [calculatorRaw, ...resultPages] = await Promise.all([
+    fetchJson(`${base}/sporttery/calculator.json`),
+    fetchJson(`${base}/sporttery/results-page-1.json`),
+    fetchJson(`${base}/sporttery/results-page-2.json`),
+    fetchJson(`${base}/sporttery/results-page-3.json`),
+    fetchJson(`${base}/sporttery/results-page-4.json`),
+    fetchJson(`${base}/sporttery/results-page-5.json`),
+  ]);
+  return { calculatorRaw, resultPages };
+}
+
+async function postPagesApi(env, path, body = null) {
   const url = `${pagesApiBase(env)}${path}`;
   const headers = {};
+  let requestBody;
+  if (body) {
+    headers["content-type"] = "application/json";
+    requestBody = JSON.stringify(body);
+  }
   if (env.APIFOOTBALL_API_KEY) headers["x-apifootball-api-key"] = env.APIFOOTBALL_API_KEY;
   if (env.FOOTBALL_DATA_API_KEY) headers["x-football-data-api-key"] = env.FOOTBALL_DATA_API_KEY;
   if (env.THESPORTSDB_API_KEY) headers["x-thesportsdb-api-key"] = env.THESPORTSDB_API_KEY;
   if (env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY) headers["x-sporttery-upstream-proxy"] = env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY;
-  const response = await fetch(url, { method: "POST", headers });
+  const response = await fetch(url, { method: "POST", headers, body: requestBody });
   const text = await response.text();
   let payload = {};
   try {
@@ -453,12 +485,36 @@ async function postPagesApi(env, path) {
 async function syncViaPagesApi(env) {
   const capturedAt = new Date().toISOString();
   const steps = [];
+  let cachePayload = null;
+  try {
+    cachePayload = await postPagesApi(env, "/api/sync/sporttery-cache", await sportteryCachePayload(env));
+    steps.push({ step: "sporttery-cache", ok: true, payload: cachePayload });
+  } catch (error) {
+    steps.push({ step: "sporttery-cache", ok: false, error: error.message });
+  }
+
   let sportteryPayload = null;
   try {
     sportteryPayload = await postPagesApi(env, "/api/sync/sporttery");
     steps.push({ step: "sporttery", ok: true, payload: sportteryPayload });
   } catch (error) {
     steps.push({ step: "sporttery", ok: false, error: error.message });
+  }
+
+  let officialResultsPayload = null;
+  try {
+    officialResultsPayload = await postPagesApi(env, "/api/sync/sporttery-results?pages=5");
+    steps.push({ step: "sporttery-results", ok: true, payload: officialResultsPayload });
+  } catch (error) {
+    steps.push({ step: "sporttery-results", ok: false, error: error.message });
+  }
+
+  let okoooPayload = null;
+  try {
+    okoooPayload = await postPagesApi(env, "/api/sync/okooo-results");
+    steps.push({ step: "okooo-results", ok: true, payload: okoooPayload });
+  } catch (error) {
+    steps.push({ step: "okooo-results", ok: false, error: error.message });
   }
 
   let fallbackPayload = null;
@@ -474,8 +530,12 @@ async function syncViaPagesApi(env) {
     ok,
     capturedAt,
     pagesApiBase: pagesApiBase(env),
+    sportteryCacheBase: sportteryCacheBase(env),
     steps,
+    cache: cachePayload,
     sporttery: sportteryPayload,
+    officialResults: officialResultsPayload,
+    okooo: okoooPayload,
     liveFallback: fallbackPayload,
   };
   if (env.DB) {
