@@ -6258,51 +6258,144 @@ function normalizeScriptSet(scriptSet, fallbackText) {
     .filter((item) => item.text || item.score || item.probability);
 }
 
+function firstModelText(...values) {
+  return values.find((value) => {
+    if (Array.isArray(value)) return value.length;
+    return value !== undefined && value !== null && String(value).trim();
+  });
+}
+
+function probabilityBaselineText(pred) {
+  const probs = [
+    pred.homeProb || (Number.isFinite(Number(pred.modelHomeProb)) ? `主胜 ${(Number(pred.modelHomeProb) * 100).toFixed(0)}%` : ""),
+    pred.drawProb || (Number.isFinite(Number(pred.modelDrawProb)) ? `平 ${(Number(pred.modelDrawProb) * 100).toFixed(0)}%` : ""),
+    pred.awayProb || (Number.isFinite(Number(pred.modelAwayProb)) ? `客胜 ${(Number(pred.modelAwayProb) * 100).toFixed(0)}%` : ""),
+  ].filter(Boolean);
+  const extras = [pred.xg ? `xG ${pred.xg}` : "", pred.poisson ? `泊松 ${pred.poisson}` : ""].filter(Boolean);
+  return [...probs, ...extras].join("；");
+}
+
+function finalLockSummaryText(pred) {
+  const finalAction = finalDecisionActionText(pred);
+  const picks = [
+    pred.pick ? `胜平负 ${pred.pick}` : "",
+    pred.handicapPick ? `让球 ${pred.handicapPick}` : "",
+    pred.totalGoalsPick ? `总进球 ${pred.totalGoalsPick}` : "",
+    pred.mainScore || pred.counterScore ? `比分 ${[pred.mainScore, pred.counterScore].filter(Boolean).join(" / ")}` : "",
+    pred.matchType ? `类型 ${pred.matchType}` : "",
+    pred.confidence || pred.advice ? `建议 ${[pred.confidence, pred.advice].filter(Boolean).join(" / ")}` : "",
+  ].filter(Boolean);
+  return [finalAction, picks.join("；")].filter(Boolean).join(" ");
+}
+
+function v4StepRows(pred) {
+  return [
+    {
+      no: "01",
+      title: "内部概率底盘",
+      text: firstModelText(probabilityBaselineText(pred), pred.modelProbability, pred.probabilityBaseline),
+    },
+    {
+      no: "02",
+      title: "赛事规则与动机",
+      text: firstModelText(pred.competitionRules, pred.groupSituation, pred.eventWeighting, pred.competitionWeight),
+    },
+    {
+      no: "03",
+      title: "球队近期状态",
+      text: firstModelText(pred.teamState, pred.recentAnalysis, pred.objectiveDataLayer),
+    },
+    {
+      no: "04",
+      title: "风格与战术对位",
+      text: firstModelText(pred.styleMatchup, pred.tacticalMatchup),
+    },
+    {
+      no: "05",
+      title: "机构线与体彩偏差",
+      text: firstModelText(pred.institutionLine, pred.marketGap, pred.crossMarketConsistency),
+    },
+    {
+      no: "06",
+      title: "赔率动态防守层",
+      text: firstModelText(pred.lineMovement, pred.oddsMovement, pred.marketProtection),
+    },
+    {
+      no: "07",
+      title: "常规比赛脚本",
+      text: firstModelText(pred.script, pred.normalScript, pred.matchScript),
+    },
+    {
+      no: "08",
+      title: "半场 / 60分钟触发",
+      text: firstModelText(pred.halftimeDecision, pred.halfFullScenario, pred.stateTransfer, pred.knockoutStateTransfer, pred.timeStateTransfer),
+    },
+    {
+      no: "09",
+      title: "决策冲突闸门",
+      text: firstModelText(pred.decisionConflict, pred.crossMarketConsistency, pred.keyJudgement),
+    },
+    {
+      no: "10",
+      title: "比分与总进球校验",
+      text: firstModelText(pred.scoreElimination, pred.totalGoalsValidation, pred.totalGoalsPick ? `总进球 ${pred.totalGoalsPick}` : ""),
+    },
+    {
+      no: "11",
+      title: "让球独立闸门",
+      text: firstModelText(pred.handicapGate, pred.handicapDecision, pred.handicapPick ? `让球选择 ${pred.handicapPick}` : ""),
+    },
+    {
+      no: "12",
+      title: "失败方式识别",
+      text: firstModelText(pred.keyFailureRisk, pred.failureMode, pred.likelyMissMode, pred.eventRisk),
+    },
+    {
+      no: "13",
+      title: "价值过滤",
+      text: firstModelText(pred.valueFilter, pred.valueFilterAction, pred.noiseFilter, pred.finalAction || pred.advice),
+    },
+    {
+      no: "14",
+      title: "人工确认锁版",
+      text: firstModelText(finalLockSummaryText(pred), pred.finalDecisionAction),
+    },
+  ];
+}
+
 function renderUniversalModelPanel(pred) {
   if (!pred) return "";
   const modelTemplate = pred.competitionModel || pred.eventModel || pred.competitionType || "通用赛前模板";
   const modelName = modelDisplayName(pred, {}, modelTemplate);
-  const motiveItems = [
-    ["统一流程", pred.decisionProcess || pred.modelDecisionProcess],
-    ["赛事规则", pred.competitionRules || pred.eventWeighting || pred.competitionWeight],
-    ["路径动机", pred.pathMotive || pred.pathAdvantage || pred.strategicMotive],
-    ["球队状态", pred.teamState || pred.teamForm || pred.recentAnalysis],
-    ["风格对位", pred.styleMatchup || pred.tacticalMatchup],
-    ["历史样本", pred.historicalSample || pred.sampleCompare || pred.historicalSampleCompare || pred.leagueSampleCompare || pred.scoreSampleCompare || pred.totalGoalsSampleCompare],
-    ["90分钟目标", pred.ninetyMinuteObjective || pred.matchObjective],
-    ["状态转移", pred.stateTransfer || pred.knockoutStateTransfer || pred.timeStateTransfer],
-    ["半全场", pred.halfFullScenario || pred.halftimeDecision || pred.halftimeTrigger],
-    ["赛程动机", pred.scheduleMotive || pred.schedulePressure || pred.rotationRisk],
-    ["失败方式", pred.failureMode || pred.likelyMissMode || pred.keyFailureRisk],
-    ["复盘错因", pred.reviewErrorType || pred.errorType || pred.learningTag],
-  ].filter(([, value]) => Boolean(value));
+  const processText = pred.decisionProcess || pred.modelDecisionProcess || "V4按固定顺序执行：概率底盘、赛事规则、球队状态、风格对位、机构线、状态转移、比分总进球、让球独立闸门、失败方式、价值过滤。";
+  const stepRows = v4StepRows(pred);
   const scripts = normalizeScriptSet(pred.scriptSet || pred.scenarioSet || pred.fourScripts, pred.script);
-  if (!modelTemplate && !motiveItems.length && !scripts.length) return "";
+  if (!modelTemplate && !stepRows.some((item) => item.text) && !scripts.length) return "";
   return `
     <section class="match-page-section universal-model-panel">
       <div class="universal-model-head">
-        <span>V4 通用模型</span>
+        <span>V4 推演链</span>
         <strong>${modelName}</strong>
-        <em>世界杯使用当前版本；其它联赛从各自 V1 起步，差异放在赛事规则、动机和赛程约束层处理。</em>
+        <em>${displayModelText(processText)}</em>
       </div>
-      ${
-        motiveItems.length
-          ? `<div class="universal-model-grid">${motiveItems
-              .map(
-                ([label, value]) => `
-                  <article>
-                    <small>${label}</small>
-                    <p>${displayModelText(value)}</p>
-                  </article>
-                `
-              )
-              .join("")}</div>`
-          : ""
-      }
+      <div class="v4-step-grid">${stepRows
+        .map((item) => {
+          const ready = Boolean(item.text);
+          return `
+            <article class="${ready ? "is-ready" : "is-missing"}">
+              <div class="v4-step-title">
+                <span>${item.no}</span>
+                <strong>${item.title}</strong>
+              </div>
+              <p>${ready ? displayModelText(item.text) : "待补齐：本场锁版 payload 没有写入这一层推演依据。"}</p>
+            </article>
+          `;
+        })
+        .join("")}</div>
       ${
         scripts.length
           ? `<div class="script-set-block">
-              <span>脚本分布</span>
+              <span>比赛脚本分支</span>
               <div class="script-set-grid">${scripts
               .map(
                 (item) => `
