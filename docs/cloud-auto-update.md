@@ -43,9 +43,19 @@ finalLockAt = min(matchDate + kickoffTime - 60分钟, ticaiDate 19:50)
 
 备用源只在体彩官方还没有比分时写入，并标记为 `officialComparison=pending`。之后官方比分出现时会覆盖备用比分，并记录覆盖差异。
 
-如果体彩同步入口因官方接口 `567` 失败，定时任务会自动补跑 `/api/sync/live-results`。这个接口不重新抓体彩赛程，只读取 D1 中已有赛程，再用备用比分源回填赛果。
+Cloudflare `worldcup-sync-worker` 每 5 分钟执行一次自动同步：
+
+1. 调用 Pages `/api/sync/sporttery`，同步体彩赛事池、官方赛果和赔率快照。
+2. 无论官方同步是否成功，都继续调用 `/api/sync/live-results`，用备用源补回官方延迟的常规时间比分。
+3. 如果 Pages API 不可用，worker 会退回本地体彩同步，避免整条定时任务空转。
+
+`/api/sync/live-results` 不重新抓体彩赛程，只读取 D1 中已有赛程，再用备用比分源回填赛果。
+
+备用源写入前必须通过常规时间闸门：`After ET`、`Extra Time`、`Penalty`、`Shootout`、`AET`、`加时`、`点球` 等状态会被排除；`football-data.org` 优先使用 `regularTime`，并记录 `scoreMode` / `scoreDuration` 方便追踪。
 
 页面进行中比分读取 `/api/live-football-scores.js`。该接口会按 D1 中的近期赛程匹配 football-data / APIfootball / TheSportsDB 的实时行，并且 football-data 比分统一优先使用 `regularTime`，符合体彩 90 分钟常规时间口径。
+
+自动化验收读取 `/api/live-score-health`。该接口返回近期 D1 赛程窗口、各备用源原始行数、常规时间可用行数、匹配成功数、被排除的加时/点球行数、最近写入的 `match_results` 和最近同步日志。
 
 `football-data.org` 还可以继续补强这些网站能力：
 

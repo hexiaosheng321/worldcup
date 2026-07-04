@@ -804,18 +804,35 @@ function officialScoreForMatch(match) {
   if (resultScore) return resultScore;
   const usableResultScore = sportteryScoreIsUsable(result) ? normalizeResultScore(result?.score) : "";
   if (usableResultScore) return usableResultScore;
-  const finishedLiveScore = liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "";
+  const finishedLiveScore = liveScore?.isFinished && liveScoreUsesRegularTime(liveScore) ? normalizeResultScore(liveScore.score) : "";
   if (finishedLiveScore) return finishedLiveScore;
   const isSportteryBacked = Boolean(match?.sportteryKey || match?.matchId || odds?.matchId);
   if (isSportteryBacked) return "";
   return normalizeResultScore(odds?.score) || normalizeResultScore(match?.score);
 }
 
+function liveScoreUsesRegularTime(row = {}) {
+  const source = String(row.source || "");
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.scoreDuration || ""}`;
+  if (/football-data\.org/i.test(source)) return row.scoreMode !== "fullTime" || !/extra|after|penalt|shootout|aet/i.test(status);
+  return !/extra|after|penalt|shootout|aet|加时|点球/i.test(status);
+}
+
+function currentLiveScoreForMatch(match) {
+  const odds = oddsMatch(match);
+  const liveScore = liveScoreForSportteryItem({ ...match, ...odds });
+  if (!liveScore || liveScore.isFinished) return "";
+  if (!liveScoreUsesRegularTime(liveScore)) return "";
+  const statusText = `${liveScore.status || ""} ${liveScore.statusName || ""} ${liveScore.statusLabel || ""} ${liveScore.minute || ""}`;
+  if (!liveScore.live && !/^\s*(\d+(\+\d+)?'?|half|半场|中场|paused|in[_\s-]?play|live)/i.test(statusText)) return "";
+  return normalizeResultScore(liveScore.score);
+}
+
 function applyResultBackfill() {
   (oddsData.matches || []).forEach((item) => {
     const result = resultForSportteryItem(item);
     const liveScore = liveScoreForSportteryItem(item);
-    const score = verifiedSportteryScore(item) || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
+    const score = verifiedSportteryScore(item) || (liveScore?.isFinished && liveScoreUsesRegularTime(liveScore) ? normalizeResultScore(liveScore?.score) : "");
     if (!score) return;
     item.score = score;
     item.result = result?.result || direction(score);
@@ -832,7 +849,7 @@ function applyResultBackfill() {
     const result = resultForWorldCupMatch(match);
     const odds = oddsMatch(match);
     const liveScore = liveScoreForSportteryItem({ ...match, ...odds });
-    const score = verifiedSportteryScore({ ...match, ...odds }) || (liveScore?.isFinished ? normalizeResultScore(liveScore?.score) : "");
+    const score = verifiedSportteryScore({ ...match, ...odds }) || (liveScore?.isFinished && liveScoreUsesRegularTime(liveScore) ? normalizeResultScore(liveScore?.score) : "");
     if (!score) return;
     match.score = score;
     match.officialResultSource = result?.score ? "sporttery" : liveScore?.source || "live-fallback";
@@ -1339,20 +1356,32 @@ function matchKickoffAt(match) {
 }
 
 function liveScoreForMatch(match) {
-  return officialScoreForMatch(match);
+  return officialScoreForMatch(match) || currentLiveScoreForMatch(match);
 }
 
 function liveStatusForMatch(match) {
-  const score = liveScoreForMatch(match);
+  const officialScore = officialScoreForMatch(match);
+  const odds = oddsMatch(match);
+  const liveRow = liveScoreForSportteryItem({ ...match, ...odds });
+  const liveScore = currentLiveScoreForMatch(match);
   const result = resultForWorldCupMatch(match);
   const kickoffAt = matchKickoffAt(match);
   const now = Date.now();
-  if (score) {
+  if (officialScore) {
     return {
       tone: "finished",
       label: "已完赛",
-      value: score,
+      value: officialScore,
       note: result?.statusName || "官方赛果已回填",
+      kickoffAt,
+    };
+  }
+  if (liveScore) {
+    return {
+      tone: "live",
+      label: liveScoreStatusText(liveRow) || "进行中",
+      value: liveScore,
+      note: liveRow?.source ? `实时比分 · ${liveRow.source}` : "实时比分",
       kickoffAt,
     };
   }
@@ -2137,6 +2166,24 @@ function loadScriptOnce(src) {
   });
 }
 
+function loadFreshScript(src) {
+  const resolvedSrc = `${src}${src.includes("?") ? "&" : "?"}t=${Date.now()}`;
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = resolvedSrc;
+    script.dataset.freshSrc = src;
+    script.onload = () => {
+      script.remove();
+      resolve();
+    };
+    script.onerror = () => {
+      script.remove();
+      reject(new Error(`failed to load ${src}`));
+    };
+    document.head.appendChild(script);
+  });
+}
+
 function markStaticFallback(payload, fallbackSource) {
   return {
     ...payload,
@@ -2171,6 +2218,19 @@ async function loadStaticSnapshotFallback({ rerender = false } = {}) {
   }
   if (changed && rerender) rerenderOddsSurfaces();
   return changed;
+}
+
+async function refreshLiveFootballScoresData({ rerender = false } = {}) {
+  try {
+    await loadFreshScript("/api/live-football-scores.js");
+    if (!window.LIVE_FOOTBALL_SCORES?.matches?.length) return false;
+    liveFootballData = window.LIVE_FOOTBALL_SCORES;
+    if (rerender) rerenderOddsSurfaces();
+    return true;
+  } catch (error) {
+    console.warn("实时比分刷新失败，继续使用当前快照。", error);
+    return false;
+  }
 }
 
 function parseCloudJson(text, fallback = null) {
@@ -2333,15 +2393,18 @@ async function loadCloudCaseBaseData({ rerender = false } = {}) {
 async function refreshSportteryCloudData() {
   const loadedCloud = await loadCloudBootstrapData({ rerender: true });
   if (loadedCloud) {
+    await refreshLiveFootballScoresData({ rerender: true });
     scheduleSportterySpHistoryRefresh();
     return;
   }
   if (oddsData.isCloudSnapshot || resultsData.isCloudSnapshot || liveFootballData.isCloudSnapshot) {
+    await refreshLiveFootballScoresData({ rerender: true });
     rerenderOddsSurfaces();
     scheduleSportterySpHistoryRefresh();
     return;
   }
   if (!SPORTTERY_CLOUD_API_URL) {
+    await refreshLiveFootballScoresData({ rerender: false });
     await loadStaticSnapshotFallback({ rerender: true });
     rerenderOddsSurfaces();
     scheduleSportterySpHistoryRefresh();
@@ -2368,6 +2431,12 @@ async function refreshSportteryCloudData() {
       window.LIVE_SPORTTERY_SP_HISTORY = payload.spHistory;
       changed = true;
     }
+    if (payload.liveFootball?.matches?.length) {
+      liveFootballData = payload.liveFootball;
+      window.LIVE_FOOTBALL_SCORES = payload.liveFootball;
+      changed = true;
+    }
+    if (await refreshLiveFootballScoresData({ rerender: false })) changed = true;
     if (changed) {
       const sourceNode = document.querySelector("#sporttery-source");
       if (sourceNode) {

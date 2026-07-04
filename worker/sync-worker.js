@@ -1,6 +1,7 @@
 const CALCULATOR_API = "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c";
 const RESULTS_API =
   "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
+const DEFAULT_PAGES_API_BASE = "https://worldcup-dashboard-4hr.pages.dev";
 
 const SPORTTERY_HEADERS = {
   accept: "application/json, text/plain, */*",
@@ -424,10 +425,80 @@ async function syncAll(env) {
   return { ok: true, capturedAt, matchCount, resultCount: resultStats.count, reviewed: resultStats.reviewed, cases: resultStats.cases };
 }
 
+function pagesApiBase(env) {
+  return String(env.PAGES_API_BASE || DEFAULT_PAGES_API_BASE).replace(/\/+$/, "");
+}
+
+async function postPagesApi(env, path) {
+  const url = `${pagesApiBase(env)}${path}`;
+  const headers = {};
+  if (env.APIFOOTBALL_API_KEY) headers["x-apifootball-api-key"] = env.APIFOOTBALL_API_KEY;
+  if (env.FOOTBALL_DATA_API_KEY) headers["x-football-data-api-key"] = env.FOOTBALL_DATA_API_KEY;
+  if (env.THESPORTSDB_API_KEY) headers["x-thesportsdb-api-key"] = env.THESPORTSDB_API_KEY;
+  if (env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY) headers["x-sporttery-upstream-proxy"] = env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY;
+  const response = await fetch(url, { method: "POST", headers });
+  const text = await response.text();
+  let payload = {};
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { raw: text.slice(0, 500) };
+  }
+  if (!response.ok || payload.ok === false) {
+    throw new Error(`${path} ${response.status}: ${payload.error || payload.message || text.slice(0, 160)}`);
+  }
+  return payload;
+}
+
+async function syncViaPagesApi(env) {
+  const capturedAt = new Date().toISOString();
+  const steps = [];
+  let sportteryPayload = null;
+  try {
+    sportteryPayload = await postPagesApi(env, "/api/sync/sporttery");
+    steps.push({ step: "sporttery", ok: true, payload: sportteryPayload });
+  } catch (error) {
+    steps.push({ step: "sporttery", ok: false, error: error.message });
+  }
+
+  let fallbackPayload = null;
+  try {
+    fallbackPayload = await postPagesApi(env, "/api/sync/live-results");
+    steps.push({ step: "live-results", ok: true, payload: fallbackPayload });
+  } catch (error) {
+    steps.push({ step: "live-results", ok: false, error: error.message });
+  }
+
+  const ok = steps.some((step) => step.ok);
+  const payload = {
+    ok,
+    capturedAt,
+    pagesApiBase: pagesApiBase(env),
+    steps,
+    sporttery: sportteryPayload,
+    liveFallback: fallbackPayload,
+  };
+  if (env.DB) {
+    await insertLog(env.DB, "pages-api-cron", ok ? "OK" : "ERROR", ok ? "pages sync completed" : "pages sync failed", payload);
+  }
+  if (!ok) throw new Error(steps.map((step) => `${step.step}: ${step.error}`).join("; "));
+  return payload;
+}
+
+async function runAutomatedSync(env) {
+  if (env.PREFER_LOCAL_SYNC === "1") return syncAll(env);
+  try {
+    return await syncViaPagesApi(env);
+  } catch (error) {
+    if (env.DB) await insertLog(env.DB, "pages-api-cron", "WARN", "falling back to local sporttery sync", { error: error.message });
+    return syncAll(env);
+  }
+}
+
 export default {
   async scheduled(_event, env, ctx) {
     ctx.waitUntil(
-      syncAll(env).catch((error) =>
+      runAutomatedSync(env).catch((error) =>
         env.DB
           ? insertLog(env.DB, "sporttery", "ERROR", error.message, { stack: error.stack })
           : Promise.resolve()
@@ -440,7 +511,7 @@ export default {
     if (url.pathname === "/health") return json({ ok: true, dbBound: Boolean(env.DB), worker: "worldcup-sync-worker" });
     if (url.pathname === "/sync" && request.method === "POST") {
       try {
-        return json(await syncAll(env));
+        return json(await runAutomatedSync(env));
       } catch (error) {
         if (env.DB) await insertLog(env.DB, "sporttery", "ERROR", error.message, { stack: error.stack });
         return json({ ok: false, error: error.message }, 500);

@@ -809,10 +809,14 @@ const apiFootballTeamZh = {
   "Bosnia-Herzegovina": "波黑",
   Bosnia: "波黑",
   Brazil: "巴西",
+  "Cape Verde": "佛得角",
+  "Cabo Verde": "佛得角",
   Canada: "加拿大",
+  Colombia: "哥伦比亚",
   Croatia: "克罗地亚",
   Denmark: "丹麦",
   Ecuador: "厄瓜多尔",
+  Egypt: "埃及",
   England: "英格兰",
   France: "法国",
   Germany: "德国",
@@ -832,6 +836,8 @@ const apiFootballTeamZh = {
   Portugal: "葡萄牙",
   Qatar: "卡塔尔",
   Scotland: "苏格兰",
+  Sirius: "天狼星",
+  "IK Sirius": "天狼星",
   Spain: "西班牙",
   Sweden: "瑞典",
   Switzerland: "瑞士",
@@ -839,6 +845,10 @@ const apiFootballTeamZh = {
   Uruguay: "乌拉圭",
   USA: "美国",
   "United States": "美国",
+  Mjallby: "米亚尔比",
+  Mjällby: "米亚尔比",
+  "Mjallby AIF": "米亚尔比",
+  "Mjällby AIF": "米亚尔比",
 };
 
 function sportteryProxyUrl(env, targetUrl) {
@@ -1023,14 +1033,18 @@ function footballDataScoreParts(score = {}) {
   const regular = score.regularTime || {};
   const full = score.fullTime || {};
   const half = score.halfTime || {};
-  const home = scorePartValue(regular.home) ?? scorePartValue(full.home);
-  const away = scorePartValue(regular.away) ?? scorePartValue(full.away);
+  const regularHome = scorePartValue(regular.home);
+  const regularAway = scorePartValue(regular.away);
+  const fullHome = scorePartValue(full.home);
+  const fullAway = scorePartValue(full.away);
+  const usesRegularTime = Number.isFinite(regularHome) && Number.isFinite(regularAway);
   return {
-    home,
-    away,
+    home: usesRegularTime ? regularHome : fullHome,
+    away: usesRegularTime ? regularAway : fullAway,
     halfHome: scorePartValue(half.home),
     halfAway: scorePartValue(half.away),
     duration: score.duration || "",
+    scoreMode: usesRegularTime ? "regularTime" : "fullTime",
     winner: score.winner || "",
   };
 }
@@ -1097,6 +1111,8 @@ async function fetchApiFootballDay(env, date) {
     winnerSide: sideFromPenalty(match.match_hometeam_penalty_score, match.match_awayteam_penalty_score),
     winnerZh: winnerFromSide(sideFromPenalty(match.match_hometeam_penalty_score, match.match_awayteam_penalty_score), apiFootballTeamZh[match.match_hometeam_name] || match.match_hometeam_name || "", apiFootballTeamZh[match.match_awayteam_name] || match.match_awayteam_name || ""),
     status: match.match_status || "",
+    scoreDuration: /after/i.test(String(match.match_status || "")) ? "EXTRA_TIME" : /pen/i.test(String(match.match_status || "")) ? "PENALTY_SHOOTOUT" : "REGULAR",
+    scoreMode: "fullTime",
     isFinished: /finished|after/i.test(String(match.match_status || "")),
     live: String(match.match_live || "") === "1",
   }));
@@ -1137,6 +1153,7 @@ async function fetchFootballDataDay(env, date) {
       isFinished: match.status === "FINISHED",
       live: ["IN_PLAY", "PAUSED"].includes(match.status),
       scoreDuration: score.duration,
+      scoreMode: score.scoreMode,
     };
   });
 }
@@ -1173,6 +1190,7 @@ async function fetchFootballDataCompetition(env, code, season = "") {
       isFinished: match.status === "FINISHED",
       live: ["IN_PLAY", "PAUSED"].includes(match.status),
       scoreDuration: score.duration,
+      scoreMode: score.scoreMode,
       stage: match.stage || "",
       group: match.group || "",
       matchday: match.matchday || "",
@@ -1211,12 +1229,14 @@ async function fetchFootballDataStandings(env, code, season = "") {
   );
 }
 
+function sportteryMatchDates(sportteryMatches = []) {
+  return [...new Set(
+    sportteryMatches.flatMap((match) => [match.matchDate, match.ticaiDate]).filter(Boolean)
+  )].sort();
+}
+
 async function fetchFootballDataMatches(env, sportteryMatches = []) {
-  const dates = [...new Set(
-    sportteryMatches
-      .map((match) => match.matchDate || match.ticaiDate)
-      .filter(Boolean)
-  )];
+  const dates = sportteryMatchDates(sportteryMatches);
   if (!dates.length) return { matches: [], errors: [] };
   if (!footballDataKey(env)) {
     return { matches: [], errors: [{ source: "football-data.org", date: "config", message: "FOOTBALL_DATA_API_KEY missing; football-data fallback skipped" }] };
@@ -1283,11 +1303,7 @@ async function fetchFallbackSource(label, dates, fetchDay, missingMessage = "") 
 }
 
 async function fetchApiFootballMatches(env, sportteryMatches = []) {
-  const dates = [...new Set(
-    sportteryMatches
-      .map((match) => match.matchDate || match.ticaiDate)
-      .filter(Boolean)
-  )];
+  const dates = sportteryMatchDates(sportteryMatches);
   if (!dates.length) return { matches: [], errors: [] };
   if (!apiFootballKey(env)) {
     return { matches: [], errors: [{ date: "config", message: "APIFOOTBALL_API_KEY missing; live fallback skipped" }] };
@@ -1302,11 +1318,7 @@ async function fetchApiFootballMatches(env, sportteryMatches = []) {
 }
 
 async function fetchLiveFallbackMatches(env, sportteryMatches = []) {
-  const dates = [...new Set(
-    sportteryMatches
-      .map((match) => match.matchDate || match.ticaiDate)
-      .filter(Boolean)
-  )];
+  const dates = sportteryMatchDates(sportteryMatches);
   if (!dates.length) return { matches: [], errors: [] };
 
   const sources = [
@@ -1494,10 +1506,26 @@ function liveDateMatchesSporttery(match, row) {
     .some((date) => dateDistanceDays(date, row.date) <= 1);
 }
 
+function liveFallbackRowHasUsableScore(row = {}) {
+  if (!liveFallbackRowUsesRegularTime(row)) return false;
+  if (row.isFinished) return Boolean(parseDashScore(row.score));
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.minute || ""}`;
+  return Boolean(row.live && parseDashScore(row.score)) ||
+    Boolean(parseDashScore(row.score) && /^\s*(\d+(\+\d+)?'?|half|半场|中场|paused|in[_\s-]?play|live)/i.test(status));
+}
+
+function liveFallbackRowUsesRegularTime(row = {}) {
+  const source = String(row.source || "");
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.scoreDuration || ""}`;
+  if (/football-data\.org/i.test(source)) return row.scoreMode !== "fullTime" || !/extra|after|penalt|shootout|aet/i.test(status);
+  return !/extra|after|penalt|shootout|aet|加时|点球/i.test(status);
+}
+
 function liveResultForSportteryMatch(match, liveRows = []) {
   return liveRows.find(
     (row) =>
       row.isFinished &&
+      liveFallbackRowUsesRegularTime(row) &&
       liveDateMatchesSporttery(match, row) &&
       liveTeamMatches(match.home, row.home) &&
       liveTeamMatches(match.away, row.away) &&
@@ -2086,7 +2114,6 @@ async function syncLiveFallbackToD1(db, env) {
   const capturedAt = new Date().toISOString();
   const rows = await db.prepare(`
     SELECT * FROM matches
-    WHERE league LIKE '%世界杯%' OR league LIKE '%竞彩%'
     ORDER BY updated_at DESC
     LIMIT 300
   `).all();
@@ -2106,6 +2133,7 @@ async function syncLiveFallbackToD1(db, env) {
     liveRows = { matches: [], errors: [{ date: "all", message: error.message || "live fallback failed" }] };
   }
 
+  const sourceSummary = liveFallbackSourceSummary(matches, liveRows.matches);
   let liveFallbackCount = 0;
   let reviewed = 0;
   let cases = 0;
@@ -2132,6 +2160,7 @@ async function syncLiveFallbackToD1(db, env) {
       scoreDuration: live.scoreDuration || "",
       liveSource: live.source,
       liveExternalId: live.externalId,
+      scoreMode: live.scoreMode || "",
       resultSource: `live-fallback-${String(live.source || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown"}`,
       officialComparison: "pending",
     };
@@ -2170,11 +2199,139 @@ async function syncLiveFallbackToD1(db, env) {
       cases,
       liveFallbackErrors: liveRows.errors,
       liveFallbackSources: [...new Set(liveRows.matches.map((match) => match.source).filter(Boolean))],
+      sourceSummary,
     }),
     capturedAt
   ).run();
 
-  return { ok: true, capturedAt, matchCount: matches.length, liveFallbackCount, reviewed, cases, liveFallbackErrors: liveRows.errors };
+  return { ok: true, capturedAt, matchCount: matches.length, liveFallbackCount, reviewed, cases, liveFallbackErrors: liveRows.errors, sourceSummary };
+}
+
+function liveFallbackSourceSummary(sportteryMatches = [], liveRows = []) {
+  const matchedRows = liveRows.filter((row) =>
+    liveFallbackRowHasUsableScore(row) &&
+    sportteryMatches.some((match) =>
+      liveDateMatchesSporttery(match, row) &&
+      liveTeamMatches(match.home, row.home) &&
+      liveTeamMatches(match.away, row.away)
+    )
+  );
+  const nonRegularRows = liveRows.filter((row) => parseDashScore(row.score) && !liveFallbackRowUsesRegularTime(row));
+  const bySource = {};
+  for (const row of liveRows) {
+    const source = row.source || "unknown";
+    bySource[source] ||= { raw: 0, usableRegular: 0, matched: 0, nonRegularExcluded: 0 };
+    bySource[source].raw += 1;
+    if (liveFallbackRowHasUsableScore(row)) bySource[source].usableRegular += 1;
+    if (matchedRows.includes(row)) bySource[source].matched += 1;
+    if (nonRegularRows.includes(row)) bySource[source].nonRegularExcluded += 1;
+  }
+  return {
+    rawCount: liveRows.length,
+    usableRegularCount: liveRows.filter(liveFallbackRowHasUsableScore).length,
+    matchedCount: matchedRows.length,
+    dedupedMatchedCount: dedupeLiveRows(matchedRows).length,
+    nonRegularExcludedCount: nonRegularRows.length,
+    sources: bySource,
+  };
+}
+
+async function liveScoreHealth(db, env) {
+  const capturedAt = new Date().toISOString();
+  const rows = await db.prepare(`
+    SELECT * FROM matches
+    ORDER BY kickoff_time DESC
+    LIMIT 300
+  `).all();
+  const now = Date.now();
+  const sportteryMatches = (rows.results || [])
+    .map(d1RowToSportteryMatch)
+    .filter((match) => {
+      const kickoffAt = bjtAt(match.matchDate || match.ticaiDate, match.kickoffTime || "00:00");
+      if (!Number.isFinite(kickoffAt)) return true;
+      return kickoffAt >= now - 2 * 86400000 && kickoffAt <= now + 2 * 86400000;
+    });
+  let liveRows = { matches: [], errors: [] };
+  try {
+    liveRows = await fetchLiveFallbackMatches(env, sportteryMatches);
+  } catch (error) {
+    liveRows = { matches: [], errors: [{ source: "all", date: "all", message: error.message || "live health failed" }] };
+  }
+  const matchedRows = liveRows.matches.filter((row) =>
+    liveFallbackRowHasUsableScore(row) &&
+    sportteryMatches.some((match) =>
+      liveDateMatchesSporttery(match, row) &&
+      liveTeamMatches(match.home, row.home) &&
+      liveTeamMatches(match.away, row.away)
+    )
+  );
+  const resultRows = await db.prepare(`
+    SELECT mr.*, m.match_code, m.league, m.home_team, m.away_team, m.kickoff_time
+    FROM match_results mr
+    LEFT JOIN matches m ON m.match_id = mr.match_id
+    ORDER BY mr.updated_at DESC
+    LIMIT 20
+  `).all();
+  const logs = await db.prepare(`
+    SELECT source, status, message, payload_json, created_at
+    FROM sync_logs
+    ORDER BY created_at DESC
+    LIMIT 10
+  `).all();
+  return {
+    ok: true,
+    capturedAt,
+    dbBound: true,
+    configuredSources: {
+      footballData: Boolean(footballDataKey(env)),
+      apiFootball: Boolean(apiFootballKey(env)),
+      theSportsDb: Boolean(theSportsDbKey(env)),
+    },
+    d1Window: {
+      matchCount: sportteryMatches.length,
+      dates: sportteryMatchDates(sportteryMatches),
+    },
+    liveFallback: {
+      ...liveFallbackSourceSummary(sportteryMatches, liveRows.matches),
+      errors: liveRows.errors,
+      matchedSamples: dedupeLiveRows(matchedRows).slice(0, 12).map((row) => ({
+        source: row.source || "",
+        date: row.date || "",
+        time: row.time || "",
+        league: row.league || "",
+        home: row.homeZh || row.home || "",
+        away: row.awayZh || row.away || "",
+        score: row.score || "",
+        status: row.status || "",
+        scoreDuration: row.scoreDuration || "",
+        scoreMode: row.scoreMode || "",
+      })),
+    },
+    recentResults: (resultRows.results || []).map((row) => {
+      const payload = parseObject(row.payload_json);
+      return {
+        matchId: row.match_id,
+        issue: payload.issue || row.match_code || "",
+        league: payload.league || row.league || "",
+        home: payload.home || row.home_team || "",
+        away: payload.away || row.away_team || "",
+        kickoffTime: payload.matchDate && payload.kickoffTime ? `${payload.matchDate} ${payload.kickoffTime}` : row.kickoff_time || "",
+        score: `${row.full_time_home_goals}-${row.full_time_away_goals}`,
+        resultSource: payload.resultSource || "",
+        scoreMode: payload.scoreMode || "",
+        scoreDuration: payload.scoreDuration || "",
+        officialComparison: payload.officialComparison || "",
+        updatedAt: row.updated_at,
+      };
+    }),
+    recentLogs: (logs.results || []).map((row) => ({
+      source: row.source,
+      status: row.status,
+      message: row.message,
+      createdAt: row.created_at,
+      payload: parseObject(row.payload_json),
+    })),
+  };
 }
 
 async function listAutoPredictions(db, limit = 300) {
@@ -2285,7 +2442,6 @@ async function d1ResultsScript(db) {
 async function d1LiveFootballScoresScript(db, env) {
   const rows = await db.prepare(`
     SELECT * FROM matches
-    WHERE league LIKE '%世界杯%' OR league LIKE '%竞彩%'
     ORDER BY kickoff_time DESC
     LIMIT 300
   `).all();
@@ -2304,7 +2460,7 @@ async function d1LiveFootballScoresScript(db, env) {
     liveRows = { matches: [], errors: [{ date: "all", message: error.message || "live score fetch failed" }] };
   }
   const matchedRows = liveRows.matches.filter((row) =>
-    (row.live || row.isFinished || Boolean(parseDashScore(row.score))) &&
+    liveFallbackRowHasUsableScore(row) &&
     sportteryMatches.some((match) => liveDateMatchesSporttery(match, row) &&
       liveTeamMatches(match.home, row.home) &&
       liveTeamMatches(match.away, row.away))
@@ -2512,6 +2668,10 @@ export async function onRequest(context) {
 
     if (path === "live-football-scores.js" && request.method === "GET") {
       return d1LiveFootballScoresScript(db, env);
+    }
+
+    if (path === "live-score-health" && request.method === "GET") {
+      return json(await liveScoreHealth(db, env));
     }
 
     if (path === "live-sporttery-sp-history.js" && request.method === "GET") {
