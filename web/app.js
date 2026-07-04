@@ -186,7 +186,7 @@ function normalizedIssueNo(value = "") {
 function findOddsRow(rows = [], matchOrNo) {
   const match = typeof matchOrNo === "object" ? matchOrNo : null;
   const targetNo = normalizedIssueNo(match?.no || matchOrNo);
-  if (targetNo) {
+  if (!match && targetNo) {
     const byNo = rows.find(
       (item) =>
         normalizedIssueNo(item.no) === targetNo ||
@@ -218,6 +218,15 @@ function findOddsRow(rows = [], matchOrNo) {
         looseTeamMatch(match.home, item.home) &&
         looseTeamMatch(match.away, item.away)
     ) ||
+    (targetNo
+      ? rows.find(
+          (item) =>
+            (normalizedIssueNo(item.no) === targetNo ||
+              normalizedIssueNo(item.issue) === targetNo ||
+              normalizedIssueNo(item.orderId) === targetNo) &&
+            (!match.date || [item.ticaiDate, item.matchDate, item.date].includes(match.date))
+        )
+      : null) ||
     null
   );
 }
@@ -657,6 +666,22 @@ function findSportteryItemByKey(key = "") {
   });
 }
 
+function sportteryNoDateTeamMatch(left = {}, right = {}) {
+  const leftNo = normalizedIssueNo(left.no || left.issue || left.orderId || left.matchCode);
+  const rightNo = normalizedIssueNo(right.no || right.issue || right.orderId || right.matchCode);
+  if (!leftNo || !rightNo || leftNo !== rightNo) return false;
+  const leftDates = [left.ticaiDate, left.matchDate, left.date].filter(Boolean);
+  const rightDates = [right.ticaiDate, right.matchDate, right.date].filter(Boolean);
+  if (leftDates.length && rightDates.length && !leftDates.some((date) => rightDates.includes(date))) return false;
+  const leftIssue = String(left.issue || left.matchCode || "");
+  const rightIssue = String(right.issue || right.matchCode || "");
+  if (leftIssue && rightIssue && leftIssue !== rightIssue) return false;
+  if (left.home && left.away && right.home && right.away) {
+    return looseTeamMatch(left.home, right.home) && looseTeamMatch(left.away, right.away);
+  }
+  return Boolean(leftIssue && rightIssue && leftIssue === rightIssue);
+}
+
 function sportteryPredictionForItem(item = {}) {
   const key = sportteryItemKey(item);
   const linkedMatch = matchFromOddsItem(item) || matchFromResultItem(item);
@@ -682,10 +707,7 @@ function sportteryPredictionForItem(item = {}) {
     || sportteryRows.find((pred) => pred.matchId && item.matchId && sameSportteryIdentity(pred.matchId, item.matchId))
     || sportteryRows.find(
       (pred) =>
-        pred.no &&
-        item.no &&
-        pred.no === item.no &&
-        [item.ticaiDate, item.matchDate].includes(pred.matchDate || pred.date)
+        sportteryNoDateTeamMatch(item, pred)
     )
     || sportteryRows.find(
       (pred) =>
@@ -701,10 +723,7 @@ function findSportteryItemForPrediction(pred = {}) {
     || rows.find((item) => pred.matchId && item.matchId && sameSportteryIdentity(pred.matchId, item.matchId))
     || rows.find(
       (item) =>
-        pred.no &&
-        item.no &&
-        pred.no === item.no &&
-        [item.ticaiDate, item.matchDate].includes(pred.matchDate || pred.date)
+        sportteryNoDateTeamMatch(item, pred)
     )
     || rows.find(
       (item) =>
