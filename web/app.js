@@ -1,7 +1,19 @@
+window.WC_DATA = window.WC_DATA || {
+  updatedAt: "",
+  currentModelVersion: "V4",
+  timezone: "Asia/Shanghai",
+  currentDate: "",
+  tournamentTotalMatches: 104,
+  ticaiDateOffsetDays: 1,
+  historicalDrawRates: [],
+  historicalScoreFrequencies: [],
+  matches: [],
+  predictions: [],
+};
 const data = window.WC_DATA;
 let matches = mergeWorldCupSportteryMatches(data.matches || [], window.LIVE_SPORTTERY_ODDS?.matches || []);
 data.matches = matches;
-const predictionMap = new Map(data.predictions.map((item) => [item.no, item]));
+const predictionMap = new Map((data.predictions || []).map((item) => [item.no, item]));
 const SPORTTERY_CLOUD_API_URL = "";
 const SPORTTERY_API_URL = "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c";
 const SPORTTERY_RESULTS_API_URL =
@@ -13,6 +25,8 @@ const STATIC_SNAPSHOT_FALLBACKS = [
   "./live-sporttery-results.js",
   "./live-sporttery-sp-history.js",
   "./live-football-scores.js",
+  "./football-data-context.js",
+  "./odds-data.js",
 ];
 let oddsData = window.LIVE_SPORTTERY_ODDS?.matches?.length
   ? window.LIVE_SPORTTERY_ODDS
@@ -2279,12 +2293,31 @@ function markStaticFallback(payload, fallbackSource) {
   };
 }
 
+async function loadWorldCupStaticDataFallback({ rerender = false } = {}) {
+  if (data.predictions?.length && data.matches?.length) return false;
+  const currentData = data;
+  await loadScriptOnce("./data.js");
+  if (!window.WC_DATA || window.WC_DATA === currentData) return false;
+  Object.assign(currentData, window.WC_DATA);
+  window.WC_DATA = currentData;
+  matches = mergeWorldCupSportteryMatches(currentData.matches || [], oddsData.matches || []);
+  currentData.matches = matches;
+  predictionMap.clear();
+  (currentData.predictions || []).forEach((item) => predictionMap.set(item.no, item));
+  if (rerender) renderCurrentRouteSurfaces();
+  return true;
+}
+
 async function loadStaticSnapshotFallback({ rerender = false } = {}) {
   await Promise.allSettled(STATIC_SNAPSHOT_FALLBACKS.map(loadScriptOnce));
   let changed = false;
   if (!oddsData.matches?.length && window.LIVE_SPORTTERY_ODDS?.matches?.length) {
     oddsData = markStaticFallback(window.LIVE_SPORTTERY_ODDS, "本地赛事池快照");
     window.LIVE_SPORTTERY_ODDS = oddsData;
+    changed = true;
+  }
+  if (!oddsData.matches?.length && window.OKOOO_ODDS?.matches?.length) {
+    oddsData = markStaticFallback(window.OKOOO_ODDS, "本地赔率快照");
     changed = true;
   }
   if (!resultsData.results?.length && window.LIVE_SPORTTERY_RESULTS?.results?.length) {
@@ -2300,6 +2333,11 @@ async function loadStaticSnapshotFallback({ rerender = false } = {}) {
   if (!liveFootballData.matches?.length && window.LIVE_FOOTBALL_SCORES?.matches?.length) {
     liveFootballData = markStaticFallback(window.LIVE_FOOTBALL_SCORES, "本地实时比分快照");
     window.LIVE_FOOTBALL_SCORES = liveFootballData;
+    changed = true;
+  }
+  if (!footballDataContext.matches?.length && window.FOOTBALL_DATA_CONTEXT?.matches?.length) {
+    footballDataContext = markStaticFallback(window.FOOTBALL_DATA_CONTEXT, "本地football-data上下文");
+    window.FOOTBALL_DATA_CONTEXT = footballDataContext;
     changed = true;
   }
   if (changed && rerender) renderCurrentRouteSurfaces();
@@ -7273,6 +7311,11 @@ function runWhenPageIdle(task, timeout = 2200) {
   setTimeout(task, Math.min(timeout, 1200));
 }
 
+function currentRouteNeedsWorldCupStaticData() {
+  const hash = window.location.hash || "";
+  return !hash || hash === "#model-stats" || hash === "#worldcup" || hash === "#worldcup-knockout" || hash === "#worldcup-review" || /^#match-/.test(hash);
+}
+
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     activateTab(tab.dataset.tab);
@@ -7794,6 +7837,11 @@ if (!initialHash) {
 }
 runWhenPageIdle(refreshSportteryCloudData, initialHash ? 500 : 500);
 runWhenPageIdle(() => loadCloudCaseBaseData({ rerender: Boolean(initialHash) }), initialHash ? 2200 : 3600);
+runWhenPageIdle(() => {
+  if (currentRouteNeedsWorldCupStaticData()) {
+    loadWorldCupStaticDataFallback({ rerender: Boolean(window.location.hash) });
+  }
+}, initialHash ? 4200 : 2600);
 setInterval(refreshSportteryCloudData, 5 * 60 * 1000);
 
 /* ── 返回顶部 ── */
