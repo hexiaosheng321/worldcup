@@ -1209,7 +1209,7 @@ function uniqueSportteryRows(rows = []) {
 }
 
 function homeReferenceDate() {
-  return data.updatedAt?.split(" ")[0] || dashboardToday();
+  return currentSportteryBusinessDate(calendarToday());
 }
 
 function homeUpcomingMatches() {
@@ -1335,12 +1335,14 @@ function homeCountdownCandidates() {
     .map((match) => {
       const reference = matchFromOddsItem(match) || {};
       const kickoffAt = homeFallbackKickoff(match);
+      const score = verifiedSportteryScore(match);
       return {
         ...reference,
         ...match,
         group: reference.group || match.group || match.league || "竞彩",
         date: match.matchDate || reference.date || match.ticaiDate,
         kickoffAt,
+        score,
       };
     })
     .filter((match) => !match.score && Number.isFinite(match.kickoffAt) && match.kickoffAt >= now)
@@ -1478,7 +1480,7 @@ function liveStatusForMatch(match) {
 function formatMatchCountdown(kickoffAt) {
   if (!kickoffAt) return "时间待同步";
   const diff = kickoffAt - Date.now();
-  if (diff <= 0) return "进行中";
+  if (diff <= 0) return isPastResultWindow(kickoffAt) ? "待回填" : "进行中";
   const days = Math.floor(diff / 86400000);
   const hours = Math.floor((diff % 86400000) / 3600000);
   const minutes = Math.floor((diff % 3600000) / 60000);
@@ -1487,9 +1489,61 @@ function formatMatchCountdown(kickoffAt) {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function homeSportteryStatus(item = {}) {
+  const result = resultForSportteryItem(item);
+  const liveScore = liveScoreForSportteryItem(item);
+  const resultScore = verifiedSportteryScore(item);
+  const liveScoreText = normalizeResultScore(liveScore?.score);
+  const kickoffAt = homeFallbackKickoff(item);
+  if (resultScore) {
+    return {
+      tone: "finished",
+      label: "已完赛",
+      value: resultScore,
+      note: result?.statusName || item.statusName || "赛果已回填",
+      kickoffAt,
+    };
+  }
+  if (liveScoreText && liveScoreStatusText(liveScore)) {
+    return {
+      tone: liveScore?.isFinished ? "finished" : "live",
+      label: liveScoreStatusText(liveScore),
+      value: liveScoreText,
+      note: liveScore?.source ? `实时比分 · ${liveScore.source}` : "实时比分",
+      kickoffAt,
+    };
+  }
+  if (kickoffAt && Date.now() >= kickoffAt) {
+    return isPastResultWindow(kickoffAt)
+      ? {
+          tone: "pending-result",
+          label: "待回填",
+          value: "待回填",
+          note: "比赛已超过常规时间窗口，等待官方比分回填",
+          kickoffAt,
+        }
+      : {
+          tone: "live",
+          label: "进行中",
+          value: "进行中",
+          note: "等待官方比分回填",
+          kickoffAt,
+        };
+  }
+  return {
+    tone: "countdown",
+    label: "距开赛",
+    value: "",
+    note: "北京开球时间",
+    kickoffAt,
+  };
+}
+
 function updateMatchFlowTimers() {
   document.querySelectorAll("[data-match-countdown]").forEach((node) => {
     const kickoffAt = Number(node.dataset.kickoffAt);
+    const homeCard = node.closest(".home-match-card");
+    if (homeCard?.classList.contains("finished")) return;
     node.textContent = formatMatchCountdown(kickoffAt);
     const card = node.closest(".match-card");
     if (card && kickoffAt && Date.now() >= kickoffAt && !card.classList.contains("finished")) {
@@ -1504,6 +1558,16 @@ function updateMatchFlowTimers() {
         if (label) label.textContent = "进行中";
         if (note) note.textContent = "等待官方比分回填";
       }
+    }
+    if (homeCard && kickoffAt && Date.now() >= kickoffAt) {
+      const label = homeCard.querySelector("[data-home-live-label]");
+      const note = homeCard.querySelector("[data-home-live-note]");
+      homeCard.classList.toggle("is-live", !isPastResultWindow(kickoffAt));
+      homeCard.classList.toggle("pending-result", isPastResultWindow(kickoffAt));
+      if (label) label.textContent = isPastResultWindow(kickoffAt) ? "待回填" : "进行中";
+      if (note) note.textContent = isPastResultWindow(kickoffAt)
+        ? "比赛已超过常规时间窗口，等待官方比分回填"
+        : "等待官方比分回填";
     }
   });
 }
@@ -1583,28 +1647,35 @@ function renderHome() {
     .slice(0, 6)
     .map((match) => {
       const kickoffAt = matchKickoffAt(match);
+      const liveStatus = match.sportteryOnly ? homeSportteryStatus(match) : liveStatusForMatch(match);
+      const effectiveKickoffAt = liveStatus.kickoffAt || kickoffAt;
       const groupLabel = match.sportteryOnly ? match.group || "竞彩" : `${match.group} 组`;
       const hasPrediction = match.sportteryOnly ? sportteryPredictionForItem(match) : latestPredictionFor(match.no);
       const cardTarget = match.sportteryOnly
         ? `data-home-sporttery-key="${encodeURIComponent(match.sportteryKey || sportteryItemKey(match))}"`
         : `data-home-match-no="${match.no}"`;
-      const kickoffLabel = kickoffAt
-        ? new Date(kickoffAt).toLocaleTimeString("zh-CN", {
+      const kickoffLabel = effectiveKickoffAt
+        ? new Date(effectiveKickoffAt).toLocaleTimeString("zh-CN", {
             timeZone: data.timezone || "Asia/Shanghai",
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
           })
         : "时间待同步";
+      const countdownValue = liveStatus.tone === "countdown"
+        ? formatMatchCountdown(effectiveKickoffAt)
+        : liveStatus.value || liveStatus.label;
+      const countdownLabel = liveStatus.tone === "countdown" ? "距离开赛" : liveStatus.label;
+      const countdownNote = liveStatus.tone === "countdown" ? `${kickoffLabel} 北京时间` : liveStatus.note;
       return `
-        <button type="button" class="home-match-card" ${cardTarget}>
+        <button type="button" class="home-match-card ${liveStatus.tone === "live" ? "is-live" : ""} ${liveStatus.tone === "pending-result" ? "pending-result" : ""} ${liveStatus.tone === "finished" ? "finished" : ""}" ${cardTarget}>
           <span>${groupLabel}</span>
           <em>${formatDate(match.date)}</em>
           <strong>${match.home}<small>vs</small>${match.away}</strong>
           <div class="home-match-countdown">
-            <small>距离开赛</small>
-            <strong data-match-countdown data-kickoff-at="${kickoffAt || ""}">${formatMatchCountdown(kickoffAt)}</strong>
-            <em>${kickoffLabel} 北京时间</em>
+            <small data-home-live-label>${countdownLabel}</small>
+            <strong data-match-countdown data-kickoff-at="${effectiveKickoffAt || ""}">${countdownValue}</strong>
+            <em data-home-live-note>${countdownNote}</em>
           </div>
           <b>${hasPrediction ? "已有推演" : "待锁版"}</b>
         </button>
@@ -3140,6 +3211,7 @@ function sportteryDetailRow(item = {}) {
   const linkedMatch = matchFromOddsItem(item) || matchFromResultItem(item);
   const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
   const hasStarted = Number.isFinite(kickoffAt) && Date.now() >= kickoffAt;
+  const pendingResult = hasStarted && isPastResultWindow(kickoffAt);
   const liveStatus = liveScoreStatusText(liveScore);
   return {
     ...item,
@@ -3154,7 +3226,11 @@ function sportteryDetailRow(item = {}) {
     liveHalfScore: liveScore?.halfScore || result?.halfScore || item.halfScore || "",
     liveSource: liveScore?.source || "",
     result,
-    status: resultScore ? (itemFinalScore || resultFinalScore ? "已完赛" : "比分待确认") : (liveScoreText || hasStarted) ? liveStatus || "进行中" : item.statusName || "待赛",
+    status: resultScore
+      ? (itemFinalScore || resultFinalScore ? "已完赛" : "比分待确认")
+      : pendingResult
+        ? "待回填"
+        : (liveScoreText || hasStarted) ? liveStatus || "进行中" : item.statusName || "待赛",
   };
 }
 

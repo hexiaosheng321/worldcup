@@ -6419,6 +6419,16 @@ body::before {
   text-align: center;
 }
 
+.home-match-card.pending-result .home-match-countdown strong,
+.home-match-card.pending-result .home-match-countdown small {
+  color: #d99a16;
+}
+
+.home-match-card.finished .home-match-countdown strong,
+.home-match-card.finished .home-match-countdown small {
+  color: #00875a;
+}
+
 .home-products {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
