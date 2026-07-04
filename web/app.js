@@ -2203,7 +2203,7 @@ function renderCurrentRouteSurfaces() {
     return;
   }
   if (hash === "#worldcup-review") {
-    renderReview();
+    renderGlobalStats();
     return;
   }
   if (hash === "#worldcup") {
@@ -2898,12 +2898,23 @@ function activateTab(tabName) {
 }
 
 function openModelForMatch(no) {
+  const siteLockCard = document.querySelector(`[data-site-lock-no="${no}"]`);
+  if (siteLockCard) {
+    activateTab("site-locks");
+    requestAnimationFrame(() => {
+      siteLockCard.scrollIntoView({ behavior: "smooth", block: "center" });
+      siteLockCard.classList.add("focus-model");
+      setTimeout(() => siteLockCard.classList.remove("focus-model"), 2200);
+    });
+    return;
+  }
   const card = document.querySelector(`#model-card-${no}`);
   if (!card) {
+    activateTab("site-locks");
     showModelNotice(`第 ${no} 场等待推演`);
     return;
   }
-  activateTab("model");
+  activateTab("site-locks");
   requestAnimationFrame(() => {
     card.scrollIntoView({ behavior: "smooth", block: "center" });
     card.classList.add("focus-model");
@@ -2912,9 +2923,10 @@ function openModelForMatch(no) {
 }
 
 function openReviewForMatch(no) {
-  activateTab("review");
+  activateTab("model-stats");
+  renderGlobalStats();
   requestAnimationFrame(() => {
-    const row = document.querySelector(`[data-review-no="${no}"]`);
+    const row = document.querySelector(`[data-global-stats-no="${no}"]`);
     if (!row) return;
     row.scrollIntoView({ behavior: "smooth", block: "center" });
     row.classList.add("focus-model");
@@ -3127,7 +3139,7 @@ function renderMatchDetail(no) {
   const filter = pred ? advancedFilter(pred) : null;
   const backLabel =
     matchDetailReturnTarget === "review"
-      ? "← 复盘验票台"
+      ? "← 模型复盘统计"
       : matchDetailReturnTarget === "locks"
         ? "← 赛事推演锁版"
       : matchDetailReturnTarget === "model-stats"
@@ -3167,8 +3179,8 @@ function renderMatchDetail(no) {
       ${renderWorldCupFullProjection(match, pred, filter, odds)}
     </div>
     <div class="match-page-actions">
-      <button type="button" data-detail-model="${match.no}">锁版室</button>
-      <button type="button" class="secondary" data-detail-review="${match.no}">复盘验票台</button>
+      <button type="button" data-detail-model="${match.no}">赛事推演锁版</button>
+      <button type="button" class="secondary" data-detail-review="${match.no}">模型复盘统计</button>
     </div>
   `;
   activateTab("match-detail");
@@ -4153,7 +4165,7 @@ function renderSportteryMatchDetail(key) {
   const research = sportteryResearchSnapshot(item, modelPred);
   const backLabel =
     matchDetailReturnTarget === "review"
-      ? "← 复盘验票台"
+      ? "← 模型复盘统计"
       : matchDetailReturnTarget === "locks"
         ? "← 赛事推演锁版"
       : matchDetailReturnTarget === "model-stats"
@@ -4240,7 +4252,7 @@ function renderSportteryMatchDetail(key) {
       ${renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreOdds, sourceStamp)}
     </div>
     <div class="match-page-actions">
-      ${item.linkedNo ? `<button type="button" data-detail-model="${item.linkedNo}">世界杯模型页</button>` : ""}
+      ${item.linkedNo ? `<button type="button" data-detail-model="${item.linkedNo}">赛事推演锁版</button>` : ""}
       ${modelPred && !item.linkedNo ? `<button type="button" data-detail-global-stats>统计和回测</button>` : ""}
       <button type="button" class="secondary" data-detail-back>${backLabel.replace("← ", "返回")}</button>
     </div>
@@ -4265,10 +4277,10 @@ function openSportteryMatchPage(key, returnTarget = "sporttery") {
 
 function closeMatchPage() {
   if (window.location.hash.startsWith("#match-") || window.location.hash.startsWith("#sporttery-match-")) {
-    const hash = matchDetailReturnTarget === "review" ? "#worldcup-review" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "odds-map" ? "#odds-map" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : matchDetailReturnTarget === "knockout" ? "#worldcup-knockout" : "#worldcup";
+    const hash = matchDetailReturnTarget === "review" ? "#model-stats" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "odds-map" ? "#odds-map" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : matchDetailReturnTarget === "knockout" ? "#worldcup-knockout" : "#worldcup";
     history.pushState("", document.title, `${window.location.pathname}${window.location.search}${hash}`);
   }
-  activateTab(matchDetailReturnTarget === "review" ? "review" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "odds-map" ? "odds-map" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : matchDetailReturnTarget === "knockout" ? "knockout" : "today");
+  activateTab(matchDetailReturnTarget === "review" ? "model-stats" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "odds-map" ? "odds-map" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : matchDetailReturnTarget === "knockout" ? "knockout" : "today");
 }
 
 function handleRouteFromHash() {
@@ -4295,7 +4307,7 @@ function handleRouteFromHash() {
     activateTab("knockout");
   }
   if (window.location.hash === "#worldcup-review") {
-    activateTab("review");
+    activateTab("model-stats");
   }
   if (window.location.hash === "#sporttery") {
     activateTab("sporttery-pool");
@@ -5069,9 +5081,11 @@ function renderKnockout() {
 }
 
 function renderModel() {
+  const list = document.querySelector("#model-list");
+  if (!list) return;
   const versionPill = document.querySelector("#model-current-version");
   if (versionPill) versionPill.textContent = `当前 ${data.currentModelVersion || "V4"}`;
-  document.querySelector("#model-list").innerHTML = groupedWorldCupPredictions()
+  list.innerHTML = groupedWorldCupPredictions()
     .map(({ match, predictions }) => {
       const actualScore = match ? officialScoreForMatch(match) : "";
       const actual = actualScore || "未完赛";
@@ -5171,7 +5185,7 @@ function renderSiteLocks() {
           const caseStatus = caseBaseStatus(pred, match);
           const lock = caseStatus.lock;
           return `
-            <article class="site-lock-card" ${keyAttr}>
+            <article class="site-lock-card" ${keyAttr} data-site-lock-no="${match.no}">
               <div class="site-lock-head">
                 <div>
                   <span>${dash(competition)} · ${dash(pred.issue || match.no)}</span>
@@ -5724,6 +5738,9 @@ function versionPickCell(pred, match) {
 }
 
 function renderReview() {
+  const cards = document.querySelector("#review-cards");
+  const table = document.querySelector("#review-table");
+  if (!cards || !table) return;
   const groupedRows = groupedWorldCupPredictions()
     .slice()
     .sort((a, b) => a.match.date.localeCompare(b.match.date) || Number(a.match.no) - Number(b.match.no))
@@ -5785,7 +5802,7 @@ function renderReview() {
     `A/B方向 ${adviceDirectionHits}/${adviceRows.length || 0}（${hitRate(adviceDirectionHits, adviceRows.length)}）`,
   ];
 
-  document.querySelector("#review-cards").innerHTML = `
+  cards.innerHTML = `
     <div class="review-summary-grid">
       <article class="review-metric"><span>已验证版本</span><strong>${verifiedRows.length}</strong><em>已有实际比分</em></article>
       <article class="review-metric"><span>方向命中</span><strong>${directionHits}/${verifiedRows.length || 0}</strong><em>${hitRate(directionHits, verifiedRows.length)}</em></article>
@@ -5964,7 +5981,7 @@ function renderReview() {
     </div>
   `;
 
-  document.querySelector("#review-table").innerHTML = `
+  table.innerHTML = `
     <div class="review-subnav">
       <button type="button" class="${activeReviewView === "ticket" ? "active" : ""}" data-review-view="ticket">预测验票</button>
       <button type="button" class="${activeReviewView === "diagnostic" ? "active" : ""}" data-review-view="diagnostic">模型诊断</button>
@@ -6154,7 +6171,7 @@ function renderGlobalStats() {
       const confidence = confidenceGrade(pred);
       const scoreText = officialScoreForMatch(match);
       return `
-        <tr>
+        <tr data-global-stats-no="${match.no}">
           <td>${dash(competition)}</td>
           <td>${dash(playType)}</td>
           <td>${dash(pred.date || match.date)}</td>
