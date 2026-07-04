@@ -22,8 +22,13 @@ const SPORTTERY_HEADERS = {
   accept: "application/json, text/plain, */*",
   "accept-encoding": "identity",
   "accept-language": "zh-CN,zh;q=0.9",
+  "cache-control": "no-cache",
+  pragma: "no-cache",
   origin: "https://m.sporttery.cn",
   referer: "https://m.sporttery.cn/",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-site",
   "user-agent":
     "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
 };
@@ -168,6 +173,16 @@ async function refreshAll() {
 
 async function serveCache(res, fileName) {
   try {
+    if (state.items[fileName]?.ok === false) {
+      sendJson(res, 503, {
+        ok: false,
+        error: "cache refresh failed",
+        cacheFile: fileName,
+        item: state.items[fileName],
+        status: state,
+      });
+      return;
+    }
     const text = await readCache(fileName);
     sendText(res, 200, text, "application/json; charset=utf-8", {
       "x-sporttery-cache": "hit",
@@ -249,6 +264,17 @@ async function handle(req, res) {
   const cacheFile = cacheFileForTarget(checked.target);
   if (!cacheFile) {
     sendJson(res, 404, { ok: false, error: "target is not cacheable yet" });
+    return;
+  }
+  const refreshResult = await refreshOne(cacheFile, checked.target.href);
+  if (!refreshResult.ok) {
+    sendJson(res, 502, {
+      ok: false,
+      error: "fresh upstream fetch failed",
+      cacheFile,
+      detail: refreshResult.error,
+      item: state.items[cacheFile],
+    });
     return;
   }
   await serveCache(res, cacheFile);

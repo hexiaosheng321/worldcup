@@ -838,6 +838,33 @@ const apiFootballTeamZh = {
   Scotland: "苏格兰",
   Sirius: "天狼星",
   "IK Sirius": "天狼星",
+  Anyang: "安养FC",
+  "FC Anyang": "安养FC",
+  "Pohang Steelers": "浦项制铁",
+  "Daejeon Citizen": "大田市民",
+  "Daejeon Hana Citizen": "大田市民",
+  "Bucheon FC": "富川FC",
+  "Bucheon FC 1995": "富川FC",
+  "Jeonbuk Motors": "全北现代",
+  "Jeonbuk Hyundai Motors": "全北现代",
+  "Gangwon FC": "江原FC",
+  Lahti: "拉赫蒂",
+  "FC Lahti": "拉赫蒂",
+  Gnistan: "赫尔火花",
+  "IF Gnistan": "赫尔火花",
+  Halmstad: "哈尔姆斯",
+  "Halmstads BK": "哈尔姆斯",
+  Vasteras: "韦斯特罗",
+  "Vasteras SK": "韦斯特罗",
+  "Vasteras SK FK": "韦斯特罗",
+  "Västerås SK": "韦斯特罗",
+  "Västerås SK FK": "韦斯特罗",
+  Degerfors: "代格福什",
+  "Degerfors IF": "代格福什",
+  Malmo: "马尔默",
+  "Malmo FF": "马尔默",
+  Malmö: "马尔默",
+  "Malmö FF": "马尔默",
   Spain: "西班牙",
   Sweden: "瑞典",
   Switzerland: "瑞士",
@@ -852,7 +879,7 @@ const apiFootballTeamZh = {
 };
 
 function sportteryProxyUrl(env, targetUrl) {
-  let proxy = (env.REQUEST_UPSTREAM_PROXY || env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || "http://114.55.11.209:8787/proxy?url=").trim();
+  let proxy = (env.REQUEST_UPSTREAM_PROXY || env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY || "").trim();
   if (!proxy) return targetUrl;
   if (!/^https?:\/\//i.test(proxy)) proxy = `https://${proxy}`;
   if (proxy.includes("114.55.11.209:8787")) {
@@ -868,6 +895,17 @@ function sportteryProxyUrl(env, targetUrl) {
   if (/[?&]url=$/.test(proxy)) return `${proxy}${encodeURIComponent(targetUrl)}`;
   const delimiter = proxy.includes("?") ? "&" : "?";
   return `${proxy}${delimiter}url=${encodeURIComponent(targetUrl)}`;
+}
+
+function sportteryCacheUrl(targetUrl) {
+  const base = "http://114.55.11.209:8787";
+  const target = new URL(targetUrl);
+  if (target.pathname.includes("getMatchCalculatorV1")) return `${base}/sporttery/calculator.json`;
+  if (target.pathname.includes("getMatchDataPageListV1")) {
+    const pageNo = target.searchParams.get("pageNo") || "1";
+    return `${base}/sporttery/results-page-${pageNo}.json`;
+  }
+  return `${base}/proxy?url=${encodeURIComponent(targetUrl)}`;
 }
 
 function sportteryProxyDiagnostics(env, targetUrl) {
@@ -892,12 +930,24 @@ function sportteryProxyDiagnostics(env, targetUrl) {
 }
 
 async function fetchSportteryJson(env, targetUrl) {
-  const response = await fetch(sportteryProxyUrl(env, targetUrl), { headers: sportteryHeaders });
-  const text = await response.text();
-  if (!response.ok) throw new Error(`Sporttery API ${response.status}: ${text.slice(0, 240)}`);
-  const raw = JSON.parse(text);
-  if (!raw.success) throw new Error(raw.errorMessage || "Sporttery API returned an error");
-  return raw;
+  const primary = sportteryProxyUrl(env, targetUrl);
+  const urls = [primary];
+  const fallback = sportteryCacheUrl(targetUrl);
+  if (fallback !== primary) urls.push(fallback);
+  let lastError = null;
+  for (const requestUrl of urls) {
+    try {
+      const response = await fetch(requestUrl, { headers: sportteryHeaders });
+      const text = await response.text();
+      if (!response.ok) throw new Error(`Sporttery API ${response.status}: ${text.slice(0, 240)}`);
+      const raw = JSON.parse(text);
+      if (!raw.success) throw new Error(raw.errorMessage || "Sporttery API returned an error");
+      return raw;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("Sporttery API fetch failed");
 }
 
 async function fetchSportteryResultPages(env, maxPages = 5) {
@@ -1235,8 +1285,12 @@ function sportteryMatchDates(sportteryMatches = []) {
   )].sort();
 }
 
+function activeSportteryDates(sportteryMatches = [], limit = 6) {
+  return sportteryMatchDates(sportteryMatches).slice(-limit);
+}
+
 async function fetchFootballDataMatches(env, sportteryMatches = []) {
-  const dates = sportteryMatchDates(sportteryMatches);
+  const dates = activeSportteryDates(sportteryMatches);
   if (!dates.length) return { matches: [], errors: [] };
   if (!footballDataKey(env)) {
     return { matches: [], errors: [{ source: "football-data.org", date: "config", message: "FOOTBALL_DATA_API_KEY missing; football-data fallback skipped" }] };
@@ -1244,7 +1298,7 @@ async function fetchFootballDataMatches(env, sportteryMatches = []) {
   const needsWorldCup = sportteryMatches.some((match) => /世界杯|World Cup/i.test(String(match.league || "")));
   const settled = await Promise.allSettled([
     ...(needsWorldCup ? [fetchFootballDataCompetition(env, "WC")] : []),
-    ...dates.slice(0, 4).map((date) => fetchFootballDataDay(env, date)),
+    ...dates.map((date) => fetchFootballDataDay(env, date)),
   ]);
   return {
     matches: settled.flatMap((item) => item.status === "fulfilled" ? item.value : []),
@@ -1293,7 +1347,7 @@ async function fetchFallbackSource(label, dates, fetchDay, missingMessage = "") 
   if (missingMessage) {
     return { matches: [], errors: [{ source: label, date: "config", message: missingMessage }] };
   }
-  const settled = await Promise.allSettled(dates.slice(0, 4).map((date) => fetchDay(date)));
+  const settled = await Promise.allSettled(dates.map((date) => fetchDay(date)));
   return {
     matches: settled.flatMap((item) => item.status === "fulfilled" ? item.value : []),
     errors: settled
@@ -1303,12 +1357,12 @@ async function fetchFallbackSource(label, dates, fetchDay, missingMessage = "") 
 }
 
 async function fetchApiFootballMatches(env, sportteryMatches = []) {
-  const dates = sportteryMatchDates(sportteryMatches);
+  const dates = activeSportteryDates(sportteryMatches);
   if (!dates.length) return { matches: [], errors: [] };
   if (!apiFootballKey(env)) {
     return { matches: [], errors: [{ date: "config", message: "APIFOOTBALL_API_KEY missing; live fallback skipped" }] };
   }
-  const settled = await Promise.allSettled(dates.slice(0, 4).map((date) => fetchApiFootballDay(env, date)));
+  const settled = await Promise.allSettled(dates.map((date) => fetchApiFootballDay(env, date)));
   return {
     matches: settled.flatMap((item) => item.status === "fulfilled" ? item.value : []),
     errors: settled
@@ -1318,7 +1372,7 @@ async function fetchApiFootballMatches(env, sportteryMatches = []) {
 }
 
 async function fetchLiveFallbackMatches(env, sportteryMatches = []) {
-  const dates = sportteryMatchDates(sportteryMatches);
+  const dates = activeSportteryDates(sportteryMatches);
   if (!dates.length) return { matches: [], errors: [] };
 
   const sources = [
@@ -1928,6 +1982,82 @@ async function autoReviewMatch(db, matchId) {
   return { reviewed, cases };
 }
 
+function sportteryResultRowsFromPages(resultPages = []) {
+  const resultSeen = new Set();
+  return resultPages.flatMap((raw) => {
+    const resultDays = raw?.value?.matchInfoList || [];
+    return resultDays.flatMap((day) =>
+      (day.subMatchList || []).flatMap((match) => {
+        const item = normalizeSportteryResult(match, day.matchDate || day.businessDate);
+        const key = sportteryDbMatchId(item);
+        if (resultSeen.has(key)) return [];
+        resultSeen.add(key);
+        return [item];
+      })
+    );
+  });
+}
+
+async function syncOfficialSportteryResultsToD1(db, env, { maxPages = 5 } = {}) {
+  const capturedAt = new Date().toISOString();
+  const resultPages = await fetchSportteryResultPages(env, maxPages);
+  const resultRows = sportteryResultRowsFromPages(resultPages);
+  let resultCount = 0;
+  let reviewed = 0;
+  let cases = 0;
+  const officialOverrides = [];
+  for (const result of resultRows) {
+    const parsed = parseSportteryScore(result.fullScoreRaw || "");
+    if (!parsed) continue;
+    const matchId = sportteryDbMatchId(result);
+    const existing = await db.prepare("SELECT * FROM match_results WHERE match_id = ?").bind(matchId).first();
+    if (existing) {
+      const existingPayload = parseObject(existing.payload_json);
+      const existingScore = `${existing.full_time_home_goals}-${existing.full_time_away_goals}`;
+      if (String(existingPayload.resultSource || "").startsWith("live-fallback") && existingScore !== parsed.text) {
+        officialOverrides.push({
+          matchId,
+          issue: result.issue || result.no || "",
+          home: result.home,
+          away: result.away,
+          liveFallbackScore: existingScore,
+          officialScore: parsed.text,
+        });
+      }
+    }
+    await db.prepare(`
+      INSERT INTO match_results (match_id, full_time_home_goals, full_time_away_goals, result_1x2, total_goals, reviewed_at, payload_json, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(match_id) DO UPDATE SET
+        full_time_home_goals=excluded.full_time_home_goals, full_time_away_goals=excluded.full_time_away_goals,
+        result_1x2=excluded.result_1x2, total_goals=excluded.total_goals, reviewed_at=excluded.reviewed_at,
+        payload_json=excluded.payload_json, updated_at=excluded.updated_at
+    `).bind(
+      matchId,
+      parsed.home,
+      parsed.away,
+      sideFromResult(parsed.home, parsed.away),
+      parsed.home + parsed.away,
+      capturedAt,
+      JSON.stringify({ ...result, cloudMatchId: matchId, resultSource: "sporttery-official" }),
+      capturedAt
+    ).run();
+    const review = await autoReviewMatch(db, matchId);
+    reviewed += review.reviewed;
+    cases += review.cases;
+    resultCount += 1;
+  }
+  await db.prepare(`
+    INSERT INTO sync_logs (sync_id, source, status, message, payload_json, created_at)
+    VALUES (?, 'sporttery-official-results', 'OK', 'sporttery official results sync completed', ?, ?)
+  `).bind(
+    `sporttery-results-${Date.now()}-${crypto.randomUUID()}`,
+    JSON.stringify({ pages: resultPages.length, scannedResults: resultRows.length, resultCount, reviewed, cases, officialOverrides }),
+    capturedAt
+  ).run();
+  return { ok: true, capturedAt, pages: resultPages.length, scannedResults: resultRows.length, results: resultCount, reviewed, cases, officialOverrides };
+}
+
 async function syncSportteryToD1(db, env, supplied = null) {
   const capturedAt = new Date().toISOString();
   const [calculatorRaw, resultPages] = supplied
@@ -2175,15 +2305,67 @@ async function syncLiveFallbackToD1(db, env) {
   let liveFallbackCount = 0;
   let reviewed = 0;
   let cases = 0;
+  const liveFallbackCandidates = [];
   for (const match of matches) {
     const matchId = match.cloudMatchId || sportteryDbMatchId(match);
     const live = liveResultForSportteryMatch(match, liveRows.matches);
-    if (!live) continue;
+    if (!live) {
+      const nearLive = liveRows.matches.find((row) =>
+        liveDateMatchesSporttery(match, row) &&
+        liveTeamMatches(match.home, row.home) &&
+        liveTeamMatches(match.away, row.away)
+      );
+      if (nearLive) {
+        liveFallbackCandidates.push({
+          matchId,
+          issue: match.issue || match.no || "",
+          home: match.home,
+          away: match.away,
+          skipped: "not-finished-or-not-regular",
+          live: {
+            source: nearLive.source,
+            date: nearLive.date,
+            home: nearLive.homeZh || nearLive.home,
+            away: nearLive.awayZh || nearLive.away,
+            score: nearLive.score,
+            status: nearLive.status,
+            isFinished: nearLive.isFinished,
+            scoreDuration: nearLive.scoreDuration,
+            scoreMode: nearLive.scoreMode,
+          },
+        });
+      }
+      continue;
+    }
     const parsed = parseDashScore(live.score);
-    if (!parsed) continue;
+    if (!parsed) {
+      liveFallbackCandidates.push({ matchId, issue: match.issue || match.no || "", home: match.home, away: match.away, skipped: "bad-score", score: live.score || "" });
+      continue;
+    }
     const existing = await db.prepare("SELECT payload_json FROM match_results WHERE match_id = ?").bind(matchId).first();
     const existingPayload = parseObject(existing?.payload_json);
-    if (existing && !String(existingPayload.resultSource || "").startsWith("live-fallback")) continue;
+    if (existing && !String(existingPayload.resultSource || "").startsWith("live-fallback")) {
+      liveFallbackCandidates.push({
+        matchId,
+        issue: match.issue || match.no || "",
+        home: match.home,
+        away: match.away,
+        skipped: "official-existing",
+        existingSource: existingPayload.resultSource || "",
+        score: `${parsed.home}-${parsed.away}`,
+      });
+      continue;
+    }
+    liveFallbackCandidates.push({
+      matchId,
+      issue: match.issue || match.no || "",
+      home: match.home,
+      away: match.away,
+      skipped: "",
+      liveSource: live.source,
+      score: `${parsed.home}-${parsed.away}`,
+      status: live.status || "",
+    });
     const result = {
       ...match,
       statusCode: "live-finished",
@@ -2237,12 +2419,13 @@ async function syncLiveFallbackToD1(db, env) {
       cases,
       liveFallbackErrors: liveRows.errors,
       liveFallbackSources: [...new Set(liveRows.matches.map((match) => match.source).filter(Boolean))],
+      liveFallbackCandidates: liveFallbackCandidates.slice(0, 30),
       sourceSummary,
     }),
     capturedAt
   ).run();
 
-  return { ok: true, capturedAt, matchCount: matches.length, liveFallbackCount, reviewed, cases, liveFallbackErrors: liveRows.errors, sourceSummary };
+  return { ok: true, capturedAt, matchCount: matches.length, liveFallbackCount, reviewed, cases, liveFallbackErrors: liveRows.errors, liveFallbackCandidates: liveFallbackCandidates.slice(0, 30), sourceSummary };
 }
 
 function liveFallbackSourceSummary(sportteryMatches = [], liveRows = []) {
@@ -2785,6 +2968,11 @@ export async function onRequest(context) {
       }));
     }
 
+    if (path === "sync/sporttery-results" && request.method === "POST") {
+      const maxPages = Math.min(Math.max(Number(url.searchParams.get("pages") || 5), 1), 10);
+      return json(await syncOfficialSportteryResultsToD1(db, env, { maxPages }));
+    }
+
     if (path === "sync/live-results" && request.method === "POST") {
       const requestApiFootballKey = request.headers.get("x-apifootball-api-key") || "";
       const requestFootballDataKey = request.headers.get("x-football-data-api-key") || "";
@@ -2807,13 +2995,21 @@ export async function onRequest(context) {
       const matchLimit = initialScope ? 40 : 200;
       const lockLimit = initialScope ? 40 : 200;
       const resultLimit = initialScope ? 40 : 200;
-      const [matches, locks, results, cases] = await Promise.all([
+      const [matches, locks, recentResults, cases] = await Promise.all([
         db.prepare(`SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT ${matchLimit}`).all(),
         db.prepare(`SELECT * FROM locked_predictions ORDER BY locked_at DESC LIMIT ${lockLimit}`).all(),
         db.prepare(`SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT ${resultLimit}`).all(),
         includeCases ? listCases(db) : Promise.resolve([]),
       ]);
-      return json({ ok: true, matches: matches.results, locks: locks.results, results: results.results, cases, autoPredictions: [] });
+      const resultsById = new Map((recentResults.results || []).map((row) => [row.match_id, row]));
+      const matchIds = (matches.results || []).map((row) => row.match_id).filter(Boolean);
+      if (matchIds.length) {
+        const placeholders = matchIds.map(() => "?").join(",");
+        const linkedResults = await db.prepare(`SELECT * FROM match_results WHERE match_id IN (${placeholders})`).bind(...matchIds).all();
+        (linkedResults.results || []).forEach((row) => resultsById.set(row.match_id, row));
+      }
+      const results = [...resultsById.values()].sort((a, b) => String(b.reviewed_at || "").localeCompare(String(a.reviewed_at || "")));
+      return json({ ok: true, matches: matches.results, locks: locks.results, results, cases, autoPredictions: [] });
     }
 
     if (path === "matches" && request.method === "GET") {

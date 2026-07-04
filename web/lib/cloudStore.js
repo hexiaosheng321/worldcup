@@ -36,6 +36,10 @@
       const scope = options.scope || "initial";
       return request(`/bootstrap?includeCases=${includeCases}&scope=${encodeURIComponent(scope)}`);
     },
+    syncSportteryResults: (options = {}) => {
+      const pages = Math.min(Math.max(Number(options.pages || 5), 1), 10);
+      return post(`/sync/sporttery-results?pages=${encodeURIComponent(pages)}`, {});
+    },
     listMatches: () => request("/matches"),
     upsertMatch: (match) => post("/matches", match),
     listAutoPredictions: () => request("/auto-predictions"),

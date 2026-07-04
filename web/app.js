@@ -21,6 +21,7 @@ const SPORTTERY_RESULTS_API_URL =
 const SPORTTERY_FIXED_BONUS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
 const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v1";
+const SPORTTERY_RESULT_SYNC_THROTTLE_KEY = "wc_sporttery_result_sync_checked_at_v1";
 const STATIC_SNAPSHOT_FALLBACKS = [
   "./live-sporttery-data.js",
   "./live-sporttery-results.js",
@@ -2691,8 +2692,40 @@ async function loadCloudCaseBaseData({ rerender = false } = {}) {
   return Boolean(added);
 }
 
+function hasPastUnfilledSportteryMatches() {
+  const now = Date.now();
+  return (oddsData.matches || []).some((item) => {
+    if (verifiedSportteryScore(item)) return false;
+    const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
+    return Number.isFinite(kickoffAt) && now - kickoffAt > 105 * 60 * 1000;
+  });
+}
+
+function recentSportteryResultSyncChecked() {
+  try {
+    const checkedAt = Number(localStorage.getItem(SPORTTERY_RESULT_SYNC_THROTTLE_KEY) || 0);
+    return Number.isFinite(checkedAt) && Date.now() - checkedAt < 10 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
+
+async function syncCloudSportteryResultsIfNeeded({ force = false, rerender = true } = {}) {
+  if (!window.WC_CLOUD_STORE?.syncSportteryResults) return false;
+  if (!force && !hasPastUnfilledSportteryMatches()) return false;
+  if (!force && recentSportteryResultSyncChecked()) return false;
+  try {
+    localStorage.setItem(SPORTTERY_RESULT_SYNC_THROTTLE_KEY, String(Date.now()));
+  } catch {}
+  const synced = await window.WC_CLOUD_STORE.syncSportteryResults({ pages: 5 });
+  if (!synced?.ok) return false;
+  const changed = await loadCloudBootstrapData({ rerender, scope: "initial" });
+  return Boolean(changed || synced.results);
+}
+
 async function refreshSportteryCloudData() {
   const loadedCloud = await loadCloudBootstrapData({ rerender: true });
+  await syncCloudSportteryResultsIfNeeded({ rerender: true });
   if (loadedCloud) {
     await refreshLiveFootballScoresData({ rerender: true });
     scheduleSportterySpHistoryRefresh();
@@ -7307,7 +7340,8 @@ window.addEventListener("hashchange", () => {
     loadWorldCupStaticDataFallback({ rerender: true });
   }
   if (currentRouteNeedsCloudBootstrap()) {
-    loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" });
+    loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" })
+      .then(() => syncCloudSportteryResultsIfNeeded({ rerender: true }));
   }
   sendAnalyticsEvent("page_view");
 });
@@ -7323,14 +7357,18 @@ document.body.classList.remove("page-loading"); document.body.classList.add("pag
 handleRouteFromHash();
 sendAnalyticsEvent("page_view");
 if (currentRouteNeedsCloudBootstrap()) {
-  loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" }).then((changed) => {
+  loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" }).then(async (changed) => {
+    const synced = await syncCloudSportteryResultsIfNeeded({ rerender: true });
     if (changed) refreshLiveFootballScoresData({ rerender: true });
+    else if (synced) renderCurrentRouteSurfaces();
     scheduleSportterySpHistoryRefresh();
   });
 } else if (!initialHash) {
   runWhenPageIdle(() => {
-    loadCloudBootstrapData({ rerender: true, scope: "initial" }).then((changed) => {
+    loadCloudBootstrapData({ rerender: true, scope: "initial" }).then(async (changed) => {
+      const synced = await syncCloudSportteryResultsIfNeeded({ rerender: true });
       if (changed) refreshLiveFootballScoresData({ rerender: true });
+      else if (synced) renderCurrentRouteSurfaces();
     });
   }, 2200);
 } else {

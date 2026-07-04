@@ -51,14 +51,7 @@ jobs:
         shell: bash
         run: |
           if [ "$RUN_DATA_UPDATE" = "true" ]; then
-            if ! node tools/sync-sporttery-cache.mjs; then
-              echo "Sporttery sync failed; running live-result fallback only."
-              curl --fail-with-body -sS -X POST \
-                -H "x-apifootball-api-key: $APIFOOTBALL_API_KEY" \
-                -H "x-football-data-api-key: $FOOTBALL_DATA_API_KEY" \
-                -H "x-thesportsdb-api-key: $THESPORTSDB_API_KEY" \
-                "https://worldcup-dashboard-4hr.pages.dev/api/sync/live-results"
-            fi
+            node tools/sync-sporttery-cache.mjs
           else
             npm run cloudflare:deploy
           fi
