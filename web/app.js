@@ -46,7 +46,7 @@ let footballDataContext = window.FOOTBALL_DATA_CONTEXT?.matches?.length
   : { matches: [], standings: [] };
 let cloudBootstrapLoaded = false;
 let cloudBootstrapAttempted = false;
-let cloudBootstrapPending = null;
+const cloudBootstrapPending = new Map();
 let worldCupStaticDataLoaded = Boolean(data.predictions?.length && data.matches?.length);
 let worldCupStaticDataPending = null;
 const dynamicScriptPromises = new Map();
@@ -2013,6 +2013,7 @@ function sportteryPoolItems() {
 function sportteryPoolCard(item) {
   const linked = Boolean(item.linkedNo);
   const cardKey = encodeURIComponent(item.sportteryKey || sportteryItemKey(item));
+  const detailHref = `#sporttery-match-${cardKey}`;
   const handicap = item.handicap || "0";
   const normalText = item.normal
     ? `胜 ${item.normal.win} · 平 ${item.normal.draw} · 负 ${item.normal.lose}`
@@ -2049,7 +2050,7 @@ function sportteryPoolCard(item) {
       </div>
       <div class="card-foot">
         <span>${item.league || "体彩"}</span>
-        <span>进入体彩详情 ›</span>
+        <a class="sporttery-detail-link" href="${detailHref}" data-sporttery-match-key="${cardKey}">进入体彩详情 ›</a>
       </div>
     </article>
   `;
@@ -2643,24 +2644,27 @@ function restoreCloudBootstrapCache() {
   }
 }
 
-async function loadCloudBootstrapData({ rerender = false, includeCases = false } = {}) {
+async function loadCloudBootstrapData({ rerender = false, includeCases = false, scope = "initial" } = {}) {
   if (!window.WC_CLOUD_STORE?.bootstrap) return false;
-  if (cloudBootstrapPending) {
-    const changed = await cloudBootstrapPending;
+  const requestedScope = scope || "initial";
+  const pendingKey = `${requestedScope}:${includeCases ? "cases" : "base"}`;
+  if (cloudBootstrapPending.has(pendingKey)) {
+    const changed = await cloudBootstrapPending.get(pendingKey);
     if (rerender) renderCurrentRouteSurfaces();
     return changed;
   }
-  cloudBootstrapPending = (async () => {
+  const pending = (async () => {
     cloudBootstrapAttempted = true;
-    const payload = await window.WC_CLOUD_STORE.bootstrap({ includeCases });
+    const payload = await window.WC_CLOUD_STORE.bootstrap({ includeCases, scope: requestedScope });
     if (!payload?.ok) return false;
     writeCloudBootstrapCache(payload);
     return applyCloudBootstrapPayload(payload, { rerender, cached: false });
   })();
+  cloudBootstrapPending.set(pendingKey, pending);
   try {
-    return await cloudBootstrapPending;
+    return await pending;
   } finally {
-    cloudBootstrapPending = null;
+    cloudBootstrapPending.delete(pendingKey);
   }
 }
 
@@ -7513,6 +7517,11 @@ function currentRouteNeedsCloudBootstrap() {
   return hash === "#sporttery" || hash === "#locks" || hash === "#model-stats" || hash === "#odds-map" || /^#sporttery-match-/.test(hash);
 }
 
+function currentRouteNeedsFullCloudBootstrap() {
+  const hash = window.location.hash || "";
+  return hash === "#model-stats" || hash === "#odds-map";
+}
+
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     activateTab(tab.dataset.tab);
@@ -8021,7 +8030,7 @@ window.addEventListener("hashchange", () => {
     loadWorldCupStaticDataFallback({ rerender: true });
   }
   if (currentRouteNeedsCloudBootstrap()) {
-    loadCloudBootstrapData({ rerender: true });
+    loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" });
   }
   sendAnalyticsEvent("page_view");
 });
@@ -8040,7 +8049,7 @@ if (!initialHash) {
   runWhenPageIdle(renderAll, 1800);
 }
 if (currentRouteNeedsCloudBootstrap()) {
-  loadCloudBootstrapData({ rerender: true }).then((changed) => {
+  loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" }).then((changed) => {
     if (changed) refreshLiveFootballScoresData({ rerender: true });
     scheduleSportterySpHistoryRefresh();
   });

@@ -6693,6 +6693,18 @@ body::before {
   font-size: 12px;
 }
 
+.sporttery-detail-link {
+  color: inherit;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.sporttery-detail-link:hover,
+.sporttery-detail-link:focus-visible {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
 .sporttery-detail-odds {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
