@@ -135,8 +135,9 @@ function showDashboard() {
 }
 
 function parseScore(score) {
-  if (!score || !score.includes("-")) return null;
-  const [home, away] = score.split("-").map(Number);
+  const normalized = String(score || "").trim().replace(":", "-");
+  if (!normalized || !normalized.includes("-")) return null;
+  const [home, away] = normalized.split("-").map(Number);
   if (Number.isNaN(home) || Number.isNaN(away)) return null;
   return { home, away, total: home + away };
 }
@@ -895,6 +896,37 @@ function handicapDirection(score, handicap) {
 
 function handicapPick(pred) {
   return pred.handicapPick || handicapDirection(pred.mainScore, reviewHandicapLine(pred));
+}
+
+function resolvedPredictionDecision(pred, context = {}) {
+  if (!pred) return null;
+  const mainScore = pred.mainScore || pred.score1 || "";
+  const primaryDirection = direction(mainScore);
+  const primaryHandicap = handicapDirection(mainScore, context.handicapLine || reviewHandicapLine(pred));
+  const originalPick = pred.pick || context.directionPick || "";
+  const originalHandicap = handicapPick(pred) || context.handicapPick || "";
+  const resolvedPick = primaryDirection || originalPick || "";
+  const resolvedHandicap = primaryHandicap || originalHandicap || "";
+  const conflicts = [];
+  if (primaryDirection && originalPick && primaryDirection !== originalPick) {
+    conflicts.push(`胜平负由${originalPick}改为${primaryDirection}`);
+  }
+  if (primaryHandicap && originalHandicap && primaryHandicap !== originalHandicap) {
+    conflicts.push(`让球由${originalHandicap}改为${primaryHandicap}`);
+  }
+  const hasConflict = conflicts.length > 0;
+  const resolution = hasConflict
+    ? `冲突闸门：主比分 ${mainScore} 权重最高，${conflicts.join("，")}；反比分只保留为风险分支。`
+    : pred.conflictResolution || pred.decisionGateConflict || "";
+  return {
+    pick: resolvedPick,
+    handicapPick: resolvedHandicap,
+    mainScore,
+    hasConflict,
+    resolution,
+    originalPick,
+    originalHandicap,
+  };
 }
 
 function displayModelText(value) {
@@ -2706,12 +2738,15 @@ function projectionScorePick(pred, fallback = "") {
 
 function renderProjectionDecisionDeck(match, pred, filter, options = {}) {
   const gate = options.gate === false ? null : match?.no ? autoDecisionGate(match.no, pred) : null;
+  const resolved = resolvedPredictionDecision(pred, { handicapLine: match ? handicapLine(match.no) : "" });
   const scorePick = projectionScorePick(pred, options.scorePick);
   const totalPick = pred?.totalGoalsPick || options.totalPick || "-";
-  const handicap = handicapPick(pred) || options.handicapPick || "-";
+  const handicap = resolved?.handicapPick || handicapPick(pred) || options.handicapPick || "-";
   const issue = options.issue || (match ? ticaiIssue(match) : pred?.issue) || "-";
   const version = pred ? predictionVersionLabel(pred) : "待推演";
-  const summary = finalDecisionActionText(pred) || `单选 ${pred?.pick || "-"}；让球 ${handicap}；总进球 ${totalPick}；比分 ${scorePick}`;
+  const summary = resolved?.hasConflict
+    ? `${resolved.resolution} 最终单选 ${resolved.pick || "-"}；让球 ${handicap}；总进球 ${totalPick}；比分 ${scorePick}`
+    : finalDecisionActionText(pred) || `单选 ${pred?.pick || "-"}；让球 ${handicap}；总进球 ${totalPick}；比分 ${scorePick}`;
   const competition = pred
     ? modelDisplayName(pred, match, options.competition || pred?.competitionModel || pred?.competitionType || (match?.group ? `${match.group}组` : ""))
     : options.competition || (match?.group ? `${match.group}组` : "");
@@ -2731,7 +2766,7 @@ function renderProjectionDecisionDeck(match, pred, filter, options = {}) {
       <div class="projection-deck-grid">
         <article><small>体彩期号</small><b>${issue}</b></article>
         <article><small>模型版本</small><b>${version}</b></article>
-        <article><small>单选</small><b>${pred?.pick || options.directionPick || "-"}</b></article>
+        <article><small>单选</small><b>${resolved?.pick || pred?.pick || options.directionPick || "-"}</b></article>
         <article><small>让球</small><b>${handicap}</b></article>
         <article><small>总进球</small><b>${totalPick}</b></article>
         <article><small>比分预测</small><b>${scorePick}</b></article>
@@ -2939,7 +2974,9 @@ function sportteryResearchSnapshot(item, modelPred) {
   if (modelPred) {
     const modelName = modelDisplayName(modelPred, item, modelPred.competitionModel || modelPred.competitionType || item?.league);
     const actualTotal = parseScore(score)?.total;
+    const resolved = resolvedPredictionDecision(modelPred, { handicapLine: item?.handicap || reviewHandicapLine(modelPred) });
     const riskNotes = [
+      resolved?.resolution,
       modelPred.decisionConflict,
       modelPred.keyFailureRisk,
       modelPred.eventRisk,
@@ -2948,8 +2985,8 @@ function sportteryResearchSnapshot(item, modelPred) {
     return {
       statusLabel: score ? "赛后复盘" : `${modelName}锁版`,
       action: modelPred.advice || "已锁版",
-      directionPick: modelPred.pick || "-",
-      handicapPick: handicapPick(modelPred) || "-",
+      directionPick: resolved?.pick || modelPred.pick || "-",
+      handicapPick: resolved?.handicapPick || handicapPick(modelPred) || "-",
       totalPick: modelPred.totalGoalsPick || "-",
       scorePick: [modelPred.mainScore, modelPred.counterScore].filter(Boolean).join(" / ") || "-",
       riskNotes,
@@ -6410,6 +6447,7 @@ function renderDecisionGatePanel(no, pred) {
 
 function finalDecisionGateItems(pred) {
   if (!pred) return [];
+  const resolved = resolvedPredictionDecision(pred);
   return [
     ["统一流程", pred.decisionProcess || pred.modelDecisionProcess],
     ["赛事规则", pred.competitionRules || pred.eventWeighting || pred.competitionWeight || pred.weightProfile],
@@ -6419,8 +6457,8 @@ function finalDecisionGateItems(pred) {
     ["让球卡盘", pred.handicapGate || pred.letBallGate || pred.handicapDecisionGate],
     ["跨市场", pred.crossMarketConsistency || pred.marketConsistencyGate],
     ["数据质量", pred.dataQuality || pred.dataQualityGate],
-    ["决策冲突", pred.decisionConflict || pred.conflictResolution || pred.decisionGateConflict],
-    ["最终动作", pred.finalDecisionAction || pred.decisionAction || pred.valueFilterAction],
+    ["决策冲突", resolved?.resolution || pred.decisionConflict || pred.conflictResolution || pred.decisionGateConflict],
+    ["最终动作", resolved?.hasConflict ? `按主比分优先收口：胜平负 ${resolved.pick || "-"}；让球 ${resolved.handicapPick || "-"}。` : pred.finalDecisionAction || pred.decisionAction || pred.valueFilterAction],
   ].filter(([, value]) => Boolean(value));
 }
 
@@ -6457,6 +6495,10 @@ function renderFinalDecisionGatePanel(pred) {
 }
 
 function finalDecisionActionText(pred) {
+  const resolved = resolvedPredictionDecision(pred);
+  if (resolved?.hasConflict) {
+    return `${resolved.resolution} 最终动作：胜平负 ${resolved.pick || "-"}；让球 ${resolved.handicapPick || "-"}。`;
+  }
   return pred?.finalDecisionAction || pred?.decisionAction || pred?.valueFilterAction || "";
 }
 

@@ -1645,6 +1645,32 @@ function topScoreTexts(scores = []) {
     .map((item) => String(item.score).replace(":", "-"));
 }
 
+function parsePredictionScore(score = "") {
+  const normalized = String(score || "").trim().replace(":", "-");
+  if (!normalized.includes("-")) return null;
+  const [home, away] = normalized.split("-").map(Number);
+  if (!Number.isFinite(home) || !Number.isFinite(away)) return null;
+  return { home, away };
+}
+
+function scoreDirection(score = "") {
+  const parsed = parsePredictionScore(score);
+  if (!parsed) return "";
+  if (parsed.home > parsed.away) return "胜";
+  if (parsed.home < parsed.away) return "负";
+  return "平";
+}
+
+function handicapDirectionFromScore(score = "", handicap = "") {
+  const parsed = parsePredictionScore(score);
+  const line = Number(handicap);
+  if (!parsed || !Number.isFinite(line)) return "";
+  const adjustedHome = parsed.home + line;
+  if (adjustedHome > parsed.away) return "让胜";
+  if (adjustedHome < parsed.away) return "让负";
+  return "让平";
+}
+
 function topGoalText(goals = []) {
   const rows = goals
     .filter((item) => item.goals && oddNumber(item.odds))
@@ -1688,6 +1714,8 @@ function buildAutoSportteryPrediction(match, phaseInfo, capturedAt) {
   const scores = topScoreTexts(match.scoreOdds || []);
   const mainScore = scores[0] || "1-1";
   const counterScore = scores[1] || (normal?.label === "平" ? "0-0" : "1-1");
+  const primaryPick = scoreDirection(mainScore) || normal?.label || "";
+  const primaryHandicap = handicapDirectionFromScore(mainScore, match.handicap || "0") || handicap?.label || "";
   const totalGoalsPick = topGoalText(match.totalGoalsOdds || []);
   const objective = match.footballDataContext || {};
   const hasObjectiveState = Boolean(objective.homeState?.played || objective.awayState?.played || objective.stage);
@@ -1703,7 +1731,16 @@ function buildAutoSportteryPrediction(match, phaseInfo, capturedAt) {
       : phaseInfo.phase === "DRAFT_AUTO"
         ? "自动初推演"
       : "风险观察";
-  const marketGap = normal && handicap && !handicap.label.includes(normal.label)
+  const conflictNotes = [];
+  if (normal?.label && primaryPick && normal.label !== primaryPick) {
+    conflictNotes.push(`胜平负低位${normal.label}与主比分${mainScore}不一致，按主比分改为${primaryPick}`);
+  }
+  if (handicap?.label && primaryHandicap && handicap.label !== primaryHandicap) {
+    conflictNotes.push(`让球低位${handicap.label}与主比分${mainScore}不一致，按主比分改为${primaryHandicap}`);
+  }
+  const marketGap = conflictNotes.length
+    ? `决策冲突闸门：${conflictNotes.join("；")}；反比分${counterScore}只作为风险分支。`
+    : normal && handicap && !handicap.label.includes(normal.label)
     ? "胜平负低位与让球低位不完全一致，自动降级为风险观察方向。"
     : "胜平负低位、让球保护与比分低赔暂未出现强冲突。";
   const stageText = objective.stage ? `football-data 阶段 ${objective.stage}${objective.group ? ` / ${objective.group}` : ""}` : "football-data 阶段待补";
@@ -1747,12 +1784,13 @@ function buildAutoSportteryPrediction(match, phaseInfo, capturedAt) {
     noiseFilter: "自动层排除单纯名气和排名叙事，低置信或数据缺口场次只保留为观察/跳过。",
     keyJudgement: hasEnoughData ? marketGap : "盘口字段不完整，自动层不强行给出正式推荐。",
     marketGap,
-    script: `主脚本按${normal?.label || "待定"}方向展开，比分低赔落点为 ${mainScore}；反脚本保留 ${counterScore}。`,
+    script: `主脚本按主比分 ${mainScore} 收口，反脚本保留 ${counterScore}。`,
     dataQuality: hasEnoughData && hasObjectiveState ? "HIGH" : hasEnoughData ? "MEDIUM" : "LOW",
     decisionConflict: marketGap,
-    finalDecisionAction: `${advice}：胜平负 ${normal?.label || "-"}；让球 ${handicap?.label || "-"}；总进球 ${totalGoalsPick}；比分 ${mainScore} / ${counterScore}。`,
-    pick: hasEnoughData ? normal?.label || "" : "",
-    handicapPick: hasEnoughData ? handicap?.label || "" : "",
+    conflictResolution: conflictNotes.length ? marketGap : "",
+    finalDecisionAction: `${advice}：胜平负 ${primaryPick || "-"}；让球 ${primaryHandicap || "-"}；总进球 ${totalGoalsPick}；比分 ${mainScore} / ${counterScore}。`,
+    pick: hasEnoughData ? primaryPick : "",
+    handicapPick: hasEnoughData ? primaryHandicap : "",
     totalGoalsPick,
     mainScore,
     counterScore,
