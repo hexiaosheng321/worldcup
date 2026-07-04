@@ -41,8 +41,9 @@ try {
 }
 
 const officialResults = await postApi("/api/sync/sporttery-results?pages=5");
+const okoooResults = await postApi("/api/sync/okooo-results");
 const liveFallback = await postApi("/api/sync/live-results");
 
-if (!cacheOk && !officialResults.ok && !liveFallback.ok) {
+if (!cacheOk && !officialResults.ok && !okoooResults.ok && !liveFallback.ok) {
   process.exit(1);
 }

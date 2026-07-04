@@ -794,6 +794,16 @@ const sportteryHeaders = {
     "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
 };
 
+const okoooJczqUrl = "https://m.okooo.com/jczq/";
+const okoooHeaders = {
+  accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "accept-language": "zh-CN,zh;q=0.9",
+  "cache-control": "no-cache",
+  pragma: "no-cache",
+  "user-agent":
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+};
+
 const apiFootballEndpoint = "https://apiv3.apifootball.com/";
 const footballDataEndpoint = "https://api.football-data.org/v4/matches";
 const footballDataCompetitionEndpoint = (code, season = "") =>
@@ -2278,6 +2288,165 @@ function d1RowToSportteryMatch(row) {
   };
 }
 
+function decodeTextBody(bytes) {
+  for (const encoding of ["gbk", "gb18030", "utf-8"]) {
+    try {
+      return new TextDecoder(encoding).decode(bytes);
+    } catch {}
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+function extractAssignedObject(source = "", marker = "") {
+  const markerIndex = source.indexOf(marker);
+  if (markerIndex < 0) return null;
+  const start = source.indexOf("{", markerIndex);
+  if (start < 0) return null;
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+  for (let index = start; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === quote) {
+        quote = "";
+      }
+      continue;
+    }
+    if (char === "\"" || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    if (char === "}") depth -= 1;
+    if (depth === 0) return source.slice(start, index + 1);
+  }
+  return null;
+}
+
+function scoreFromOkoooResult(value = "") {
+  const found = String(value || "").match(/^Score(\d)(\d)$/);
+  if (!found) return null;
+  const home = Number(found[1]);
+  const away = Number(found[2]);
+  if (!Number.isFinite(home) || !Number.isFinite(away)) return null;
+  return { home, away, text: `${home}-${away}` };
+}
+
+function parseOkoooJczqResults(html = "") {
+  const objectText = extractAssignedObject(html, "var oddsData");
+  if (!objectText) throw new Error("OKOOO oddsData not found");
+  const oddsData = JSON.parse(objectText);
+  return Object.entries(oddsData).map(([orderId, item]) => {
+    const result = item?.Result || {};
+    const parsed = scoreFromOkoooResult(result.SportteryScore);
+    return {
+      orderId,
+      score: parsed?.text || "",
+      homeGoals: parsed?.home,
+      awayGoals: parsed?.away,
+      result,
+      boundary: item?.Boundary || {},
+      hasResult: Boolean(parsed),
+      rawScoreCode: result.SportteryScore || "",
+    };
+  });
+}
+
+async function fetchOkoooJczqResults(env) {
+  const response = await fetch(env.OKOOO_JCZQ_URL || okoooJczqUrl, { headers: okoooHeaders });
+  const text = decodeTextBody(await response.arrayBuffer());
+  if (!response.ok) throw new Error(`OKOOO ${response.status}: ${text.slice(0, 200)}`);
+  return parseOkoooJczqResults(text);
+}
+
+async function syncOkoooResultsToD1(db, env) {
+  const capturedAt = new Date().toISOString();
+  const rows = await db.prepare(`
+    SELECT * FROM matches
+    ORDER BY updated_at DESC
+    LIMIT 300
+  `).all();
+  const byOrderId = new Map();
+  for (const match of (rows.results || []).map(d1RowToSportteryMatch)) {
+    const orderId = String(match.orderId || "").trim();
+    if (orderId && !byOrderId.has(orderId)) byOrderId.set(orderId, match);
+  }
+
+  const sourceRows = await fetchOkoooJczqResults(env);
+  let resultCount = 0;
+  let reviewed = 0;
+  let cases = 0;
+  const skipped = [];
+  const written = [];
+  for (const source of sourceRows) {
+    if (!source.hasResult) {
+      skipped.push({ orderId: source.orderId, reason: "result-null" });
+      continue;
+    }
+    const match = byOrderId.get(source.orderId);
+    if (!match) {
+      skipped.push({ orderId: source.orderId, score: source.score, reason: "match-not-found" });
+      continue;
+    }
+    const matchId = match.cloudMatchId || sportteryDbMatchId(match);
+    const existing = await db.prepare("SELECT * FROM match_results WHERE match_id = ?").bind(matchId).first();
+    const existingPayload = parseObject(existing?.payload_json);
+    if (existing && String(existingPayload.resultSource || "") === "sporttery-official") {
+      skipped.push({ orderId: source.orderId, matchId, score: source.score, reason: "official-existing" });
+      continue;
+    }
+    const payload = {
+      ...match,
+      statusCode: "okooo-finished",
+      statusName: "已完赛",
+      fullScoreRaw: `${source.homeGoals}:${source.awayGoals}`,
+      score: source.score,
+      result: source.homeGoals > source.awayGoals ? "胜" : source.homeGoals < source.awayGoals ? "负" : "平",
+      okoooOrderId: source.orderId,
+      okoooResult: source.result,
+      okoooBoundary: source.boundary,
+      resultSource: "okooo-jczq",
+      officialComparison: "pending",
+    };
+    await db.prepare(`
+      INSERT INTO match_results (match_id, full_time_home_goals, full_time_away_goals, result_1x2, total_goals, reviewed_at, payload_json, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(match_id) DO UPDATE SET
+        full_time_home_goals=excluded.full_time_home_goals, full_time_away_goals=excluded.full_time_away_goals,
+        result_1x2=excluded.result_1x2, total_goals=excluded.total_goals, reviewed_at=excluded.reviewed_at,
+        payload_json=excluded.payload_json, updated_at=excluded.updated_at
+    `).bind(
+      matchId,
+      source.homeGoals,
+      source.awayGoals,
+      sideFromResult(source.homeGoals, source.awayGoals),
+      source.homeGoals + source.awayGoals,
+      capturedAt,
+      JSON.stringify({ ...payload, cloudMatchId: matchId }),
+      capturedAt
+    ).run();
+    const review = await autoReviewMatch(db, matchId);
+    reviewed += review.reviewed;
+    cases += review.cases;
+    resultCount += 1;
+    written.push({ orderId: source.orderId, matchId, issue: match.issue || match.no || "", home: match.home, away: match.away, score: source.score });
+  }
+  await db.prepare(`
+    INSERT INTO sync_logs (sync_id, source, status, message, payload_json, created_at)
+    VALUES (?, 'okooo-jczq-results', 'OK', 'okooo jczq results sync completed', ?, ?)
+  `).bind(
+    `okooo-results-${Date.now()}-${crypto.randomUUID()}`,
+    JSON.stringify({ scanned: sourceRows.length, resultCount, reviewed, cases, written, skipped: skipped.slice(0, 80) }),
+    capturedAt
+  ).run();
+  return { ok: true, capturedAt, scanned: sourceRows.length, results: resultCount, reviewed, cases, written, skipped };
+}
+
 async function syncLiveFallbackToD1(db, env) {
   const capturedAt = new Date().toISOString();
   const rows = await db.prepare(`
@@ -2971,6 +3140,10 @@ export async function onRequest(context) {
     if (path === "sync/sporttery-results" && request.method === "POST") {
       const maxPages = Math.min(Math.max(Number(url.searchParams.get("pages") || 5), 1), 10);
       return json(await syncOfficialSportteryResultsToD1(db, env, { maxPages }));
+    }
+
+    if (path === "sync/okooo-results" && request.method === "POST") {
+      return json(await syncOkoooResultsToD1(db, env));
     }
 
     if (path === "sync/live-results" && request.method === "POST") {
