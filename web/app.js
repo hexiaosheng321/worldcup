@@ -20,6 +20,7 @@ const SPORTTERY_RESULTS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
 const SPORTTERY_FIXED_BONUS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
+const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v1";
 const STATIC_SNAPSHOT_FALLBACKS = [
   "./live-sporttery-data.js",
   "./live-sporttery-results.js",
@@ -43,6 +44,9 @@ let liveFootballData = window.LIVE_FOOTBALL_SCORES?.matches?.length
 let footballDataContext = window.FOOTBALL_DATA_CONTEXT?.matches?.length
   ? window.FOOTBALL_DATA_CONTEXT
   : { matches: [], standings: [] };
+let cloudBootstrapLoaded = false;
+let cloudBootstrapAttempted = false;
+let cloudBootstrapPending = null;
 
 const tabs = document.querySelectorAll(".tab");
 const panels = document.querySelectorAll(".panel");
@@ -2042,6 +2046,8 @@ function renderSportteryPool() {
           `
         )
         .join("")
+    : !cloudBootstrapAttempted && !oddsData.matches?.length
+      ? dataLoadingMarkup("正在同步赛事池", "正在读取 Cloudflare D1 开盘、赛果和实时比分数据。")
     : `<p class='empty'>暂无${activeSportteryPoolView === "finished" ? "今日已完赛" : activeSportteryPoolView === "live" ? "正在比赛中" : "体彩开盘"}赛事</p>`;
 }
 
@@ -2056,6 +2062,20 @@ function formatCapturedAt(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function dataLoadingMarkup(title = "正在同步云端数据", detail = "正在读取 Cloudflare D1 最新数据，稍后会自动显示。") {
+  return `
+    <section class="data-loading-panel" aria-live="polite">
+      <div>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <strong>${title}</strong>
+      <p>${detail}</p>
+    </section>
+  `;
 }
 
 function rerenderOddsSurfaces() {
@@ -2462,9 +2482,7 @@ function cloudResultRowsToResultsData(rows = [], matchRows = [], capturedAt = ne
   };
 }
 
-async function loadCloudBootstrapData({ rerender = false, includeCases = false } = {}) {
-  if (!window.WC_CLOUD_STORE?.bootstrap) return false;
-  const payload = await window.WC_CLOUD_STORE.bootstrap({ includeCases });
+function applyCloudBootstrapPayload(payload, { rerender = false, cached = false } = {}) {
   if (!payload?.ok) return false;
   window.WC_CLOUD_BOOTSTRAP = payload;
   const capturedAt =
@@ -2475,11 +2493,13 @@ async function loadCloudBootstrapData({ rerender = false, includeCases = false }
   let changed = false;
   if (payload.matches?.length) {
     oddsData = cloudMatchRowsToOddsData(payload.matches, capturedAt);
+    if (cached) oddsData.isCachedSnapshot = true;
     window.LIVE_SPORTTERY_ODDS = oddsData;
     changed = true;
   }
   if (payload.results?.length) {
     resultsData = cloudResultRowsToResultsData(payload.results, payload.matches || [], capturedAt);
+    if (cached) resultsData.isCachedSnapshot = true;
     window.LIVE_SPORTTERY_RESULTS = resultsData;
     changed = true;
   }
@@ -2492,8 +2512,56 @@ async function loadCloudBootstrapData({ rerender = false, includeCases = false }
   if (mergeCloudAutoPredictions(cloudLockRowsToPredictions(payload.locks || []))) {
     changed = true;
   }
+  cloudBootstrapLoaded = true;
   if (changed && rerender) renderCurrentRouteSurfaces();
   return changed;
+}
+
+function writeCloudBootstrapCache(payload) {
+  try {
+    const cachePayload = {
+      ok: true,
+      cachedAt: new Date().toISOString(),
+      matches: payload.matches || [],
+      locks: payload.locks || [],
+      results: payload.results || [],
+      cases: [],
+      autoPredictions: [],
+    };
+    localStorage.setItem(CLOUD_BOOTSTRAP_CACHE_KEY, JSON.stringify(cachePayload));
+  } catch {}
+}
+
+function restoreCloudBootstrapCache() {
+  try {
+    const raw = localStorage.getItem(CLOUD_BOOTSTRAP_CACHE_KEY);
+    if (!raw) return false;
+    const payload = JSON.parse(raw);
+    return applyCloudBootstrapPayload(payload, { cached: true });
+  } catch {
+    return false;
+  }
+}
+
+async function loadCloudBootstrapData({ rerender = false, includeCases = false } = {}) {
+  if (!window.WC_CLOUD_STORE?.bootstrap) return false;
+  if (cloudBootstrapPending) {
+    const changed = await cloudBootstrapPending;
+    if (rerender) renderCurrentRouteSurfaces();
+    return changed;
+  }
+  cloudBootstrapPending = (async () => {
+    cloudBootstrapAttempted = true;
+    const payload = await window.WC_CLOUD_STORE.bootstrap({ includeCases });
+    if (!payload?.ok) return false;
+    writeCloudBootstrapCache(payload);
+    return applyCloudBootstrapPayload(payload, { rerender, cached: false });
+  })();
+  try {
+    return await cloudBootstrapPending;
+  } finally {
+    cloudBootstrapPending = null;
+  }
 }
 
 let cloudCaseBaseLoaded = false;
@@ -5008,6 +5076,8 @@ function renderSiteLocks() {
           `;
         })
         .join("")
+    : !cloudBootstrapAttempted
+      ? dataLoadingMarkup("正在同步锁版记录", "正在读取 Cloudflare D1 的 FINAL_LOCK 和 PRE_LOCK 记录。")
     : "<p class='empty'>暂无赛事推演锁版记录</p>";
 }
 
@@ -7316,6 +7386,11 @@ function currentRouteNeedsWorldCupStaticData() {
   return !hash || hash === "#model-stats" || hash === "#worldcup" || hash === "#worldcup-knockout" || hash === "#worldcup-review" || /^#match-/.test(hash);
 }
 
+function currentRouteNeedsCloudBootstrap() {
+  const hash = window.location.hash || "";
+  return hash === "#sporttery" || hash === "#locks" || hash === "#model-stats" || hash === "#odds-map" || /^#sporttery-match-/.test(hash);
+}
+
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     activateTab(tab.dataset.tab);
@@ -7820,9 +7895,13 @@ function sendAnalyticsEvent(eventType = "page_view", payload = {}) {
 
 window.addEventListener("hashchange", () => {
   handleRouteFromHash();
+  if (currentRouteNeedsCloudBootstrap()) {
+    loadCloudBootstrapData({ rerender: true });
+  }
   sendAnalyticsEvent("page_view");
 });
 
+restoreCloudBootstrapCache();
 const initialHash = window.location.hash;
 if (initialHash) {
   renderCurrentRouteSurfaces();
@@ -7835,7 +7914,14 @@ sendAnalyticsEvent("page_view");
 if (!initialHash) {
   runWhenPageIdle(renderAll, 1800);
 }
-runWhenPageIdle(refreshSportteryCloudData, initialHash ? 500 : 500);
+if (currentRouteNeedsCloudBootstrap()) {
+  loadCloudBootstrapData({ rerender: true }).then((changed) => {
+    if (changed) refreshLiveFootballScoresData({ rerender: true });
+    scheduleSportterySpHistoryRefresh();
+  });
+} else {
+  runWhenPageIdle(refreshSportteryCloudData, 500);
+}
 runWhenPageIdle(() => loadCloudCaseBaseData({ rerender: Boolean(initialHash) }), initialHash ? 2200 : 3600);
 runWhenPageIdle(() => {
   if (currentRouteNeedsWorldCupStaticData()) {
