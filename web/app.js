@@ -6883,6 +6883,18 @@ function renderInitialHomeOnly() {
   renderSignals();
 }
 
+function renderPanelForTab(tabName) {
+  if (tabName === "path") renderPath();
+  else if (tabName === "knockout") renderKnockout();
+  else if (tabName === "today") renderToday();
+  else if (tabName === "schedule") renderSchedule();
+  else if (tabName === "stats") renderStats();
+  else if (tabName === "sporttery-pool") renderSportteryPool();
+  else if (tabName === "site-locks") renderSiteLocks();
+  else if (tabName === "model-stats") renderGlobalStats();
+  else if (tabName === "odds-map") renderOddsMap();
+}
+
 function runWhenPageIdle(task, timeout = 2200) {
   if (typeof window.requestIdleCallback === "function") {
     window.requestIdleCallback(task, { timeout });
@@ -6893,7 +6905,7 @@ function runWhenPageIdle(task, timeout = 2200) {
 
 function currentRouteNeedsWorldCupStaticData() {
   const hash = window.location.hash || "";
-  return !hash || hash === "#model-stats" || hash === "#worldcup" || hash === "#worldcup-knockout" || /^#match-/.test(hash);
+  return hash === "#model-stats" || hash === "#worldcup" || hash === "#worldcup-knockout" || /^#match-/.test(hash);
 }
 
 function currentRouteNeedsCloudBootstrap() {
@@ -6908,6 +6920,7 @@ function currentRouteNeedsFullCloudBootstrap() {
 
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
+    renderPanelForTab(tab.dataset.tab);
     activateTab(tab.dataset.tab);
   });
 });
@@ -6919,6 +6932,7 @@ homeEnters.forEach((button) => {
       return;
     }
     showDashboard();
+    renderPanelForTab("path");
     activateTab("path");
   });
 });
@@ -6937,6 +6951,7 @@ sportteryPoolButtons.forEach((button) => {
       window.location.hash = "sporttery";
       return;
     }
+    renderPanelForTab("sporttery-pool");
     activateTab("sporttery-pool");
   });
 });
@@ -6947,6 +6962,7 @@ siteLocksButtons.forEach((button) => {
       window.location.hash = "locks";
       return;
     }
+    renderPanelForTab("site-locks");
     activateTab("site-locks");
   });
 });
@@ -6967,6 +6983,7 @@ modelStatsButtons.forEach((button) => {
       window.location.hash = "model-stats";
       return;
     }
+    renderPanelForTab("model-stats");
     activateTab("model-stats");
   });
 });
@@ -6977,6 +6994,7 @@ oddsMapButtons.forEach((button) => {
       window.location.hash = "odds-map";
       return;
     }
+    renderPanelForTab("odds-map");
     activateTab("odds-map");
   });
 });
@@ -7285,23 +7303,26 @@ if (initialHash) {
 document.body.classList.remove("page-loading"); document.body.classList.add("page-loaded");
 handleRouteFromHash();
 sendAnalyticsEvent("page_view");
-if (!initialHash) {
-  runWhenPageIdle(renderAll, 1800);
-}
 if (currentRouteNeedsCloudBootstrap()) {
   loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" }).then((changed) => {
     if (changed) refreshLiveFootballScoresData({ rerender: true });
     scheduleSportterySpHistoryRefresh();
   });
+} else if (!initialHash) {
+  runWhenPageIdle(() => {
+    loadCloudBootstrapData({ rerender: true, scope: "initial" }).then((changed) => {
+      if (changed) refreshLiveFootballScoresData({ rerender: true });
+    });
+  }, 2200);
 } else {
-  runWhenPageIdle(refreshSportteryCloudData, 500);
+  runWhenPageIdle(refreshSportteryCloudData, 900);
 }
 if (currentRouteNeedsWorldCupStaticData()) {
   loadWorldCupStaticDataFallback({ rerender: true });
 }
 runWhenPageIdle(() => loadCloudCaseBaseData({ rerender: Boolean(initialHash) }), initialHash ? 2200 : 3600);
 runWhenPageIdle(() => {
-  if (!currentRouteNeedsWorldCupStaticData()) {
+  if (window.location.hash && !currentRouteNeedsWorldCupStaticData()) {
     loadWorldCupStaticDataFallback({ rerender: Boolean(window.location.hash) });
   }
 }, initialHash ? 4200 : 2600);
