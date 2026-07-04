@@ -488,7 +488,6 @@
   75% { transform: translateY(-3px) rotate(0.1deg); }
 }
 .match-card:hover,
-.model-card:hover,
 .sporttery-card:hover,
 .odds-spotlight-card:hover,
 .about-mission-card:hover,
@@ -505,7 +504,6 @@
 
 /* ── 所有文章/卡片容器入场动画 ── */
 .match-card,
-.model-card,
 .sporttery-card,
 .odds-spotlight-card,
 .about-mission-card,

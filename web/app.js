@@ -64,12 +64,7 @@ const modelIntroButtons = document.querySelectorAll("[data-model-intro]");
 const modelStatsButtons = document.querySelectorAll("[data-model-stats]");
 const oddsMapButtons = document.querySelectorAll("[data-odds-map]");
 const aboutSiteButtons = document.querySelectorAll("[data-about-site]");
-const oddsSelections = new Map();
-const collapsedOddsDates = new Set();
-let activeSheetMatchNo = "";
 let modelNoticeTimer;
-let activeReviewView = "ticket";
-let activeReviewDate = "all";
 let activeGlobalStatsDate = "all";
 let activeGlobalStatsLeague = "all";
 let activeSportteryPoolView = "open";
@@ -2163,9 +2158,7 @@ function rerenderOddsSurfaces() {
   renderOddsMap();
   renderSignals();
   renderStats();
-  renderReview();
   renderGlobalStats();
-  renderOdds();
   const match = window.location.hash.match(/^#match-(.+)$/);
   if (match) renderMatchDetail(match[1]);
   const sportteryMatch = window.location.hash.match(/^#sporttery-match-(.+)$/);
@@ -2200,10 +2193,6 @@ function renderCurrentRouteSurfaces() {
   }
   if (hash === "#odds-map") {
     renderOddsMap();
-    return;
-  }
-  if (hash === "#worldcup-review") {
-    renderGlobalStats();
     return;
   }
   if (hash === "#worldcup") {
@@ -2890,7 +2879,7 @@ function activateTab(tabName) {
   if (targetTab) targetTab.classList.add("active");
   targetPanel.classList.add("active-panel");
   requestAnimationFrame(function(){
-    var items = targetPanel.querySelectorAll(".match-card, .model-card, .insight-card, .bar-row, .hist-row, .score-table > div, .home-research-grid > article");
+    var items = targetPanel.querySelectorAll(".match-card, .insight-card, .bar-row, .hist-row, .score-table > div, .home-research-grid > article");
     items.forEach(function(el, i){
       if (i < 20) { el.style.animation = "none"; void el.offsetWidth; el.style.animation = "fadeInUp 0.35s ease " + (i * 0.04) + "s both"; }
     });
@@ -2908,18 +2897,8 @@ function openModelForMatch(no) {
     });
     return;
   }
-  const card = document.querySelector(`#model-card-${no}`);
-  if (!card) {
-    activateTab("site-locks");
-    showModelNotice(`第 ${no} 场等待推演`);
-    return;
-  }
   activateTab("site-locks");
-  requestAnimationFrame(() => {
-    card.scrollIntoView({ behavior: "smooth", block: "center" });
-    card.classList.add("focus-model");
-    setTimeout(() => card.classList.remove("focus-model"), 2200);
-  });
+  showModelNotice(`第 ${no} 场等待推演`);
 }
 
 function openReviewForMatch(no) {
@@ -4306,9 +4285,6 @@ function handleRouteFromHash() {
   if (window.location.hash === "#worldcup-knockout") {
     activateTab("knockout");
   }
-  if (window.location.hash === "#worldcup-review") {
-    activateTab("model-stats");
-  }
   if (window.location.hash === "#sporttery") {
     activateTab("sporttery-pool");
   }
@@ -5080,92 +5056,6 @@ function renderKnockout() {
   `;
 }
 
-function renderModel() {
-  const list = document.querySelector("#model-list");
-  if (!list) return;
-  const versionPill = document.querySelector("#model-current-version");
-  if (versionPill) versionPill.textContent = `当前 ${data.currentModelVersion || "V4"}`;
-  list.innerHTML = groupedWorldCupPredictions()
-    .map(({ match, predictions }) => {
-      const actualScore = match ? officialScoreForMatch(match) : "";
-      const actual = actualScore || "未完赛";
-      const actualDirection = direction(actualScore);
-      const versionBlocks = predictions
-        .slice()
-        .sort((a, b) => predictionVersionRank(a) - predictionVersionRank(b))
-        .map((pred) => {
-          const hLabel = handicapLabel(pred);
-          const hPick = handicapPick(pred);
-          const filter = advancedFilter(pred);
-          const hit = actualDirection ? (actualDirection === pred.pick ? "方向中" : "方向未中") : "待验证";
-          return `
-            <section class="model-version">
-              <div class="version-head">
-                <strong>${predictionVersionLabel(pred)}</strong>
-                <span>${hit}</span>
-              </div>
-              <div class="model-filter-strip">
-                <span>类型 ${filter.type}</span>
-                <span>置信 ${filter.grade}</span>
-                <span>${filter.advice}</span>
-                <span>候选池 ${filter.scorePool}</span>
-              </div>
-              <div class="prob-grid">
-                <span>主胜 ${pred.homeProb}</span>
-                <span>平 ${pred.drawProb}</span>
-                <span>客胜 ${pred.awayProb}</span>
-                <span>xG ${pred.xg}</span>
-              </div>
-              <p><b>泊松比分簇：</b>${pred.poisson}</p>
-              ${pred.groupSituation ? `<p class="model-reason"><b>小组形势：</b>${displayModelText(pred.groupSituation)}</p>` : ""}
-              ${pred.recentAnalysis ? `<p class="model-reason"><b>近况与推演思路：</b>${displayModelText(pred.recentAnalysis)}</p>` : ""}
-              ${pred.institutionLine ? `<p class="model-reason"><b>机构视角：</b>${displayModelText(pred.institutionLine)}</p>` : ""}
-              ${pred.noiseFilter ? `<p class="model-reason"><b>排除因素：</b>${displayModelText(pred.noiseFilter)}</p>` : ""}
-              ${pred.keyJudgement ? `<p class="model-reason"><b>关键判断：</b>${displayModelText(pred.keyJudgement)}</p>` : ""}
-              <p><b>盘口偏差：</b>${displayModelText(pred.marketGap)}</p>
-              <p><b>比赛脚本：</b>${displayModelText(pred.script)}</p>
-              ${renderSpRadarPanel(pred.no, "card")}
-              <details class="model-filter-detail">
-                <summary>八层筛选结果</summary>
-                <div>
-                  <span><b>比赛类型：</b>${filter.type}</span>
-                  <span><b>强队意图：</b>${filter.favoriteIntent}</span>
-                  <span><b>弱队抵抗：</b>${filter.underdogResistance}</span>
-                  <span><b>总进球前置：</b>${pred.totalGoalsPick || "暂无"}</span>
-                  <span><b>两个比分峰值：</b>${pred.mainScore} / ${pred.counterScore}</span>
-                  <span><b>机构最怕：</b>${filter.institutionFear}</span>
-                  <span><b>排噪状态：</b>${filter.excludedNoise}</span>
-                  <span><b>复盘新增：</b>赛后验证比赛类型是否命中</span>
-                </div>
-              </details>
-              ${pred.changeNote ? `<p><b>变化原因：</b>${displayModelText(pred.changeNote)}</p>` : ""}
-              <div class="pick-row">
-                <strong>单选 ${pred.pick}</strong>
-                <span>让球 ${hLabel || "暂无盘口"} ${hPick || "暂无"}</span>
-                <span>总进球 ${pred.totalGoalsPick || "暂无"}</span>
-                <span>比分预测 ${pred.mainScore} / ${pred.counterScore}</span>
-              </div>
-              <small>${pred.type} · ${displayModelText(pred.handicap)}</small>
-            </section>
-          `;
-        })
-        .join("");
-      return `
-        <article class="model-card" id="model-card-${match.no}">
-          <div class="model-top">
-            <div>
-              <span class="match-no">${match.no}</span>
-              <h3>${match.home} vs ${match.away}</h3>
-            </div>
-            <span class="result-pill">实际 ${actual}</span>
-          </div>
-          <div class="model-version-grid">${versionBlocks}</div>
-        </article>
-      `;
-    })
-    .join("");
-}
-
 function renderSiteLocks() {
   const target = document.querySelector("#site-locks-list");
   if (!target) return;
@@ -5219,239 +5109,6 @@ function renderSiteLocks() {
     : !cloudBootstrapAttempted
       ? dataLoadingMarkup("正在同步锁版记录", "正在读取 Cloudflare D1 的 FINAL_LOCK 和 PRE_LOCK 记录。")
     : "<p class='empty'>暂无赛事推演锁版记录</p>";
-}
-
-function renderOdds() {
-  const target = document.querySelector("#odds-board");
-  if (!target) return;
-  const dayMap = { 日: 0, 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6 };
-  const weekNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-  const baseDate = oddsData.lotterNo || dashboardToday();
-  const baseDay = new Date(`${baseDate}T00:00:00+08:00`).getDay();
-
-  const issueDate = (issue = "") => {
-    const issueDay = dayMap[issue.slice(0, 1)];
-    if (issueDay === undefined) return baseDate;
-    let diff = issueDay - baseDay;
-    if (diff < -3) diff += 7;
-    if (diff > 3) diff -= 7;
-    return addDays(baseDate, diff);
-  };
-
-  const formatShortDate = (date) => {
-    const [, month, day] = date.split("-");
-    return `${month}-${day}`;
-  };
-
-  const formatWeekDate = (date) => {
-    const d = new Date(`${date}T00:00:00+08:00`);
-    return `${weekNames[d.getDay()]} ${formatShortDate(date)}`;
-  };
-
-  const localName = (item, side) => {
-    const match = matches.find((m) => m.no === item.no);
-    return match?.[side] || item[side] || "";
-  };
-
-  const oddsButton = (item, playType, label, value, active = true) => {
-    const key = `${item.no}-${playType}-${label}`;
-    const selected = oddsSelections.has(key);
-    return `
-    <button
-      type="button"
-      class="jczq-odd ${active ? "single" : "disabled"} ${selected ? "selected" : ""}"
-      ${active ? "" : "disabled"}
-      data-bet-key="${key}"
-      data-no="${item.no}"
-      data-issue="${item.issue}"
-      data-play="${playType}"
-      data-pick="${label}"
-      data-odds="${value || ""}"
-      data-home="${localName(item, "home")}"
-      data-away="${localName(item, "away")}"
-    >
-      <b>${label}</b>
-      <em>${value || "-"}</em>
-    </button>
-  `;
-  };
-
-  const oddsRow = (item, odds, handicap, moreLabel, playType, sideAction = "more") => `
-    <div class="jczq-betrow">
-      <span class="jczq-bubble ${handicap === "0" ? "" : handicap?.startsWith("+") ? "green" : "hot"}">${handicap || "0"}</span>
-      ${oddsButton(item, playType, "胜", odds?.win, Boolean(odds))}
-      ${oddsButton(item, playType, "平", odds?.draw, Boolean(odds))}
-      ${oddsButton(item, playType, "负", odds?.lose, Boolean(odds))}
-      <button type="button" class="jczq-more" ${sideAction === "index" ? `data-index="${item.no}"` : `data-more="${item.no}"`}>
-        ${moreLabel}
-        ${extraSelectionCount(item.no) ? `<i>${extraSelectionCount(item.no)}</i>` : ""}
-      </button>
-    </div>
-  `;
-
-  const allWorldCupOdds = (oddsData.matches || [])
-    .filter((item) => item.league === "世界杯")
-    .map((item) => ({ ...item, oddsDate: issueDate(item.issue) }))
-    .sort((a, b) => a.oddsDate.localeCompare(b.oddsDate) || Number(a.no) - Number(b.no));
-
-  const showEnded = Boolean(document.querySelector("#show-ended-odds")?.checked);
-  const activeWorldCupOdds = allWorldCupOdds.filter((item) => item.oddsDate >= baseDate);
-  const worldCupOdds = showEnded || !activeWorldCupOdds.length ? allWorldCupOdds : activeWorldCupOdds;
-  const grouped = worldCupOdds.reduce((acc, item) => {
-    if (!acc.has(item.oddsDate)) acc.set(item.oddsDate, []);
-    acc.get(item.oddsDate).push(item);
-    return acc;
-  }, new Map());
-
-  target.innerHTML = grouped.size
-    ? [...grouped.entries()]
-        .map(([date, items]) => `
-          <section class="jczq-day ${collapsedOddsDates.has(date) ? "collapsed" : ""}">
-            <button type="button" class="jczq-daybar" data-date-toggle="${date}">
-              <span>${formatWeekDate(date)}　共${items.length}场</span>
-              <span>${collapsedOddsDates.has(date) ? "▾" : "▴"}</span>
-            </button>
-            <div class="jczq-list">
-              ${collapsedOddsDates.has(date) ? "" : items
-                  .map((item) => {
-                    const home = localName(item, "home");
-                    const away = localName(item, "away");
-                    const handicap = item.handicap || "0";
-                    return `
-                      <article class="jczq-match">
-                        <div class="jczq-left">
-                          <span class="jczq-issue">${item.issue}</span>
-                          <span class="jczq-league">世界杯</span>
-                          <span class="jczq-time">22:00</span>
-                          <button type="button" class="jczq-attitude" data-note="${item.no}">▤ 态度</button>
-                        </div>
-                        <div class="jczq-main">
-                          <button type="button" class="jczq-teams" data-history="${item.no}">
-                            <strong>${home}</strong>
-                            <span>VS</span>
-                            <strong>${away}</strong>
-                            <i>›</i>
-                          </button>
-                          ${oddsRow(item, item.normal, "0", "指数", "胜平负", "index")}
-                          ${oddsRow(item, item.handicapOdds, handicap, "更多玩法", `让球${handicap}`)}
-                        </div>
-                      </article>
-                    `;
-                  })
-                  .join("")}
-            </div>
-          </section>
-        `)
-        .join("")
-    : "<p class='empty'>暂无体彩开盘数据</p>";
-
-  renderOddsSlip();
-}
-
-function renderOddsSlip() {
-  const slip = document.querySelector("#odds-slip");
-  if (!slip) return;
-  const selections = [...oddsSelections.values()];
-  const selectedMatchCount = new Set(selections.map((item) => item.no)).size;
-  slip.innerHTML = selections.length
-    ? `
-      <strong>已选 ${selectedMatchCount} 场</strong>
-      <span>${selections.map((item) => `${item.issue} ${item.play}${item.pick}@${item.odds}`).join(" ｜ ")}</span>
-      <button type="button" id="confirm-odds-slip">确定</button>
-      <button type="button" id="clear-odds-slip">清空</button>
-    `
-    : `
-      <strong>已选 0 场</strong>
-      <span>点选赔率后生成临时方案</span>
-    `;
-}
-
-function extraSelectionCount(no) {
-  return [...oddsSelections.values()].filter((item) => item.no === no && ["比分", "总进球"].includes(item.play)).length;
-}
-
-function findOddsItem(no) {
-  return (oddsData.matches || []).find((item) => item.no === no);
-}
-
-function showJczqSheet(title, bodyHtml) {
-  const overlay = document.querySelector("#jczq-overlay");
-  const titleNode = document.querySelector("#jczq-sheet-title");
-  const body = document.querySelector("#jczq-sheet-body");
-  if (!overlay || !titleNode || !body) return;
-  titleNode.textContent = title;
-  body.innerHTML = bodyHtml;
-  overlay.hidden = false;
-}
-
-function closeJczqSheet() {
-  const overlay = document.querySelector("#jczq-overlay");
-  if (overlay) overlay.hidden = true;
-}
-
-function renderMoreSheet(no) {
-  const item = findOddsItem(no);
-  if (!item) return;
-  activeSheetMatchNo = no;
-  const match = matches.find((m) => m.no === no);
-  const home = match?.home || item.home;
-  const away = match?.away || item.away;
-  const handicap = item.handicap || "0";
-  const scoreOptions = (item.scoreOdds || []).map((odd) => ({ label: odd.score, odds: odd.odds }));
-  const goalOptions = (item.totalGoalsOdds || []).map((odd) => ({ label: `${odd.goals}球`, odds: odd.odds }));
-  showJczqSheet(`${item.issue} ${home} vs ${away}`, `
-    <div class="jczq-sheet-tabs">
-      <span>胜平负</span>
-      <span>让球${handicap}</span>
-      <span>比分</span>
-      <span>总进球</span>
-    </div>
-    <div class="jczq-sheet-section">
-      <h4>胜平负</h4>
-      <div class="jczq-sheet-grid three">
-        ${["胜", "平", "负"].map((pick) => oddsSheetButton(item, "胜平负", pick, item.normal?.[pick === "胜" ? "win" : pick === "平" ? "draw" : "lose"])).join("")}
-      </div>
-    </div>
-    <div class="jczq-sheet-section">
-      <h4>让球胜平负 ${handicap}</h4>
-      <div class="jczq-sheet-grid three">
-        ${["胜", "平", "负"].map((pick) => oddsSheetButton(item, `让球${handicap}`, pick, item.handicapOdds?.[pick === "胜" ? "win" : pick === "平" ? "draw" : "lose"])).join("")}
-      </div>
-    </div>
-    <div class="jczq-sheet-section">
-      <h4>比分</h4>
-      <div class="jczq-sheet-grid score">
-        ${scoreOptions.map((odd) => oddsSheetButton(item, "比分", odd.label, odd.odds)).join("")}
-      </div>
-    </div>
-    <div class="jczq-sheet-section">
-      <h4>总进球</h4>
-      <div class="jczq-sheet-grid four">
-        ${goalOptions.map((odd) => oddsSheetButton(item, "总进球", odd.label, odd.odds)).join("")}
-      </div>
-    </div>
-  `);
-}
-
-function oddsSheetButton(item, playType, label, odds) {
-  const key = `${item.no}-${playType}-${label}`;
-  const selected = oddsSelections.has(key);
-  return `
-    <button
-      type="button"
-      class="jczq-sheet-option ${selected ? "selected" : ""}"
-      ${odds ? "" : "disabled"}
-      data-bet-key="${key}"
-      data-no="${item.no}"
-      data-issue="${item.issue}"
-      data-play="${playType}"
-      data-pick="${label}"
-      data-odds="${odds || ""}"
-    >
-      <b>${label}</b>
-      <em>${odds || "-"}</em>
-    </button>
-  `;
 }
 
 function totalGoalsOptions(pick) {
@@ -5709,293 +5366,6 @@ function dash(value) {
 function hitRate(hits, total) {
   if (!total) return "0.0%";
   return `${((hits / total) * 100).toFixed(1)}%`;
-}
-
-function versionPickCell(pred, match) {
-  if (!pred) {
-    return `
-      <td class="pick-cell">-</td>
-      <td>${hitCell(null)}</td>
-      <td class="pick-cell">-</td>
-      <td>${hitCell(null)}</td>
-      <td class="pick-cell">-</td>
-      <td>${hitCell(null)}</td>
-      <td class="pick-cell">-</td>
-      <td>${hitCell(null)}</td>
-    `;
-  }
-  const review = predictionReviewData(pred, match);
-  return `
-    <td class="pick-cell">${dash(pred.pick)}</td>
-    <td>${hitCell(review.directionHit)}</td>
-    <td class="pick-cell">${dash(review.hPick)}</td>
-    <td>${hitCell(review.handicapHit)}</td>
-    <td class="pick-cell">${dash(pred.totalGoalsPick)}</td>
-    <td>${hitCell(review.totalGoalsHit)}</td>
-    <td class="pick-cell">${dash(pred.mainScore)} / ${dash(pred.counterScore)}</td>
-    <td>${hitCell(review.scoreHit)}</td>
-  `;
-}
-
-function renderReview() {
-  const cards = document.querySelector("#review-cards");
-  const table = document.querySelector("#review-table");
-  if (!cards || !table) return;
-  const groupedRows = groupedWorldCupPredictions()
-    .slice()
-    .sort((a, b) => a.match.date.localeCompare(b.match.date) || Number(a.match.no) - Number(b.match.no))
-    .map(({ match, predictions }) => {
-      const sorted = predictions.slice().sort((a, b) => predictionVersionRank(a) - predictionVersionRank(b));
-      const referencePred = sorted[0] || predictions[0];
-      const review = predictionReviewData(referencePred, match);
-      return { match, pred: referencePred, review };
-    });
-
-  const reviewDates = [...new Set(groupedRows.map(({ match }) => match.date))];
-  if (activeReviewDate !== "all" && !reviewDates.includes(activeReviewDate)) {
-    activeReviewDate = "all";
-  }
-  const visibleRows =
-    activeReviewDate === "all" ? groupedRows : groupedRows.filter(({ match }) => match.date === activeReviewDate);
-  const rows = visibleRows.map(({ match, pred, review }) => ({
-    ...review,
-    pred,
-    match,
-  }));
-
-  const verifiedRows = rows.filter((row) => row.actualDirection);
-  const handicapVerifiedRows = rows.filter((row) => row.actualHandicapDirection);
-  const directionHits = verifiedRows.filter((row) => row.directionHit).length;
-  const handicapHits = handicapVerifiedRows.filter((row) => row.handicapHit).length;
-  const totalGoalsHits = verifiedRows.filter((row) => row.totalGoalsHit).length;
-  const scoreCoveredRows = verifiedRows.filter((row) => row.scoreHit).length;
-  const matchTypeHits = verifiedRows.filter((row) => row.matchTypeHit).length;
-  const adviceRows = verifiedRows.filter((row) => ["A", "A-", "B", "B-"].includes(row.confidence));
-  const adviceDirectionHits = adviceRows.filter((row) => row.directionHit).length;
-  const gateRows = rows.map((row) => ({ ...row, gate: autoDecisionGate(row.match.no, row.pred) }));
-  const mainGateRows = gateRows.filter((row) => row.gate.level === "A");
-  const attributionRows = verifiedRows.map((row) => ({ ...row, attribution: reviewAttribution(row.pred, row.match, row) }));
-  const missAttributions = attributionRows.filter((row) => row.attribution.severity !== "good");
-  const attributionSummary = calibrationStats(attributionRows, (row) => row.attribution.type).slice(0, 4);
-  const versionStats = ["V1", "V2", "V3", "V4"]
-    .map((version) => {
-      const subset = verifiedRows.filter((row) => predictionModelVersion(row.pred) === version);
-      if (!subset.length) return null;
-      const handicapSubset = subset.filter((row) => row.actualHandicapDirection);
-      return {
-        version,
-        total: subset.length,
-        directionHits: subset.filter((row) => row.directionHit).length,
-        handicapTotal: handicapSubset.length,
-        handicapHits: handicapSubset.filter((row) => row.handicapHit).length,
-        totalGoalsHits: subset.filter((row) => row.totalGoalsHit).length,
-        scoreHits: subset.filter((row) => row.scoreHit).length,
-      };
-    })
-    .filter(Boolean);
-  const reviewRateSummary = [
-    `方向 ${directionHits}/${verifiedRows.length || 0}（${hitRate(directionHits, verifiedRows.length)}）`,
-    `让球 ${handicapHits}/${handicapVerifiedRows.length || 0}（${hitRate(handicapHits, handicapVerifiedRows.length)}）`,
-    `总进球 ${totalGoalsHits}/${verifiedRows.length || 0}（${hitRate(totalGoalsHits, verifiedRows.length)}）`,
-    `比分覆盖 ${scoreCoveredRows}/${verifiedRows.length || 0}（${hitRate(scoreCoveredRows, verifiedRows.length)}）`,
-    `类型 ${matchTypeHits}/${verifiedRows.length || 0}（${hitRate(matchTypeHits, verifiedRows.length)}）`,
-    `A/B方向 ${adviceDirectionHits}/${adviceRows.length || 0}（${hitRate(adviceDirectionHits, adviceRows.length)}）`,
-  ];
-
-  cards.innerHTML = `
-    <div class="review-summary-grid">
-      <article class="review-metric"><span>已验证版本</span><strong>${verifiedRows.length}</strong><em>已有实际比分</em></article>
-      <article class="review-metric"><span>方向命中</span><strong>${directionHits}/${verifiedRows.length || 0}</strong><em>${hitRate(directionHits, verifiedRows.length)}</em></article>
-      <article class="review-metric"><span>让球命中</span><strong>${handicapHits}/${handicapVerifiedRows.length || 0}</strong><em>${hitRate(handicapHits, handicapVerifiedRows.length)}</em></article>
-      <article class="review-metric"><span>总进球</span><strong>${totalGoalsHits}/${verifiedRows.length || 0}</strong><em>${hitRate(totalGoalsHits, verifiedRows.length)}</em></article>
-      <article class="review-metric"><span>比分覆盖</span><strong>${scoreCoveredRows}/${verifiedRows.length || 0}</strong><em>${hitRate(scoreCoveredRows, verifiedRows.length)}</em></article>
-      <article class="review-metric"><span>类型命中</span><strong>${matchTypeHits}/${verifiedRows.length || 0}</strong><em>${hitRate(matchTypeHits, verifiedRows.length)}</em></article>
-      <article class="review-metric"><span>A/B方向</span><strong>${adviceDirectionHits}/${adviceRows.length || 0}</strong><em>${hitRate(adviceDirectionHits, adviceRows.length)}</em></article>
-      <article class="review-metric"><span>A级证据</span><strong>${mainGateRows.length}</strong><em>证据完整，不代表自动主推</em></article>
-      <article class="review-metric"><span>错因样本</span><strong>${missAttributions.length}</strong><em>待优化记录</em></article>
-    </div>
-    <div class="review-version-strip">
-      ${versionStats
-        .map(
-          (item) => `
-            <article>
-              <strong>${item.version}</strong>
-              <span>方向 ${item.directionHits}/${item.total}（${hitRate(item.directionHits, item.total)}）</span>
-              <span>让球 ${item.handicapHits}/${item.handicapTotal || 0}（${hitRate(item.handicapHits, item.handicapTotal)}）</span>
-              <span>总进球 ${item.totalGoalsHits}/${item.total}（${hitRate(item.totalGoalsHits, item.total)}）</span>
-              <span>比分 ${item.scoreHits}/${item.total}（${hitRate(item.scoreHits, item.total)}）</span>
-            </article>
-          `
-        )
-        .join("")}
-      <article class="current-version-note">
-        <strong>${data.currentModelVersion || "V4"}</strong>
-        <span>当前启用版本。之后新锁版归入 ${data.currentModelVersion || "V4"}，旧结果不回填改判。</span>
-      </article>
-    </div>
-    <div class="attribution-strip">
-      ${attributionSummary
-        .map(
-          (item) => `
-            <article>
-              <span>${item.label}</span>
-              <strong>${item.total}</strong>
-              <em>方向 ${hitRate(item.directionHits, item.total)}</em>
-            </article>
-          `
-        )
-        .join("") || "<article><span>错因归因</span><strong>0</strong><em>等待赛果</em></article>"}
-    </div>
-    ${renderCalibrationPanel(verifiedRows)}
-  `;
-
-  const dateOptions = [
-    `<option value="all"${activeReviewDate === "all" ? " selected" : ""}>全部日期</option>`,
-    ...reviewDates.map(
-      (date) => `<option value="${date}"${activeReviewDate === date ? " selected" : ""}>${formatDate(date)}</option>`
-    ),
-  ].join("");
-  const dateScopeLabel =
-    activeReviewDate === "all" ? "全部锁版记录" : `${formatDate(activeReviewDate)} 锁版记录`;
-  const ticketRows = visibleRows
-    .map(({ match, pred, review }) => {
-      const caseStatus = caseBaseStatus(pred, match);
-      const scoreText = officialScoreForMatch(match);
-      const tags = [
-        ...(caseStatus.caseItem?.failureTags || []),
-        ...(caseStatus.caseItem?.successTags || []),
-      ];
-      return `
-        <tr data-review-no="${match.no}">
-          <td>${dash(pred.date)}</td>
-          <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
-          <td>${match.no}</td>
-          <td class="match-name-cell">${reviewMatchButton(match)}</td>
-          <td class="actual-cell">${dash(scoreText)}</td>
-          <td><b>${dash(pred.pick)}</b>${hitCell(review.directionHit)}</td>
-          <td><b>${dash(review.hPick)}</b>${hitCell(review.handicapHit)}</td>
-          <td><b>${dash(pred.totalGoalsPick)}</b>${hitCell(review.totalGoalsHit)}</td>
-          <td><b>${dash(pred.mainScore)} / ${dash(pred.counterScore)}</b>${hitCell(review.scoreHit)}</td>
-          <td>${dash(caseStatus.hitStatus)}</td>
-          <td>${caseStatus.generated ? "已进入" : "未进入"}</td>
-          <td class="text-cell">${dash(caseStatus.caseId)}${tags.length ? `<em>${tags.join(" / ")}</em>` : ""}</td>
-        </tr>
-      `;
-    })
-    .join("") || `<tr><td colspan="12" class="empty-cell">当前日期暂无可复盘记录</td></tr>`;
-
-  const diagnosticRows = visibleRows
-    .map(({ match, pred, review }) => {
-      const scoreText = officialScoreForMatch(match);
-      const filter = advancedFilter(pred);
-      const gate = autoDecisionGate(match.no, pred);
-      const attribution = reviewAttribution(pred, match, review);
-      const upgradeNotes = [
-        `盘口变化：${filter.lineMovement}`,
-        `事件风险：${filter.eventRisk}`,
-        `比分淘汰：${filter.scoreElimination}`,
-        `错层风险：${filter.keyFailureRisk}`,
-      ].join(" ｜ ");
-      return `
-        <tr data-review-no="${match.no}">
-          <td>${dash(pred.date)}</td>
-          <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
-          <td>${match.no}</td>
-          <td class="match-name-cell">${reviewMatchButton(match)}</td>
-          <td class="actual-cell">${dash(scoreText)}</td>
-          <td><b>${dash(review.matchType)}</b>${hitCell(review.matchTypeHit)}</td>
-          <td>${dash(review.actualMatchType)}</td>
-          <td>${dash(review.confidence)}</td>
-          <td><span class="gate-badge ${gate.tone}">${gate.level} ${gate.score}</span></td>
-          <td><span class="attribution-badge ${attribution.severity}">${attribution.type}</span><em>${attribution.note}</em></td>
-          <td>${filter.institutionFear}</td>
-          <td>${filter.underdogResistance}</td>
-          <td class="text-cell">${upgradeNotes}</td>
-        </tr>
-      `;
-    })
-    .join("") || `<tr><td colspan="13" class="empty-cell">当前日期暂无模型诊断记录</td></tr>`;
-
-  const ticketTable = `
-    <div class="review-record-wrap compact">
-      <table class="review-record-table ticket-table">
-        <thead>
-          <tr>
-            <th>记录日期</th>
-            <th>模型</th>
-            <th>场次</th>
-            <th>比赛</th>
-            <th>实际比分</th>
-            <th>胜平负</th>
-            <th>让球</th>
-            <th>总进球</th>
-            <th>比分预测</th>
-            <th>验票结果</th>
-            <th>Case Base</th>
-            <th>caseId / 标签</th>
-          </tr>
-        </thead>
-        <tbody>${ticketRows}</tbody>
-        <tfoot>
-          <tr>
-            <td colspan="12">
-              <strong>命中概率：</strong>${reviewRateSummary.map((item) => `<span>${item}</span>`).join("")}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  `;
-
-  const diagnosticTable = `
-    <div class="review-record-wrap compact">
-      <table class="review-record-table diagnostic-table">
-        <thead>
-          <tr>
-            <th>记录日期</th>
-            <th>模型</th>
-            <th>场次</th>
-            <th>比赛</th>
-            <th>实际比分</th>
-            <th>预测类型</th>
-            <th>实际类型</th>
-            <th>置信</th>
-            <th>证据等级</th>
-            <th>错因归因</th>
-            <th>机构最怕</th>
-            <th>弱队抵抗</th>
-            <th>补短板记录</th>
-          </tr>
-        </thead>
-        <tbody>${diagnosticRows}</tbody>
-        <tfoot>
-          <tr>
-            <td colspan="13">
-              <strong>模型诊断：</strong>
-              <span>比赛类型命中 ${matchTypeHits}/${verifiedRows.length || 0}（${hitRate(matchTypeHits, verifiedRows.length)}）</span>
-              <span>A/B 级仅统计未来赛前明确评级的场次</span>
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  `;
-
-  table.innerHTML = `
-    <div class="review-subnav">
-      <button type="button" class="${activeReviewView === "ticket" ? "active" : ""}" data-review-view="ticket">预测验票</button>
-      <button type="button" class="${activeReviewView === "diagnostic" ? "active" : ""}" data-review-view="diagnostic">模型诊断</button>
-    </div>
-    <div class="review-filterbar">
-      <div>
-        <span>按日期复盘</span>
-        <strong>${dateScopeLabel}</strong>
-        <em>${visibleRows.length}/${groupedRows.length} 场</em>
-      </div>
-      <select data-review-date aria-label="选择复盘日期">${dateOptions}</select>
-    </div>
-    ${activeReviewView === "ticket" ? ticketTable : diagnosticTable}
-  `;
 }
 
 function modelAuditRows() {
@@ -7505,9 +6875,6 @@ function renderAll() {
   renderPath();
   renderKnockout();
   renderStats();
-  renderOdds();
-  renderModel();
-  renderReview();
 }
 
 function renderInitialHomeOnly() {
@@ -7526,7 +6893,7 @@ function runWhenPageIdle(task, timeout = 2200) {
 
 function currentRouteNeedsWorldCupStaticData() {
   const hash = window.location.hash || "";
-  return !hash || hash === "#model-stats" || hash === "#worldcup" || hash === "#worldcup-knockout" || hash === "#worldcup-review" || /^#match-/.test(hash);
+  return !hash || hash === "#model-stats" || hash === "#worldcup" || hash === "#worldcup-knockout" || /^#match-/.test(hash);
 }
 
 function currentRouteNeedsCloudBootstrap() {
@@ -7733,30 +7100,6 @@ document.querySelector("#site-locks")?.addEventListener("click", (event) => {
   }
 });
 
-document.querySelector("#review-table")?.addEventListener("click", (event) => {
-  const sportteryButton = event.target.closest("[data-review-open-sporttery]");
-  if (sportteryButton) {
-    openSportteryMatchPage(sportteryButton.dataset.reviewOpenSporttery, "review");
-    return;
-  }
-  const matchButton = event.target.closest("[data-review-open-match]");
-  if (matchButton) {
-    openMatchPage(matchButton.dataset.reviewOpenMatch, "review");
-    return;
-  }
-  const button = event.target.closest("[data-review-view]");
-  if (!button) return;
-  activeReviewView = button.dataset.reviewView;
-  renderReview();
-});
-
-document.querySelector("#review-table")?.addEventListener("change", (event) => {
-  const select = event.target.closest("[data-review-date]");
-  if (!select) return;
-  activeReviewDate = select.value;
-  renderReview();
-});
-
 document.querySelector("#global-stats-table")?.addEventListener("change", (event) => {
   const select = event.target.closest("[data-global-stats-date]");
   if (!select) return;
@@ -7879,126 +7222,6 @@ document.querySelector(".schedule-subtabs")?.addEventListener("click", (event) =
   document.querySelector("#schedule-list").hidden = view !== "current";
   document.querySelector("#schedule-2022-list").hidden = view !== "wc2022";
 });
-
-document.querySelector("#odds")?.addEventListener("click", (event) => {
-  const option = event.target.closest(".jczq-odd, .jczq-sheet-option");
-  if (option && !option.disabled) {
-    const { betKey, no, issue, play, pick, odds } = option.dataset;
-    if (oddsSelections.has(betKey)) {
-      oddsSelections.delete(betKey);
-    } else {
-      oddsSelections.set(betKey, { no, issue, play, pick, odds });
-    }
-    renderOdds();
-    if (!document.querySelector("#jczq-overlay")?.hidden && activeSheetMatchNo) renderMoreSheet(activeSheetMatchNo);
-    return;
-  }
-
-  const dateToggle = event.target.closest("[data-date-toggle]");
-  if (dateToggle) {
-    const date = dateToggle.dataset.dateToggle;
-    if (collapsedOddsDates.has(date)) collapsedOddsDates.delete(date);
-    else collapsedOddsDates.add(date);
-    renderOdds();
-    return;
-  }
-
-  const more = event.target.closest("[data-more]");
-  if (more) {
-    renderMoreSheet(more.dataset.more);
-    return;
-  }
-
-  const index = event.target.closest("[data-index]");
-  if (index) {
-    const item = findOddsItem(index.dataset.index);
-    const match = matches.find((m) => m.no === index.dataset.index);
-    showJczqSheet("指数", `
-      <p class="jczq-sheet-note">${item?.issue || ""} ${match?.home || item?.home} vs ${match?.away || item?.away}</p>
-      <div class="jczq-ticket-list">
-        ${(item?.scoreOdds || []).slice(0, 8).map((odd) => `<span>比分 ${odd.score} @ ${odd.odds}</span>`).join("")}
-        ${(item?.totalGoalsOdds || []).slice(0, 8).map((odd) => `<span>总进球 ${odd.goals}球 @ ${odd.odds}</span>`).join("")}
-      </div>
-    `);
-    return;
-  }
-
-  const action = event.target.closest("[data-jczq-action]")?.dataset.jczqAction;
-  if (action === "close-sheet") {
-    closeJczqSheet();
-    return;
-  }
-  if (action === "filter") {
-    showJczqSheet("筛选比赛", `
-      <div class="jczq-filter-grid">
-        <button type="button" class="selected">世界杯</button>
-        <button type="button">单关</button>
-        <button type="button">未开赛</button>
-        <button type="button">有让球</button>
-      </div>
-      <p class="jczq-sheet-note">本地看板目前只接入世界杯竞彩数据，筛选按钮按原站样式保留。</p>
-    `);
-    return;
-  }
-  if (action === "menu") {
-    showJczqSheet("快捷入口", `
-      <div class="jczq-menu-list">
-        <button type="button">我的方案</button>
-        <button type="button">开奖结果</button>
-        <button type="button">投注记录</button>
-        <button type="button">玩法规则</button>
-      </div>
-    `);
-    return;
-  }
-  if (action === "app") {
-    showJczqSheet("澳客APP", `<p class="jczq-sheet-note">原站这里会尝试唤起澳客APP；本地看板不跳外部应用。</p>`);
-    return;
-  }
-  if (action === "back") {
-    document.querySelector('[data-tab="today"]')?.click();
-    return;
-  }
-
-  const history = event.target.closest("[data-history]");
-  if (history) {
-    const item = findOddsItem(history.dataset.history);
-    const match = matches.find((m) => m.no === history.dataset.history);
-    showJczqSheet("比赛详情", `
-      <p class="jczq-sheet-note">${item?.issue || ""} ${match?.home || item?.home} vs ${match?.away || item?.away}</p>
-      <p class="jczq-sheet-note">原站会进入历史交锋、近期战绩和指数页；这里先保留为本地详情入口。</p>
-    `);
-    return;
-  }
-
-  const note = event.target.closest("[data-note]");
-  if (note) {
-    const item = findOddsItem(note.dataset.note);
-    showJczqSheet("专家态度", `
-      <p class="jczq-sheet-note">${item?.issue || ""} 态度入口。原站会打开推荐/专栏内容，本地不抓取付费或登录内容。</p>
-    `);
-    return;
-  }
-
-  if (event.target.closest("#confirm-odds-slip")) {
-    const selections = [...oddsSelections.values()];
-    showJczqSheet("方案确认", `
-      <p class="jczq-sheet-note">已选择 ${selections.length} 项：</p>
-      <div class="jczq-ticket-list">
-        ${selections.map((item) => `<span>${item.issue} ${item.play}${item.pick} @ ${item.odds}</span>`).join("")}
-      </div>
-    `);
-    return;
-  }
-
-  if (event.target.closest("#clear-odds-slip")) {
-    oddsSelections.clear();
-    renderOdds();
-    if (!document.querySelector("#jczq-overlay")?.hidden && activeSheetMatchNo) renderMoreSheet(activeSheetMatchNo);
-  }
-});
-
-document.querySelector("#show-ended-odds")?.addEventListener("change", renderOdds);
 
 function analyticsSessionId() {
   try {
