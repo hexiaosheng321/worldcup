@@ -47,6 +47,9 @@ let footballDataContext = window.FOOTBALL_DATA_CONTEXT?.matches?.length
 let cloudBootstrapLoaded = false;
 let cloudBootstrapAttempted = false;
 let cloudBootstrapPending = null;
+let worldCupStaticDataLoaded = Boolean(data.predictions?.length && data.matches?.length);
+let worldCupStaticDataPending = null;
+const dynamicScriptPromises = new Map();
 
 const tabs = document.querySelectorAll(".tab");
 const panels = document.querySelectorAll(".panel");
@@ -2275,15 +2278,24 @@ function scheduleSportterySpHistoryRefresh(delay = 400) {
 }
 
 function loadScriptOnce(src) {
-  if (document.querySelector(`script[data-dynamic-src="${src}"]`)) return Promise.resolve();
-  return new Promise((resolve, reject) => {
+  if (dynamicScriptPromises.has(src)) return dynamicScriptPromises.get(src);
+  if (document.querySelector(`script[data-dynamic-src="${src}"][data-loaded="true"]`)) return Promise.resolve();
+  const promise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = src;
     script.dataset.dynamicSrc = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`failed to load ${src}`));
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      resolve();
+    };
+    script.onerror = () => {
+      dynamicScriptPromises.delete(src);
+      reject(new Error(`failed to load ${src}`));
+    };
     document.head.appendChild(script);
   });
+  dynamicScriptPromises.set(src, promise);
+  return promise;
 }
 
 function loadFreshScript(src) {
@@ -2314,18 +2326,35 @@ function markStaticFallback(payload, fallbackSource) {
 }
 
 async function loadWorldCupStaticDataFallback({ rerender = false } = {}) {
-  if (data.predictions?.length && data.matches?.length) return false;
+  if (data.predictions?.length && data.matches?.length) {
+    worldCupStaticDataLoaded = true;
+    return false;
+  }
+  if (worldCupStaticDataPending) {
+    const changed = await worldCupStaticDataPending;
+    if (rerender) renderCurrentRouteSurfaces();
+    return changed;
+  }
   const currentData = data;
-  await loadScriptOnce("./data.js");
-  if (!window.WC_DATA || window.WC_DATA === currentData) return false;
-  Object.assign(currentData, window.WC_DATA);
-  window.WC_DATA = currentData;
-  matches = mergeWorldCupSportteryMatches(currentData.matches || [], oddsData.matches || []);
-  currentData.matches = matches;
-  predictionMap.clear();
-  (currentData.predictions || []).forEach((item) => predictionMap.set(item.no, item));
-  if (rerender) renderCurrentRouteSurfaces();
-  return true;
+  worldCupStaticDataPending = (async () => {
+    await loadScriptOnce("./data.js");
+    if (!window.WC_DATA || window.WC_DATA === currentData) return false;
+    Object.assign(currentData, window.WC_DATA);
+    window.WC_DATA = currentData;
+    matches = mergeWorldCupSportteryMatches(currentData.matches || [], oddsData.matches || []);
+    currentData.matches = matches;
+    predictionMap.clear();
+    (currentData.predictions || []).forEach((item) => predictionMap.set(item.no, item));
+    worldCupStaticDataLoaded = Boolean(currentData.predictions?.length && currentData.matches?.length);
+    return worldCupStaticDataLoaded;
+  })();
+  try {
+    const changed = await worldCupStaticDataPending;
+    if (changed && rerender) renderCurrentRouteSurfaces();
+    return changed;
+  } finally {
+    worldCupStaticDataPending = null;
+  }
 }
 
 async function loadStaticSnapshotFallback({ rerender = false } = {}) {
@@ -2657,6 +2686,16 @@ function renderSignals() {
 }
 
 function renderToday() {
+  if (!worldCupStaticDataLoaded && !matches.length) {
+    document.querySelector("#today-count").textContent = "同步中";
+    document.querySelector("#today-date").textContent = "正在读取世界杯赛程";
+    document.querySelector("#next-label").textContent = "世界杯";
+    document.querySelector("#today-grid").innerHTML = dataLoadingMarkup(
+      "正在同步世界杯赛程",
+      "正在读取完整赛程、赛果和模型锁版数据。"
+    );
+    return;
+  }
   const today = currentSportteryBusinessDate(calendarToday());
   const tomorrow = addDays(today, 1);
   const targetMatches = worldCupMatchFlowMatches(today, tomorrow);
@@ -4581,6 +4620,13 @@ function renderPathBars(team) {
 function renderPath() {
   const board = document.querySelector("#path-board");
   if (!board) return;
+  if (!worldCupStaticDataLoaded && !matches.length) {
+    board.innerHTML = dataLoadingMarkup(
+      "正在同步世界杯数据",
+      "正在读取小组积分、最佳第三线和晋级路径模拟数据。"
+    );
+    return;
+  }
   const teams = buildTeamTable();
   const groupStageMatches = worldCupGroupStageMatches();
   const groupRows = [...teams.reduce((acc, team) => {
@@ -7895,6 +7941,9 @@ function sendAnalyticsEvent(eventType = "page_view", payload = {}) {
 
 window.addEventListener("hashchange", () => {
   handleRouteFromHash();
+  if (currentRouteNeedsWorldCupStaticData()) {
+    loadWorldCupStaticDataFallback({ rerender: true });
+  }
   if (currentRouteNeedsCloudBootstrap()) {
     loadCloudBootstrapData({ rerender: true });
   }
@@ -7922,9 +7971,12 @@ if (currentRouteNeedsCloudBootstrap()) {
 } else {
   runWhenPageIdle(refreshSportteryCloudData, 500);
 }
+if (currentRouteNeedsWorldCupStaticData()) {
+  loadWorldCupStaticDataFallback({ rerender: true });
+}
 runWhenPageIdle(() => loadCloudCaseBaseData({ rerender: Boolean(initialHash) }), initialHash ? 2200 : 3600);
 runWhenPageIdle(() => {
-  if (currentRouteNeedsWorldCupStaticData()) {
+  if (!currentRouteNeedsWorldCupStaticData()) {
     loadWorldCupStaticDataFallback({ rerender: Boolean(window.location.hash) });
   }
 }, initialHash ? 4200 : 2600);
