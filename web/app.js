@@ -2063,6 +2063,60 @@ function rerenderOddsSurfaces() {
   if (sportteryMatch) renderSportteryMatchDetail(decodeURIComponent(sportteryMatch[1]));
 }
 
+function renderCurrentRouteSurfaces() {
+  applyResultBackfill();
+  refreshRuntimeCaseBase();
+  const hash = window.location.hash || "";
+  const match = hash.match(/^#match-(.+)$/);
+  if (match) {
+    renderMatchDetail(match[1]);
+    return;
+  }
+  const sportteryMatch = hash.match(/^#sporttery-match-(.+)$/);
+  if (sportteryMatch) {
+    renderSportteryMatchDetail(decodeURIComponent(sportteryMatch[1]));
+    return;
+  }
+  if (hash === "#model-stats") {
+    renderGlobalStats();
+    return;
+  }
+  if (hash === "#sporttery") {
+    renderSportteryPool();
+    return;
+  }
+  if (hash === "#locks") {
+    renderSiteLocks();
+    return;
+  }
+  if (hash === "#odds-map") {
+    renderOddsMap();
+    return;
+  }
+  if (hash === "#worldcup-review") {
+    renderReview();
+    return;
+  }
+  if (hash === "#worldcup") {
+    renderToday();
+    renderSchedule();
+    renderPath();
+    return;
+  }
+  if (hash === "#worldcup-knockout") {
+    renderKnockout();
+    return;
+  }
+  if (hash === "#model-intro" || hash === "#about") {
+    return;
+  }
+  if (!hash) {
+    renderInitialHomeOnly();
+    return;
+  }
+  renderAll();
+}
+
 function normalizeSportteryResultPayload(raw, capturedAt = new Date().toISOString()) {
   const days = raw?.value?.matchInfoList || [];
   const results = days.flatMap((day) =>
@@ -2111,7 +2165,7 @@ async function refreshSportteryLiveData() {
     if (!nextData.matches.length) return;
     oddsData = nextData;
     window.LIVE_SPORTTERY_ODDS = nextData;
-    rerenderOddsSurfaces();
+    renderCurrentRouteSurfaces();
   } catch (error) {
     console.warn("体彩官方实时刷新失败，继续使用当前快照。", error);
     const sourceNode = document.querySelector("#sporttery-source");
@@ -2134,7 +2188,7 @@ async function refreshSportteryResultsData() {
     if (!nextData.results.length) return;
     resultsData = nextData;
     window.LIVE_SPORTTERY_RESULTS = nextData;
-    rerenderOddsSurfaces();
+    renderCurrentRouteSurfaces();
   } catch (error) {
     console.warn("体彩官方赛果刷新失败，继续使用当前赛果快照。", error);
   }
@@ -2172,7 +2226,7 @@ async function refreshSportterySpHistoryData(sourceMatches = oddsData.matches ||
     matches: histories,
   };
   window.LIVE_SPORTTERY_SP_HISTORY = spHistoryData;
-  rerenderOddsSurfaces();
+  renderCurrentRouteSurfaces();
 }
 
 function oddsMapNeedsSpHistoryRefresh() {
@@ -2248,7 +2302,7 @@ async function loadStaticSnapshotFallback({ rerender = false } = {}) {
     window.LIVE_FOOTBALL_SCORES = liveFootballData;
     changed = true;
   }
-  if (changed && rerender) rerenderOddsSurfaces();
+  if (changed && rerender) renderCurrentRouteSurfaces();
   return changed;
 }
 
@@ -2257,7 +2311,7 @@ async function refreshLiveFootballScoresData({ rerender = false } = {}) {
     await loadFreshScript("/api/live-football-scores.js");
     if (!window.LIVE_FOOTBALL_SCORES?.matches?.length) return false;
     liveFootballData = window.LIVE_FOOTBALL_SCORES;
-    if (rerender) rerenderOddsSurfaces();
+    if (rerender) renderCurrentRouteSurfaces();
     return true;
   } catch (error) {
     console.warn("实时比分刷新失败，继续使用当前快照。", error);
@@ -2400,7 +2454,7 @@ async function loadCloudBootstrapData({ rerender = false, includeCases = false }
   if (mergeCloudAutoPredictions(cloudLockRowsToPredictions(payload.locks || []))) {
     changed = true;
   }
-  if (changed && rerender) rerenderOddsSurfaces();
+  if (changed && rerender) renderCurrentRouteSurfaces();
   return changed;
 }
 
@@ -2414,10 +2468,7 @@ async function loadCloudCaseBaseData({ rerender = false } = {}) {
   const added = window.WC_CASE_BASE.appendCases(payload.cases);
   if (added) {
     runtimeCaseBaseCache = null;
-    if (rerender) {
-      renderReview();
-      renderGlobalStats();
-    }
+    if (rerender) renderCurrentRouteSurfaces();
   }
   return Boolean(added);
 }
@@ -2431,14 +2482,14 @@ async function refreshSportteryCloudData() {
   }
   if (oddsData.isCloudSnapshot || resultsData.isCloudSnapshot || liveFootballData.isCloudSnapshot) {
     await refreshLiveFootballScoresData({ rerender: true });
-    rerenderOddsSurfaces();
+    renderCurrentRouteSurfaces();
     scheduleSportterySpHistoryRefresh();
     return;
   }
   if (!SPORTTERY_CLOUD_API_URL) {
     await refreshLiveFootballScoresData({ rerender: false });
     await loadStaticSnapshotFallback({ rerender: true });
-    rerenderOddsSurfaces();
+    renderCurrentRouteSurfaces();
     scheduleSportterySpHistoryRefresh();
     return;
   }
@@ -2478,7 +2529,7 @@ async function refreshSportteryCloudData() {
           formatCapturedAt(payload.odds?.importedAt || payload.results?.importedAt);
         sourceNode.textContent = `数据源：Cloudflare 云端数据同步 · ${stamp || "最新快照"}`;
       }
-      rerenderOddsSurfaces();
+      renderCurrentRouteSurfaces();
       scheduleSportterySpHistoryRefresh();
     }
   } catch (error) {
@@ -7731,7 +7782,7 @@ window.addEventListener("hashchange", () => {
 
 const initialHash = window.location.hash;
 if (initialHash) {
-  renderAll();
+  renderCurrentRouteSurfaces();
 } else {
   renderInitialHomeOnly();
 }
