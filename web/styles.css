@@ -7012,12 +7012,66 @@ body::before {
   padding: 0 22px;
 }
 
+.global-stats-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(207, 221, 239, 0.95);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, #f8fbff, #eef5ff);
+}
+
+.global-stats-table-toolbar div {
+  display: grid;
+  gap: 3px;
+}
+
+.global-stats-table-toolbar span,
+.global-stats-table-toolbar strong {
+  display: block;
+}
+
+.global-stats-table-toolbar span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.global-stats-table-toolbar strong {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.global-stats-table-toolbar button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  background: var(--blue);
+  color: white;
+  font-weight: 950;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.global-stats-table-toolbar button:hover {
+  background: #063879;
+}
+
 .global-stats-filterbar {
   margin-top: 18px;
 }
 
 .global-stats-wrap {
-  max-height: 680px;
+  max-height: 500px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .global-stats-record-table {
@@ -7028,6 +7082,85 @@ body::before {
 .global-stats-record-table td:nth-child(6) {
   min-width: 180px;
   max-width: 210px;
+}
+
+.global-stats-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(8, 32, 82, 0.58);
+}
+
+.global-stats-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1880px, 98vw);
+  height: min(980px, 94vh);
+  overflow: hidden;
+  border: 1px solid rgba(207, 221, 239, 0.98);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 30px 80px rgba(8, 32, 82, 0.32);
+}
+
+.global-stats-dialog header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 18px 22px;
+  background: linear-gradient(115deg, rgba(8, 32, 82, 0.99), rgba(7, 60, 135, 0.96));
+  color: white;
+}
+
+.global-stats-dialog header span,
+.global-stats-dialog header em {
+  display: block;
+  color: rgba(255, 255, 255, 0.72);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.global-stats-dialog header strong {
+  display: block;
+  margin: 5px 0;
+  color: white;
+  font-size: 22px;
+  font-weight: 950;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.global-stats-dialog header button {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.global-stats-dialog-body {
+  min-height: 0;
+  overflow: auto;
+  background: #f4f8fd;
+}
+
+.global-stats-record-table-expanded {
+  min-width: 1680px;
+  font-size: 13px;
+}
+
+.global-stats-record-table-expanded th,
+.global-stats-record-table-expanded td {
+  padding: 9px 10px;
 }
 
 .odds-map-panel {

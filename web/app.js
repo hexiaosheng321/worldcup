@@ -5850,8 +5850,18 @@ function renderGlobalStats() {
       `;
     })
     .join("") || `<tr><td colspan="13" class="empty-cell">当前范围暂无模型推演记录</td></tr>`;
+  const tableSummary = `${activeGlobalStatsLeague === "all" ? "全部联赛 / 专题" : activeGlobalStatsLeague} · ${dateScopeLabel} · ${visibleRows.length}/${allRows.length} 场`;
 
   table.innerHTML = `
+    <div class="global-stats-table-toolbar">
+      <div>
+        <span>回测明细表</span>
+        <strong>${tableSummary}</strong>
+      </div>
+      <button type="button" data-global-stats-maximize aria-label="最大化查看回测明细表">
+        <span>最大化查看</span>
+      </button>
+    </div>
     <div class="review-record-wrap compact global-stats-wrap">
       <table class="review-record-table global-stats-record-table">
         <thead>
@@ -5875,6 +5885,34 @@ function renderGlobalStats() {
       </table>
     </div>
   `;
+}
+
+function openGlobalStatsModal() {
+  const sourceTable = document.querySelector("#global-stats-table .global-stats-record-table");
+  if (!sourceTable) return;
+  document.querySelector(".global-stats-modal")?.remove();
+  const summary =
+    document.querySelector("#global-stats-table .global-stats-table-toolbar strong")?.textContent ||
+    "全部体彩模型记录";
+  const modal = document.createElement("div");
+  modal.className = "global-stats-modal";
+  modal.innerHTML = `
+    <div class="global-stats-dialog" role="dialog" aria-modal="true" aria-label="回测明细最大化表格">
+      <header>
+        <div>
+          <span>模型回测明细</span>
+          <strong>${summary}</strong>
+          <em>横向滚动查看更多列，纵向滚动查看更多比赛。</em>
+        </div>
+        <button type="button" data-global-stats-close aria-label="关闭最大化表格">×</button>
+      </header>
+      <div class="global-stats-dialog-body"></div>
+    </div>
+  `;
+  const tableClone = sourceTable.cloneNode(true);
+  tableClone.classList.add("global-stats-record-table-expanded");
+  modal.querySelector(".global-stats-dialog-body")?.appendChild(tableClone);
+  document.body.appendChild(modal);
 }
 
 function spNumber(value) {
@@ -7283,6 +7321,27 @@ document.querySelector("#odds-map")?.addEventListener("click", (event) => {
 });
 
 document.body.addEventListener("click", (event) => {
+  const globalStatsModal = event.target.closest(".global-stats-modal");
+  const globalStatsClose = event.target.closest("[data-global-stats-close]");
+  const globalStatsBackdrop = event.target.classList?.contains("global-stats-modal") ? event.target : null;
+  if (globalStatsClose || globalStatsBackdrop) {
+    document.querySelector(".global-stats-modal")?.remove();
+    return;
+  }
+  if (globalStatsModal) {
+    const sportteryButton = event.target.closest("[data-review-open-sporttery]");
+    if (sportteryButton) {
+      document.querySelector(".global-stats-modal")?.remove();
+      openSportteryMatchPage(sportteryButton.dataset.reviewOpenSporttery, "model-stats");
+      return;
+    }
+    const matchButton = event.target.closest("[data-review-open-match]");
+    if (matchButton) {
+      document.querySelector(".global-stats-modal")?.remove();
+      openMatchPage(matchButton.dataset.reviewOpenMatch, "model-stats");
+      return;
+    }
+  }
   const closeButton = event.target.closest("[data-odds-backtest-close]");
   const modalBackdrop = event.target.classList?.contains("odds-backtest-modal") ? event.target : null;
   if (closeButton || modalBackdrop) {
@@ -7299,6 +7358,7 @@ document.body.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     document.querySelector(".odds-backtest-modal")?.remove();
+    document.querySelector(".global-stats-modal")?.remove();
   }
 });
 
@@ -7359,6 +7419,10 @@ document.querySelector("#global-stats-league-filter")?.addEventListener("change"
 });
 
 document.querySelector("#global-stats-table")?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-global-stats-maximize]")) {
+    openGlobalStatsModal();
+    return;
+  }
   const sportteryButton = event.target.closest("[data-review-open-sporttery]");
   if (sportteryButton) {
     openSportteryMatchPage(sportteryButton.dataset.reviewOpenSporttery, "model-stats");
