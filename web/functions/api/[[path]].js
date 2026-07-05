@@ -312,6 +312,99 @@ function hasFinalApproval(body = {}) {
   return body.finalApproval === true || body.final_approval === true || body.payload?.finalApproval === true;
 }
 
+function firstLockText(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && String(value).trim() !== "") return String(value).trim();
+  }
+  return "";
+}
+
+function firstNumber(...values) {
+  for (const value of values) {
+    const number = Number(value);
+    if (Number.isFinite(number)) return number;
+  }
+  return null;
+}
+
+function isBlankValue(value) {
+  return value === undefined || value === null || String(value).trim() === "";
+}
+
+function isDefaultNumber(value) {
+  return value === undefined || value === null || Number(value) === 0;
+}
+
+function pickSideText(value = "") {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (/^(HOME|主|胜)$/i.test(text)) return "胜";
+  if (/^(DRAW|平)$/i.test(text)) return "平";
+  if (/^(AWAY|客|负)$/i.test(text)) return "负";
+  return text;
+}
+
+function lockPayloadShape(source = {}) {
+  const payload = source.payload && typeof source.payload === "object" ? source.payload : {};
+  const prediction = source.sportteryPrediction || source.prediction || payload.sportteryPrediction || payload.prediction || source;
+  const analysis = prediction.analysis || source.analysis || payload.analysis || prediction.payload || payload.payload || {};
+  const finalPick = prediction.finalPick || analysis.finalPick || source.finalPick || payload.finalPick || {};
+  return { payload, prediction, analysis, finalPick };
+}
+
+function lockSummaryFromShape(shape) {
+  const { prediction, analysis, finalPick } = shape;
+  const scores = Array.isArray(finalPick.scores) ? finalPick.scores.join(" / ") : firstLockText(finalPick.scores);
+  const pick = firstLockText(
+    prediction.pick,
+    prediction.recommendation,
+    prediction.recommendationSide,
+    finalPick.winDrawLose
+  );
+  const handicap = firstLockText(prediction.handicapPick, prediction.handicapRecommendation, finalPick.handicap);
+  const totalGoals = firstLockText(prediction.totalGoalsPick, finalPick.totalGoals);
+  const scorePick = firstLockText(prediction.scorePick, scores);
+  return {
+    recommendation: firstLockText(prediction.recommendation, pickSideText(pick)),
+    recommendationSide: firstLockText(prediction.recommendationSide, finalPick.winDrawLose, pick),
+    finalGrade: firstLockText(prediction.finalGrade, prediction.confidence, finalPick.confidence),
+    finalAction: firstLockText(prediction.finalAction, prediction.advice, finalPick.advice),
+    dataQuality: firstLockText(prediction.dataQuality, analysis.dataQuality),
+    reasoningSummary: firstLockText(
+      prediction.reasoningSummary,
+      analysis.keyJudgement,
+      analysis.hardGate,
+      [pickSideText(pick), handicap, totalGoals, scorePick].filter(Boolean).join(" / ")
+    ),
+    modelHomeProb: firstNumber(prediction.modelHomeProb, prediction.homeProb, analysis.modelHomeProb),
+    modelDrawProb: firstNumber(prediction.modelDrawProb, prediction.drawProb, analysis.modelDrawProb),
+    modelAwayProb: firstNumber(prediction.modelAwayProb, prediction.awayProb, analysis.modelAwayProb),
+    confidenceScore: firstNumber(prediction.confidenceScore, prediction.confidence_score),
+    riskScore: firstNumber(prediction.riskScore, prediction.risk_score),
+    consistencyScore: firstNumber(prediction.consistencyScore, prediction.consistency_score),
+  };
+}
+
+function enrichLockRow(row = {}) {
+  const parsed = parseObject(row.payload_json, {});
+  const summary = lockSummaryFromShape(lockPayloadShape(parsed));
+  return {
+    ...row,
+    model_home_prob: isDefaultNumber(row.model_home_prob) && summary.modelHomeProb !== null ? summary.modelHomeProb : row.model_home_prob,
+    model_draw_prob: isDefaultNumber(row.model_draw_prob) && summary.modelDrawProb !== null ? summary.modelDrawProb : row.model_draw_prob,
+    model_away_prob: isDefaultNumber(row.model_away_prob) && summary.modelAwayProb !== null ? summary.modelAwayProb : row.model_away_prob,
+    recommendation: isBlankValue(row.recommendation) ? summary.recommendation : row.recommendation,
+    recommendation_side: isBlankValue(row.recommendation_side) || row.recommendation_side === "SKIP" ? summary.recommendationSide : row.recommendation_side,
+    final_grade: isBlankValue(row.final_grade) || row.final_grade === "D" ? summary.finalGrade || row.final_grade : row.final_grade,
+    final_action: isBlankValue(row.final_action) ? summary.finalAction : row.final_action,
+    confidence_score: isDefaultNumber(row.confidence_score) && summary.confidenceScore !== null ? summary.confidenceScore : row.confidence_score,
+    risk_score: isDefaultNumber(row.risk_score) && summary.riskScore !== null ? summary.riskScore : row.risk_score,
+    consistency_score: row.consistency_score === undefined || row.consistency_score === null ? summary.consistencyScore : row.consistency_score,
+    data_quality: isBlankValue(row.data_quality) ? summary.dataQuality : row.data_quality,
+    reasoning_summary: isBlankValue(row.reasoning_summary) ? summary.reasoningSummary : row.reasoning_summary,
+  };
+}
+
 const weights = {
   league: 0.1,
   modelProb: 0.22,
@@ -3185,7 +3278,7 @@ export async function onRequest(context) {
         (linkedResults.results || []).forEach((row) => resultsById.set(row.match_id, row));
       }
       const results = [...resultsById.values()].sort((a, b) => String(b.reviewed_at || "").localeCompare(String(a.reviewed_at || "")));
-      return json({ ok: true, matches: matches.results, locks: locks.results, results, cases, autoPredictions: [] });
+      return json({ ok: true, matches: matches.results, locks: (locks.results || []).map(enrichLockRow), results, cases, autoPredictions: [] });
     }
 
     if (path === "matches" && request.method === "GET") {
@@ -3212,7 +3305,7 @@ export async function onRequest(context) {
         ? db.prepare("SELECT * FROM locked_predictions WHERE match_id = ? ORDER BY locked_at DESC").bind(matchId)
         : db.prepare("SELECT * FROM locked_predictions ORDER BY locked_at DESC LIMIT 300");
       const { results } = await stmt.all();
-      return json({ ok: true, locks: results });
+      return json({ ok: true, locks: (results || []).map(enrichLockRow) });
     }
 
     if (path === "locks/preferred" && request.method === "GET") {
@@ -3224,7 +3317,7 @@ export async function onRequest(context) {
         ORDER BY CASE WHEN lock_type = 'FINAL_LOCK' THEN 0 ELSE 1 END, locked_at DESC
         LIMIT 1
       `).bind(matchId).first();
-      return json({ ok: true, lock });
+      return json({ ok: true, lock: lock ? enrichLockRow(lock) : null });
     }
 
     if (path === "locks" && request.method === "POST") {
@@ -3232,6 +3325,8 @@ export async function onRequest(context) {
       const lockId = body.lockId || body.lock_id || `${body.matchId || body.match_id}-${body.lockType || "FINAL_LOCK"}-${Date.now()}`;
       const lockType = body.lockType || body.lock_type || "FINAL_LOCK";
       const league = body.league || "世界杯";
+      const payloadShape = lockPayloadShape(body);
+      const payloadSummary = lockSummaryFromShape(payloadShape);
       if (lockType === "FINAL_LOCK" && !isWorldCupLeague(league) && !hasFinalApproval(body)) {
         return json({
           ok: false,
@@ -3253,16 +3348,16 @@ export async function onRequest(context) {
       `).bind(
         lockId, body.matchId || body.match_id, body.matchCode || body.match_code || "", body.homeTeam || body.home_team || "", body.awayTeam || body.away_team || "",
         league, body.kickoffTime || body.kickoff_time || "", body.lockedAt || body.locked_at || new Date().toISOString(), lockType, body.modelVersion || body.model_version || "V1",
-        n(body.modelHomeProb ?? body.model_home_prob, 0), n(body.modelDrawProb ?? body.model_draw_prob, 0), n(body.modelAwayProb ?? body.model_away_prob, 0),
-        body.recommendation || "", body.recommendationSide || body.recommendation_side || "SKIP", body.finalGrade || body.final_grade || "D", body.finalAction || body.final_action || "谨慎",
-        n(body.confidenceScore ?? body.confidence_score, 0), n(body.riskScore ?? body.risk_score, 0), n(body.consistencyScore ?? body.consistency_score, null),
+        n(body.modelHomeProb ?? body.model_home_prob ?? payloadSummary.modelHomeProb, 0), n(body.modelDrawProb ?? body.model_draw_prob ?? payloadSummary.modelDrawProb, 0), n(body.modelAwayProb ?? body.model_away_prob ?? payloadSummary.modelAwayProb, 0),
+        body.recommendation || payloadSummary.recommendation || "", body.recommendationSide || body.recommendation_side || payloadSummary.recommendationSide || "SKIP", body.finalGrade || body.final_grade || payloadSummary.finalGrade || "D", body.finalAction || body.final_action || payloadSummary.finalAction || "谨慎",
+        n(body.confidenceScore ?? body.confidence_score ?? payloadSummary.confidenceScore, 0), n(body.riskScore ?? body.risk_score ?? payloadSummary.riskScore, 0), n(body.consistencyScore ?? body.consistency_score ?? payloadSummary.consistencyScore, null),
         n(body.sportteryHomeSp ?? body.sporttery_home_sp, null), n(body.sportteryDrawSp ?? body.sporttery_draw_sp, null), n(body.sportteryAwaySp ?? body.sporttery_away_sp, null),
         n(body.sportteryHomeProb ?? body.sporttery_home_prob, null), n(body.sportteryDrawProb ?? body.sporttery_draw_prob, null), n(body.sportteryAwayProb ?? body.sporttery_away_prob, null),
         n(body.valueHomeGap ?? body.value_home_gap, null), n(body.valueDrawGap ?? body.value_draw_gap, null), n(body.valueAwayGap ?? body.value_away_gap, null),
         n(body.asianHandicap ?? body.asian_handicap, null), n(body.asianHomeWater ?? body.asian_home_water, null), n(body.asianAwayWater ?? body.asian_away_water, null),
         n(body.euroHomeOdds ?? body.euro_home_odds, null), n(body.euroDrawOdds ?? body.euro_draw_odds, null), n(body.euroAwayOdds ?? body.euro_away_odds, null),
         n(body.euroHomeProb ?? body.euro_home_prob, null), n(body.euroDrawProb ?? body.euro_draw_prob, null), n(body.euroAwayProb ?? body.euro_away_prob, null),
-        body.dataQuality || body.data_quality || "MEDIUM", body.reasoningSummary || body.reasoning_summary || "", JSON.stringify(body.downgradeReasons || body.downgrade_reasons || []), JSON.stringify(body)
+        body.dataQuality || body.data_quality || payloadSummary.dataQuality || "MEDIUM", body.reasoningSummary || body.reasoning_summary || payloadSummary.reasoningSummary || "", JSON.stringify(body.downgradeReasons || body.downgrade_reasons || []), JSON.stringify(body)
       ).run();
       return json({ ok: true, lockId });
     }
