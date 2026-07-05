@@ -885,6 +885,17 @@ async function ensureSportteryLockForItem(item = {}, key = "") {
   }
 }
 
+function hasCompleteSportteryLockFields(pred = {}) {
+  if (!pred) return false;
+  const scores = [pred.mainScore, pred.counterScore].filter(Boolean);
+  return Boolean(
+    pred.lockId &&
+    (pred.pick || pred.recommendationSide) &&
+    (pred.handicapPick || pred.handicapRecommendation) &&
+    (scores.length || pred.scorePick)
+  );
+}
+
 function resultForWorldCupMatch(match) {
   const results = resultsData.results || [];
   return results.find(
@@ -3369,7 +3380,7 @@ function sportteryResearchSnapshot(item, modelPred) {
       directionPick: resolved?.pick || modelPred.pick || "-",
       handicapPick: resolved?.handicapPick || handicapPick(modelPred) || "-",
       totalPick: modelPred.totalGoalsPick || "-",
-      scorePick: [modelPred.mainScore, modelPred.counterScore].filter(Boolean).join(" / ") || "-",
+      scorePick: [modelPred.mainScore, modelPred.counterScore].filter(Boolean).join(" / ") || modelPred.scorePick || "-",
       riskNotes,
       score,
       actualDirection: direction(score),
@@ -4255,11 +4266,14 @@ function renderSportteryMatchDetail(key) {
   }
   const item = sportteryDetailRow(base);
   let modelPred = sportteryPredictionForItem(item) || (item.linkedNo ? latestPredictionFor(item.linkedNo) : null);
-  if (!modelPred) {
+  const hasCloudMatchId = Boolean(cloudMatchIdForSportteryItem(item));
+  const needsPreferredLock = hasCloudMatchId && !hasCompleteSportteryLockFields(modelPred);
+  if (needsPreferredLock) {
     ensureSportteryLockForItem(item, sportteryLookupKeyFromHash(key));
     modelPred = sportteryPredictionForItem(item) || (item.linkedNo ? latestPredictionFor(item.linkedNo) : null);
+    if (!hasCompleteSportteryLockFields(modelPred)) modelPred = null;
   }
-  const lockSyncing = !modelPred && Boolean(cloudMatchIdForSportteryItem(item));
+  const lockSyncing = !modelPred && hasCloudMatchId;
   const research = sportteryResearchSnapshot(item, modelPred);
   const backLabel =
     matchDetailReturnTarget === "review"
