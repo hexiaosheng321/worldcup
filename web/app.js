@@ -692,6 +692,19 @@ function sportteryPredictionForItem(item = {}) {
   const linkedMatch = matchFromOddsItem(item) || matchFromResultItem(item);
   const worldCupRows = data.predictions || [];
   const sportteryRows = data.sportteryPredictions || [];
+  const sportteryPred = sportteryRows.find((pred) => pred.sportteryKey && (pred.sportteryKey === key || sameSportteryIdentity(pred.sportteryKey, key)))
+    || sportteryRows.find((pred) => pred.matchId && item.matchId && sameSportteryIdentity(pred.matchId, item.matchId))
+    || sportteryRows.find(
+      (pred) =>
+        sportteryNoDateTeamMatch(item, pred)
+    )
+    || sportteryRows.find(
+      (pred) =>
+        [item.ticaiDate, item.matchDate].includes(pred.matchDate || pred.date) &&
+        looseTeamMatch(pred.home, item.home) &&
+        looseTeamMatch(pred.away, item.away)
+    );
+  if (sportteryPred) return sportteryPred;
   const worldCupPred = linkedMatch
     ? latestPredictionFor(linkedMatch.no)
     : worldCupRows.find(
@@ -708,18 +721,7 @@ function sportteryPredictionForItem(item = {}) {
           looseTeamMatch(pred.away, item.away)
       );
   if (worldCupPred) return worldCupPred;
-  return sportteryRows.find((pred) => pred.sportteryKey && (pred.sportteryKey === key || sameSportteryIdentity(pred.sportteryKey, key)))
-    || sportteryRows.find((pred) => pred.matchId && item.matchId && sameSportteryIdentity(pred.matchId, item.matchId))
-    || sportteryRows.find(
-      (pred) =>
-        sportteryNoDateTeamMatch(item, pred)
-    )
-    || sportteryRows.find(
-      (pred) =>
-        [item.ticaiDate, item.matchDate].includes(pred.matchDate || pred.date) &&
-        looseTeamMatch(pred.home, item.home) &&
-        looseTeamMatch(pred.away, item.away)
-    );
+  return null;
 }
 
 function findSportteryItemForPrediction(pred = {}) {

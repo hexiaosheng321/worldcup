@@ -3236,7 +3236,7 @@ export async function onRequest(context) {
         return json({
           ok: false,
           error: "league model must be completed as PRE_LOCK before FINAL_LOCK",
-          hint: "For non-World-Cup leagues, write PRE_LOCK first. Add finalApproval=true only after manual confirmation.",
+          hint: "For non-World-Cup leagues, write PRE_LOCK first. Add finalApproval=true only after external lineup/injury verification or explicit final review.",
         }, 400);
       }
       const exists = await db.prepare("SELECT lock_id FROM locked_predictions WHERE lock_id = ?").bind(lockId).first();

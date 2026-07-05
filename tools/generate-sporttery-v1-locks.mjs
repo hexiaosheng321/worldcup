@@ -13,7 +13,7 @@ const OUTPUT = path.resolve("web/auto-sporttery-predictions.js");
 const EXTERNAL_SAMPLES_FILE = path.resolve("web/data/externalHistoricalSamples.js");
 const SP_HISTORY_FILE = path.resolve("web/live-sporttery-sp-history.js");
 const LEAGUE_V1_DECISION_STEPS =
-  "联赛V1必须以世界杯V4推演链为基础：1内部概率底盘；2赛事规则/动机；3球队状态；4风格对位；5机构线与体彩盘口偏差；6赔率动态防守层；7常规比赛脚本；8半场/60分钟触发脚本；9决策冲突闸门；10比分与总进球校验；11让球独立闸门；12失败方式识别；13价值过滤；14人工确认后锁版。自动生成只能作为PRE_LOCK草稿。2026-07-04后新增硬门槛：球队状态未补齐、赔率动态未比较、冲突闸门仅靠1-1低赔、让球未按两个比分映射、总进球未结合联赛画像时，一律不得FINAL_LOCK。";
+  "联赛V1必须以世界杯V4推演链为基础：1内部概率底盘；2赛事规则/动机；3球队状态；4风格对位；5机构线与体彩盘口偏差；6赔率动态防守层；7常规比赛脚本；8半场/60分钟触发脚本；9决策冲突闸门；10比分与总进球校验；11让球独立闸门；12失败方式识别；13价值过滤；14外部检索确认后锁版。自动生成只能作为PRE_LOCK草稿。2026-07-04后新增硬门槛：球队状态未补齐、赔率动态未比较、冲突闸门仅靠1-1低赔、让球未按两个比分映射、总进球未结合联赛画像时，一律不得FINAL_LOCK。";
 const LEAGUE_V1_HARD_GATES = [
   "球队状态门槛：必须补双方排名/近3-5场/主客场/伤停轮换/进攻路径/防守风险；模板状态不能FINAL",
   "赔率动态门槛：必须比较开盘、最新、临场或SP历史至少两个状态；缺失时降级到C+或以下",
@@ -274,7 +274,7 @@ const rows = (oddsData.matches || [])
       poisson: scores.length ? scores.join(" / ") : "待接入",
       decisionProcess: LEAGUE_V1_DECISION_STEPS,
       competitionRules: competitionRuleTemplate(item),
-      groupSituation: `${competitionRuleTemplate(item)} 模型草稿先记录盘口、比分低赔、总进球结构和联赛节奏，球队状态和规则动机补足后只能进入PRE_LOCK；人工确认后才允许FINAL_LOCK。`,
+      groupSituation: `${competitionRuleTemplate(item)} 模型草稿先记录盘口、比分低赔、总进球结构和联赛节奏，球队状态和规则动机补足后只能进入PRE_LOCK；由任务流程完成外部检索确认后才允许FINAL_LOCK。`,
       teamState,
       styleMatchup: styleMatchupTemplate(item),
       recentAnalysis: `联赛V1状态层：${teamState} 联赛节奏提示：${profile.tempo}`,
@@ -289,11 +289,11 @@ const rows = (oddsData.matches || [])
       halftimeDecision: halfFullScenarioFor(item, normal, handicap, scoreA, scoreB),
       stateTransfer,
       failureMode: profile.risk,
-      dataQuality: `联赛V1数据质量：${contextQuality}；阵容伤停仍需人工确认。样本不足时只展示，不上调置信。`,
+      dataQuality: `联赛V1数据质量：${contextQuality}；阵容伤停由任务流程外部检索确认，公开来源不足时只展示，不上调置信。`,
       decisionConflict: `${conflict} ${decisionConflictGate(normal, handicap, scoreA, scoreB)}`,
       handicapGate: handicapMappingGate(item, scoreA, scoreB),
       valueFilter: `价值过滤硬门槛：${contextQuality}；球队状态、赔率动态、冲突闸门、让球映射、总进球画像任一未补齐时，不允许升主打；自动草稿只能观察或PRE_LOCK。`,
-      finalDecisionAction: `联赛V1模型草稿：按世界杯V4推演链先给临时方向，胜平负倾向${normal?.label || "-"}；让球倾向${handicap?.label || "-"}；总进球倾向${totalGoals}；比分候选${scoreA} / ${scoreB}。${contextQuality}；未同时满足状态层、赔率动态两态比较、阵容伤停和人工确认前只能作为PRE_LOCK草稿，不得当作FINAL_LOCK。`,
+      finalDecisionAction: `联赛V1模型草稿：按世界杯V4推演链先给临时方向，胜平负倾向${normal?.label || "-"}；让球倾向${handicap?.label || "-"}；总进球倾向${totalGoals}；比分候选${scoreA} / ${scoreB}。${contextQuality}；未同时满足状态层、赔率动态两态比较、阵容伤停外部检索确认前只能作为PRE_LOCK草稿，不得当作FINAL_LOCK。`,
       pick: normal?.label || "",
       handicapPick: handicap?.label || "",
       totalGoalsPick: totalGoals,
