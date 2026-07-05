@@ -5,7 +5,14 @@ const ODDS_FILE = path.resolve("web/live-sporttery-data.js");
 const MANUAL_FILE = path.resolve("web/data.js");
 const OUTPUT = path.resolve("web/auto-sporttery-predictions.js");
 const LEAGUE_V1_DECISION_STEPS =
-  "联赛V1必须以世界杯V4推演链为基础：1内部概率底盘；2赛事规则/动机；3球队状态；4风格对位；5机构线与体彩盘口偏差；6赔率动态防守层；7常规比赛脚本；8半场/60分钟触发脚本；9决策冲突闸门；10比分与总进球校验；11让球独立闸门；12失败方式识别；13价值过滤；14人工确认后锁版。自动生成只能作为PRE_LOCK草稿。";
+  "联赛V1必须以世界杯V4推演链为基础：1内部概率底盘；2赛事规则/动机；3球队状态；4风格对位；5机构线与体彩盘口偏差；6赔率动态防守层；7常规比赛脚本；8半场/60分钟触发脚本；9决策冲突闸门；10比分与总进球校验；11让球独立闸门；12失败方式识别；13价值过滤；14人工确认后锁版。自动生成只能作为PRE_LOCK草稿。2026-07-04后新增硬门槛：球队状态未补齐、赔率动态未比较、冲突闸门仅靠1-1低赔、让球未按两个比分映射、总进球未结合联赛画像时，一律不得FINAL_LOCK。";
+const LEAGUE_V1_HARD_GATES = [
+  "球队状态门槛：必须补双方排名/近3-5场/主客场/伤停轮换/进攻路径/防守风险；模板状态不能FINAL",
+  "赔率动态门槛：必须比较开盘、最新、临场或SP历史至少两个状态；缺失时降级到C+或以下",
+  "冲突闸门：单个1-1最低比分不能推翻胜平负低位，至少需要球队状态、联赛画像、赔率动态、让球映射、相似样本两层支持",
+  "让球映射门槛：两个候选比分必须逐个换算让胜/让平/让负；受让保护不等于自动让胜",
+  "总进球门槛：不能从低比分模板直接导出小球，必须结合联赛画像和双方近期BTTS/大球形态",
+];
 
 function jsonFromJs(content, varName) {
   const matched = content.match(new RegExp(`${varName}\\s*=\\s*(\\{[\\s\\S]*\\});?\\s*$`));
@@ -121,6 +128,34 @@ function marketConflict(normalPick, handicapPick) {
   return "胜平负与让球低位暂同向，但仍需检查比分低赔是否支持第二球。";
 }
 
+function handicapResultForScore(score = "", handicap = "") {
+  const matched = String(score || "").match(/(\d+)\D+(\d+)/);
+  const line = Number(String(handicap || "").replace(/[^\d+-]/g, ""));
+  if (!matched || !Number.isFinite(line)) return "待判";
+  const home = Number(matched[1]);
+  const away = Number(matched[2]);
+  const adjusted = home + line - away;
+  if (adjusted > 0) return "让胜";
+  if (adjusted === 0) return "让平";
+  return "让负";
+}
+
+function handicapMappingGate(item, scoreA, scoreB) {
+  return `让球映射硬门槛：${item.home || "主队"}${item.handicap || "0"}下，${scoreA || "-"}=${handicapResultForScore(scoreA, item.handicap)}，${scoreB || "-"}=${handicapResultForScore(scoreB, item.handicap)}。最终让球必须从比分映射、球队状态、赔率动态三层共同确认，不能把受让保护直接写成让胜。`;
+}
+
+function decisionConflictGate(normalPick, handicapPick, scoreA, scoreB) {
+  return `冲突闸门硬门槛：胜平负低位${normalPick ? `${normalPick.label}${normalPick.odd}` : "-"}、让球低位${handicapPick ? `${handicapPick.label}${handicapPick.odd}` : "-"}、比分低赔${scoreA}/${scoreB}必须互相解释。单个1-1或低比分不能推翻胜平负低位；至少需要球队状态、联赛画像、赔率动态、让球映射、相似样本中两层支持，才允许改选平局或冷门。`;
+}
+
+function oddsMovementGate() {
+  return "赔率动态硬门槛：当前自动草稿只读取一次赛事池快照，未比较开盘/最新/临场/SP历史，不能用于FINAL_LOCK；人工锁版前必须补lineMovement，若动态缺失则置信降到C+或以下。";
+}
+
+function teamStateGate(item) {
+  return `球队状态硬门槛：${item.home || "主队"}与${item.away || "客队"}必须补排名、近3-5场进失球、主客场、伤停轮换、赛程压力、各自进攻路径和防守风险。未补齐时只能PRE_LOCK或跳过。`;
+}
+
 function stateTransferFor(item, normalPick, handicapPick, totalGoals) {
   const profile = leagueProfile(item.league);
   const conflict = marketConflict(normalPick, handicapPick);
@@ -128,7 +163,7 @@ function stateTransferFor(item, normalPick, handicapPick, totalGoals) {
 }
 
 function teamStateTemplate(item) {
-  return `待人工补充：${item.home || "主队"}与${item.away || "客队"}近3-5场真实状态、伤停停赛、主客场强弱、体能和赛程压力。模型草稿不能把盘口低位当作球队状态。`;
+  return `待人工补充：${teamStateGate(item)} 模型草稿不能把盘口低位当作球队状态。`;
 }
 
 function styleMatchupTemplate(item) {
@@ -224,8 +259,9 @@ const rows = (oddsData.matches || [])
       styleMatchup: styleMatchupTemplate(item),
       recentAnalysis: `联赛V1模型草稿仅根据体彩开盘结构生成，球队状态和风格对位待人工补充。联赛节奏提示：${profile.tempo}`,
       institutionLine: `胜平负低位 ${normal ? `${normal.label}${normal.odd}` : "-"}；让球低位 ${handicap ? `${handicap.label}${handicap.odd}` : "-"}。`,
+      lineMovement: oddsMovementGate(),
       noiseFilter: "自动锁版不做名气追热，低置信场次只作观察样本。",
-      keyJudgement: "联赛V1模型草稿先检查世界杯V4推演链是否完整：球队状态、风格对位、赛事规则、盘口、赔率动态、常规脚本、触发脚本、冲突闸门、比分/总进球、让球闸门、失败方式、价值过滤缺一项都不能进入FINAL_LOCK。",
+      keyJudgement: `联赛V1模型草稿先检查世界杯V4推演链是否完整：球队状态、风格对位、赛事规则、盘口、赔率动态、常规脚本、触发脚本、冲突闸门、比分/总进球、让球闸门、失败方式、价值过滤缺一项都不能进入FINAL_LOCK。硬门槛：${LEAGUE_V1_HARD_GATES.join("；")}`,
       marketGap: `联赛V1暂以体彩盘口结构作为市场温度，不替代完整V4链路推演。${conflict}`,
       script: "比赛脚本等待该联赛样本、球队状态、风格对位、阵容和半全场走势补足后继续细化。",
       scriptSet: scenarioSetFor(normal, handicap, scoreA, scoreB),
@@ -234,7 +270,9 @@ const rows = (oddsData.matches || [])
       stateTransfer,
       failureMode: profile.risk,
       dataQuality: "联赛V1模型草稿已接入体彩盘口；阵容、伤停、近期状态、联赛风格和相似案例仍待人工补全。样本不足时只展示，不上调置信。",
-      decisionConflict: conflict,
+      decisionConflict: `${conflict} ${decisionConflictGate(normal, handicap, scoreA, scoreB)}`,
+      handicapGate: handicapMappingGate(item, scoreA, scoreB),
+      valueFilter: "价值过滤硬门槛：球队状态、赔率动态、冲突闸门、让球映射、总进球画像任一未补齐时，不允许升主打；自动草稿只能观察或PRE_LOCK。",
       finalDecisionAction: `联赛V1模型草稿：按世界杯V4推演链先给临时方向，胜平负倾向${normal?.label || "-"}；让球倾向${handicap?.label || "-"}；总进球倾向${totalGoals}；比分候选${scoreA} / ${scoreB}。球队状态、风格、赛事规则、相似案例、半全场和价值过滤未补足前只能作为PRE_LOCK草稿，不得当作FINAL_LOCK。`,
       pick: normal?.label || "",
       handicapPick: handicap?.label || "",
