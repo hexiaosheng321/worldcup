@@ -23,9 +23,9 @@ const SPORTTERY_FIXED_BONUS_API_URL =
 const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v1";
 const SPORTTERY_RESULT_SYNC_THROTTLE_KEY = "wc_sporttery_result_sync_checked_at_v1";
 const STATIC_SNAPSHOT_FALLBACKS = [
-  "./live-sporttery-data.js",
-  "./live-sporttery-results.js",
-  "./live-sporttery-sp-history.js",
+  "./live-sporttery-data.js?v=13task-20260705-2025",
+  "./live-sporttery-results.js?v=13task-20260705-2025",
+  "./live-sporttery-sp-history.js?v=13task-20260705-2025",
   "./live-football-scores.js",
   "./football-data-context.js",
   "./odds-data.js",
