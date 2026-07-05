@@ -22,6 +22,8 @@ const SPORTTERY_FIXED_BONUS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
 const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v1";
 const SPORTTERY_RESULT_SYNC_THROTTLE_KEY = "wc_sporttery_result_sync_checked_at_v1";
+const SPORTTERY_RESULT_SYNC_DELAY_MINUTES = 105;
+const SPORTTERY_RESULT_PENDING_WINDOW_MINUTES = 135;
 const STATIC_SNAPSHOT_FALLBACKS = [
   "./live-sporttery-data.js?v=13task-20260705-2025",
   "./live-sporttery-results.js?v=13task-20260705-2025",
@@ -1430,7 +1432,7 @@ function kickoffElapsedMinutes(kickoffAt) {
 
 function isPastResultWindow(kickoffAt) {
   const elapsed = kickoffElapsedMinutes(kickoffAt);
-  return elapsed !== null && elapsed > 105;
+  return elapsed !== null && elapsed > SPORTTERY_RESULT_PENDING_WINDOW_MINUTES;
 }
 
 function inferredLiveText(statusName, kickoffAt) {
@@ -1444,7 +1446,7 @@ function inferredLiveNote(statusName, kickoffAt) {
   const elapsed = kickoffElapsedMinutes(kickoffAt);
   if (statusName && statusName !== "待开奖") return "来自体彩官方状态";
   if (elapsed === null) return "等待官方比分回填";
-  if (elapsed > 105) return "比赛已超过常规时间窗口，等待官方比分回填";
+  if (isPastResultWindow(kickoffAt)) return "比赛已超过官方回填观察窗口，等待比分回填";
   return `已开赛约 ${elapsed} 分钟，等待官方比分回填`;
 }
 
@@ -1644,7 +1646,7 @@ function homeSportteryStatus(item = {}) {
           tone: "pending-result",
           label: "待回填",
           value: "待回填",
-          note: "比赛已超过常规时间窗口，等待官方比分回填",
+          note: "比赛已超过官方回填观察窗口，等待比分回填",
           kickoffAt,
         }
       : {
@@ -1677,7 +1679,7 @@ function updateMatchFlowTimers() {
       if (isPastResultWindow(kickoffAt)) {
         card.classList.remove("is-live");
         if (label) label.textContent = "待回填";
-        if (note) note.textContent = "比赛已超过常规时间窗口，等待官方比分回填";
+        if (note) note.textContent = "比赛已超过官方回填观察窗口，等待比分回填";
       } else {
         card.classList.add("is-live");
         if (label) label.textContent = "进行中";
@@ -1691,7 +1693,7 @@ function updateMatchFlowTimers() {
       homeCard.classList.toggle("pending-result", isPastResultWindow(kickoffAt));
       if (label) label.textContent = isPastResultWindow(kickoffAt) ? "待回填" : "进行中";
       if (note) note.textContent = isPastResultWindow(kickoffAt)
-        ? "比赛已超过常规时间窗口，等待官方比分回填"
+        ? "比赛已超过官方回填观察窗口，等待比分回填"
         : "等待官方比分回填";
     }
   });
@@ -1958,7 +1960,7 @@ function sportteryPoolItems() {
       const score = resultScore || (liveScore?.isFinished ? liveScoreText : "");
       const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
       const elapsed = kickoffElapsedMinutes(kickoffAt);
-      const likelyPastLiveWindow = !score && elapsed !== null && elapsed > 105 && !liveScoreText;
+      const likelyPastLiveWindow = !score && elapsed !== null && elapsed > SPORTTERY_RESULT_PENDING_WINDOW_MINUTES && !liveScoreText;
       const liveSignal = Boolean(liveScore?.live || liveScoreStatusText(liveScore));
       const kickoffStarted = Number.isFinite(kickoffAt) && now >= kickoffAt;
       const isLive = !score && !likelyPastLiveWindow && ((Boolean(liveScoreText) && liveSignal) || kickoffStarted);
@@ -2805,7 +2807,7 @@ function hasPastUnfilledSportteryMatches() {
   return (oddsData.matches || []).some((item) => {
     if (verifiedSportteryScore(item)) return false;
     const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
-    return Number.isFinite(kickoffAt) && now - kickoffAt > 105 * 60 * 1000;
+    return Number.isFinite(kickoffAt) && now - kickoffAt > SPORTTERY_RESULT_SYNC_DELAY_MINUTES * 60 * 1000;
   });
 }
 
