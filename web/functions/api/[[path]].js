@@ -3266,12 +3266,31 @@ export async function onRequest(context) {
       const resultLimit = initialScope ? 40 : 200;
       const [matches, locks, recentResults, cases] = await Promise.all([
         db.prepare(`SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT ${matchLimit}`).all(),
-        db.prepare(`SELECT * FROM locked_predictions ORDER BY locked_at DESC LIMIT ${lockLimit}`).all(),
+        db.prepare(`
+          SELECT * FROM locked_predictions
+          WHERE lock_id IN (
+            SELECT lock_id FROM (
+              SELECT
+                lock_id,
+                ROW_NUMBER() OVER (
+                  PARTITION BY match_id
+                  ORDER BY CASE WHEN lock_type = 'FINAL_LOCK' THEN 0 ELSE 1 END, locked_at DESC
+                ) AS row_no
+              FROM locked_predictions
+            )
+            WHERE row_no = 1
+          )
+          ORDER BY locked_at DESC
+          LIMIT ${lockLimit}
+        `).all(),
         db.prepare(`SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT ${resultLimit}`).all(),
         includeCases ? listCases(db) : Promise.resolve([]),
       ]);
       const resultsById = new Map((recentResults.results || []).map((row) => [row.match_id, row]));
-      const matchIds = (matches.results || []).map((row) => row.match_id).filter(Boolean);
+      const matchIds = [
+        ...(matches.results || []).map((row) => row.match_id),
+        ...(locks.results || []).map((row) => row.match_id),
+      ].filter(Boolean);
       if (matchIds.length) {
         const placeholders = matchIds.map(() => "?").join(",");
         const linkedResults = await db.prepare(`SELECT * FROM match_results WHERE match_id IN (${placeholders})`).bind(...matchIds).all();
