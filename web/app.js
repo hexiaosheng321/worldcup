@@ -1726,7 +1726,7 @@ function marketFavoriteText(odds) {
 
 function matchLiveDataSummary(match, pred) {
   const odds = oddsMatch(match);
-  const spRow = spRadarForMatch(match.no);
+  const spRow = spRadarForMatch(match);
   const consistency = pred ? marketConsistency(match.no, pred) : null;
   const gate = pred ? autoDecisionGate(match.no, pred) : null;
   const scoreLow = odds ? lowestOddOption(odds.scoreOdds, "score") : "";
