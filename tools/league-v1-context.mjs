@@ -13,6 +13,10 @@ const TEAM_ALIASES = {
   "索尔纳": ["AIK Stockholm", "AIK"],
   "埃夫斯堡": ["IF Elfsborg", "Elfsborg"],
   "哈马比": ["Hammarby FF", "Hammarby"],
+  "赫根": ["BK Hacken", "BK Häcken", "Hacken", "Häcken"],
+  "佐加顿斯": ["Djurgardens IF", "Djurgårdens IF", "Djurgarden", "Djurgården"],
+  "布鲁马波": ["IF Brommapojkarna", "Brommapojkarna"],
+  "盖斯": ["Gais", "GAIS"],
 };
 
 function extractWindowJson(content = "", name = "") {

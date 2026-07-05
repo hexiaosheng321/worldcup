@@ -1,7 +1,7 @@
 window.LIVE_SPORTTERY_SP_HISTORY = {
   "source": "Cloudflare D1 odds_snapshots",
   "apiEndpoint": "/api/live-sporttery-sp-history.js",
-  "importedAt": "2026-07-05T02:26:27.170Z",
+  "importedAt": "2026-07-05T02:33:08.375Z",
   "isLiveSnapshot": true,
   "isCloudSnapshot": true,
   "totalCount": 29,
