@@ -1,9 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import {
+  buildTeamState,
+  loadExternalSamples,
+  loadSportterySpHistory,
+  summarizeOddsMovement,
+} from "./league-v1-context.mjs";
 
 const ODDS_FILE = path.resolve("web/live-sporttery-data.js");
 const MANUAL_FILE = path.resolve("web/data.js");
 const OUTPUT = path.resolve("web/auto-sporttery-predictions.js");
+const EXTERNAL_SAMPLES_FILE = path.resolve("web/data/externalHistoricalSamples.js");
+const SP_HISTORY_FILE = path.resolve("web/live-sporttery-sp-history.js");
 const LEAGUE_V1_DECISION_STEPS =
   "联赛V1必须以世界杯V4推演链为基础：1内部概率底盘；2赛事规则/动机；3球队状态；4风格对位；5机构线与体彩盘口偏差；6赔率动态防守层；7常规比赛脚本；8半场/60分钟触发脚本；9决策冲突闸门；10比分与总进球校验；11让球独立闸门；12失败方式识别；13价值过滤；14人工确认后锁版。自动生成只能作为PRE_LOCK草稿。2026-07-04后新增硬门槛：球队状态未补齐、赔率动态未比较、冲突闸门仅靠1-1低赔、让球未按两个比分映射、总进球未结合联赛画像时，一律不得FINAL_LOCK。";
 const LEAGUE_V1_HARD_GATES = [
@@ -211,6 +219,8 @@ function adviceFor(confidence) {
 const oddsData = jsonFromJs(await fs.readFile(ODDS_FILE, "utf8"), "window\\.LIVE_SPORTTERY_ODDS") || { matches: [] };
 const manualContent = await fs.readFile(MANUAL_FILE, "utf8");
 const manualKeys = new Set([...manualContent.matchAll(/sportteryKey:\s*"([^"]+)"/g)].map((item) => item[1]));
+const externalSamples = await loadExternalSamples(EXTERNAL_SAMPLES_FILE);
+const spHistory = await loadSportterySpHistory(SP_HISTORY_FILE);
 
 const rows = (oddsData.matches || [])
   .filter((item) => item.league && item.league !== "世界杯")
@@ -229,6 +239,16 @@ const rows = (oddsData.matches || [])
     const matchType = totalGoalBand(goals);
     const conflict = marketConflict(normal, handicap);
     const stateTransfer = stateTransferFor(item, normal, handicap, totalGoals);
+    const teamContext = buildTeamState(externalSamples, item);
+    const oddsContext = summarizeOddsMovement(spHistory, item);
+    const teamState = teamContext.hasState
+      ? `外部样本状态层已补齐：${teamContext.summary}`
+      : `${teamStateTemplate(item)} 当前外部样本匹配不足：${teamContext.summary}`;
+    const lineMovement = oddsContext.text;
+    const contextQuality = [
+      teamContext.hasState ? "球队状态=外部样本可用" : "球队状态=样本不足",
+      oddsContext.hasMovement ? "赔率动态=两态可比" : `赔率动态=${oddsContext.snapshotCount || 0}态`,
+    ].join("；");
     return {
       sportteryKey: sportteryKey(item),
       matchId: item.matchId || "",
@@ -255,11 +275,11 @@ const rows = (oddsData.matches || [])
       decisionProcess: LEAGUE_V1_DECISION_STEPS,
       competitionRules: competitionRuleTemplate(item),
       groupSituation: `${competitionRuleTemplate(item)} 模型草稿先记录盘口、比分低赔、总进球结构和联赛节奏，球队状态和规则动机补足后只能进入PRE_LOCK；人工确认后才允许FINAL_LOCK。`,
-      teamState: teamStateTemplate(item),
+      teamState,
       styleMatchup: styleMatchupTemplate(item),
-      recentAnalysis: `联赛V1模型草稿仅根据体彩开盘结构生成，球队状态和风格对位待人工补充。联赛节奏提示：${profile.tempo}`,
+      recentAnalysis: `联赛V1状态层：${teamState} 联赛节奏提示：${profile.tempo}`,
       institutionLine: `胜平负低位 ${normal ? `${normal.label}${normal.odd}` : "-"}；让球低位 ${handicap ? `${handicap.label}${handicap.odd}` : "-"}。`,
-      lineMovement: oddsMovementGate(),
+      lineMovement,
       noiseFilter: "自动锁版不做名气追热，低置信场次只作观察样本。",
       keyJudgement: `联赛V1模型草稿先检查世界杯V4推演链是否完整：球队状态、风格对位、赛事规则、盘口、赔率动态、常规脚本、触发脚本、冲突闸门、比分/总进球、让球闸门、失败方式、价值过滤缺一项都不能进入FINAL_LOCK。硬门槛：${LEAGUE_V1_HARD_GATES.join("；")}`,
       marketGap: `联赛V1暂以体彩盘口结构作为市场温度，不替代完整V4链路推演。${conflict}`,
@@ -269,11 +289,11 @@ const rows = (oddsData.matches || [])
       halftimeDecision: halfFullScenarioFor(item, normal, handicap, scoreA, scoreB),
       stateTransfer,
       failureMode: profile.risk,
-      dataQuality: "联赛V1模型草稿已接入体彩盘口；阵容、伤停、近期状态、联赛风格和相似案例仍待人工补全。样本不足时只展示，不上调置信。",
+      dataQuality: `联赛V1数据质量：${contextQuality}；阵容伤停仍需人工确认。样本不足时只展示，不上调置信。`,
       decisionConflict: `${conflict} ${decisionConflictGate(normal, handicap, scoreA, scoreB)}`,
       handicapGate: handicapMappingGate(item, scoreA, scoreB),
-      valueFilter: "价值过滤硬门槛：球队状态、赔率动态、冲突闸门、让球映射、总进球画像任一未补齐时，不允许升主打；自动草稿只能观察或PRE_LOCK。",
-      finalDecisionAction: `联赛V1模型草稿：按世界杯V4推演链先给临时方向，胜平负倾向${normal?.label || "-"}；让球倾向${handicap?.label || "-"}；总进球倾向${totalGoals}；比分候选${scoreA} / ${scoreB}。球队状态、风格、赛事规则、相似案例、半全场和价值过滤未补足前只能作为PRE_LOCK草稿，不得当作FINAL_LOCK。`,
+      valueFilter: `价值过滤硬门槛：${contextQuality}；球队状态、赔率动态、冲突闸门、让球映射、总进球画像任一未补齐时，不允许升主打；自动草稿只能观察或PRE_LOCK。`,
+      finalDecisionAction: `联赛V1模型草稿：按世界杯V4推演链先给临时方向，胜平负倾向${normal?.label || "-"}；让球倾向${handicap?.label || "-"}；总进球倾向${totalGoals}；比分候选${scoreA} / ${scoreB}。${contextQuality}；未同时满足状态层、赔率动态两态比较、阵容伤停和人工确认前只能作为PRE_LOCK草稿，不得当作FINAL_LOCK。`,
       pick: normal?.label || "",
       handicapPick: handicap?.label || "",
       totalGoalsPick: totalGoals,

@@ -2926,11 +2926,14 @@ async function d1SportterySpHistoryScript(db, env) {
       m.match_code, m.league, m.home_team, m.away_team, m.kickoff_time, m.payload_json AS match_payload
     FROM odds_snapshots s
     LEFT JOIN matches m ON m.match_id = s.match_id
-    ORDER BY s.captured_at ASC
+    ORDER BY s.captured_at DESC
     LIMIT 1200
   `).all();
+  const snapshotRows = [...(rows.results || [])].sort((a, b) =>
+    String(a.captured_at || "").localeCompare(String(b.captured_at || ""))
+  );
   const byMatch = new Map();
-  for (const row of rows.results || []) {
+  for (const row of snapshotRows) {
     const payload = parseObject(row.snapshot_payload, {});
     const matchPayload = parseObject(row.match_payload, {});
     const base = payload.home && payload.away ? payload : matchPayload;
