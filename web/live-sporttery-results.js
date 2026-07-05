@@ -1,7 +1,7 @@
 window.LIVE_SPORTTERY_RESULTS = {
   "source": "中国体育彩票官方赛果接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1",
-  "importedAt": "2026-07-05T12:24:53.023Z",
+  "importedAt": "2026-07-05T13:01:07.128Z",
   "isLiveSnapshot": true,
   "totalCount": 80,
   "matchDates": [
@@ -1385,10 +1385,10 @@ window.LIVE_SPORTTERY_RESULTS = {
       "away": "仁川联",
       "statusCode": "10",
       "statusName": "待开奖",
-      "halfScore": "",
-      "fullScoreRaw": "",
-      "score": "",
-      "result": ""
+      "halfScore": "0-0",
+      "fullScoreRaw": "1:0",
+      "score": "1-0",
+      "result": "胜"
     },
     {
       "orderId": "7202",
@@ -1403,10 +1403,10 @@ window.LIVE_SPORTTERY_RESULTS = {
       "away": "蔚山现代",
       "statusCode": "10",
       "statusName": "待开奖",
-      "halfScore": "",
-      "fullScoreRaw": "",
-      "score": "",
-      "result": ""
+      "halfScore": "0-0",
+      "fullScoreRaw": "1:1",
+      "score": "1-1",
+      "result": "平"
     },
     {
       "orderId": "7203",
@@ -1421,10 +1421,10 @@ window.LIVE_SPORTTERY_RESULTS = {
       "away": "济州SK",
       "statusCode": "10",
       "statusName": "待开奖",
-      "halfScore": "",
-      "fullScoreRaw": "",
-      "score": "",
-      "result": ""
+      "halfScore": "0-0",
+      "fullScoreRaw": "1:1",
+      "score": "1-1",
+      "result": "平"
     },
     {
       "orderId": "7204",

@@ -1,7 +1,7 @@
 window.LIVE_SPORTTERY_SP_HISTORY = {
   "source": "中国体育彩票官方 SP 历史接口",
   "apiEndpoint": "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry",
-  "importedAt": "2026-07-05T12:24:54.928Z",
+  "importedAt": "2026-07-05T13:01:09.142Z",
   "isLiveSnapshot": true,
   "totalCount": 9,
   "errors": [],
@@ -1432,7 +1432,7 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
       "home": "墨西哥",
       "away": "英格兰",
       "handicap": "+1",
-      "updatedAt": "2026-07-05 20:17:36",
+      "updatedAt": "2026-07-05 20:43:56",
       "history": {
         "had": [
           {
@@ -1576,6 +1576,17 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
             "h": "3.22",
             "updateTime": "19:20:34",
             "hf": "0",
+            "goalLine": ""
+          },
+          {
+            "a": "2.08",
+            "updateDate": "2026-07-05",
+            "df": "1",
+            "d": "2.92",
+            "af": "-1",
+            "h": "3.27",
+            "updateTime": "20:43:56",
+            "hf": "1",
             "goalLine": ""
           }
         ],
@@ -2626,7 +2637,7 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
       "home": "埃夫斯堡",
       "away": "哈马比",
       "handicap": "+1",
-      "updatedAt": "2026-07-05 18:58:19",
+      "updatedAt": "2026-07-05 20:43:06",
       "history": {
         "had": [
           {
@@ -2718,6 +2729,27 @@ window.LIVE_SPORTTERY_SP_HISTORY = {
             "s0": "17.00",
             "s1": "5.85",
             "s2": "3.75"
+          },
+          {
+            "s3": "3.40",
+            "s4": "4.60",
+            "updateDate": "2026-07-05",
+            "s5": "8.00",
+            "s6f": "-1",
+            "s6": "13.00",
+            "s7f": "-1",
+            "s4f": "0",
+            "s7": "18.00",
+            "s5f": "0",
+            "s2f": "1",
+            "s3f": "0",
+            "s0f": "0",
+            "s1f": "1",
+            "updateTime": "20:43:06",
+            "goalLine": "",
+            "s0": "17.00",
+            "s1": "6.10",
+            "s2": "3.80"
           }
         ],
         "crs": [
