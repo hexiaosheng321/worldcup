@@ -48,6 +48,7 @@ let footballDataContext = window.FOOTBALL_DATA_CONTEXT?.matches?.length
 let cloudBootstrapLoaded = false;
 let cloudBootstrapAttempted = false;
 const cloudBootstrapPending = new Map();
+const sportteryLockFetchPending = new Set();
 let worldCupStaticDataLoaded = Boolean(data.predictions?.length && data.matches?.length);
 let worldCupStaticDataPending = null;
 const dynamicScriptPromises = new Map();
@@ -809,7 +810,10 @@ function cloudLockRowsToPredictions(rows = []) {
       const payload = parseCloudJson(row.payload_json, {});
       const prediction = payload.sportteryPrediction || payload.prediction || payload;
       const finalPick = prediction.finalPick || prediction.analysis?.finalPick || payload.finalPick || {};
-      const scorePair = scorePairFromPick(prediction.scorePick || finalPick.scores || "");
+      const finalScoresText = Array.isArray(finalPick.scores) ? finalPick.scores.join(" / ") : finalPick.scores || "";
+      const scorePair = Array.isArray(finalPick.scores)
+        ? [finalPick.scores[0] || "", finalPick.scores[1] || ""]
+        : scorePairFromPick(prediction.scorePick || finalScoresText || "");
       const rawMatchId = prediction.matchId || row.match_id || "";
       const compactMatchId = String(rawMatchId || "").replace(/^sporttery-/, "");
       const lockType = row.lock_type || row.lockType || prediction.lockType || "FINAL_LOCK";
@@ -839,7 +843,7 @@ function cloudLockRowsToPredictions(rows = []) {
         totalGoalsPick: prediction.totalGoalsPick || finalPick.totalGoals || "",
         mainScore: prediction.mainScore || scorePair[0] || "",
         counterScore: prediction.counterScore || scorePair[1] || "",
-        scorePick: prediction.scorePick || finalPick.scores || scorePair.filter(Boolean).join(" / "),
+        scorePick: prediction.scorePick || finalScoresText || scorePair.filter(Boolean).join(" / "),
         lockId: row.lock_id || prediction.lockId || "",
         lockType,
         lockedAt: row.locked_at || prediction.lockedAt || "",
@@ -848,6 +852,35 @@ function cloudLockRowsToPredictions(rows = []) {
       };
     })
     .filter(Boolean);
+}
+
+function cloudMatchIdForSportteryItem(item = {}) {
+  const raw = item.cloudMatchId || item.matchId || sportteryItemKey(item);
+  const compact = sportteryComparableId(raw);
+  return compact ? `sporttery-${compact}` : "";
+}
+
+async function ensureSportteryLockForItem(item = {}, key = "") {
+  const matchId = cloudMatchIdForSportteryItem(item);
+  if (!matchId || !window.WC_CLOUD_STORE?.getPreferredLock) return false;
+  if (sportteryLockFetchPending.has(matchId)) return false;
+  sportteryLockFetchPending.add(matchId);
+  try {
+    const preferred = await window.WC_CLOUD_STORE.getPreferredLock(matchId);
+    const lockRows = preferred?.lock
+      ? [preferred.lock]
+      : (await window.WC_CLOUD_STORE.listLocks?.(matchId))?.locks || [];
+    const changed = mergeCloudAutoPredictions(cloudLockRowsToPredictions(lockRows));
+    const currentKey = sportteryLookupKeyFromHash((window.location.hash || "").replace(/^#sporttery-match-/, ""));
+    if (changed && currentKey && (currentKey === key || sameSportteryIdentity(currentKey, key) || sameSportteryIdentity(currentKey, matchId))) {
+      renderSportteryMatchDetail(currentKey);
+    }
+    return changed;
+  } catch {
+    return false;
+  } finally {
+    sportteryLockFetchPending.delete(matchId);
+  }
 }
 
 function resultForWorldCupMatch(match) {
@@ -4219,7 +4252,12 @@ function renderSportteryMatchDetail(key) {
     return;
   }
   const item = sportteryDetailRow(base);
-  const modelPred = sportteryPredictionForItem(item) || (item.linkedNo ? latestPredictionFor(item.linkedNo) : null);
+  let modelPred = sportteryPredictionForItem(item) || (item.linkedNo ? latestPredictionFor(item.linkedNo) : null);
+  if (!modelPred) {
+    ensureSportteryLockForItem(item, sportteryLookupKeyFromHash(key));
+    modelPred = sportteryPredictionForItem(item) || (item.linkedNo ? latestPredictionFor(item.linkedNo) : null);
+  }
+  const lockSyncing = !modelPred && Boolean(cloudMatchIdForSportteryItem(item));
   const research = sportteryResearchSnapshot(item, modelPred);
   const backLabel =
     matchDetailReturnTarget === "review"
@@ -4263,8 +4301,8 @@ function renderSportteryMatchDetail(key) {
       <section class="quick-decision-board sporttery-quick-board">
         <article class="quick-main-card">
           <span>${modelPred ? "锁版结论" : "模型状态"}</span>
-          <strong>${modelPred ? research.directionPick : "待锁版"}</strong>
-          <p>${modelPred ? `让球 ${research.handicapPick} · 总进球 ${research.totalPick} · 比分 ${research.scorePick}` : `盘口预筛 ${research.directionPick} · 让球 ${research.handicapPick}`}</p>
+          <strong>${modelPred ? research.directionPick : lockSyncing ? "同步锁版中" : "待锁版"}</strong>
+          <p>${modelPred ? `让球 ${research.handicapPick} · 总进球 ${research.totalPick} · 比分 ${research.scorePick}` : lockSyncing ? "正在读取 Cloudflare D1 锁版记录" : `盘口预筛 ${research.directionPick} · 让球 ${research.handicapPick}`}</p>
         </article>
         <article>
           <span>比赛状态</span>
@@ -4273,22 +4311,24 @@ function renderSportteryMatchDetail(key) {
         </article>
         <article>
           <span>建议动作</span>
-          <strong>${research.action}</strong>
-          <p>${modelPred?.advice || "等待模型真实推演后写入锁版记录"}</p>
+          <strong>${modelPred ? research.action : lockSyncing ? "同步锁版" : research.action}</strong>
+          <p>${modelPred?.advice || (lockSyncing ? "已请求线上锁版包，返回后自动刷新详情" : "等待模型真实推演后写入锁版记录")}</p>
         </article>
         <article>
           <span>模型版本</span>
-          <strong>${modelPred ? predictionVersionLabel(modelPred) : "未锁版"}</strong>
-          <p>${modelName || `${item.league || "该赛事"}待锁版，不计入正式模型版本`}</p>
+          <strong>${modelPred ? predictionVersionLabel(modelPred) : lockSyncing ? "同步中" : "未锁版"}</strong>
+          <p>${modelName || (lockSyncing ? "正在读取线上 preferred lock" : `${item.league || "该赛事"}待锁版，不计入正式模型版本`)}</p>
         </article>
       </section>
       <section class="match-page-section sporttery-research-panel">
-        <span>${modelPred ? `${modelName}快速判断` : research.score ? "复盘验票" : "待推演"}</span>
+        <span>${modelPred ? `${modelName}快速判断` : research.score ? "复盘验票" : lockSyncing ? "同步锁版" : "待推演"}</span>
         <p>${
           research.score
             ? `实际比分 ${research.score}，赛果 ${research.actualDirection || "-"}，让球结果 ${research.actualHandicap || "-"}，总进球 ${research.actualTotal ?? "-"}。`
             : modelPred
               ? displayModelText(modelPred.finalDecisionAction || modelPred.marketGap || modelPred.script)
+              : lockSyncing
+                ? "正在从 Cloudflare D1 读取这场比赛的 preferred lock，读取完成后会自动展示完整模型链路和最终结论。"
               : "这场比赛还没有真实模型推演记录。当前只显示盘口预筛信息，完成推演并锁版后会展示完整模型链路和最终结论。"
         }</p>
       </section>
