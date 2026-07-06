@@ -2371,7 +2371,7 @@ function oddsMapScoreForRow(row = {}) {
   const liveScoreText = liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "";
   if (liveScoreText) return { scoreText: liveScoreText, score: parseScore(liveScoreText), source: "实时完赛", item: liveScore };
 
-  const match = matchFromOddsItem(row) || matchFromResultItem(row) || matches.find((item) => item.no === row.no);
+  const match = matchFromOddsItem(row) || matchFromResultItem(row) || matches.find((item) => item.no === row.no && (item.ticaiDate === row.ticaiDate || item.matchDate === row.ticaiDate || item.date === row.ticaiDate));
   const matchScore = normalizeResultScore(match?.score);
   if (matchScore) return { scoreText: matchScore, score: parseScore(matchScore), source: "本地赛果", item: match };
 

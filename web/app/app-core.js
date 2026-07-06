@@ -441,7 +441,7 @@ function looseTeamMatch(fullName = "", sourceName = "") {
 function matchFromOddsItem(item) {
   const targetNo = normalizedIssueNo(item.no || item.issue || item.orderId);
   if (targetNo && isWorldCupSportteryItem(item)) {
-    const byNo = matches.find((match) => normalizedIssueNo(match.no) === targetNo);
+    const byNo = matches.find((match) => normalizedIssueNo(match.no) === targetNo && (match.ticaiDate === item.ticaiDate || match.matchDate === item.ticaiDate || match.date === item.ticaiDate));
     if (byNo) return byNo;
   }
   return matches.find(
