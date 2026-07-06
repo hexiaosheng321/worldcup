@@ -389,6 +389,31 @@ function applyCloudBootstrapPayload(payload, { rerender = false, cached = false 
   if (payload.spHistory?.matches?.length) {
     spHistoryData = payload.spHistory;
     if (cached) spHistoryData.isCachedSnapshot = true;
+    /* 将赛事池中有但 spHistory 中没有的比赛补进去（客户端做，不膨胀 bootstrap） */
+    const poolRows = payload.matches || [];
+    const spMatchIds = new Set(spHistoryData.matches.map((m) => String(m.matchId || m.match_id || "").replace(/^sporttery-/, "")));
+    for (const pm of poolRows) {
+      const mid = String(pm.match_id || "").replace(/^sporttery-/, "");
+      if (spMatchIds.has(mid)) continue;
+      const py = pm.payload_json ? (typeof pm.payload_json === 'string' ? JSON.parse(pm.payload_json) : pm.payload_json) : {};
+      const kickoff = String(pm.kickoff_time || "");
+      spHistoryData.matches.push({
+        orderId: mid,
+        issue: pm.match_code || "",
+        no: (pm.match_code || "").replace(/^.{2}/, ""),
+        ticaiDate: (py.ticaiDate || py.matchDate || kickoff.slice(0, 10)),
+        matchDate: (py.matchDate || py.ticaiDate || kickoff.slice(0, 10)),
+        kickoffTime: (py.kickoffTime || kickoff.slice(11, 16)),
+        league: pm.league || "竞彩",
+        matchId: mid,
+        home: py.home || pm.home_team || "",
+        away: py.away || pm.away_team || "",
+        handicap: String(py.handicap || "0"),
+        updatedAt: "",
+        history: { had: [], hhad: [], ttg: [], crs: [], hafu: [] },
+        poolOnly: true,
+      });
+    }
     window.LIVE_SPORTTERY_SP_HISTORY = spHistoryData;
     changed = true;
   }
