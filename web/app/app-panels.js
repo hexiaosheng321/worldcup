@@ -986,6 +986,148 @@ function hitRate(hits, total) {
   return `${((hits / total) * 100).toFixed(1)}%`;
 }
 
+function compactDateTime(value = "") {
+  const text = String(value || "");
+  return text ? text.replace("T", " ").slice(0, 16) : "-";
+}
+
+function loopHealthNumber(value) {
+  return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
+
+function loopHealthTone(health = {}) {
+  const riskCount = health.riskFlags?.length || 0;
+  if (riskCount >= 4 || health.counts?.highOpenModelUpgradeNotes) return "hot";
+  if (riskCount >= 2) return "warm";
+  return "cool";
+}
+
+function renderLoopHealthRows(rows = [], emptyText = "暂无断点") {
+  return rows.length
+    ? rows
+        .slice(0, 5)
+        .map((row) => {
+          const title = [row.matchCode, row.homeTeam, row.awayTeam].filter(Boolean).join(" ") || row.title || row.step || row.matchId;
+          const meta = [
+            row.league || row.source,
+            row.modelVersion,
+            row.finalCount ? `${row.finalCount} 条 FINAL_LOCK` : "",
+            row.lockCount ? `${row.lockCount} 条锁版` : "",
+            row.reviewedAt ? `赛果 ${compactDateTime(row.reviewedAt)}` : "",
+            row.updatedAt ? `更新 ${compactDateTime(row.updatedAt)}` : "",
+            row.error,
+          ].filter(Boolean).join(" · ");
+          return `<li><strong>${dash(title)}</strong><span>${dash(meta)}</span></li>`;
+        })
+        .join("")
+    : `<li class="empty-cell">${emptyText}</li>`;
+}
+
+function renderLoopHealthBoard() {
+  const board = document.querySelector("#loop-health-board");
+  if (!board) return;
+  if (!window.WC_CLOUD_STORE?.loopHealth) {
+    board.innerHTML = `
+      <section class="loop-health-panel">
+        <header><span>闭环健康</span><strong>本地模式</strong></header>
+        <p>当前无法读取云端闭环摘要，只显示本地回测统计。</p>
+      </section>
+    `;
+    return;
+  }
+  if (!loopHealthData) {
+    board.innerHTML = `
+      <section class="loop-health-panel loading">
+        <header><span>闭环健康</span><strong>正在读取 D1</strong></header>
+        <p>正在检查锁版、赛果、Case Base、升级建议和同步日志。</p>
+      </section>
+    `;
+    if (!loopHealthPending) {
+      loopHealthPending = window.WC_CLOUD_STORE.loopHealth()
+        .then((payload) => {
+          loopHealthData = payload?.ok ? payload : { ok: false, error: payload?.data?.error || payload?.error || "loop health unavailable" };
+        })
+        .catch((error) => {
+          loopHealthData = { ok: false, error: error?.message || "loop health unavailable" };
+        })
+        .finally(() => {
+          loopHealthPending = null;
+          renderLoopHealthBoard();
+        });
+    }
+    return;
+  }
+
+  if (!loopHealthData.ok) {
+    board.innerHTML = `
+      <section class="loop-health-panel warm">
+        <header><span>闭环健康</span><strong>摘要暂不可用</strong></header>
+        <p>${dash(loopHealthData.error)}。统计表仍可使用，部署新接口后会自动显示云端闭环摘要。</p>
+      </section>
+    `;
+    return;
+  }
+
+  const health = loopHealthData;
+  const counts = health.counts || {};
+  const closure = health.closure || {};
+  const hygiene = health.lockHygiene || {};
+  const upgrades = health.modelUpgrade || {};
+  const dataQuality = health.dataQuality || {};
+  const sync = health.syncHealth || {};
+  const finalToCaseRate = loopHealthNumber(counts.finalLocks)
+    ? Math.round((loopHealthNumber(counts.cases) / loopHealthNumber(counts.finalLocks)) * 100)
+    : 0;
+  const failedStepRows = (sync.failedSteps || []).map((item) => ({
+    source: item.source,
+    step: item.step,
+    error: item.error,
+    updatedAt: item.createdAt,
+  }));
+  board.innerHTML = `
+    <section class="loop-health-panel ${loopHealthTone(health)}">
+      <header>
+        <div>
+          <span>闭环健康</span>
+          <strong>${health.riskFlags?.length ? `${health.riskFlags.length} 个待处理断点` : "闭环无明显断点"}</strong>
+        </div>
+        <em>更新 ${compactDateTime(health.generatedAt)}</em>
+      </header>
+      <div class="loop-health-grid">
+        <article><span>锁版</span><strong>${counts.finalLocks || 0}/${counts.locks || 0}</strong><em>FINAL / 全部</em></article>
+        <article><span>赛果</span><strong>${counts.results || 0}</strong><em>已回填结果</em></article>
+        <article><span>Case</span><strong>${counts.cases || 0}</strong><em>约 ${finalToCaseRate}% FINAL 覆盖</em></article>
+        <article><span>OPEN Note</span><strong>${counts.openModelUpgradeNotes || 0}</strong><em>${counts.highOpenModelUpgradeNotes || 0} 条高优先级</em></article>
+      </div>
+      <div class="loop-health-flags">
+        ${(health.riskFlags || []).map((flag) => `<span>${flag}</span>`).join("") || "<span>暂无高优先级风险</span>"}
+      </div>
+      <div class="loop-health-columns">
+        <section>
+          <h3>锁版卫生</h3>
+          <ul>${renderLoopHealthRows(hygiene.duplicateFinalLocks || [], "暂无重复 FINAL_LOCK")}</ul>
+        </section>
+        <section>
+          <h3>闭环断点</h3>
+          <ul>${renderLoopHealthRows(closure.finalLocksWithResultNoCase || [], "暂无已出赛果但未入 Case 的 FINAL_LOCK")}</ul>
+        </section>
+        <section>
+          <h3>升级队列</h3>
+          <ul>${renderLoopHealthRows(upgrades.topOpenNotes || [], "暂无 OPEN 升级建议")}</ul>
+        </section>
+        <section>
+          <h3>数据缺口</h3>
+          <ul>${renderLoopHealthRows(dataQuality.weakLeagueContext || [], "暂无明显联赛状态缺口")}</ul>
+        </section>
+        <section>
+          <h3>同步异常</h3>
+          <ul>${renderLoopHealthRows(failedStepRows, "近期同步无失败步骤")}</ul>
+        </section>
+      </div>
+    </section>
+  `;
+}
+
 function modelAuditRows() {
   const worldCupRows = groupedPredictions()
     .slice()
@@ -1035,6 +1177,7 @@ function modelAuditRows() {
 }
 
 function renderGlobalStats() {
+  renderLoopHealthBoard();
   const cards = document.querySelector("#global-stats-cards");
   const table = document.querySelector("#global-stats-table");
   const leagueFilter = document.querySelector("#global-stats-league-filter");

@@ -50,6 +50,7 @@
     listCases: () => request("/cases"),
     generateCase: (lockId) => post("/cases/generate", { lockId }),
     runReview: (lockId) => post("/review/run", { lockId }),
+    loopHealth: () => request("/loop-health"),
     similarCases: (payload) => post("/similar-cases", payload),
   };
 })();

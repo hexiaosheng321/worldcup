@@ -1614,7 +1614,9 @@ select {
   .hero,
   .stat-layout,
   .draw-rates,
-  .review-cards {
+  .review-cards,
+  .loop-health-grid,
+  .loop-health-columns {
     grid-template-columns: 1fr;
   }
 
@@ -4166,6 +4168,18 @@ body::before {
 }
 
 @media (max-width: 720px) {
+  .loop-health-board {
+    padding: 14px 14px 0;
+  }
+
+  .loop-health-panel header {
+    display: grid;
+  }
+
+  .loop-health-panel header em {
+    white-space: normal;
+  }
+
   .path-hero {
     grid-template-columns: 1fr;
   }
@@ -6194,6 +6208,161 @@ body::before {
   overflow: hidden;
   padding: 0 0 22px;
   background: rgba(255, 255, 255, 0.96);
+}
+
+.loop-health-board {
+  padding: 22px 22px 0;
+}
+
+.loop-health-panel {
+  border: 1px solid rgba(23, 37, 84, 0.12);
+  border-radius: 8px;
+  padding: 18px;
+  background: linear-gradient(180deg, #ffffff, #f7fafc);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.loop-health-panel.hot {
+  border-color: rgba(185, 28, 28, 0.28);
+}
+
+.loop-health-panel.warm {
+  border-color: rgba(180, 83, 9, 0.3);
+}
+
+.loop-health-panel.cool {
+  border-color: rgba(22, 101, 52, 0.22);
+}
+
+.loop-health-panel header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.loop-health-panel header span,
+.loop-health-panel h3 {
+  display: block;
+  margin: 0 0 5px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.loop-health-panel header strong {
+  display: block;
+  color: #0f172a;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.loop-health-panel header em {
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.loop-health-panel.loading p {
+  margin: 0;
+  color: #475569;
+}
+
+.loop-health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.loop-health-grid article {
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(248, 250, 252, 0.86);
+}
+
+.loop-health-grid span,
+.loop-health-grid em {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.loop-health-grid strong {
+  display: block;
+  margin: 4px 0;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.loop-health-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.loop-health-flags span {
+  border: 1px solid rgba(180, 83, 9, 0.24);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.loop-health-columns {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.loop-health-columns section {
+  min-width: 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 10px;
+}
+
+.loop-health-columns ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.loop-health-columns li {
+  min-width: 0;
+  border-left: 3px solid rgba(14, 116, 144, 0.35);
+  padding-left: 8px;
+}
+
+.loop-health-columns li strong,
+.loop-health-columns li span {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.loop-health-columns li strong {
+  color: #0f172a;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.loop-health-columns li span {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .site-locks-panel {

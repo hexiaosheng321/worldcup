@@ -76,6 +76,8 @@ let activeSportteryPoolView = "open";
 let activeOddsMapView = "pre";
 let matchDetailReturnTarget = "path";
 let sportteryPoolItemCache = new Map();
+let loopHealthData = null;
+let loopHealthPending = null;
 let homeCountdownTimer;
 let matchFlowTimer;
 const teamFlags = {

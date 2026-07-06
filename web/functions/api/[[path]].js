@@ -535,6 +535,177 @@ async function listModelUpgradeNotes(db, params) {
   return (results || []).map(rowToUpgradeNote);
 }
 
+function rowCount(row, key = "count") {
+  return Number(row?.[key] || 0);
+}
+
+function parseSyncPayload(row = {}) {
+  const payload = parseObject(row.payload_json);
+  const steps = Array.isArray(payload.steps) ? payload.steps : [];
+  const failedSteps = steps
+    .filter((step) => step && step.ok === false)
+    .map((step) => ({
+      step: step.step || "",
+      error: String(step.error || "").slice(0, 220),
+    }));
+  return {
+    source: row.source,
+    status: row.status,
+    message: row.message,
+    createdAt: row.created_at,
+    failedSteps,
+    has403: JSON.stringify(payload).includes("403"),
+  };
+}
+
+async function loopHealthSummary(db) {
+  await ensureModelUpgradeSchema(db);
+  const [
+    matches,
+    locks,
+    finalLocks,
+    preLocks,
+    results,
+    cases,
+    notes,
+    openNotes,
+    highOpenNotes,
+    duplicateLocks,
+    duplicateFinals,
+    finalLocksWithResultNoCase,
+    finalLocksWithoutResult,
+    weakLeagueContext,
+    topOpenNotes,
+    recentLogs,
+  ] = await Promise.all([
+    db.prepare("SELECT COUNT(*) AS count FROM matches").first(),
+    db.prepare("SELECT COUNT(*) AS count FROM locked_predictions").first(),
+    db.prepare("SELECT COUNT(*) AS count FROM locked_predictions WHERE lock_type = 'FINAL_LOCK'").first(),
+    db.prepare("SELECT COUNT(*) AS count FROM locked_predictions WHERE lock_type = 'PRE_LOCK'").first(),
+    db.prepare("SELECT COUNT(*) AS count FROM match_results").first(),
+    db.prepare("SELECT COUNT(*) AS count FROM case_base").first(),
+    db.prepare("SELECT COUNT(*) AS count FROM model_upgrade_notes").first(),
+    db.prepare("SELECT COUNT(*) AS count FROM model_upgrade_notes WHERE status = 'OPEN'").first(),
+    db.prepare("SELECT COUNT(*) AS count FROM model_upgrade_notes WHERE status = 'OPEN' AND severity = 'HIGH'").first(),
+    db.prepare(`
+      SELECT match_id AS matchId, league, home_team AS homeTeam, away_team AS awayTeam,
+        COUNT(*) AS lockCount,
+        SUM(CASE WHEN lock_type = 'FINAL_LOCK' THEN 1 ELSE 0 END) AS finalCount,
+        MAX(locked_at) AS latestLockedAt
+      FROM locked_predictions
+      GROUP BY match_id
+      HAVING COUNT(*) > 1
+      ORDER BY latestLockedAt DESC
+      LIMIT 20
+    `).all(),
+    db.prepare(`
+      SELECT match_id AS matchId, league, home_team AS homeTeam, away_team AS awayTeam,
+        COUNT(*) AS finalCount,
+        MAX(locked_at) AS latestLockedAt
+      FROM locked_predictions
+      WHERE lock_type = 'FINAL_LOCK'
+      GROUP BY match_id
+      HAVING COUNT(*) > 1
+      ORDER BY latestLockedAt DESC
+      LIMIT 20
+    `).all(),
+    db.prepare(`
+      SELECT lp.lock_id AS lockId, lp.match_id AS matchId, lp.league, lp.home_team AS homeTeam, lp.away_team AS awayTeam,
+        lp.locked_at AS lockedAt, mr.reviewed_at AS reviewedAt
+      FROM locked_predictions lp
+      JOIN match_results mr ON mr.match_id = lp.match_id
+      LEFT JOIN case_base cb ON cb.source_lock_id = lp.lock_id
+      WHERE lp.lock_type = 'FINAL_LOCK' AND cb.case_id IS NULL
+      ORDER BY mr.reviewed_at DESC
+      LIMIT 20
+    `).all(),
+    db.prepare(`
+      SELECT lp.lock_id AS lockId, lp.match_id AS matchId, lp.league, lp.home_team AS homeTeam, lp.away_team AS awayTeam,
+        lp.kickoff_time AS kickoffTime, lp.locked_at AS lockedAt
+      FROM locked_predictions lp
+      LEFT JOIN match_results mr ON mr.match_id = lp.match_id
+      WHERE lp.lock_type = 'FINAL_LOCK' AND mr.match_id IS NULL
+      ORDER BY lp.kickoff_time ASC
+      LIMIT 20
+    `).all(),
+    db.prepare(`
+      SELECT match_id AS matchId, match_code AS matchCode, league, home_team AS homeTeam, away_team AS awayTeam,
+        updated_at AS updatedAt
+      FROM matches
+      WHERE league NOT LIKE '%世界杯%' AND (
+        payload_json LIKE '%"rank":null%' OR
+        payload_json LIKE '%"recentMatches":[]%' OR
+        payload_json LIKE '%暂无积分榜%'
+      )
+      ORDER BY updated_at DESC
+      LIMIT 20
+    `).all(),
+    db.prepare(`
+      SELECT model_version AS modelVersion, league, title, severity, COUNT(*) AS count
+      FROM model_upgrade_notes
+      WHERE status = 'OPEN'
+      GROUP BY model_version, league, title, severity
+      ORDER BY count DESC, severity DESC
+      LIMIT 12
+    `).all(),
+    db.prepare(`
+      SELECT source, status, message, payload_json, created_at
+      FROM sync_logs
+      ORDER BY created_at DESC
+      LIMIT 8
+    `).all(),
+  ]);
+  const logs = (recentLogs.results || []).map(parseSyncPayload);
+  const failedSyncSteps = logs.flatMap((log) =>
+    log.failedSteps.map((step) => ({
+      source: log.source,
+      createdAt: log.createdAt,
+      ...step,
+    }))
+  );
+  const riskFlags = [];
+  if (rowCount(openNotes) > 0) riskFlags.push("存在未采纳的模型升级建议");
+  if (rowCount(duplicateFinals, "count") || (duplicateFinals.results || []).length) riskFlags.push("同场存在多条 FINAL_LOCK");
+  if ((finalLocksWithResultNoCase.results || []).length) riskFlags.push("有已出赛果的 FINAL_LOCK 尚未生成 Case");
+  if ((weakLeagueContext.results || []).length) riskFlags.push("非世界杯联赛存在球队状态缺口");
+  if (failedSyncSteps.length || logs.some((log) => log.has403)) riskFlags.push("近期同步链路出现失败或 403");
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    counts: {
+      matches: rowCount(matches),
+      locks: rowCount(locks),
+      finalLocks: rowCount(finalLocks),
+      preLocks: rowCount(preLocks),
+      results: rowCount(results),
+      cases: rowCount(cases),
+      modelUpgradeNotes: rowCount(notes),
+      openModelUpgradeNotes: rowCount(openNotes),
+      highOpenModelUpgradeNotes: rowCount(highOpenNotes),
+    },
+    closure: {
+      finalLocksWithResultNoCase: finalLocksWithResultNoCase.results || [],
+      finalLocksWithoutResult: finalLocksWithoutResult.results || [],
+    },
+    lockHygiene: {
+      duplicateLocks: duplicateLocks.results || [],
+      duplicateFinalLocks: duplicateFinals.results || [],
+    },
+    modelUpgrade: {
+      topOpenNotes: topOpenNotes.results || [],
+    },
+    dataQuality: {
+      weakLeagueContext: weakLeagueContext.results || [],
+    },
+    syncHealth: {
+      recentLogs: logs,
+      failedSteps: failedSyncSteps,
+      hasRecent403: logs.some((log) => log.has403),
+    },
+    riskFlags,
+  };
+}
+
 async function createCaseForLock(db, lockId) {
   const lock = await db.prepare("SELECT * FROM locked_predictions WHERE lock_id = ?").bind(lockId).first();
   if (!lock) return { ok: false, status: 404, error: "lock not found" };
@@ -3137,6 +3308,10 @@ export async function onRequest(context) {
 
     if (path === "model-upgrade-notes" && request.method === "GET") {
       return json({ ok: true, notes: await listModelUpgradeNotes(db, url.searchParams) });
+    }
+
+    if (path === "loop-health" && request.method === "GET") {
+      return json(await loopHealthSummary(db));
     }
 
     if (path === "model-upgrade-notes" && request.method === "POST") {
