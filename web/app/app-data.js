@@ -484,7 +484,7 @@ async function loadCloudSportterySpHistoryData({ rerender = false } = {}) {
   }
   if (!window.LIVE_SPORTTERY_SP_HISTORY?.matches?.length) {
     const staticSrc = STATIC_SNAPSHOT_FALLBACKS.find((f) => /sp-history/.test(f));
-    if (staticSrc) await loadScriptOnce(staticSrc);
+    if (staticSrc) await loadFreshScript(staticSrc.replace(/\?.*$/, ""));
   }
   if (window.LIVE_SPORTTERY_SP_HISTORY?.matches?.length) {
     spHistoryData = window.LIVE_SPORTTERY_SP_HISTORY;
