@@ -202,10 +202,10 @@ async function loadWorldCupStaticDataFallback({ rerender = false } = {}) {
   }
 }
 
-async function loadStaticSnapshotFallback({ rerender = false } = {}) {
+async function loadStaticSnapshotFallback({ rerender = false, force = false } = {}) {
   await Promise.allSettled(STATIC_SNAPSHOT_FALLBACKS.map(loadScriptOnce));
   let changed = false;
-  if (!oddsData.matches?.length && window.LIVE_SPORTTERY_ODDS?.matches?.length) {
+  if ((force || !oddsData.matches?.length) && window.LIVE_SPORTTERY_ODDS?.matches?.length) {
     oddsData = markStaticFallback(window.LIVE_SPORTTERY_ODDS, "本地赛事池快照");
     window.LIVE_SPORTTERY_ODDS = oddsData;
     changed = true;
@@ -473,15 +473,21 @@ async function loadCloudCaseBaseData({ rerender = false } = {}) {
 }
 
 async function loadCloudSportterySpHistoryData({ rerender = false } = {}) {
-  if (spHistoryData.matches?.length) return true;
   const src = window.location.protocol === "file:"
     ? "https://worldcup-dashboard-4hr.pages.dev/api/live-sporttery-sp-history.js"
     : "/api/live-sporttery-sp-history.js";
+  /* 始终尝试云端 API——云端数据比静态快照更新更全 */
   try {
     await loadFreshScript(src);
+    if (window.LIVE_SPORTTERY_SP_HISTORY?.matches?.length) {
+      spHistoryData = window.LIVE_SPORTTERY_SP_HISTORY;
+      if (rerender) renderCurrentRouteSurfaces();
+      return true;
+    }
   } catch (error) {
     console.warn("Cloudflare SP 历史快照读取失败，尝试静态兜底。", error);
   }
+  /* 云端失败或无数据 → 用本地静态 SP 历史快照兜底 */
   if (!window.LIVE_SPORTTERY_SP_HISTORY?.matches?.length) {
     const staticSrc = STATIC_SNAPSHOT_FALLBACKS.find((f) => /sp-history/.test(f));
     if (staticSrc) await loadFreshScript(staticSrc.replace(/\?.*$/, ""));
@@ -526,7 +532,7 @@ async function syncCloudSportteryResultsIfNeeded({ force = false, rerender = tru
 }
 
 async function refreshSportteryCloudData() {
-  await loadStaticSnapshotFallback({ rerender: false });
+  await loadStaticSnapshotFallback({ force: true, rerender: false });
   const loadedCloud = await loadCloudBootstrapData({ rerender: true });
   await syncCloudSportteryResultsIfNeeded({ rerender: true });
   if (loadedCloud) {
