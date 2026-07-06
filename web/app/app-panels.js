@@ -2695,7 +2695,8 @@ function renderOddsMap() {
   const updated = document.querySelector("#odds-map-updated");
   if (liveCount) liveCount.textContent = `${preRows.length} 赛前 / ${backtestRows.length} 回测`;
   if (updated) {
-    const debugDate = spHistoryData.matches?.[0] ? `[今日${new Date().toISOString().slice(0,10)} 首场${spHistoryData.matches[0].matchDate||spHistoryData.matches[0].ticaiDate||'?'}]` : "";
+    const debugPre = preRows.length ? preRows.map(r => r.matchDate||r.ticaiDate||'?').join(',') : '无预赛';
+    const debugDate = `[今日${new Date().toISOString().slice(0,10)} 预赛日期:${debugPre}]`;
     updated.textContent = (formatCapturedAt(spHistoryData.importedAt) || "等待 SP 历史") + debugDate;
   }
 
