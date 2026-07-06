@@ -2718,7 +2718,7 @@ function sportterySnapshotStamp(value = "") {
   };
 }
 
-async function d1SportterySpHistoryScript(db, env) {
+async function d1SportterySpHistoryScript(db, env, raw = false) {
   const rows = await db.prepare(`
     SELECT
       s.match_id, s.captured_at, s.payload_json AS snapshot_payload,
@@ -2796,7 +2796,9 @@ async function d1SportterySpHistoryScript(db, env) {
     errors: [],
     matches: histories,
   };
-  return javascript(`window.LIVE_SPORTTERY_SP_HISTORY = ${JSON.stringify(data, null, 2)};\n`);
+  if (raw) return data;
+  return javascript(`window.LIVE_SPORTTERY_SP_HISTORY = ${JSON.stringify(data, null, 2)};
+`);
 }
 
 async function d1FootballDataContextScript(db, env) {
@@ -2970,7 +2972,7 @@ export async function onRequest(context) {
       const matchLimit = initialScope ? 40 : 200;
       const lockLimit = initialScope ? 40 : 200;
       const resultLimit = initialScope ? 40 : 200;
-      const [matches, locks, recentResults, cases] = await Promise.all([
+      const [matches, locks, recentResults, cases, spHistoryData] = await Promise.all([
         db.prepare(`SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT ${matchLimit}`).all(),
         db.prepare(`
           SELECT * FROM locked_predictions
@@ -2991,6 +2993,7 @@ export async function onRequest(context) {
         `).all(),
         db.prepare(`SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT ${resultLimit}`).all(),
         includeCases ? listCases(db) : Promise.resolve([]),
+        d1SportterySpHistoryScript(db, env, true),
       ]);
       const resultsById = new Map((recentResults.results || []).map((row) => [row.match_id, row]));
       const matchIds = [
@@ -3003,7 +3006,8 @@ export async function onRequest(context) {
         (linkedResults.results || []).forEach((row) => resultsById.set(row.match_id, row));
       }
       const results = [...resultsById.values()].sort((a, b) => String(b.reviewed_at || "").localeCompare(String(a.reviewed_at || "")));
-      return json({ ok: true, matches: matches.results, locks: (locks.results || []).map(enrichLockRow), results, cases, autoPredictions: [] });
+      
+      return json({ ok: true, matches: matches.results, locks: (locks.results || []).map(enrichLockRow), results, cases, autoPredictions: [], spHistory: spHistoryData });
     }
 
     if (path === "matches" && request.method === "GET") {

@@ -473,10 +473,11 @@ async function loadCloudCaseBaseData({ rerender = false } = {}) {
 }
 
 async function loadCloudSportterySpHistoryData({ rerender = false } = {}) {
+  /* bootstrap 已含 spHistory → 直接返回 */
+  if (spHistoryData.matches?.length) return true;
   const src = window.location.protocol === "file:"
     ? "https://worldcup-dashboard-4hr.pages.dev/api/live-sporttery-sp-history.js"
     : "/api/live-sporttery-sp-history.js";
-  /* 始终尝试云端 API——云端数据比静态快照更新更全 */
   try {
     await loadFreshScript(src);
     if (window.LIVE_SPORTTERY_SP_HISTORY?.matches?.length) {
@@ -487,7 +488,6 @@ async function loadCloudSportterySpHistoryData({ rerender = false } = {}) {
   } catch (error) {
     console.warn("Cloudflare SP 历史快照读取失败，尝试静态兜底。", error);
   }
-  /* 云端失败或无数据 → 用本地静态 SP 历史快照兜底 */
   if (!window.LIVE_SPORTTERY_SP_HISTORY?.matches?.length) {
     const staticSrc = STATIC_SNAPSHOT_FALLBACKS.find((f) => /sp-history/.test(f));
     if (staticSrc) await loadFreshScript(staticSrc.replace(/\?.*$/, ""));
