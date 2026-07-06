@@ -423,7 +423,6 @@ window.addEventListener("hashchange", () => {
     loadWorldCupStaticDataFallback({ rerender: true });
   }
   if (currentRouteNeedsCloudBootstrap()) {
-    loadCloudSportteryOddsData({ rerender: true });
     loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" })
       .then(() => syncCloudSportteryResultsIfNeeded({ rerender: true }));
   }
@@ -456,7 +455,10 @@ if (currentRouteNeedsCloudBootstrap()) {
     });
   }, 2200);
 } else {
-  runWhenPageIdle(refreshSportteryCloudData, 900);
+  runWhenPageIdle(() => {
+    loadStaticSnapshotFallback({ rerender: false });
+    refreshLiveFootballScoresData({ rerender: false });
+  }, 900);
 }
 if (currentRouteNeedsWorldCupStaticData()) {
   loadWorldCupStaticDataFallback({ rerender: true });
