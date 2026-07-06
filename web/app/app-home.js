@@ -811,7 +811,9 @@ function sportteryPoolItems() {
   const currentSportteryDate = currentSportteryBusinessDate(currentCalendarDate);
   const recentPoolDates = recentSportteryDateSet(currentCalendarDate, currentSportteryDate);
   const now = Date.now();
-  const openItems = (oddsData.matches || [])
+  /* 赛事池：优先 oddsData（实时云数据），其次 spHistoryData（含池补全），最后空 */
+  const poolMatches = oddsData.matches?.length ? oddsData.matches : (spHistoryData.matches || []);
+  const openItems = (poolMatches)
     .map((item) => {
       const linkedMatch = matchFromOddsItem(item);
       const result = resultForSportteryItem(item);
