@@ -391,16 +391,18 @@ function applyCloudBootstrapPayload(payload, { rerender = false, cached = false 
     if (cached) spHistoryData.isCachedSnapshot = true;
     /* 将赛事池中有但 spHistory 中没有的比赛补进去（客户端做，不膨胀 bootstrap） */
     const poolRows = payload.matches || [];
-    const spMatchIds = new Set(spHistoryData.matches.map((m) => String(m.matchId || m.match_id || "").replace(/^sporttery-/, "")));
+    const spMatchIds = new Set((spHistoryData.matches || []).map((m) => String(m.matchId || m.match_id || "").replace(/^sporttery-/, "")));
     for (const pm of poolRows) {
-      const mid = String(pm.match_id || "").replace(/^sporttery-/, "");
-      if (spMatchIds.has(mid)) continue;
-      const py = pm.payload_json ? (typeof pm.payload_json === 'string' ? JSON.parse(pm.payload_json) : pm.payload_json) : {};
-      const kickoff = String(pm.kickoff_time || "");
-      spHistoryData.matches.push({
-        orderId: mid,
-        issue: pm.match_code || "",
-        no: (pm.match_code || "").replace(/^.{2}/, ""),
+      try {
+        const mid = String(pm.match_id || "").replace(/^sporttery-/, "");
+        if (!mid || spMatchIds.has(mid)) continue;
+        const raw = pm.payload_json;
+        const py = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {};
+        const kickoff = String(pm.kickoff_time || "");
+        spHistoryData.matches.push({
+          orderId: mid,
+          issue: pm.match_code || "",
+          no: compactSportteryNo(pm.match_code, mid),
         ticaiDate: (py.ticaiDate || py.matchDate || kickoff.slice(0, 10)),
         matchDate: (py.matchDate || py.ticaiDate || kickoff.slice(0, 10)),
         kickoffTime: (py.kickoffTime || kickoff.slice(11, 16)),
@@ -413,6 +415,9 @@ function applyCloudBootstrapPayload(payload, { rerender = false, cached = false 
         history: { had: [], hhad: [], ttg: [], crs: [], hafu: [] },
         poolOnly: true,
       });
+    } catch(e) {
+      /* 单条池比赛补全失败，跳过继续 */
+    }
     }
     window.LIVE_SPORTTERY_SP_HISTORY = spHistoryData;
     changed = true;

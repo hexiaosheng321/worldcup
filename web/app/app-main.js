@@ -442,16 +442,20 @@ sendAnalyticsEvent("page_view");
 if (currentRouteNeedsCloudBootstrap()) {
   loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" }).then(async (changed) => {
     const synced = await syncCloudSportteryResultsIfNeeded({ rerender: true });
-    if (changed) refreshLiveFootballScoresData({ rerender: true });
-    else if (synced) renderCurrentRouteSurfaces();
+    if (changed) {
+      refreshLiveFootballScoresData({ rerender: true });
+      renderCurrentRouteSurfaces();
+    } else if (synced) renderCurrentRouteSurfaces();
     scheduleSportterySpHistoryRefresh();
   });
 } else if (!initialHash) {
   runWhenPageIdle(() => {
     loadCloudBootstrapData({ rerender: true, scope: "initial" }).then(async (changed) => {
       const synced = await syncCloudSportteryResultsIfNeeded({ rerender: true });
-      if (changed) refreshLiveFootballScoresData({ rerender: true });
-      else if (synced) renderCurrentRouteSurfaces();
+      if (changed) {
+        refreshLiveFootballScoresData({ rerender: true });
+        renderCurrentRouteSurfaces();
+      } else if (synced) renderCurrentRouteSurfaces();
     });
   }, 2200);
 } else {
