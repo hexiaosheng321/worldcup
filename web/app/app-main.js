@@ -423,6 +423,7 @@ window.addEventListener("hashchange", () => {
     loadWorldCupStaticDataFallback({ rerender: true });
   }
   if (currentRouteNeedsCloudBootstrap()) {
+    loadCloudSportteryOddsData({ rerender: true });
     loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" })
       .then(() => syncCloudSportteryResultsIfNeeded({ rerender: true }));
   }
@@ -467,6 +468,13 @@ runWhenPageIdle(() => {
     loadWorldCupStaticDataFallback({ rerender: Boolean(window.location.hash) });
   }
 }, initialHash ? 4200 : 2600);
+
+// 强制预加载静态数据作为基底，再加载云端数据
+if (currentRouteNeedsCloudBootstrap()) {
+  loadStaticSnapshotFallback({ force: true, rerender: false }).then(() => {
+    return loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" });
+  });
+}
 setInterval(refreshSportteryCloudData, 5 * 60 * 1000);
 
 /* ── 返回顶部 ── */

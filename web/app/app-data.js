@@ -472,6 +472,24 @@ async function loadCloudCaseBaseData({ rerender = false } = {}) {
   return Boolean(added);
 }
 
+async function loadCloudSportteryOddsData({ rerender = false } = {}) {
+  /* 从云端 API 加载实时体彩赛事池（更新更全） */
+  const src = window.location.protocol === "file:"
+    ? "https://worldcup-dashboard-4hr.pages.dev/api/live-sporttery-data.js"
+    : "/api/live-sporttery-data.js";
+  try {
+    await loadFreshScript(src);
+    if (window.LIVE_SPORTTERY_ODDS?.matches?.length) {
+      oddsData = window.LIVE_SPORTTERY_ODDS;
+      if (rerender) renderCurrentRouteSurfaces();
+      return true;
+    }
+  } catch (error) {
+    console.warn("云端赛事池加载失败，使用本地快照兜底。", error);
+  }
+  return false;
+}
+
 async function loadCloudSportterySpHistoryData({ rerender = false } = {}) {
   /* bootstrap 已含 spHistory → 直接返回 */
   if (spHistoryData.matches?.length) return true;
