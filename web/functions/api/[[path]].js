@@ -3007,33 +3007,7 @@ export async function onRequest(context) {
       }
       const results = [...resultsById.values()].sort((a, b) => String(b.reviewed_at || "").localeCompare(String(a.reviewed_at || "")));
       
-      const poolMatchIds = new Set((matches.results || []).map((m) => String(m.match_id || "").replace(/^sporttery-/, "")));
-      const spHistoryMatches = spHistoryData?.matches || [];
-      const spMatchIds = new Set(spHistoryMatches.map((m) => String(m.matchId || "")));
-      /* 补充赛事池中有但 SP 历史中没有的比赛——空历史也会进入盘口图谱监控 */
-      for (const pm of (matches.results || [])) {
-        const mid = String(pm.match_id || "").replace(/^sporttery-/, "");
-        if (spMatchIds.has(mid)) continue;
-        const py = parseObject(pm.payload_json, {});
-        const kickoff = String(pm.kickoff_time || "");
-        spHistoryMatches.push({
-          orderId: mid,
-          issue: pm.match_code || "",
-          no: compactSportteryNo(pm.match_code, mid),
-          ticaiDate: (py.ticaiDate || py.matchDate || kickoff.slice(0, 10)),
-          matchDate: (py.matchDate || py.ticaiDate || kickoff.slice(0, 10)),
-          kickoffTime: (py.kickoffTime || kickoff.slice(11, 16)),
-          league: pm.league || "竞彩",
-          matchId: mid,
-          home: py.home || pm.home_team || "",
-          away: py.away || pm.away_team || "",
-          handicap: String(py.handicap || "0"),
-          updatedAt: "",
-          history: { had: [], hhad: [], ttg: [], crs: [], hafu: [] },
-          poolOnly: true,
-        });
-      }
-      return json({ ok: true, matches: matches.results, locks: (locks.results || []).map(enrichLockRow), results, cases, autoPredictions: [], spHistory: { ...(spHistoryData || {}), matches: spHistoryMatches, totalCount: spHistoryMatches.length } });
+      return json({ ok: true, matches: matches.results, locks: (locks.results || []).map(enrichLockRow), results, cases, autoPredictions: [], spHistory: spHistoryData });
     }
 
     if (path === "matches" && request.method === "GET") {
