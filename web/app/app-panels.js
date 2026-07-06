@@ -2363,6 +2363,11 @@ function findOddsMapRowByKey(key = "") {
 }
 
 function oddsMapScoreForRow(row = {}) {
+  /* 未来比赛不可能有赛果——先挡掉以免后面各种查找污染 */
+  const matchDate = row.matchDate || row.ticaiDate || "";
+  const today = new Date().toISOString().slice(0, 10);
+  if (matchDate > today) return null;
+
   const result = resultForSportteryItem(row);
   const resultScore = sportteryResultIsFinished(result) ? normalizeResultScore(result?.score) : "";
   if (resultScore) return { scoreText: resultScore, score: parseScore(resultScore), source: "体彩赛果", item: result };
