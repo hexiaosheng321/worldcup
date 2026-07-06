@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>体彩足彩模型中心</title>
-    <link rel="stylesheet" href="./styles.css?v=202607041225" />
+    <link rel="stylesheet" href="./styles.css?v=20260706104012" />
     <link rel="preload" href="./styles-effects.css?v=202607011825" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <noscript><link rel="stylesheet" href="./styles-effects.css?v=202607011825" /></noscript>
-    <link rel="preload" href="./app.js?v=202607051255" as="script" />
+    <link rel="preload" href="./app.js?v=20260706_1" as="script" />
   </head>
   <body class="home-mode page-loading">
     <header class="home-topbar">
@@ -108,31 +108,6 @@
             <p class="eyebrow">World Cup Control Room</p>
             <h1>2026 世界杯模型控制室</h1>
             <p class="subline">赛程、盘口、比分层、锁版和复盘验证集中在一个控制台。</p>
-          </div>
-          <div class="hero-panel">
-            <span>今日焦点</span>
-            <strong id="today-count">0 场</strong>
-            <small id="today-date">北京时间</small>
-            <small id="hero-model-version">当前模型 V4</small>
-          </div>
-        </section>
-
-        <section class="signal-strip" aria-label="赛事态势">
-          <div role="button" tabindex="0" data-signal-page="finished" aria-label="查看已完赛场次">
-            <span>已完赛</span>
-            <strong id="signal-finished">0</strong>
-          </div>
-          <div role="button" tabindex="0" data-signal-page="upcoming" aria-label="查看未开赛未来赛程">
-            <span>待推演</span>
-            <strong id="signal-upcoming">0</strong>
-          </div>
-          <div role="button" tabindex="0" data-signal-page="predicted" aria-label="查看已有推演比赛">
-            <span>模型锁版</span>
-            <strong id="signal-predicted">0</strong>
-          </div>
-          <div>
-            <span>当前场均</span>
-            <strong id="signal-goals">0.00</strong>
           </div>
         </section>
 
@@ -251,11 +226,11 @@
           <article>
             <span>V1</span>
             <h3>四层基础模型</h3>
-            <p>先建立每场比赛的内部概率基线，再判断盘口偏差，接着推演比赛过程，最后落到体彩可执行结果。</p>
+            <p>先建立每场比赛的内部概率基线，再判断体彩实际怎么开；再从庄家视角，用球队信息、比赛发展、热度和风险防范反推自己会怎么开，最后找出偏差和防范点，落到体彩可执行结果。</p>
             <ul>
               <li>自建 ELO / 概率 / xG 式基线</li>
               <li>比较模型概率与体彩盘口预期</li>
-              <li>推演前 20-30 分钟、先进球与领先后的比赛脚本</li>
+              <li>结合踢法、对位和客观因素，推演两种最可能发生的比赛发展</li>
               <li>输出单选胜平负、让球方向和两条比分路径</li>
             </ul>
           </article>
@@ -279,7 +254,7 @@
               <li>加入弱队先进球路径、首球时间和净胜球动机</li>
               <li>半场 0-0 / 60 分钟触发器参与最终胜平负和让球决策</li>
               <li>让球卡盘闸门独立判断深盘走盘风险</li>
-              <li>主脚本、触发脚本和盘口保护冲突时必须改判或降级</li>
+              <li>两种比赛发展与盘口保护冲突时必须改判或降级</li>
               <li>分类闷局、常规局、开放局、打花局</li>
               <li>锁定胜平负、让球、总进球双选和两个最可能比分</li>
             </ul>
@@ -306,13 +281,13 @@
             <h3>统一赛前推演机制</h3>
           </div>
           <div class="model-flow-grid">
-            <article><span>01</span><strong>内部概率底盘</strong><p>先判断真实强弱、攻防稳定性、主客场和基础概率，不直接被盘口牵着走。</p></article>
+            <article><span>01</span><strong>当前胜平负 SP 复核</strong><p>先读取当前胜平负 SP，换算去水后的主胜、平局、客胜市场隐含概率，说明盘口更偏向哪一侧；它只代表市场输入，不直接等于模型结论，最终方向仍按锁版闸门综合处理。</p></article>
             <article><span>02</span><strong>赛事规则/动机</strong><p>世界杯看出线路径和淘汰赛 90 分钟目标；联赛看积分、保级、争冠、赛程密度和轮换。</p></article>
             <article><span>03</span><strong>球队状态</strong><p>近况、伤停、体能、连续主客和心理状态进入判断，联赛 V1 也必须补这一层。</p></article>
-            <article><span>04</span><strong>风格对位</strong><p>看高压、低位、转换、边路、定位球和谁更怕谁，确认比赛脚本能不能成立。</p></article>
+            <article><span>04</span><strong>风格对位</strong><p>看高压、低位、转换、边路、定位球和谁更怕谁，确认比赛会朝哪两种情况发展。</p></article>
             <article><span>05</span><strong>盘口和样本</strong><p>自建机构线，再对比体彩盘口、SP 历史、赔率数学、历史比分和相似盘口样本。</p></article>
             <article><span>06</span><strong>状态转移</strong><p>推演 0-0 到 60 分钟、早进球、弱队先进、领先后是否继续追第二球。</p></article>
-            <article><span>07</span><strong>比分/总进球验证</strong><p>用主脚本和反脚本反推两个比分，再校验总进球区间是否和样本、盘口一致。</p></article>
+            <article><span>07</span><strong>比分/总进球验证</strong><p>用两种最可能的比赛发展反推两个比分，再校验总进球区间是否和样本、盘口一致。</p></article>
             <article><span>08</span><strong>让球独立闸门</strong><p>胜平负方向正确不等于让球正确，强队一球胜、深盘卡盘必须单独判断。</p></article>
             <article><span>09</span><strong>失败方式和值过滤</strong><p>写清楚最可能错在哪里，再决定主打、可选、谨慎或跳过。</p></article>
             <article><span>10</span><strong>最终锁版</strong><p>只在证据链完整后输出胜平负、让球、总进球双选、两个比分、比赛类型和建议。</p></article>
@@ -341,7 +316,7 @@
           <section>
             <span>联赛模型原则</span>
             <strong>同结构，不同版本</strong>
-            <p>最终决策步骤保持一致：概率底盘、赛事规则、球队状态、风格对位、盘口样本、状态转移、让球闸门、锁版结论和赛后复盘。但不同联赛不会共用成熟度，新联赛一律从 V1 开始。</p>
+            <p>最终决策步骤保持一致：当前胜平负 SP 复核、赛事规则、球队状态、风格对位、盘口样本、状态转移、让球闸门、锁版结论和赛后复盘。第一步统一写清 SP、去水隐含概率和盘口偏向，但不同联赛不会共用成熟度，新联赛一律从 V1 开始。</p>
           </section>
           <section>
             <span>升级条件</span>
@@ -492,7 +467,7 @@
             <span>模型机制</span>
             <h3>保留 V1 到 V4 的演进</h3>
             <p>
-              V1 建立基础概率和比赛脚本，V2 加入比分校准、小组形势和噪音过滤，V3 进一步强调赛前筛选、半场变化触发器和低质量场次降级。
+              V1 建立基础概率和比赛发展推演，V2 加入比分校准、小组形势和噪音过滤，V3 进一步强调赛前筛选、半场变化触发器和低质量场次降级。
               V4 把框架升级为通用体彩模型，按世界杯、联赛和杯赛淘汰赛切换权重；旧版本命中率会单独保留。
             </p>
             <div class="about-version-row">
@@ -632,7 +607,12 @@
     <script defer src="./lib/cloudStore.js?v=202607041845"></script>
     <script defer src="./sporttery-math.js?v=202607010005"></script>
     <script defer src="./app-charts.js?v=202607021125"></script>
-    <script defer src="./app.js?v=202607051255"></script>
+    <script defer src="./app/app-core.js?v=20260706_2"></script>
+    <script defer src="./app/app-data.js?v=20260706_2"></script>
+    <script defer src="./app/app-home.js?v=20260706_2"></script>
+    <script defer src="./app/app-detail.js?v=20260706_2"></script>
+    <script defer src="./app/app-panels.js?v=20260706_2"></script>
+    <script defer src="./app/app-main.js?v=20260706_2"></script>
 <button type="button" class="back-to-top" id="back-to-top" aria-label="返回顶部">&#8593;</button>
   </body>
 </html>
