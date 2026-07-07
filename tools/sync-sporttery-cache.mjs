@@ -12,6 +12,7 @@ async function getJson(url) {
 
 const headers = {
   "content-type": "application/json",
+  "x-sporttery-upstream-proxy": process.env.SPORTTERY_UPSTREAM_PROXY || "",
   "x-apifootball-api-key": process.env.APIFOOTBALL_API_KEY || "",
   "x-football-data-api-key": process.env.FOOTBALL_DATA_API_KEY || "",
   "x-thesportsdb-api-key": process.env.THESPORTSDB_API_KEY || "",
@@ -28,22 +29,35 @@ async function postApi(path, body = {}) {
   return { ok: response.ok, text };
 }
 
-let cacheOk = false;
+let sportteryOk = false;
+
+// 优先让 Cloudflare Worker 自己抓体彩官方最新数据
 try {
-  const calculatorRaw = await getJson(`${cacheBase}/sporttery/calculator.json`);
-  const resultPages = [];
-  for (let pageNo = 1; pageNo <= 5; pageNo += 1) {
-    resultPages.push(await getJson(`${cacheBase}/sporttery/results-page-${pageNo}.json`));
-  }
-  cacheOk = (await postApi("/api/sync/sporttery-cache", { calculatorRaw, resultPages })).ok;
+  const directSync = await postApi("/api/sync/sporttery");
+  sportteryOk = directSync.ok;
 } catch (error) {
-  console.warn(`sporttery cache sync skipped: ${error.message}`);
+  console.warn(`direct sporttery sync failed: ${error.message}`);
+}
+
+// 如果官方直连/代理失败，再使用旧缓存服务器兜底
+if (!sportteryOk) {
+  try {
+    const calculatorRaw = await getJson(`${cacheBase}/sporttery/calculator.json`);
+    const resultPages = [];
+    for (let pageNo = 1; pageNo <= 5; pageNo += 1) {
+      resultPages.push(await getJson(`${cacheBase}/sporttery/results-page-${pageNo}.json`));
+    }
+    const cacheSync = await postApi("/api/sync/sporttery-cache", { calculatorRaw, resultPages });
+    sportteryOk = cacheSync.ok;
+  } catch (error) {
+    console.warn(`sporttery cache sync skipped: ${error.message}`);
+  }
 }
 
 const officialResults = await postApi("/api/sync/sporttery-results?pages=5");
 const okoooResults = await postApi("/api/sync/okooo-results");
 const liveFallback = await postApi("/api/sync/live-results");
 
-if (!cacheOk && !officialResults.ok && !okoooResults.ok && !liveFallback.ok) {
+if (!sportteryOk && !officialResults.ok && !okoooResults.ok && !liveFallback.ok) {
   process.exit(1);
 }
