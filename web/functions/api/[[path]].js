@@ -2162,7 +2162,162 @@ async function fetchOkoooJczqResults(env) {
   if (!response.ok) throw new Error(`OKOOO ${response.status}: ${text.slice(0, 200)}`);
   return parseOkoooJczqResults(text);
 }
+function oddText(value) {
+  if (value === undefined || value === null || value === "") return "";
+  return String(value);
+}
 
+function normalizeOkoooHandicap(value = "") {
+  const text = String(value || "0").trim();
+  if (!text) return "0";
+  const num = Number(text.replace("+", ""));
+  if (!Number.isFinite(num)) return text;
+  if (num > 0) return `+${num}`;
+  return String(num);
+}
+
+function normalizeOkoooIssue(orderId = "") {
+  const no = String(orderId || "").slice(-3).padStart(3, "0");
+  return { no, issue: no };
+}
+
+function parseOkoooDate(value = "") {
+  const text = String(value || "");
+  const found = text.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (!found) return "";
+  return `${found[1]}-${found[2].padStart(2, "0")}-${found[3].padStart(2, "0")}`;
+}
+
+function parseOkoooTime(value = "") {
+  const text = String(value || "");
+  const found = text.match(/(\d{1,2}):(\d{2})/);
+  if (!found) return "";
+  return `${found[1].padStart(2, "0")}:${found[2]}`;
+}
+
+function parseOkoooJczqMatches(html = "") {
+  const objectText = extractAssignedObject(html, "var oddsData");
+  if (!objectText) throw new Error("OKOOO oddsData not found");
+
+  const oddsData = JSON.parse(objectText);
+  const capturedAt = new Date().toISOString();
+
+  return Object.entries(oddsData).flatMap(([orderId, item]) => {
+    const result = item?.Result || {};
+
+    const hasFinished =
+      Boolean(result.SportteryScore) ||
+      Boolean(result.HomeScore) ||
+      Boolean(result.AwayScore);
+
+    if (hasFinished) return [];
+
+    const boundary = item?.Boundary || {};
+    const odds = item?.Odds || item?.odds || {};
+    const base = item?.Base || item?.Match || item || {};
+
+    const home =
+      base.HomeTeamName ||
+      base.HomeName ||
+      base.HomeTeam ||
+      item.HomeTeamName ||
+      item.HomeName ||
+      item.HomeTeam ||
+      "";
+
+    const away =
+      base.AwayTeamName ||
+      base.AwayName ||
+      base.AwayTeam ||
+      item.AwayTeamName ||
+      item.AwayName ||
+      item.AwayTeam ||
+      "";
+
+    if (!home || !away) return [];
+
+    const league =
+      base.LeagueName ||
+      base.League ||
+      item.LeagueName ||
+      item.League ||
+      "竞彩";
+
+    const rawDate =
+      base.MatchDate ||
+      base.MatchTime ||
+      base.StartTime ||
+      item.MatchDate ||
+      item.MatchTime ||
+      item.StartTime ||
+      "";
+
+    const rawTime =
+      base.MatchTime ||
+      base.StartTime ||
+      item.MatchTime ||
+      item.StartTime ||
+      "";
+
+    const matchDate = parseOkoooDate(rawDate) || parseOkoooDate(rawTime);
+    const kickoffTime = parseOkoooTime(rawTime) || "00:00";
+
+    const { no, issue } = normalizeOkoooIssue(orderId);
+
+    const normal =
+      odds.Had || odds.had || odds["胜平负"] || item.Had || item.had || null;
+
+    const handicapOdds =
+      odds.Hhad || odds.hhad || odds["让球胜平负"] || item.Hhad || item.hhad || null;
+
+    const match = {
+      orderId: String(orderId),
+      issue,
+      no,
+      ticaiDate: matchDate,
+      matchDate,
+      kickoffTime,
+      league,
+      matchId: `okooo-${orderId}`,
+      home,
+      away,
+      venue: "",
+      statusCode: "Selling",
+      score: "",
+      handicap: normalizeOkoooHandicap(
+        boundary.Handicap ||
+        boundary.GoalLine ||
+        item.Handicap ||
+        item.GoalLine ||
+        "0"
+      ),
+      normal: normal ? {
+        win: oddText(normal.HomeWin || normal.Win || normal.H || normal.h),
+        draw: oddText(normal.Draw || normal.D || normal.d),
+        lose: oddText(normal.AwayWin || normal.Lose || normal.A || normal.a),
+      } : null,
+      handicapOdds: handicapOdds ? {
+        win: oddText(handicapOdds.HomeWin || handicapOdds.Win || handicapOdds.H || handicapOdds.h),
+        draw: oddText(handicapOdds.Draw || handicapOdds.D || handicapOdds.d),
+        lose: oddText(handicapOdds.AwayWin || handicapOdds.Lose || handicapOdds.A || handicapOdds.a),
+      } : null,
+      scoreOdds: [],
+      totalGoalsOdds: [],
+      updatedAt: capturedAt,
+      sportteryKey: `okooo-${orderId}`,
+      source: "okooo-jczq",
+    };
+
+    return [match];
+  });
+}
+
+async function fetchOkoooJczqMatches(env) {
+  const response = await fetch(env.OKOOO_JCZQ_URL || okoooJczqUrl, { headers: okoooHeaders });
+  const text = decodeTextBody(await response.arrayBuffer());
+  if (!response.ok) throw new Error(`OKOOO ${response.status}: ${text.slice(0, 200)}`);
+  return parseOkoooJczqMatches(text);
+}
 async function syncOkoooResultsToD1(db, env) {
   const capturedAt = new Date().toISOString();
   const rows = await db.prepare(`
