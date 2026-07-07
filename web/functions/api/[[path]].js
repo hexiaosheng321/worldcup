@@ -2318,6 +2318,76 @@ async function fetchOkoooJczqMatches(env) {
   if (!response.ok) throw new Error(`OKOOO ${response.status}: ${text.slice(0, 200)}`);
   return parseOkoooJczqMatches(text);
 }
+async function syncOkoooMatchesToD1(db, env) {
+  const capturedAt = new Date().toISOString();
+  const matches = await fetchOkoooJczqMatches(env);
+
+  let matchCount = 0;
+
+  for (const match of matches) {
+    const matchId = sportteryDbMatchId(match);
+
+    await db.prepare(`
+      INSERT INTO matches (match_id, match_code, league, home_team, away_team, kickoff_time, status, payload_json, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(match_id) DO UPDATE SET
+        match_code=excluded.match_code,
+        league=excluded.league,
+        home_team=excluded.home_team,
+        away_team=excluded.away_team,
+        kickoff_time=excluded.kickoff_time,
+        status=excluded.status,
+        payload_json=excluded.payload_json,
+        updated_at=excluded.updated_at
+    `).bind(
+      matchId,
+      match.issue || match.no || "",
+      match.league || "竞彩",
+      match.home || "",
+      match.away || "",
+      `${match.matchDate || match.ticaiDate || ""} ${match.kickoffTime || ""}`.trim(),
+      "SCHEDULED",
+      JSON.stringify({ ...match, cloudMatchId: matchId }),
+      capturedAt
+    ).run();
+
+    await db.prepare(`
+      INSERT INTO odds_snapshots (
+        snapshot_id, match_id, source, captured_at,
+        sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp,
+        handicap, payload_json
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      `odds-${matchId}-${capturedAt}`,
+      matchId,
+      "okooo-jczq",
+      capturedAt,
+      n(match.normal?.win, null),
+      n(match.normal?.draw, null),
+      n(match.normal?.lose, null),
+      n(String(match.handicap || "0").replace("+", ""), null),
+      JSON.stringify(match)
+    ).run();
+
+    matchCount += 1;
+  }
+
+  await db.prepare(`
+    INSERT INTO sync_logs (sync_id, source, status, message, payload_json, created_at)
+    VALUES (?, 'okooo-jczq-live', 'OK', 'okooo live matches sync completed', ?, ?)
+  `).bind(
+    `okooo-live-${Date.now()}-${crypto.randomUUID()}`,
+    JSON.stringify({ matchCount }),
+    capturedAt
+  ).run();
+
+  return {
+    ok: true,
+    capturedAt,
+    matchCount,
+  };
+}
 async function syncOkoooResultsToD1(db, env) {
   const capturedAt = new Date().toISOString();
   const rows = await db.prepare(`
