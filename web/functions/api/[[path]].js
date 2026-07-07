@@ -3170,7 +3170,9 @@ export async function onRequest(context) {
       const maxPages = Math.min(Math.max(Number(url.searchParams.get("pages") || 5), 1), 10);
       return json(await syncOfficialSportteryResultsToD1(db, env, { maxPages }));
     }
-
+if (path === "sync/okooo-live" && request.method === "POST") {
+  return json(await syncOkoooMatchesToD1(db, env));
+}
     if (path === "sync/okooo-results" && request.method === "POST") {
       return json(await syncOkoooResultsToD1(db, env));
     }
