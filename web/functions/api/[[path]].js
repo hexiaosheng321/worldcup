@@ -2162,6 +2162,35 @@ async function fetchOkoooJczqResults(env) {
   if (!response.ok) throw new Error(`OKOOO ${response.status}: ${text.slice(0, 200)}`);
   return parseOkoooJczqResults(text);
 }
+async function debugOkoooJczq(env) {
+  const response = await fetch(env.OKOOO_JCZQ_URL || okoooJczqUrl, { headers: okoooHeaders });
+  const text = decodeTextBody(await response.arrayBuffer());
+
+  const objectText = extractAssignedObject(text, "var oddsData");
+  if (!objectText) {
+    return {
+      ok: false,
+      error: "oddsData not found",
+      htmlStart: text.slice(0, 1200),
+      htmlIncludesOddsData: text.includes("oddsData"),
+      htmlIncludesMatch: text.includes("match"),
+      htmlIncludesJczq: text.includes("jczq"),
+    };
+  }
+
+  const oddsData = JSON.parse(objectText);
+  const samples = Object.entries(oddsData).slice(0, 5).map(([orderId, item]) => ({
+    orderId,
+    topKeys: Object.keys(item || {}),
+    sample: item,
+  }));
+
+  return {
+    ok: true,
+    count: Object.keys(oddsData).length,
+    samples,
+  };
+}
 function oddText(value) {
   if (value === undefined || value === null || value === "") return "";
   return String(value);
@@ -3170,6 +3199,9 @@ export async function onRequest(context) {
       const maxPages = Math.min(Math.max(Number(url.searchParams.get("pages") || 5), 1), 10);
       return json(await syncOfficialSportteryResultsToD1(db, env, { maxPages }));
     }
+    if (path === "debug/okooo-jczq" && request.method === "GET") {
+  return json(await debugOkoooJczq(env));
+}
 if (path === "sync/okooo-live" && request.method === "POST") {
   return json(await syncOkoooMatchesToD1(db, env));
 }
