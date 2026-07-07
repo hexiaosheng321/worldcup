@@ -46,6 +46,8 @@ async function getJson(url) {
 let hasUsefulSync = false;
 
 // 1. OKOOO 先跑。现在它已经确认可以成功。
+const okoooLive = await postApi("/api/sync/okooo-live");
+if (okoooLive.ok) hasUsefulSync = true;
 const okoooResults = await postApi("/api/sync/okooo-results");
 if (okoooResults.ok) hasUsefulSync = true;
 
