@@ -7,6 +7,8 @@ const sync = fs.readFileSync("tools/sync-sporttery-cache.mjs", "utf8");
 const api = fs.readFileSync("web/functions/api/[[path]].js", "utf8");
 const leagueContext = fs.readFileSync("tools/league-v1-context.mjs", "utf8");
 const workflow = fs.readFileSync(".github/workflows/sporttery-auto-deploy.yml", "utf8");
+const unifiedEngine = fs.readFileSync("tools/lib/unified-prediction-engine.mjs", "utf8");
+const unifiedRunner = fs.readFileSync("tools/run-unified-prediction.mjs", "utf8");
 
 const retiredMarkers = [
   'data-tab="path"',
@@ -69,6 +71,18 @@ if (!leagueContext.includes("/api/historical-samples/rolling?limit=1000")) {
 }
 if (!workflow.includes('cron: "*/30 * * * *"')) {
   throw new Error("Production baseline requires 24/7 completed-match synchronization.");
+}
+const unifiedPredictionMarkers = [
+  "UNIFIED_PREDICTION_V1",
+  "preMatchResearch",
+  "decisionConflictResolved",
+  "handicapMapping",
+  "researchTemplate",
+  "model-runs",
+];
+const missingUnifiedPredictionMarkers = unifiedPredictionMarkers.filter((marker) => !unifiedEngine.includes(marker) && !unifiedRunner.includes(marker) && !api.includes(marker));
+if (missingUnifiedPredictionMarkers.length) {
+  throw new Error(`Production baseline missing unified prediction contract: ${missingUnifiedPredictionMarkers.join(", ")}`);
 }
 const syncPositions = syncMarkers.map((marker) => sync.indexOf(marker));
 if (!syncPositions.every((position, index) => index === 0 || position > syncPositions[index - 1])) {

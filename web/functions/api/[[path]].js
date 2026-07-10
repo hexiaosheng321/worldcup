@@ -3585,11 +3585,14 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const matchIds = [
         ...(matches.results || []).map((row) => row.match_id),
         ...(locks.results || []).map((row) => row.match_id),
-      ].filter(Boolean);
+      ].filter(Boolean).filter((value, index, values) => values.indexOf(value) === index);
       if (matchIds.length) {
-        const placeholders = matchIds.map(() => "?").join(",");
-        const linkedResults = await db.prepare(`SELECT * FROM match_results WHERE match_id IN (${placeholders})`).bind(...matchIds).all();
-        (linkedResults.results || []).forEach((row) => resultsById.set(row.match_id, row));
+        for (let offset = 0; offset < matchIds.length; offset += 80) {
+          const chunk = matchIds.slice(offset, offset + 80);
+          const placeholders = chunk.map(() => "?").join(",");
+          const linkedResults = await db.prepare(`SELECT * FROM match_results WHERE match_id IN (${placeholders})`).bind(...chunk).all();
+          (linkedResults.results || []).forEach((row) => resultsById.set(row.match_id, row));
+        }
       }
       const results = [...resultsById.values()].sort((a, b) => String(b.reviewed_at || "").localeCompare(String(a.reviewed_at || "")));
       
@@ -3633,6 +3636,35 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         LIMIT 1
       `).bind(matchId).first();
       return json({ ok: true, lock: lock ? enrichLockRow(lock) : null });
+    }
+
+    if (path === "model-runs" && request.method === "GET") {
+      const matchId = url.searchParams.get("matchId");
+      const stmt = matchId
+        ? db.prepare("SELECT * FROM model_runs WHERE match_id = ? ORDER BY created_at DESC LIMIT 100").bind(matchId)
+        : db.prepare("SELECT * FROM model_runs ORDER BY created_at DESC LIMIT 100");
+      const { results } = await stmt.all();
+      return json({ ok: true, runs: results || [] });
+    }
+
+    if (path === "model-runs" && request.method === "POST") {
+      const body = await readJson(request);
+      const matchId = String(body.matchId || body.match_id || "");
+      if (!matchId) return json({ ok: false, error: "matchId required" }, 400);
+      const runId = body.runId || body.run_id || `model-run-${crypto.randomUUID()}`;
+      await db.prepare(`
+        INSERT INTO model_runs (run_id, match_id, model_version, run_type, input_json, output_json, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        runId,
+        matchId,
+        body.modelVersion || body.model_version || "V4-UNIFIED",
+        body.runType || body.run_type || "PRE_LOCK",
+        JSON.stringify(body.input || body.input_json || {}),
+        JSON.stringify(body.output || body.output_json || {}),
+        body.createdAt || body.created_at || new Date().toISOString(),
+      ).run();
+      return json({ ok: true, runId });
     }
 
     if (path === "locks" && request.method === "POST") {
