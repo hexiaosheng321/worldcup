@@ -5518,6 +5518,29 @@ function modelAuditRows() {
   });
 }
 
+function globalStatsDateMatches(date, selection, latestDate) {
+  if (selection === "all") return true;
+  if (selection.startsWith("month:")) return String(date || "").startsWith(selection.slice(6));
+  const dayCount = selection === "last7" ? 7 : selection === "last15" ? 15 : 0;
+  if (!dayCount) return date === selection;
+  const anchor = Date.parse(`${latestDate}T00:00:00+08:00`);
+  const target = Date.parse(`${date}T00:00:00+08:00`);
+  if (!Number.isFinite(anchor) || !Number.isFinite(target)) return false;
+  const ageDays = Math.floor((anchor - target) / 86400000);
+  return ageDays >= 0 && ageDays < dayCount;
+}
+
+function globalStatsDateLabel(selection) {
+  if (selection === "all") return "全部体彩模型记录";
+  if (selection === "last7") return "近7天模型记录";
+  if (selection === "last15") return "近15天模型记录";
+  if (selection.startsWith("month:")) {
+    const [year, month] = selection.slice(6).split("-");
+    return `${year}年${Number(month)}月模型记录`;
+  }
+  return `${formatDate(selection)} 模型记录`;
+}
+
 function renderGlobalStats() {
   const cards = document.querySelector("#global-stats-cards");
   const table = document.querySelector("#global-stats-table");
@@ -5526,8 +5549,14 @@ function renderGlobalStats() {
 
   const allRows = modelAuditRows();
   const dates = [...new Set(allRows.map(({ match }) => match.date))];
+  const latestDate = dates.at(-1) || "";
+  const months = [...new Set(dates.map((date) => String(date).slice(0, 7)))].filter(Boolean).sort().reverse();
   const leagues = [...new Set(allRows.map((row) => row.competition).filter(Boolean))];
-  if (activeGlobalStatsDate !== "all" && !dates.includes(activeGlobalStatsDate)) {
+  const validDateSelection = activeGlobalStatsDate === "all"
+    || ["last7", "last15"].includes(activeGlobalStatsDate)
+    || (activeGlobalStatsDate.startsWith("month:") && months.includes(activeGlobalStatsDate.slice(6)))
+    || dates.includes(activeGlobalStatsDate);
+  if (!validDateSelection) {
     activeGlobalStatsDate = "all";
   }
   if (activeGlobalStatsLeague !== "all" && !leagues.includes(activeGlobalStatsLeague)) {
@@ -5535,7 +5564,7 @@ function renderGlobalStats() {
   }
   const visibleRows =
     allRows.filter(({ match, competition }) => {
-      const dateOk = activeGlobalStatsDate === "all" || match.date === activeGlobalStatsDate;
+      const dateOk = globalStatsDateMatches(match.date, activeGlobalStatsDate, latestDate);
       const leagueOk = activeGlobalStatsLeague === "all" || competition === activeGlobalStatsLeague;
       return dateOk && leagueOk;
     });
@@ -5568,14 +5597,25 @@ function renderGlobalStats() {
     </div>
   `;
 
-  const dateOptions = [
-    `<option value="all"${activeGlobalStatsDate === "all" ? " selected" : ""}>全部日期</option>`,
-    ...dates.map(
-      (date) => `<option value="${date}"${activeGlobalStatsDate === date ? " selected" : ""}>${formatDate(date)}</option>`
-    ),
-  ].join("");
-  const dateScopeLabel =
-    activeGlobalStatsDate === "all" ? "全部体彩模型记录" : `${formatDate(activeGlobalStatsDate)} 模型记录`;
+  const dateOptions = `
+    <option value="all"${activeGlobalStatsDate === "all" ? " selected" : ""}>全部日期</option>
+    <optgroup label="快捷区间">
+      <option value="last7"${activeGlobalStatsDate === "last7" ? " selected" : ""}>近7天</option>
+      <option value="last15"${activeGlobalStatsDate === "last15" ? " selected" : ""}>近15天</option>
+    </optgroup>
+    <optgroup label="按月份">
+      ${months.map((month) => {
+        const [year, value] = month.split("-");
+        const key = `month:${month}`;
+        return `<option value="${key}"${activeGlobalStatsDate === key ? " selected" : ""}>${year}年${Number(value)}月</option>`;
+      }).join("")}
+    </optgroup>
+    <optgroup label="按单日">
+      ${dates.slice().reverse().map(
+        (date) => `<option value="${date}"${activeGlobalStatsDate === date ? " selected" : ""}>${formatDate(date)}</option>`
+      ).join("")}
+    </optgroup>`;
+  const dateScopeLabel = globalStatsDateLabel(activeGlobalStatsDate);
   if (leagueFilter) {
     const leagueOptions = [
       `<option value="all"${activeGlobalStatsLeague === "all" ? " selected" : ""}>全部联赛 / 专题</option>`,

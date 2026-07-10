@@ -42,6 +42,9 @@ if (panels.includes("review-version-strip") || panels.includes("全体彩口径"
 if (panels.includes("renderCalibrationPanel") || panels.includes("calibration-panel") || panels.includes("模型校准统计")) {
   throw new Error("Production baseline rejects the retired calibration summary panels.");
 }
+for (const marker of ['value="last7"', 'value="last15"', 'label="按月份"', 'label="按单日"', "globalStatsDateMatches"]) {
+  if (!panels.includes(marker)) throw new Error(`Production baseline missing date-range filter marker: ${marker}`);
+}
 if (!styles.includes(".global-stats-table-toolbar button span") || !styles.includes("color: #ffffff;")) {
   throw new Error("Production baseline requires high-contrast text in the global-stats maximize button.");
 }
