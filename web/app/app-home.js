@@ -1192,12 +1192,12 @@ function renderCurrentRouteSurfaces() {
   if (hash === "#worldcup") {
     renderSignals();
     renderSchedule();
-    renderPath();
     return;
   }
   if (hash === "#worldcup-knockout") {
+    history.replaceState("", document.title, `${window.location.pathname}${window.location.search}#worldcup`);
     renderSignals();
-    renderKnockout();
+    renderSchedule();
     return;
   }
   if (hash === "#model-intro" || hash === "#about") {

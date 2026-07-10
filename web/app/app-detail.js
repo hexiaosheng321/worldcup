@@ -1651,10 +1651,10 @@ function openSportteryMatchPage(key, returnTarget = "sporttery") {
 
 function closeMatchPage() {
   if (window.location.hash.startsWith("#match-") || window.location.hash.startsWith("#sporttery-match-")) {
-    const hash = matchDetailReturnTarget === "review" ? "#model-stats" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "odds-map" ? "#odds-map" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : matchDetailReturnTarget === "knockout" ? "#worldcup-knockout" : "#worldcup";
+    const hash = matchDetailReturnTarget === "review" ? "#model-stats" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "odds-map" ? "#odds-map" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : "#worldcup";
     history.pushState("", document.title, `${window.location.pathname}${window.location.search}${hash}`);
   }
-  activateTab(matchDetailReturnTarget === "review" ? "model-stats" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "odds-map" ? "odds-map" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : matchDetailReturnTarget === "knockout" ? "knockout" : "today");
+  activateTab(matchDetailReturnTarget === "review" ? "model-stats" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "odds-map" ? "odds-map" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : "schedule");
 }
 
 function handleRouteFromHash() {
@@ -1675,10 +1675,11 @@ function handleRouteFromHash() {
     return;
   }
   if (window.location.hash === "#worldcup") {
-    activateTab("path");
+    activateTab("schedule");
   }
   if (window.location.hash === "#worldcup-knockout") {
-    activateTab("knockout");
+    history.replaceState("", document.title, `${window.location.pathname}${window.location.search}#worldcup`);
+    activateTab("schedule");
   }
   if (window.location.hash === "#sporttery") {
     activateTab("sporttery-pool");

@@ -68,7 +68,7 @@ homeEnters.forEach((button) => {
     }
     showDashboard();
     renderPanelForTab("path");
-    activateTab("path");
+    activateTab("schedule");
   });
 });
 
@@ -315,7 +315,7 @@ document.querySelector(".signal-strip")?.addEventListener("keydown", (event) => 
 
 document.querySelector("#signal-detail")?.addEventListener("click", (event) => {
   if (event.target.closest("[data-signal-back]")) {
-    activateTab("path");
+    activateTab("schedule");
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
