@@ -2607,7 +2607,10 @@ function parseOkoooJczqMatches(html = "") {
     const home = capture(/class="ctrl_homename"[^>]*>([\s\S]*?)<\/em>/i);
     const away = capture(/class="ctrl_awayname"[^>]*>([\s\S]*?)<\/em>/i);
     const league = capture(/class="liansai"[^>]*>([\s\S]*?)<\/a>/i) || "竞彩";
-    const kickoffTime = capture(/class="timetxt"[^>]*>([\s\S]*?)<\/time>/i) || "00:00";
+    // OKOOO's list `timetxt` is the local Sporttery sale-close clock, not a
+    // reliable fixture kickoff clock. Keep it for sales context only; the
+    // official Sporttery calculator supplies matchDate + kickoffTime below.
+    const salesCloseTime = capture(/class="timetxt"[^>]*>([\s\S]*?)<\/time>/i) || "";
     const matchId = block.match(/matchid="(\d+)"/i)?.[1] || block.match(/MatchID=(\d+)/i)?.[1] || `okooo-${orderId}`;
     const issueText = capture(/class="xuhao"[^>]*>([\s\S]*?)<\/p>/i);
     const no = String(orderId).slice(-3).padStart(3, "0");
@@ -2622,8 +2625,9 @@ function parseOkoooJczqMatches(html = "") {
       issue,
       no,
       ticaiDate: latestDay,
-      matchDate: latestDay,
-      kickoffTime,
+      matchDate: "",
+      kickoffTime: "",
+      salesCloseTime,
       league,
       matchId,
       home,
@@ -2671,7 +2675,28 @@ async function fetchOkoooJczqMatches(env) {
 }
 async function syncOkoooMatchesToD1(db, env) {
   const capturedAt = new Date().toISOString();
-  const matches = await fetchOkoooJczqMatches(env);
+  const [okoooMatches, calculatorRaw] = await Promise.all([
+    fetchOkoooJczqMatches(env),
+    fetchSportteryJson(env, sportteryApis.calculator),
+  ]);
+  const officialByOrderId = new Map(
+    (calculatorRaw?.value?.matchInfoList || []).flatMap((day) =>
+      (day.subMatchList || []).map((match) => {
+        const normalized = normalizeSportteryMatch(match, day.businessDate);
+        return [normalized.orderId, normalized];
+      })
+    )
+  );
+  const matches = okoooMatches.map((match) => {
+    const official = officialByOrderId.get(match.orderId);
+    return {
+      ...match,
+      matchDate: official?.matchDate || "",
+      kickoffTime: official?.kickoffTime || "",
+      kickoffSource: official ? "sporttery-official" : "pending-official-schedule",
+      officialMatchId: official?.matchId || "",
+    };
+  });
 
   let matchCount = 0;
 

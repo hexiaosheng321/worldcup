@@ -128,6 +128,16 @@ if (missingOkoooDirectionMarkers.length) {
   throw new Error(`Production baseline missing OKOOO home/away option mapping: ${missingOkoooDirectionMarkers.join(", ")}`);
 }
 
+const kickoffSourceMarkers = [
+  "salesCloseTime",
+  'kickoffSource: official ? "sporttery-official" : "pending-official-schedule"',
+  "officialByOrderId",
+];
+const missingKickoffSourceMarkers = kickoffSourceMarkers.filter((marker) => !api.includes(marker));
+if (missingKickoffSourceMarkers.length) {
+  throw new Error(`Production baseline must keep sale-close and real kickoff clocks separate: ${missingKickoffSourceMarkers.join(", ")}`);
+}
+
 if (!process.env.GITHUB_ACTIONS) {
   const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const remoteMain = execFileSync("git", ["rev-parse", "origin/main"], { encoding: "utf8" }).trim();
