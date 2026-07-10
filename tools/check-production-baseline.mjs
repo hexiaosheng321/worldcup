@@ -5,6 +5,8 @@ const index = fs.readFileSync("web/index.html", "utf8");
 const main = fs.readFileSync("web/app/app-main.js", "utf8");
 const sync = fs.readFileSync("tools/sync-sporttery-cache.mjs", "utf8");
 const api = fs.readFileSync("web/functions/api/[[path]].js", "utf8");
+const leagueContext = fs.readFileSync("tools/league-v1-context.mjs", "utf8");
+const workflow = fs.readFileSync(".github/workflows/sporttery-auto-deploy.yml", "utf8");
 
 const retiredMarkers = [
   'data-tab="path"',
@@ -43,10 +45,28 @@ const syncMarkers = [
   "/api/sync/okooo-live",
   "/api/sync/okooo-results",
   "/api/sync/live-results",
+  "/api/sync/reconcile-completed-samples",
 ];
 const missingSyncMarkers = syncMarkers.filter((marker) => !sync.includes(marker));
 if (missingSyncMarkers.length) {
   throw new Error(`Production baseline missing automatic score pipeline: ${missingSyncMarkers.join(", ")}`);
+}
+
+const rollingSampleMarkers = [
+  "upsertCompletedMatchHistoricalSample",
+  'source = "completed-match-auto"',
+  'path === "sync/reconcile-completed-samples"',
+  'path === "historical-samples/rolling"',
+];
+const missingRollingSampleMarkers = rollingSampleMarkers.filter((marker) => !api.includes(marker));
+if (missingRollingSampleMarkers.length) {
+  throw new Error(`Production baseline missing completed-match sample ingestion: ${missingRollingSampleMarkers.join(", ")}`);
+}
+if (!leagueContext.includes("/api/historical-samples/rolling?limit=1000")) {
+  throw new Error("Production baseline requires rolling completed samples in the next prediction context.");
+}
+if (!workflow.includes('cron: "*/30 * * * *"')) {
+  throw new Error("Production baseline requires 24/7 completed-match synchronization.");
 }
 const syncPositions = syncMarkers.map((marker) => sync.indexOf(marker));
 if (!syncPositions.every((position, index) => index === 0 || position > syncPositions[index - 1])) {

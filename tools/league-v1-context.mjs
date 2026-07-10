@@ -140,7 +140,19 @@ function tableFor(samples = [], league = "", beforeDate = "") {
 
 export async function loadExternalSamples(filePath) {
   const content = await fs.readFile(filePath, "utf8");
-  return extractWindowJson(content, "window\\.WC_EXTERNAL_HISTORICAL_SAMPLES") || [];
+  const localSamples = extractWindowJson(content, "window\\.WC_EXTERNAL_HISTORICAL_SAMPLES") || [];
+  const apiBase = String(process.env.PUBLIC_API_BASE || "https://ticai-model.com").replace(/\/$/, "");
+  try {
+    const response = await fetch(`${apiBase}/api/historical-samples/rolling?limit=1000`, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!response.ok) return localSamples;
+    const payload = await response.json();
+    return dedupeSamples([...localSamples, ...(Array.isArray(payload?.samples) ? payload.samples : [])]);
+  } catch {
+    return localSamples;
+  }
 }
 
 export async function loadSportterySpHistory(filePath) {

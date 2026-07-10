@@ -14,6 +14,9 @@ for (let index = 2; index < process.argv.length; index += 1) {
 const dataDir = path.resolve(args.get("data-dir") || "web/data");
 const apply = args.get("apply") === "true";
 const seedTarget = Math.max(1, Number(args.get("seed-target") || 100));
+const preserveAllLeagues = new Set(
+  String(args.get("preserve-all-leagues") || "世界杯").split(",").map((item) => item.trim()).filter(Boolean),
+);
 const files = fs.readdirSync(dataDir)
   .filter((name) => /^externalHistoricalSamples.*\.js$/.test(name))
   .sort();
@@ -59,6 +62,10 @@ function fixtureKey(sample) {
 }
 
 function cappedLeagueSamples(samples) {
+  const league = String(samples[0]?.league || "");
+  if (preserveAllLeagues.has(league)) {
+    return [...samples].sort((a, b) => String(b.kickoffTime || "").localeCompare(String(a.kickoffTime || "")));
+  }
   const unique = new Map();
   for (const sample of samples) {
     const key = fixtureKey(sample);
@@ -99,7 +106,7 @@ for (const name of files) {
   report.push({ file: name, before: before.length, completeOdds: complete.length, kept: after.length, removed: before.length - after.length, removedByLeague });
 }
 
-console.log(JSON.stringify({ apply, seedTarget, files: report, totals: {
+console.log(JSON.stringify({ apply, seedTarget, preserveAllLeagues: [...preserveAllLeagues], files: report, totals: {
   before: report.reduce((sum, item) => sum + item.before, 0),
   kept: report.reduce((sum, item) => sum + item.kept, 0),
   removed: report.reduce((sum, item) => sum + item.removed, 0),

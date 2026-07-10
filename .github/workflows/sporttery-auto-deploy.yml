@@ -5,8 +5,8 @@ on:
     branches:
       - main
   schedule:
-    # Beijing time 08:00-22:30: rolling coverage for the current Sporttery sales day.
-    - cron: "*/30 0-14 * * *"
+    # 24/7 rolling coverage: World Cup matches often finish overnight in Beijing.
+    - cron: "*/30 * * * *"
     # Beijing time 19:50: hard final-lock checkpoint.
     - cron: "50 11 * * *"
     # Beijing time 21:40: final odds snapshot before sale close.

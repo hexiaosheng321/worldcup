@@ -46,10 +46,11 @@ try {
 } catch (e) {
   console.warn("Sporttery 官方同步失败（正常）");
 }
+const reconciled = await postApi("/api/sync/reconcile-completed-samples");
 
-console.log(`Snapshot: ${snapshotSeed.ok ? "✅" : "❌"} | Okooo赛程: ${okoooLive.ok ? "✅" : "❌"} | Okooo赛果: ${okoooResults.ok ? "✅" : "❌"} | Live: ${liveFallback.ok ? "✅" : "❌"}`);
+console.log(`Snapshot: ${snapshotSeed.ok ? "✅" : "❌"} | Okooo赛程: ${okoooLive.ok ? "✅" : "❌"} | Okooo赛果: ${okoooResults.ok ? "✅" : "❌"} | Live: ${liveFallback.ok ? "✅" : "❌"} | 样本回填: ${reconciled.ok ? "✅" : "❌"}`);
 
-if (!snapshotSeed.ok || (!okoooLive.ok && !okoooResults.ok && !liveFallback.ok)) {
+if (!snapshotSeed.ok || !reconciled.ok || (!okoooLive.ok && !okoooResults.ok && !liveFallback.ok)) {
   console.error("主要数据源失败");
   process.exit(1);
 }

@@ -421,6 +421,17 @@ async function historicalSimilarSamples(db, current) {
   };
 }
 
+async function listRollingCompletedSamples(db, limit = 500) {
+  const safeLimit = Math.min(Math.max(Number(limit || 500), 1), 1000);
+  const { results } = await db.prepare(`
+    SELECT * FROM external_historical_samples
+    WHERE source = 'completed-match-auto'
+    ORDER BY kickoff_time DESC
+    LIMIT ?
+  `).bind(safeLimit).all();
+  return (results || []).map(rowToExternalSample);
+}
+
 async function ensureModelUpgradeSchema(db) {
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS model_upgrade_notes (
@@ -672,6 +683,82 @@ async function createCaseForLock(db, lockId) {
   await db.prepare("UPDATE locked_predictions SET result_status = ? WHERE lock_id = ?").bind(review.hitStatus, lock.lock_id).run();
   const upgradeNote = await createModelUpgradeNoteForCase(db, lock, result, review, caseId, diagnosticPayload);
   return { ok: true, caseId, review, upgradeNote };
+}
+
+async function upsertCompletedMatchHistoricalSample(db, matchId) {
+  const row = await db.prepare(`
+    SELECT
+      m.match_id, m.league, m.home_team, m.away_team, m.kickoff_time, m.payload_json AS match_payload_json,
+      r.full_time_home_goals, r.full_time_away_goals, r.result_1x2, r.total_goals,
+      r.reviewed_at, r.payload_json AS result_payload_json,
+      o.source AS odds_source, o.captured_at AS odds_captured_at,
+      o.sporttery_home_sp, o.sporttery_draw_sp, o.sporttery_away_sp,
+      o.handicap, o.payload_json AS odds_payload_json
+    FROM matches m
+    JOIN match_results r ON r.match_id = m.match_id
+    LEFT JOIN odds_snapshots o ON o.snapshot_id = (
+      SELECT snapshot_id FROM odds_snapshots
+      WHERE match_id = m.match_id
+        AND sporttery_home_sp > 1 AND sporttery_draw_sp > 1 AND sporttery_away_sp > 1
+      ORDER BY captured_at DESC
+      LIMIT 1
+    )
+    WHERE m.match_id = ?
+  `).bind(matchId).first();
+  if (!row) return { ok: false, stored: false, reason: "match-or-result-not-found" };
+  if (![row.sporttery_home_sp, row.sporttery_draw_sp, row.sporttery_away_sp].every((value) => Number(value) > 1)) {
+    return { ok: true, stored: false, reason: "complete-1x2-not-found" };
+  }
+  const odds = [Number(row.sporttery_home_sp), Number(row.sporttery_draw_sp), Number(row.sporttery_away_sp)];
+  const rawProbabilities = odds.map((value) => 1 / value);
+  const probabilityTotal = rawProbabilities.reduce((sum, value) => sum + value, 0);
+  const probabilities = rawProbabilities.map((value) => Number((value / probabilityTotal).toFixed(4)));
+  const matchPayload = parseObject(row.match_payload_json);
+  const resultPayload = parseObject(row.result_payload_json);
+  const oddsPayload = parseObject(row.odds_payload_json);
+  const league = normalizeCompetition(row.league);
+  const season = String(row.kickoff_time || "").match(/\b(20\d{2})\b/)?.[1] || "";
+  const source = "completed-match-auto";
+  const sampleId = `completed-${row.match_id}`;
+  const sourceUrl = String(resultPayload.sourceUrl || matchPayload.sourceUrl || "");
+  const score = `${row.full_time_home_goals}-${row.full_time_away_goals}`;
+  await db.prepare(`
+    INSERT INTO external_historical_samples (
+      sample_id, source, source_url, source_captured_at, league, season, kickoff_time, home_team, away_team,
+      sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp,
+      euro_home_odds, euro_draw_odds, euro_away_odds,
+      euro_home_prob, euro_draw_prob, euro_away_prob,
+      asian_handicap, data_quality, actual_result, actual_home_goals, actual_away_goals, actual_goals,
+      score, payload_json, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'MEDIUM', ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(sample_id) DO UPDATE SET
+      source_url=excluded.source_url, source_captured_at=excluded.source_captured_at,
+      league=excluded.league, season=excluded.season, kickoff_time=excluded.kickoff_time,
+      home_team=excluded.home_team, away_team=excluded.away_team,
+      sporttery_home_sp=excluded.sporttery_home_sp, sporttery_draw_sp=excluded.sporttery_draw_sp, sporttery_away_sp=excluded.sporttery_away_sp,
+      euro_home_odds=excluded.euro_home_odds, euro_draw_odds=excluded.euro_draw_odds, euro_away_odds=excluded.euro_away_odds,
+      euro_home_prob=excluded.euro_home_prob, euro_draw_prob=excluded.euro_draw_prob, euro_away_prob=excluded.euro_away_prob,
+      asian_handicap=excluded.asian_handicap, data_quality=excluded.data_quality,
+      actual_result=excluded.actual_result, actual_home_goals=excluded.actual_home_goals,
+      actual_away_goals=excluded.actual_away_goals, actual_goals=excluded.actual_goals,
+      score=excluded.score, payload_json=excluded.payload_json, updated_at=excluded.updated_at
+  `).bind(
+    sampleId, source, sourceUrl, row.odds_captured_at || row.reviewed_at, league, season,
+    row.kickoff_time, row.home_team, row.away_team,
+    odds[0], odds[1], odds[2], odds[0], odds[1], odds[2],
+    probabilities[0], probabilities[1], probabilities[2],
+    row.handicap, row.result_1x2, row.full_time_home_goals, row.full_time_away_goals, row.total_goals,
+    score,
+    JSON.stringify({
+      sampleRole: "rolling-completed-match",
+      resultSource: resultPayload.resultSource || "",
+      oddsSource: row.odds_source || "",
+      oddsCapturedAt: row.odds_captured_at || "",
+      orderId: matchPayload.orderId || oddsPayload.orderId || "",
+    }),
+    new Date().toISOString(),
+  ).run();
+  return { ok: true, stored: true, sampleId };
 }
 
 const sportteryApis = {
@@ -1879,6 +1966,7 @@ async function createAutoLocks(db, matches, capturedAt) {
 }
 
 async function autoReviewMatch(db, matchId) {
+  const historicalSample = await upsertCompletedMatchHistoricalSample(db, matchId);
   const locks = await db.prepare("SELECT lock_id, lock_type FROM locked_predictions WHERE match_id = ?").bind(matchId).all();
   let reviewed = 0;
   let cases = 0;
@@ -1887,7 +1975,23 @@ async function autoReviewMatch(db, matchId) {
     if (created.ok || created.error === "only FINAL_LOCK can enter Case Base") reviewed += 1;
     if (created.caseId && !created.duplicated) cases += 1;
   }
-  return { reviewed, cases };
+  return { reviewed, cases, historicalSample };
+}
+
+async function reconcileCompletedSamples(db) {
+  const rows = await db.prepare("SELECT match_id FROM match_results ORDER BY reviewed_at ASC LIMIT 1000").all();
+  let reviewed = 0;
+  let cases = 0;
+  let historicalSamples = 0;
+  const skipped = [];
+  for (const row of rows.results || []) {
+    const result = await autoReviewMatch(db, row.match_id);
+    reviewed += result.reviewed;
+    cases += result.cases;
+    if (result.historicalSample?.stored) historicalSamples += 1;
+    else skipped.push({ matchId: row.match_id, reason: result.historicalSample?.reason || "unknown" });
+  }
+  return { ok: true, scanned: rows.results?.length || 0, reviewed, cases, historicalSamples, skipped };
 }
 
 function sportteryResultRowsFromPages(resultPages = []) {
@@ -3349,6 +3453,9 @@ if (path === "sync/okooo-live" && request.method === "POST") {
     if (path === "sync/okooo-results" && request.method === "POST") {
       return json(await syncOkoooResultsToD1(db, env));
     }
+    if (path === "sync/reconcile-completed-samples" && request.method === "POST") {
+      return json(await reconcileCompletedSamples(db));
+    }
 
     if (path === "sync/live-results" && request.method === "POST") {
       const requestApiFootballKey = request.headers.get("x-apifootball-api-key") || "";
@@ -3613,6 +3720,9 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const current = await readJson(request);
       if (!current.league) return json({ ok: false, error: "league required" }, 400);
       return json(await historicalSimilarSamples(db, current));
+    }
+    if (path === "historical-samples/rolling" && request.method === "GET") {
+      return json({ ok: true, samples: await listRollingCompletedSamples(db, url.searchParams.get("limit")) });
     }
 
     return json({ ok: false, error: "not found", path }, 404);
