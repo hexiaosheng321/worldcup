@@ -24,7 +24,7 @@ function predictionVersionRank(pred) {
 
 function predictionModelVersion(pred) {
   if (!pred) return "";
-  if (pred.modelVersion) return pred.modelVersion;
+  if (pred.modelVersion) return modelVersionFromText(pred.modelVersion) || pred.modelVersion;
   if ((pred.type || "").includes("V4")) return "V4";
   if ((pred.type || "").includes("V3")) return "V3";
   if ((pred.type || "").includes("V2")) return "V2";

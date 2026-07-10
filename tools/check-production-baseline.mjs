@@ -38,6 +38,9 @@ if (missingRequired.length) {
 if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v2"')) {
   throw new Error("Production baseline requires the corrected score-cache namespace.");
 }
+if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('return `${competition} 联赛 ${version} 模型`')) {
+  throw new Error("Production baseline requires canonical public model names.");
+}
 if (!fs.readFileSync("web/lib/cloudStore.js", "utf8").includes('cache: options.cache || "no-store"')) {
   throw new Error("Production baseline requires uncached Cloudflare bootstrap reads.");
 }

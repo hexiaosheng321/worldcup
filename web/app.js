@@ -1101,18 +1101,19 @@ function baseCompetitionLabel(value = "") {
 }
 
 function modelDisplayName(pred = {}, match = {}, fallback = "") {
-  const rawVersion =
+  const rawModelVersion =
     pred.modelVersion ||
     modelVersionFromText(pred.type, pred.competitionModel, pred.eventModel, pred.competitionType, fallback);
+  const rawVersion = modelVersionFromText(rawModelVersion) || rawModelVersion;
   const explicitCompetition =
     baseCompetitionLabel(pred.competition) ||
     baseCompetitionLabel(match.league) ||
     baseCompetitionLabel(match.competition);
   const version = rawVersion || "V1";
   if (explicitCompetition && !/世界杯|World Cup/i.test(explicitCompetition)) {
-    if (/联赛$/.test(explicitCompetition)) return `${explicitCompetition} ${version}`;
-    if (/体彩|竞彩/.test(explicitCompetition)) return `${explicitCompetition} ${version}`;
-    return `${explicitCompetition}联赛 ${version}`;
+    const competition = explicitCompetition.replace(/联赛$/, "").trim();
+    if (/体彩|竞彩/.test(competition)) return `${competition} ${version} 模型`;
+    return `${competition} 联赛 ${version} 模型`;
   }
   const text = [
     pred.competition,
@@ -1133,9 +1134,9 @@ function modelDisplayName(pred = {}, match = {}, fallback = "") {
     explicitCompetition ||
     baseCompetitionLabel(fallback) ||
     "体彩联赛";
-  if (/联赛$/.test(competition)) return `${competition} ${version}`;
-  if (/体彩|竞彩/.test(competition)) return `${competition} ${version}`;
-  return `${competition}联赛 ${version}`;
+  const normalizedCompetition = competition.replace(/联赛$/, "").trim();
+  if (/体彩|竞彩/.test(normalizedCompetition)) return `${normalizedCompetition} ${version} 模型`;
+  return `${normalizedCompetition} 联赛 ${version} 模型`;
 }
 
 function handicapLabel(pred) {
@@ -1163,7 +1164,7 @@ function predictionVersionRank(pred) {
 
 function predictionModelVersion(pred) {
   if (!pred) return "";
-  if (pred.modelVersion) return pred.modelVersion;
+  if (pred.modelVersion) return modelVersionFromText(pred.modelVersion) || pred.modelVersion;
   if ((pred.type || "").includes("V4")) return "V4";
   if ((pred.type || "").includes("V3")) return "V3";
   if ((pred.type || "").includes("V2")) return "V2";
