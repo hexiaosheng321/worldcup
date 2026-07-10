@@ -39,6 +39,9 @@ if (missingRequired.length) {
 if (panels.includes("review-version-strip") || panels.includes("全体彩口径")) {
   throw new Error("Production baseline rejects the retired model-version hit-rate strip.");
 }
+if (panels.includes("renderCalibrationPanel") || panels.includes("calibration-panel") || panels.includes("模型校准统计")) {
+  throw new Error("Production baseline rejects the retired calibration summary panels.");
+}
 if (!styles.includes(".global-stats-table-toolbar button span") || !styles.includes("color: #ffffff;")) {
   throw new Error("Production baseline requires high-contrast text in the global-stats maximize button.");
 }

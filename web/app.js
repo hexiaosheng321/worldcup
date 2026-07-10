@@ -5457,62 +5457,6 @@ function reviewAttribution(pred, match, review = predictionReviewData(pred, matc
   };
 }
 
-function calibrationStats(rows, selector) {
-  const groups = new Map();
-  rows.forEach((row) => {
-    const key = selector(row);
-    if (!key) return;
-    if (!groups.has(key)) {
-      groups.set(key, { label: key, total: 0, directionHits: 0, handicapTotal: 0, handicapHits: 0, totalGoalsHits: 0 });
-    }
-    const item = groups.get(key);
-    item.total += 1;
-    if (row.directionHit) item.directionHits += 1;
-    if (row.actualHandicapDirection) {
-      item.handicapTotal += 1;
-      if (row.handicapHit) item.handicapHits += 1;
-    }
-    if (row.totalGoalsHit) item.totalGoalsHits += 1;
-  });
-  return [...groups.values()].sort((a, b) => b.total - a.total || b.directionHits - a.directionHits);
-}
-
-function renderCalibrationPanel(verifiedRows) {
-  const confidenceRows = calibrationStats(verifiedRows, (row) => row.confidence || "未评级");
-  const typeRows = calibrationStats(verifiedRows, (row) => row.matchType || "待判");
-  const gateRows = calibrationStats(verifiedRows, (row) => autoDecisionGate(row.match?.no, row.pred).level);
-  const renderGroup = (title, rows) => `
-    <article>
-      <strong>${title}</strong>
-      ${rows
-        .slice(0, 5)
-        .map(
-          (item) => `
-            <div>
-              <span>${item.label}</span>
-              <b>${item.directionHits}/${item.total}</b>
-              <em>${hitRate(item.directionHits, item.total)}</em>
-            </div>
-          `
-        )
-        .join("") || "<p>等待样本</p>"}
-    </article>
-  `;
-  return `
-    <div class="calibration-panel">
-      <div class="stat-title-line">
-        <h3>模型校准统计</h3>
-        <span class="mini-pill">按置信 / 类型 / 证据等级分组</span>
-      </div>
-      <div class="calibration-grid">
-        ${renderGroup("置信等级", confidenceRows)}
-        ${renderGroup("比赛类型", typeRows)}
-        ${renderGroup("证据等级", gateRows)}
-      </div>
-    </div>
-  `;
-}
-
 function hitCell(hit) {
   return `<span class="${hit === null ? "empty-mark" : hit ? "good" : "bad"}">${hit === null ? "-" : hit ? "中" : "未中"}</span>`;
 }
@@ -5622,7 +5566,6 @@ function renderGlobalStats() {
       <article class="review-metric"><span>A级证据</span><strong>${mainGateRows.length}</strong><em>证据完整，不代表自动主推</em></article>
       <article class="review-metric"><span>错因样本</span><strong>${missAttributions.length}</strong><em>用于迭代模型</em></article>
     </div>
-    ${renderCalibrationPanel(verifiedRows)}
   `;
 
   const dateOptions = [

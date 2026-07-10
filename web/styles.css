@@ -1195,8 +1195,7 @@ select {
   margin-top: 14px;
 }
 
-.attribution-strip article,
-.calibration-grid article {
+.attribution-strip article {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1218,52 +1217,6 @@ select {
   font-family: Georgia, "Songti SC", serif;
   font-size: 32px;
   line-height: 1;
-}
-
-.calibration-panel {
-  margin-top: 18px;
-}
-
-.calibration-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.calibration-grid article > strong {
-  display: block;
-  margin-bottom: 10px;
-  color: var(--ink);
-  font-size: 18px;
-  font-weight: 950;
-}
-
-.calibration-grid div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 8px;
-  align-items: center;
-  padding: 8px 0;
-  border-top: 1px solid rgba(203, 217, 233, 0.8);
-}
-
-.calibration-grid span,
-.calibration-grid b,
-.calibration-grid em {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: normal;
-  font-weight: 900;
-}
-
-.calibration-grid b {
-  color: var(--ink);
-}
-
-.calibration-grid p {
-  margin: 0;
-  color: var(--muted);
-  font-weight: 850;
 }
 
 .version-badge {
@@ -7650,7 +7603,6 @@ body::before {
   .odds-backtest-status-grid,
   .triad-grid,
   .odds-math-grid,
-  .calibration-grid,
   .path-simulation-grid,
   .about-mission-grid,
   .about-flow,
