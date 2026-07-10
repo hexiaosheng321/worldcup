@@ -54,6 +54,8 @@ if (missingSyncMarkers.length) {
 
 const rollingSampleMarkers = [
   "upsertCompletedMatchHistoricalSample",
+  "ensureMatchForStoredResult",
+  "seededMatches",
   'source = "completed-match-auto"',
   'path === "sync/reconcile-completed-samples"',
   'path === "historical-samples/rolling"',

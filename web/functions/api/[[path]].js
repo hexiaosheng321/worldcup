@@ -761,6 +761,33 @@ async function upsertCompletedMatchHistoricalSample(db, matchId) {
   return { ok: true, stored: true, sampleId };
 }
 
+async function ensureMatchForStoredResult(db, matchId) {
+  const existing = await db.prepare("SELECT match_id FROM matches WHERE match_id = ?").bind(matchId).first();
+  if (existing) return { ok: true, created: false };
+  const result = await db.prepare("SELECT payload_json FROM match_results WHERE match_id = ?").bind(matchId).first();
+  if (!result) return { ok: false, created: false, reason: "result-not-found" };
+  const payload = parseObject(result.payload_json);
+  const home = String(payload.home || payload.homeTeam || "").trim();
+  const away = String(payload.away || payload.awayTeam || "").trim();
+  if (!home || !away) return { ok: false, created: false, reason: "teams-not-found" };
+  const kickoff = `${payload.matchDate || payload.ticaiDate || payload.date || ""} ${payload.kickoffTime || ""}`.trim();
+  await db.prepare(`
+    INSERT OR IGNORE INTO matches (
+      match_id, match_code, league, home_team, away_team, kickoff_time, status, payload_json, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, 'FINISHED', ?, ?)
+  `).bind(
+    matchId,
+    payload.issue || payload.no || "",
+    normalizeCompetition(payload.league || "竞彩"),
+    home,
+    away,
+    kickoff,
+    JSON.stringify({ ...payload, cloudMatchId: matchId, seededFromResult: true }),
+    new Date().toISOString(),
+  ).run();
+  return { ok: true, created: true };
+}
+
 const sportteryApis = {
   calculator: "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c",
   results: "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1",
@@ -1966,6 +1993,7 @@ async function createAutoLocks(db, matches, capturedAt) {
 }
 
 async function autoReviewMatch(db, matchId) {
+  const matchRecord = await ensureMatchForStoredResult(db, matchId);
   const historicalSample = await upsertCompletedMatchHistoricalSample(db, matchId);
   const locks = await db.prepare("SELECT lock_id, lock_type FROM locked_predictions WHERE match_id = ?").bind(matchId).all();
   let reviewed = 0;
@@ -1975,11 +2003,32 @@ async function autoReviewMatch(db, matchId) {
     if (created.ok || created.error === "only FINAL_LOCK can enter Case Base") reviewed += 1;
     if (created.caseId && !created.duplicated) cases += 1;
   }
-  return { reviewed, cases, historicalSample };
+  return { reviewed, cases, historicalSample, matchRecord };
 }
 
 async function reconcileCompletedSamples(db, limit = 4) {
   const safeLimit = Math.min(Math.max(Number(limit || 4), 1), 8);
+  const seeded = await db.prepare(`
+    INSERT OR IGNORE INTO matches (
+      match_id, match_code, league, home_team, away_team, kickoff_time, status, payload_json, updated_at
+    )
+    SELECT
+      mr.match_id,
+      COALESCE(json_extract(mr.payload_json, '$.issue'), json_extract(mr.payload_json, '$.no'), ''),
+      COALESCE(json_extract(mr.payload_json, '$.league'), '竞彩'),
+      COALESCE(json_extract(mr.payload_json, '$.home'), json_extract(mr.payload_json, '$.homeTeam')),
+      COALESCE(json_extract(mr.payload_json, '$.away'), json_extract(mr.payload_json, '$.awayTeam')),
+      TRIM(COALESCE(json_extract(mr.payload_json, '$.matchDate'), json_extract(mr.payload_json, '$.ticaiDate'), json_extract(mr.payload_json, '$.date'), '') || ' ' || COALESCE(json_extract(mr.payload_json, '$.kickoffTime'), '')),
+      'FINISHED',
+      mr.payload_json,
+      COALESCE(mr.updated_at, CURRENT_TIMESTAMP)
+    FROM match_results mr
+    LEFT JOIN matches m ON m.match_id = mr.match_id
+    WHERE m.match_id IS NULL
+      AND COALESCE(json_extract(mr.payload_json, '$.home'), json_extract(mr.payload_json, '$.homeTeam'), '') <> ''
+      AND COALESCE(json_extract(mr.payload_json, '$.away'), json_extract(mr.payload_json, '$.awayTeam'), '') <> ''
+    LIMIT 500
+  `).run();
   const rows = await db.prepare(`
     SELECT DISTINCT mr.match_id
     FROM match_results mr
@@ -2012,7 +2061,16 @@ async function reconcileCompletedSamples(db, limit = 4) {
     if (result.historicalSample?.stored) historicalSamples += 1;
     else skipped.push({ matchId: row.match_id, reason: result.historicalSample?.reason || "unknown" });
   }
-  return { ok: true, scanned: rows.results?.length || 0, reviewed, cases, historicalSamples, skipped, batchLimit: safeLimit };
+  return {
+    ok: true,
+    seededMatches: Number(seeded?.meta?.changes || seeded?.changes || 0),
+    scanned: rows.results?.length || 0,
+    reviewed,
+    cases,
+    historicalSamples,
+    skipped,
+    batchLimit: safeLimit,
+  };
 }
 
 function sportteryResultRowsFromPages(resultPages = []) {
