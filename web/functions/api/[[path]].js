@@ -147,7 +147,7 @@ function normalizeCompetition(value = "") {
 }
 
 function has(...values) {
-  return values.every((value) => Number.isFinite(Number(value)));
+  return values.every((value) => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)));
 }
 
 function addPart(parts, key, score) {
@@ -215,6 +215,7 @@ function scoreLabel(row) {
 }
 
 function handicapResult(row) {
+  if (row.asianHandicap === null || row.asianHandicap === undefined || row.asianHandicap === "") return "";
   const home = Number(row.actualHomeGoals);
   const away = Number(row.actualAwayGoals);
   const line = Number(row.asianHandicap);
@@ -317,9 +318,107 @@ function downgradeAdvice(s, warningFlags) {
   return { downgrade: false, level: "维持", reason: s.samplePolicyNote || "暂无触发降级条件。" };
 }
 
-async function listCases(db) {
-  const { results } = await db.prepare("SELECT * FROM case_base ORDER BY created_at DESC LIMIT 500").all();
+async function listCases(db, options = {}) {
+  const limit = Math.min(Math.max(Number(options.limit || 500), 1), 500);
+  const league = String(options.league || "").trim();
+  const statement = league
+    ? db.prepare("SELECT * FROM case_base WHERE league = ? AND data_quality IN ('HIGH', 'MEDIUM') ORDER BY created_at DESC LIMIT ?").bind(league, limit)
+    : db.prepare("SELECT * FROM case_base ORDER BY created_at DESC LIMIT ?").bind(limit);
+  const { results } = await statement.all();
   return results.map(rowToCase);
+}
+
+function rowToExternalSample(row) {
+  return {
+    caseId: row.sample_id,
+    matchId: row.sample_id,
+    sampleType: "external-history",
+    modelVersion: "EXTERNAL_HISTORY",
+    source: row.source,
+    sourceUrl: row.source_url,
+    league: row.league,
+    season: row.season,
+    kickoffTime: row.kickoff_time,
+    homeTeam: row.home_team,
+    awayTeam: row.away_team,
+    sportteryHomeSp: row.sporttery_home_sp,
+    sportteryDrawSp: row.sporttery_draw_sp,
+    sportteryAwaySp: row.sporttery_away_sp,
+    euroHomeOdds: row.euro_home_odds,
+    euroDrawOdds: row.euro_draw_odds,
+    euroAwayOdds: row.euro_away_odds,
+    euroHomeProb: row.euro_home_prob,
+    euroDrawProb: row.euro_draw_prob,
+    euroAwayProb: row.euro_away_prob,
+    over25Odds: row.over25_odds,
+    under25Odds: row.under25_odds,
+    asianHandicap: row.asian_handicap,
+    asianHomeWater: row.asian_home_water,
+    asianAwayWater: row.asian_away_water,
+    dataQuality: row.data_quality,
+    actualResult: row.actual_result,
+    actualHomeGoals: row.actual_home_goals,
+    actualAwayGoals: row.actual_away_goals,
+    actualGoals: row.actual_goals,
+    score: row.score,
+  };
+}
+
+async function historicalSimilarSamples(db, current) {
+  if (!has(current.euroHomeProb, current.euroDrawProb, current.euroAwayProb) && has(current.euroHomeOdds, current.euroDrawOdds, current.euroAwayOdds)) {
+    const raw = [1 / Number(current.euroHomeOdds), 1 / Number(current.euroDrawOdds), 1 / Number(current.euroAwayOdds)];
+    const total = raw.reduce((sum, value) => sum + value, 0);
+    current = {
+      ...current,
+      euroHomeProb: raw[0] / total,
+      euroDrawProb: raw[1] / total,
+      euroAwayProb: raw[2] / total,
+    };
+  }
+  const league = normalizeCompetition(current.league);
+  const candidateLimit = Math.min(Math.max(Number(current.candidateLimit || 300), 50), 500);
+  const threshold = Number(current.threshold ?? 65);
+  const bindings = [league];
+  const filters = ["league = ?", "data_quality IN ('HIGH', 'MEDIUM')"];
+  if (has(current.euroHomeOdds, current.euroDrawOdds, current.euroAwayOdds)) {
+    filters.push("euro_home_odds BETWEEN ? AND ?", "euro_draw_odds BETWEEN ? AND ?", "euro_away_odds BETWEEN ? AND ?");
+    bindings.push(
+      Number(current.euroHomeOdds) - 1.25, Number(current.euroHomeOdds) + 1.25,
+      Number(current.euroDrawOdds) - 1.25, Number(current.euroDrawOdds) + 1.25,
+      Number(current.euroAwayOdds) - 1.25, Number(current.euroAwayOdds) + 1.25,
+    );
+  }
+  if (Number.isFinite(Number(current.asianHandicap))) {
+    filters.push("asian_handicap BETWEEN ? AND ?");
+    bindings.push(Number(current.asianHandicap) - 0.75, Number(current.asianHandicap) + 0.75);
+  }
+  bindings.push(candidateLimit);
+  const query = `SELECT * FROM external_historical_samples WHERE ${filters.join(" AND ")} ORDER BY kickoff_time DESC LIMIT ?`;
+  const { results } = await db.prepare(query).bind(...bindings).all();
+  const mapped = (results || []).map(rowToExternalSample);
+  const hasCurrentMarket = has(current.euroHomeOdds, current.euroDrawOdds, current.euroAwayOdds) || has(current.sportteryHomeSp, current.sportteryDrawSp, current.sportteryAwaySp);
+  const pool = mapped
+    .map((item) => ({ ...item, similarityScore: similarity(current, item), distributionOnly: !hasCurrentMarket }))
+    .filter((item) => item.distributionOnly || item.similarityScore >= threshold)
+    .sort((a, b) => Number(a.distributionOnly) - Number(b.distributionOnly) || b.similarityScore - a.similarityScore)
+    .slice(0, Math.min(Math.max(Number(current.sampleLimit || 50), 10), 100));
+  const topCases = pool.slice(0, Math.min(Math.max(Number(current.topLimit || 5), 1), 20));
+  const summary = stats(pool, current);
+  summary.lockedSampleCount = 0;
+  summary.externalSampleCount = pool.length;
+  summary.samplePolicyLabel = pool.length >= 30 ? "参与分布校验" : summary.samplePolicyLabel;
+  summary.samplePolicyNote = pool.length >= 30
+    ? "外部历史样本只参与赛果、进球和盘口分布校验，不修正模型命中率。"
+    : summary.samplePolicyNote;
+  return {
+    ok: true,
+    sampleCount: pool.length,
+    topCases,
+    stats: summary,
+    confidenceAdjustment: 0,
+    warningFlags: pool.length < 10 ? ["同赛事外部样本不足"] : [],
+    summaryText: summary.samplePolicyNote,
+  };
 }
 
 async function ensureModelUpgradeSchema(db) {
@@ -3438,7 +3537,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
 
     if (path === "similar-cases" && request.method === "POST") {
       const current = await readJson(request);
-      const cases = await listCases(db);
+      const cases = await listCases(db, { league: normalizeCompetition(current.league), limit: 500 });
       const pool = cases
         .filter((item) => String(item.matchId) !== String(current.matchId))
         .filter((item) => normalizeCompetition(item.league) === normalizeCompetition(current.league))
@@ -3466,6 +3565,12 @@ if (path === "sync/okooo-live" && request.method === "POST") {
             ? `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%，同模型版本 ${(s.sameModelVersionHitRate * 100).toFixed(1)}%，样本只做风险提示。`
             : `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%，同联赛同盘口 ${(s.sameLeagueHandicapHitRate * 100).toFixed(1)}%。`,
       });
+    }
+
+    if (path === "historical-samples/similar" && request.method === "POST") {
+      const current = await readJson(request);
+      if (!current.league) return json({ ok: false, error: "league required" }, 400);
+      return json(await historicalSimilarSamples(db, current));
     }
 
     return json({ ok: false, error: "not found", path }, 404);

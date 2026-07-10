@@ -51,5 +51,6 @@
     generateCase: (lockId) => post("/cases/generate", { lockId }),
     runReview: (lockId) => post("/review/run", { lockId }),
     similarCases: (payload) => post("/similar-cases", payload),
+    historicalSimilarSamples: (payload) => post("/historical-samples/similar", payload),
   };
 })();

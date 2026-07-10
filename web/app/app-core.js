@@ -133,14 +133,21 @@ function showHome() {
     "odds-map-mode",
     "about-site-mode"
   );
-  document.querySelectorAll(".home-topbar nav button").forEach((button) => button.classList.remove("active"));
+  document.querySelectorAll(".home-topbar nav button").forEach((button) => {
+    button.classList.remove("active");
+    button.removeAttribute("aria-current");
+  });
   siteHome?.classList.add("active");
+  siteHome?.setAttribute("aria-current", "page");
 }
 
 function showDashboard() {
   document.body.classList.add("dashboard-mode");
   document.body.classList.remove("home-mode");
-  document.querySelectorAll(".home-topbar nav button").forEach((button) => button.classList.remove("active"));
+  document.querySelectorAll(".home-topbar nav button").forEach((button) => {
+    button.classList.remove("active");
+    button.removeAttribute("aria-current");
+  });
   const active =
     window.location.hash === "#sporttery" || window.location.hash.startsWith("#sporttery-match-")
       ? "[data-sporttery-pool]"
@@ -155,7 +162,9 @@ function showDashboard() {
             : window.location.hash === "#about"
               ? "[data-about-site]"
         : "[data-home-enter]";
-  document.querySelector(`.home-topbar ${active}`)?.classList.add("active");
+  const activeNavButton = document.querySelector(`.home-topbar ${active}`);
+  activeNavButton?.classList.add("active");
+  activeNavButton?.setAttribute("aria-current", "page");
 }
 
 function parseScore(score) {

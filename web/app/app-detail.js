@@ -162,9 +162,15 @@ function activateTab(tabName) {
   document.body.classList.toggle("model-stats-mode", tabName === "model-stats");
   document.body.classList.toggle("odds-map-mode", tabName === "odds-map");
   document.body.classList.toggle("about-site-mode", tabName === "about-site");
-  tabs.forEach((item) => item.classList.remove("active"));
+  tabs.forEach((item) => {
+    item.classList.remove("active");
+    item.setAttribute("aria-selected", "false");
+  });
   panels.forEach((item) => item.classList.remove("active-panel"));
-  if (targetTab) targetTab.classList.add("active");
+  if (targetTab) {
+    targetTab.classList.add("active");
+    targetTab.setAttribute("aria-selected", "true");
+  }
   targetPanel.classList.add("active-panel");
   requestAnimationFrame(function(){
     var items = targetPanel.querySelectorAll(".match-card, .insight-card, .bar-row, .hist-row, .score-table > div, .home-research-grid > article");
@@ -889,110 +895,13 @@ function runtimeCaseBase() {
   return refreshRuntimeCaseBase();
 }
 
-let externalHistoricalSamplesLoading = null;
 let leagueProfilesLoading = null;
-const EXTERNAL_HISTORICAL_SAMPLE_SCRIPTS = [
-  "./data/externalHistoricalSamples.js?v=202607032000",
-  "./data/externalHistoricalSamplesBig5England.js?v=202607032000",
-  "./data/externalHistoricalSamplesBig5Spain.js?v=202607032000",
-  "./data/externalHistoricalSamplesBig5Germany.js?v=202607032000",
-  "./data/externalHistoricalSamplesBig5Italy.js?v=202607032000",
-  "./data/externalHistoricalSamplesBig5France.js?v=202607032000",
-];
-
-function ensureExternalHistoricalSamplesLoaded(callback) {
-  if (window.WC_EXTERNAL_HISTORICAL_SAMPLES_READY && Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES)) {
-    if (typeof callback === "function") callback();
-    return Promise.resolve(true);
-  }
-  if (!externalHistoricalSamplesLoading) {
-    const loadScript = (src) => new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = src;
-      script.async = true;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-    externalHistoricalSamplesLoading = EXTERNAL_HISTORICAL_SAMPLE_SCRIPTS
-      .reduce((promise, src) => promise.then((ok) => (ok ? loadScript(src) : false)), Promise.resolve(true))
-      .then((loaded) => {
-        window.WC_EXTERNAL_HISTORICAL_SAMPLES_READY = Boolean(loaded && Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES));
-        return window.WC_EXTERNAL_HISTORICAL_SAMPLES_READY;
-      });
-  }
-  return externalHistoricalSamplesLoading.then((loaded) => {
-    if (loaded && typeof callback === "function") callback();
-    return loaded;
-  });
-}
-
-function historicalSampleKey(item = {}) {
-  return [
-    item.caseId,
-    item.source,
-    item.league,
-    item.season,
-    item.kickoffTime,
-    item.homeTeam,
-    item.awayTeam,
-  ].filter(Boolean).join("|");
-}
-
-function mergeFirecrawlHistoricalOdds(samples = []) {
-  if (!Array.isArray(samples) || !samples.length) return false;
-  const current = Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES) ? window.WC_EXTERNAL_HISTORICAL_SAMPLES : [];
-  const byKey = new Map(current.map((item) => [historicalSampleKey(item), item]));
-  let changed = false;
-  samples.forEach((item) => {
-    const directKey = item.caseId ? [...byKey.keys()].find((key) => key.startsWith(`${item.caseId}|`) || key === item.caseId) : "";
-    const key = directKey || historicalSampleKey(item);
-    const old = byKey.get(key);
-    if (!old) {
-      byKey.set(key, item);
-      changed = true;
-      return;
-    }
-    const merged = {
-      ...old,
-      sportteryHomeSp: old.sportteryHomeSp || item.sportteryHomeSp,
-      sportteryDrawSp: old.sportteryDrawSp || item.sportteryDrawSp,
-      sportteryAwaySp: old.sportteryAwaySp || item.sportteryAwaySp,
-      euroHomeOdds: old.euroHomeOdds || item.euroHomeOdds,
-      euroDrawOdds: old.euroDrawOdds || item.euroDrawOdds,
-      euroAwayOdds: old.euroAwayOdds || item.euroAwayOdds,
-      over25Odds: old.over25Odds || item.over25Odds,
-      under25Odds: old.under25Odds || item.under25Odds,
-      asianHandicap: old.asianHandicap ?? item.asianHandicap,
-      asianHomeWater: old.asianHomeWater || item.asianHomeWater,
-      asianAwayWater: old.asianAwayWater || item.asianAwayWater,
-      bookmakerCount1x2: old.bookmakerCount1x2 || item.bookmakerCount1x2,
-      bookmakerCountTotal: old.bookmakerCountTotal || item.bookmakerCountTotal,
-      firecrawlOdds: item,
-    };
-    byKey.set(key, merged);
-    changed = true;
-  });
-  if (!changed) return false;
-  window.WC_EXTERNAL_HISTORICAL_SAMPLES = [...byKey.values()];
-  window.WC_EXTERNAL_HISTORICAL_SAMPLES_READY = true;
-  runtimeCaseBaseCache = null;
-  return true;
-}
 
 async function loadFirecrawlEnrichmentData({ rerender = false } = {}) {
   let changed = false;
   try {
     await loadFreshScript("./data/firecrawlObjectiveContext.js");
     if (window.WC_FIRECRAWL_OBJECTIVE_CONTEXT?.matches?.length) changed = true;
-  } catch {}
-  try {
-    await loadFreshScript("./data/firecrawlHistoricalOdds.js");
-    const rows = window.WC_FIRECRAWL_HISTORICAL_ODDS?.samples || [];
-    if (rows.length) {
-      await ensureExternalHistoricalSamplesLoaded();
-      if (mergeFirecrawlHistoricalOdds(rows)) changed = true;
-    }
   } catch {}
   if (changed && rerender) renderCurrentRouteSurfaces();
   return changed;
@@ -1244,21 +1153,46 @@ function writeSportteryLockToD1(key, button) {
   return writePredictionLockToD1(pred, item, button);
 }
 
+const historicalSimilarResultCache = new Map();
+const historicalSimilarPending = new Map();
+
+function historicalSimilarKey(lock = {}) {
+  return [lock.matchId, lock.league, lock.sportteryHomeSp, lock.sportteryDrawSp, lock.sportteryAwaySp, lock.asianHandicap].join("|");
+}
+
+function requestHistoricalSimilarSamples(lock, match) {
+  if (!window.WC_CLOUD_STORE?.historicalSimilarSamples) return;
+  const key = historicalSimilarKey(lock);
+  if (historicalSimilarResultCache.has(key) || historicalSimilarPending.has(key)) return;
+  const pending = window.WC_CLOUD_STORE.historicalSimilarSamples({ ...lock, sampleLimit: 50, topLimit: 5 })
+    .then((result) => {
+      historicalSimilarResultCache.set(key, result?.ok ? result : { ok: false, sampleCount: 0, topCases: [], stats: {} });
+      const hash = window.location.hash || "";
+      const worldCup = hash.match(/^#match-(.+)$/);
+      const sporttery = hash.match(/^#sporttery-match-(.+)$/);
+      if (worldCup) renderMatchDetail(worldCup[1]);
+      if (sporttery) renderSportteryMatchDetail(decodeURIComponent(sporttery[1]));
+      return result;
+    })
+    .catch(() => historicalSimilarResultCache.set(key, { ok: false, sampleCount: 0, topCases: [], stats: {} }))
+    .finally(() => historicalSimilarPending.delete(key));
+  historicalSimilarPending.set(key, pending);
+}
+
 function renderSimilarCasePanel(pred, match) {
   if (!pred || !match || !window.WC_SIMILAR_CASE_ENGINE) return "";
   const lock = lockFromPrediction(pred, match);
   if (!lock) return "";
-  const externalReady = Array.isArray(window.WC_EXTERNAL_HISTORICAL_SAMPLES);
-  if (!externalReady) {
-    ensureExternalHistoricalSamplesLoaded(() => {
-      const hash = window.location.hash || "";
-      const currentWorldCup = hash.match(/^#match-(.+)$/);
-      const currentSporttery = hash.match(/^#sporttery-match-(.+)$/);
-      if (currentWorldCup) renderMatchDetail(currentWorldCup[1]);
-      if (currentSporttery) renderSportteryMatchDetail(decodeURIComponent(currentSporttery[1]));
-    });
+  const cacheKey = historicalSimilarKey(lock);
+  const result = historicalSimilarResultCache.get(cacheKey);
+  if (!result) {
+    requestHistoricalSimilarSamples(lock, match);
+    return `
+      <section class="match-page-section similar-case-panel">
+        <span>相似盘口历史样本</span>
+        <p class="similar-case-summary-text">正在从D1按联赛和盘口区间查询，页面不再下载完整历史库。</p>
+      </section>`;
   }
-  const result = window.WC_SIMILAR_CASE_ENGINE.findSimilarCases(lock, runtimeCaseBase());
   const stats = result.stats || {};
   const pct = (value) => `${((Number(value) || 0) * 100).toFixed(1)}%`;
   const distText = (rows = [], empty = "等待样本") =>

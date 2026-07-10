@@ -7,6 +7,7 @@
     "history:import-api": "node tools/import-free-history-api.mjs",
     "history:import-api-football": "node tools/import-api-football-history.mjs",
     "history:import-football-data": "node tools/import-football-data-history.mjs",
+    "history:export-d1": "node tools/export-external-history-d1-sql.mjs",
     "history:import-footiqo": "node tools/import-footiqo-history.mjs",
     "live-scores:fetch": "node tools/fetch-live-football-scores.mjs",
     "sporttery:auto-deploy": "node tools/auto-update-and-deploy.mjs",
@@ -16,6 +17,7 @@
     "deploy:pages": "node scripts/cloudflare-pages.mjs deploy",
     "d1:migrate": "wrangler d1 execute worldcup-case-base --file migrations/0001_case_base_schema.sql --remote",
     "d1:migrate:upgrade-notes": "wrangler d1 execute worldcup-case-base --file migrations/0003_model_upgrade_notes.sql --remote",
+    "d1:migrate:external-history": "wrangler d1 execute worldcup-case-base --file migrations/0004_external_historical_samples.sql --remote",
     "api:health": "curl -s https://worldcup-dashboard-4hr.pages.dev/api/health"
   },
   "devDependencies": {
