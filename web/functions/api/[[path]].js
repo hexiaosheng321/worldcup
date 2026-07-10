@@ -2673,12 +2673,17 @@ async function fetchOkoooJczqMatches(env) {
   if (!response.ok) throw new Error(`OKOOO ${response.status}: ${text.slice(0, 200)}`);
   return parseOkoooJczqMatches(text);
 }
-async function syncOkoooMatchesToD1(db, env) {
+async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
   const capturedAt = new Date().toISOString();
-  const [okoooMatches, calculatorRaw] = await Promise.all([
-    fetchOkoooJczqMatches(env),
-    fetchSportteryJson(env, sportteryApis.calculator),
-  ]);
+  const okoooMatches = await fetchOkoooJczqMatches(env);
+  let calculatorRaw = suppliedCalculatorRaw;
+  if (!calculatorRaw) {
+    try {
+      calculatorRaw = await fetchSportteryJson(env, sportteryApis.calculator);
+    } catch {
+      calculatorRaw = null;
+    }
+  }
   const officialByOrderId = new Map(
     (calculatorRaw?.value?.matchInfoList || []).flatMap((day) =>
       (day.subMatchList || []).map((match) => {
@@ -3595,7 +3600,8 @@ export async function onRequest(context) {
   return json(await debugOkoooJczq(env));
 }
 if (path === "sync/okooo-live" && request.method === "POST") {
-  return json(await syncOkoooMatchesToD1(db, env));
+  const body = await readJson(request);
+  return json(await syncOkoooMatchesToD1(db, env, body.calculatorRaw || body.calculator || null));
 }
     if (path === "sync/okooo-results" && request.method === "POST") {
       return json(await syncOkoooResultsToD1(db, env));

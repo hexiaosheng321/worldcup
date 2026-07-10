@@ -132,10 +132,14 @@ const kickoffSourceMarkers = [
   "salesCloseTime",
   'kickoffSource: official ? "sporttery-official" : "pending-official-schedule"',
   "officialByOrderId",
+  'body.calculatorRaw || body.calculator || null',
 ];
 const missingKickoffSourceMarkers = kickoffSourceMarkers.filter((marker) => !api.includes(marker));
 if (missingKickoffSourceMarkers.length) {
   throw new Error(`Production baseline must keep sale-close and real kickoff clocks separate: ${missingKickoffSourceMarkers.join(", ")}`);
+}
+if (!sync.includes('postApi("/api/sync/okooo-live", { calculatorRaw })')) {
+  throw new Error("Production baseline requires the reachable sync runner to supply official kickoff times to OKOOO odds sync.");
 }
 
 if (!process.env.GITHUB_ACTIONS) {

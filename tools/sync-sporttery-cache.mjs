@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
+import { fetchSportteryJson } from "./sporttery-utils.mjs";
 
 const apiBase = process.env.PUBLIC_API_BASE || "https://worldcup-dashboard-4hr.pages.dev";
+const calculatorUrl = "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=c";
 
 async function snapshotMatches() {
   const source = await readFile(new URL("../web/live-sporttery-data.js", import.meta.url), "utf8");
@@ -34,7 +36,13 @@ console.log("=== 开始同步（优先 Okooo） ===");
 
 // D1 必须先有比赛主记录，后续赛果才能按 matchId/orderId 自动落库。
 const snapshotSeed = await postApi("/api/sync/sporttery-snapshot", { matches: await snapshotMatches() });
-const okoooLive = await postApi("/api/sync/okooo-live");
+let calculatorRaw = null;
+try {
+  calculatorRaw = await fetchSportteryJson(calculatorUrl);
+} catch (error) {
+  console.warn(`体彩官方赛程读取失败，OKOOO赔率仍同步但不使用停售时间作为开球时间：${error.message}`);
+}
+const okoooLive = await postApi("/api/sync/okooo-live", { calculatorRaw });
 const okoooResults = await postApi("/api/sync/okooo-results");
 const liveFallback = await postApi("/api/sync/live-results");
 
