@@ -12,6 +12,7 @@ for (let i = 2; i < process.argv.length; i += 1) {
 
 const dataDir = path.resolve(args.get("data-dir") || "web/data");
 const output = path.resolve(args.get("output") || "/tmp/external-historical-samples.sql");
+const replace = args.get("replace") === "true";
 const files = fs.readdirSync(dataDir)
   .filter((name) => /^externalHistoricalSamples.*\.js$/.test(name))
   .sort();
@@ -72,7 +73,7 @@ const statements = [...selected.values()].map((row, index) => {
     numericSql(row.sportteryHomeSp), numericSql(row.sportteryDrawSp), numericSql(row.sportteryAwaySp),
     numericSql(row.euroHomeOdds), numericSql(row.euroDrawOdds), numericSql(row.euroAwayOdds),
     numericSql(row.euroHomeProb), numericSql(row.euroDrawProb), numericSql(row.euroAwayProb),
-    numericSql(row.over25Odds), numericSql(row.under25Odds), numericSql(row.asianHandicap), numericSql(row.asianHomeWater), numericSql(row.asianAwayWater),
+    numericSql(row.over25Odds), numericSql(row.under25Odds), numericSql(row.asianHandicap ?? row.asianHandicapLine), numericSql(row.asianHomeWater ?? row.asianHomeOdds), numericSql(row.asianAwayWater ?? row.asianAwayOdds),
     numericSql(row.bookmakerCount1x2), numericSql(row.bookmakerCountTotal), numericSql(row.bookmakerCountAsian),
     sql(text(row.dataQuality || "LOW").toUpperCase()), sql(text(row.actualResult)),
     numericSql(row.actualHomeGoals), numericSql(row.actualAwayGoals), numericSql(row.actualGoals), sql(text(row.score)),
@@ -83,5 +84,5 @@ const statements = [...selected.values()].map((row, index) => {
     columns.slice(2).map((column) => `  ${column}=excluded.${column}`).join(",\n") + ",\n  updated_at=CURRENT_TIMESTAMP;";
 });
 
-fs.writeFileSync(output, `${statements.join("\n")}\n`, "utf8");
-console.log(JSON.stringify({ inputFiles: files.length, inputRows: rows.length, dedupedRows: selected.size, output, bytes: fs.statSync(output).size }, null, 2));
+fs.writeFileSync(output, `${replace ? "DELETE FROM external_historical_samples;\n" : ""}${statements.join("\n")}\n`, "utf8");
+console.log(JSON.stringify({ inputFiles: files.length, inputRows: rows.length, dedupedRows: selected.size, replace, output, bytes: fs.statSync(output).size }, null, 2));
