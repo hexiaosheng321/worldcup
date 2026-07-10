@@ -36,6 +36,9 @@ const missingRequired = requiredMarkers.filter((marker) => !index.includes(marke
 if (missingRequired.length) {
   throw new Error(`Production baseline missing required World Cup behavior: ${missingRequired.join(", ")}`);
 }
+if (index.includes("odds-map-updated") || panels.includes("预赛日期") || panels.includes("debugPre")) {
+  throw new Error("Production baseline rejects the retired odds-map timestamp/debug row.");
+}
 if (panels.includes("review-version-strip") || panels.includes("全体彩口径")) {
   throw new Error("Production baseline rejects the retired model-version hit-rate strip.");
 }

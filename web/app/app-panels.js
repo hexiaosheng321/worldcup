@@ -2643,13 +2643,7 @@ function renderOddsMap() {
   panel?.classList.toggle("odds-map-pre-view", activeOddsMapView !== "backtest");
   renderSpBacktest(backtestRows);
   const liveCount = document.querySelector("#odds-map-live-count");
-  const updated = document.querySelector("#odds-map-updated");
   if (liveCount) liveCount.textContent = `${preRows.length} 赛前 / ${backtestRows.length} 回测`;
-  if (updated) {
-    const debugPre = preRows.length ? preRows.map(r => r.matchDate||r.ticaiDate||'?').join(',') : '无预赛';
-    const debugDate = `[今日${new Date().toISOString().slice(0,10)} 预赛日期:${debugPre}]`;
-    updated.textContent = (formatCapturedAt(spHistoryData.importedAt) || "等待 SP 历史") + debugDate;
-  }
 
   if (activeOddsMapView === "backtest") {
     cards.innerHTML = `

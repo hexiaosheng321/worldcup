@@ -7004,9 +7004,7 @@ function renderOddsMap() {
   panel?.classList.toggle("odds-map-pre-view", activeOddsMapView !== "backtest");
   renderSpBacktest(backtestRows);
   const liveCount = document.querySelector("#odds-map-live-count");
-  const updated = document.querySelector("#odds-map-updated");
   if (liveCount) liveCount.textContent = `${preRows.length} 赛前 / ${backtestRows.length} 回测`;
-  if (updated) updated.textContent = formatCapturedAt(spHistoryData.importedAt) || "等待 SP 历史";
 
   if (activeOddsMapView === "backtest") {
     cards.innerHTML = `
