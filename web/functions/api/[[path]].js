@@ -2599,6 +2599,48 @@ async function syncOkoooResultsToD1(db, env) {
   return { ok: true, capturedAt, scanned: sourceRows.length, results: resultCount, reviewed, cases, written, skipped };
 }
 
+async function syncSnapshotMatchesToD1(db, request) {
+  const capturedAt = new Date().toISOString();
+  const body = await readJson(request);
+  const matches = Array.isArray(body.matches) ? body.matches.slice(0, 500) : [];
+  let inserted = 0;
+  let existing = 0;
+  let skipped = 0;
+  for (const match of matches) {
+    if (!match?.home || !match?.away || !(match.matchId || match.orderId)) {
+      skipped += 1;
+      continue;
+    }
+    const matchId = sportteryDbMatchId(match);
+    const result = await db.prepare(`
+      INSERT INTO matches (match_id, match_code, league, home_team, away_team, kickoff_time, status, payload_json, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(match_id) DO NOTHING
+    `).bind(
+      matchId,
+      match.issue || match.no || "",
+      match.league || "竞彩",
+      match.home,
+      match.away,
+      `${match.matchDate || match.ticaiDate || ""} ${match.kickoffTime || ""}`.trim(),
+      match.statusCode || "SNAPSHOT",
+      JSON.stringify({ ...match, cloudMatchId: matchId, sourcePriority: match.sourcePriority || "snapshot-fallback" }),
+      capturedAt
+    ).run();
+    if (Number(result.meta?.changes || 0) > 0) inserted += 1;
+    else existing += 1;
+  }
+  await db.prepare(`
+    INSERT INTO sync_logs (sync_id, source, status, message, payload_json, created_at)
+    VALUES (?, 'sporttery-snapshot-seed', 'OK', 'snapshot match seed completed', ?, ?)
+  `).bind(
+    `sporttery-snapshot-${Date.now()}-${crypto.randomUUID()}`,
+    JSON.stringify({ received: matches.length, inserted, existing, skipped }),
+    capturedAt
+  ).run();
+  return { ok: true, capturedAt, received: matches.length, inserted, existing, skipped };
+}
+
 async function syncLiveFallbackToD1(db, env) {
   const capturedAt = new Date().toISOString();
   const rows = await db.prepare(`
@@ -3297,6 +3339,9 @@ export async function onRequest(context) {
     if (path === "sync/sporttery-results" && request.method === "POST") {
       const maxPages = Math.min(Math.max(Number(url.searchParams.get("pages") || 5), 1), 10);
       return json(await syncOfficialSportteryResultsToD1(db, env, { maxPages }));
+    }
+    if (path === "sync/sporttery-snapshot" && request.method === "POST") {
+      return json(await syncSnapshotMatchesToD1(db, request));
     }
     if (path === "debug/okooo-jczq" && request.method === "GET") {
   return json(await debugOkoooJczq(env));
