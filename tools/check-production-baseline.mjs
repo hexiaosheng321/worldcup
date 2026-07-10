@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 const index = fs.readFileSync("web/index.html", "utf8");
 const main = fs.readFileSync("web/app/app-main.js", "utf8");
 const sync = fs.readFileSync("tools/sync-sporttery-cache.mjs", "utf8");
+const api = fs.readFileSync("web/functions/api/[[path]].js", "utf8");
 
 const retiredMarkers = [
   'data-tab="path"',
@@ -43,6 +44,16 @@ if (missingSyncMarkers.length) {
 const syncPositions = syncMarkers.map((marker) => sync.indexOf(marker));
 if (!syncPositions.every((position, index) => index === 0 || position > syncPositions[index - 1])) {
   throw new Error("Production baseline requires match seeding before live schedule and result synchronization.");
+}
+
+const regularTimeMarkers = [
+  'scoreMode: usesRegularTime ? "regularTime" : "fullTime"',
+  '!/extra|after|penalt|shootout|aet/i.test(status)',
+  "liveFallbackRowHasUsableScore",
+];
+const missingRegularTimeMarkers = regularTimeMarkers.filter((marker) => !api.includes(marker));
+if (missingRegularTimeMarkers.length) {
+  throw new Error(`Production baseline must preserve 90-minute result scoring: ${missingRegularTimeMarkers.join(", ")}`);
 }
 
 if (!process.env.GITHUB_ACTIONS) {

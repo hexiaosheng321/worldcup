@@ -2323,12 +2323,43 @@ function parseOkoooTime(value = "") {
   return `${found[1].padStart(2, "0")}:${found[2]}`;
 }
 
+function okoooPlainText(value = "") {
+  return String(value)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function okoooCalendarDate(monthDay = "") {
+  const found = String(monthDay).match(/(\d{1,2})-(\d{1,2})/);
+  if (!found) return "";
+  const now = new Date(Date.now() + BJT_OFFSET_MS);
+  const month = Number(found[1]);
+  let year = now.getUTCFullYear();
+  const currentMonth = now.getUTCMonth() + 1;
+  if (currentMonth === 1 && month === 12) year -= 1;
+  if (currentMonth === 12 && month === 1) year += 1;
+  return `${year}-${String(month).padStart(2, "0")}-${found[2].padStart(2, "0")}`;
+}
+
 function parseOkoooJczqMatches(html = "") {
   const objectText = extractAssignedObject(html, "var oddsData");
   if (!objectText) throw new Error("OKOOO oddsData not found");
 
   const oddsData = JSON.parse(objectText);
   const capturedAt = new Date().toISOString();
+
+  const dayMarkers = [];
+  const dayPattern = /listtop-new[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/g;
+  let dayMatch;
+  while ((dayMatch = dayPattern.exec(html))) {
+    const date = okoooCalendarDate(okoooPlainText(dayMatch[1]).match(/\d{1,2}-\d{1,2}/)?.[0] || "");
+    if (date) dayMarkers.push({ index: dayMatch.index, date });
+  }
 
   return Object.entries(oddsData).flatMap(([orderId, item]) => {
     const result = item?.Result || {};
@@ -2341,72 +2372,38 @@ function parseOkoooJczqMatches(html = "") {
     if (hasFinished) return [];
 
     const boundary = item?.Boundary || {};
-    const odds = item?.Odds || item?.odds || {};
-    const base = item?.Base || item?.Match || item || {};
+    const odds = item?.OddsList || item?.Odds || item?.odds || {};
+    const marker = `<div id="match_${orderId}"`;
+    const markerIndex = html.indexOf(marker);
+    if (markerIndex < 0) return [];
+    const previousMatch = html.lastIndexOf("jsMatchItem", markerIndex);
+    const nextMatch = html.indexOf("jsMatchItem", markerIndex + marker.length);
+    const block = html.slice(Math.max(0, previousMatch - 300), nextMatch > markerIndex ? nextMatch : markerIndex + 5000);
+    const latestDay = dayMarkers.filter((entry) => entry.index < markerIndex).at(-1)?.date || "";
 
-    const home =
-      base.HomeTeamName ||
-      base.HomeName ||
-      base.HomeTeam ||
-      item.HomeTeamName ||
-      item.HomeName ||
-      item.HomeTeam ||
-      "";
-
-    const away =
-      base.AwayTeamName ||
-      base.AwayName ||
-      base.AwayTeam ||
-      item.AwayTeamName ||
-      item.AwayName ||
-      item.AwayTeam ||
-      "";
+    const capture = (pattern) => okoooPlainText(block.match(pattern)?.[1] || "");
+    const home = capture(/class="ctrl_homename"[^>]*>([\s\S]*?)<\/em>/i);
+    const away = capture(/class="ctrl_awayname"[^>]*>([\s\S]*?)<\/em>/i);
+    const league = capture(/class="liansai"[^>]*>([\s\S]*?)<\/a>/i) || "竞彩";
+    const kickoffTime = capture(/class="timetxt"[^>]*>([\s\S]*?)<\/time>/i) || "00:00";
+    const matchId = block.match(/matchid="(\d+)"/i)?.[1] || block.match(/MatchID=(\d+)/i)?.[1] || `okooo-${orderId}`;
+    const issueText = capture(/class="xuhao"[^>]*>([\s\S]*?)<\/p>/i);
+    const no = String(orderId).slice(-3).padStart(3, "0");
+    const issue = issueText || no;
 
     if (!home || !away) return [];
-
-    const league =
-      base.LeagueName ||
-      base.League ||
-      item.LeagueName ||
-      item.League ||
-      "竞彩";
-
-    const rawDate =
-      base.MatchDate ||
-      base.MatchTime ||
-      base.StartTime ||
-      item.MatchDate ||
-      item.MatchTime ||
-      item.StartTime ||
-      "";
-
-    const rawTime =
-      base.MatchTime ||
-      base.StartTime ||
-      item.MatchTime ||
-      item.StartTime ||
-      "";
-
-    const matchDate = parseOkoooDate(rawDate) || parseOkoooDate(rawTime);
-    const kickoffTime = parseOkoooTime(rawTime) || "00:00";
-
-    const { no, issue } = normalizeOkoooIssue(orderId);
-
-    const normal =
-      odds.Had || odds.had || odds["胜平负"] || item.Had || item.had || null;
-
-    const handicapOdds =
-      odds.Hhad || odds.hhad || odds["让球胜平负"] || item.Hhad || item.hhad || null;
+    const normal = odds.SportteryNWDL || null;
+    const handicapOdds = odds.SportteryWDL || null;
 
     const match = {
       orderId: String(orderId),
       issue,
       no,
-      ticaiDate: matchDate,
-      matchDate,
+      ticaiDate: latestDay,
+      matchDate: latestDay,
       kickoffTime,
       league,
-      matchId: `okooo-${orderId}`,
+      matchId,
       home,
       away,
       venue: "",
@@ -2420,19 +2417,19 @@ function parseOkoooJczqMatches(html = "") {
         "0"
       ),
       normal: normal ? {
-        win: oddText(normal.HomeWin || normal.Win || normal.H || normal.h),
-        draw: oddText(normal.Draw || normal.D || normal.d),
-        lose: oddText(normal.AwayWin || normal.Lose || normal.A || normal.a),
+        win: oddText(normal["14"] || normal.HomeWin || normal.Win || normal.H || normal.h),
+        draw: oddText(normal["15"] || normal.Draw || normal.D || normal.d),
+        lose: oddText(normal["16"] || normal.AwayWin || normal.Lose || normal.A || normal.a),
       } : null,
       handicapOdds: handicapOdds ? {
-        win: oddText(handicapOdds.HomeWin || handicapOdds.Win || handicapOdds.H || handicapOdds.h),
-        draw: oddText(handicapOdds.Draw || handicapOdds.D || handicapOdds.d),
-        lose: oddText(handicapOdds.AwayWin || handicapOdds.Lose || handicapOdds.A || handicapOdds.a),
+        win: oddText(handicapOdds["10"] || handicapOdds.HomeWin || handicapOdds.Win || handicapOdds.H || handicapOdds.h),
+        draw: oddText(handicapOdds["11"] || handicapOdds.Draw || handicapOdds.D || handicapOdds.d),
+        lose: oddText(handicapOdds["13"] || handicapOdds.AwayWin || handicapOdds.Lose || handicapOdds.A || handicapOdds.a),
       } : null,
       scoreOdds: [],
       totalGoalsOdds: [],
       updatedAt: capturedAt,
-      sportteryKey: `okooo-${orderId}`,
+      sportteryKey: matchId,
       source: "okooo-jczq",
     };
 
