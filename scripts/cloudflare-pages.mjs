@@ -19,7 +19,7 @@ const env = {
 const argsByMode = {
   login: ["wrangler", "login"],
   whoami: ["wrangler", "whoami"],
-  deploy: ["wrangler", "pages", "deploy", "web", "--project-name", "worldcup-dashboard"],
+  deploy: ["wrangler", "pages", "deploy", "web", "--project-name", "worldcup-dashboard", "--branch", "main", "--commit-dirty=true"],
 };
 
 if (!argsByMode[mode]) {
