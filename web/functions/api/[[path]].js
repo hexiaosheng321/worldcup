@@ -650,6 +650,15 @@ async function createCaseForLock(db, lockId) {
   const lock = await db.prepare("SELECT * FROM locked_predictions WHERE lock_id = ?").bind(lockId).first();
   if (!lock) return { ok: false, status: 404, error: "lock not found" };
   if (lock.lock_type !== "FINAL_LOCK") return { ok: false, status: 400, error: "only FINAL_LOCK can enter Case Base" };
+  const preferred = await db.prepare(`
+    SELECT lock_id FROM locked_predictions
+    WHERE match_id = ? AND lock_type = 'FINAL_LOCK'
+    ORDER BY locked_at DESC
+    LIMIT 1
+  `).bind(lock.match_id).first();
+  if (preferred?.lock_id !== lock.lock_id) {
+    return { ok: false, status: 409, error: "only the preferred FINAL_LOCK can enter Case Base" };
+  }
   const result = await db.prepare("SELECT * FROM match_results WHERE match_id = ?").bind(lock.match_id).first();
   if (!result) return { ok: false, status: 400, error: "result not found" };
   const existing = await db.prepare("SELECT case_id FROM case_base WHERE source_lock_id = ?").bind(lock.lock_id).first();

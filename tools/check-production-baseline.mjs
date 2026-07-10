@@ -84,6 +84,10 @@ const unifiedPredictionMarkers = [
   "model-runs",
   "tenStepResult",
   "backtestContract",
+  "LESSONS_2026-07-10",
+  "counterScriptDiverges",
+  "drawOverrideJustified",
+  "recentFormFresh",
 ];
 const missingUnifiedPredictionMarkers = unifiedPredictionMarkers.filter((marker) => !unifiedEngine.includes(marker) && !unifiedRunner.includes(marker) && !api.includes(marker));
 if (missingUnifiedPredictionMarkers.length) {
@@ -91,6 +95,9 @@ if (missingUnifiedPredictionMarkers.length) {
 }
 for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "conflicts with mainScore mapping"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing mandatory FINAL_LOCK gate: ${marker}`);
+}
+if (!api.includes("only the preferred FINAL_LOCK can enter Case Base")) {
+  throw new Error("Production baseline requires one official Case per preferred FINAL_LOCK.");
 }
 const syncPositions = syncMarkers.map((marker) => sync.indexOf(marker));
 if (!syncPositions.every((position, index) => index === 0 || position > syncPositions[index - 1])) {

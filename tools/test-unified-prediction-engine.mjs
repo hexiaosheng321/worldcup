@@ -7,12 +7,13 @@ const research = Object.fromEntries(RESEARCH_KEYS.map((key) => [key, {
   evidenceGrade: "A",
   summary: `这是用于验证统一推演门禁的${key}完整赛前证据摘要。`,
   capturedAt,
+  observedAt: capturedAt,
   sources: [{ title: "Test evidence", url: "https://example.com/evidence" }],
   impact: { home: 0.01, draw: 0, away: -0.01, xgHome: 0.05, xgAway: -0.05 },
 }]));
 const samples = Array.from({ length: 40 }, (_, index) => ({
   league: "韩职",
-  kickoffTime: `2026-06-${String(index + 1).padStart(2, "0")}`,
+  kickoffTime: `2026-06-${String(20 + (index % 11)).padStart(2, "0")}`,
   homeTeam: index % 2 ? "主队" : "客队",
   awayTeam: index % 2 ? "对手甲" : "对手乙",
   actualHomeGoals: 1 + (index % 2),
@@ -37,6 +38,8 @@ assert.equal(final.lockType, "FINAL_LOCK");
 assert.deepEqual(final.gateResult.blockers, []);
 assert.equal(final.tenStepResult.steps.length, 10);
 assert.equal(final.tenStepResult.passed, true);
+assert.equal(final.modelLessons.counterScriptDiverges, true);
+assert.notEqual(final.scenarioSet[0].score.split("-")[0] > final.scenarioSet[0].score.split("-")[1], final.scenarioSet[1].score.split("-")[0] > final.scenarioSet[1].score.split("-")[1]);
 
 const blocked = runUnifiedPrediction({ ...context, research: { ...research, injuries: { status: "MISSING" } } }, { lockType: "FINAL_LOCK" });
 assert.equal(blocked.lockType, "PRE_LOCK");
