@@ -2492,6 +2492,35 @@ function normalizeOkoooIssue(orderId = "") {
   return { no, issue: no };
 }
 
+const okoooScoreOptionMap = {
+  30: "1:0", 31: "2:0", 32: "2:1", 33: "3:0", 34: "3:1", 35: "3:2",
+  36: "4:0", 37: "4:1", 38: "4:2", 39: "5:0", 40: "5:1", 41: "5:2", 42: "胜其它",
+  43: "0:0", 44: "1:1", 45: "2:2", 46: "3:3", 47: "平其它",
+  48: "0:1", 49: "0:2", 50: "1:2", 51: "0:3", 52: "1:3", 53: "2:3",
+  54: "0:4", 55: "1:4", 56: "2:4", 57: "0:5", 58: "1:5", 59: "2:5", 60: "负其它",
+};
+
+function okoooScoreOdds(scoreMarket = {}) {
+  return Object.entries(scoreMarket)
+    .map(([key, value]) => {
+      const score = okoooScoreOptionMap[key];
+      if (!score || !oddText(value)) return null;
+      const matched = score.match(/^(\d+):(\d+)$/);
+      const bucket = matched ? sportteryScoreBucket(Number(matched[1]), Number(matched[2])) : score[0];
+      return { score, odds: oddText(value), bucket };
+    })
+    .filter(Boolean)
+    .sort((left, right) => Number(left.odds) - Number(right.odds))
+    .slice(0, 12);
+}
+
+function okoooTotalGoalsOdds(totalGoalsMarket = {}) {
+  return Array.from({ length: 8 }, (_, index) => {
+    const value = totalGoalsMarket[String(index).padStart(2, "0")];
+    return oddText(value) ? { goals: index === 7 ? "7+" : String(index), odds: oddText(value) } : null;
+  }).filter(Boolean);
+}
+
 function parseOkoooDate(value = "") {
   const text = String(value || "");
   const found = text.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
@@ -2593,6 +2622,7 @@ function parseOkoooJczqMatches(html = "") {
       statusCode: "Selling",
       score: "",
       handicap: normalizeOkoooHandicap(
+        boundary.SportteryWDL ||
         boundary.Handicap ||
         boundary.GoalLine ||
         item.Handicap ||
@@ -2612,8 +2642,8 @@ function parseOkoooJczqMatches(html = "") {
         draw: oddText(handicapOdds["11"] || handicapOdds.Draw || handicapOdds.D || handicapOdds.d),
         lose: oddText(handicapOdds["10"] || handicapOdds.AwayWin || handicapOdds.Lose || handicapOdds.A || handicapOdds.a),
       } : null,
-      scoreOdds: [],
-      totalGoalsOdds: [],
+      scoreOdds: okoooScoreOdds(odds.SportteryScore || {}),
+      totalGoalsOdds: okoooTotalGoalsOdds(odds.SportteryTotalGoals || {}),
       updatedAt: capturedAt,
       sportteryKey: matchId,
       source: "okooo-jczq",

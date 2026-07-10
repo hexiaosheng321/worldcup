@@ -104,6 +104,9 @@ const okoooDirectionMarkers = [
   'normal["14"]',
   'handicapOdds["13"]',
   'handicapOdds["10"]',
+  "boundary.SportteryWDL",
+  "okoooScoreOptionMap",
+  "okoooTotalGoalsOdds",
 ];
 const missingOkoooDirectionMarkers = okoooDirectionMarkers.filter((marker) => !api.includes(marker));
 if (missingOkoooDirectionMarkers.length) {
