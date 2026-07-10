@@ -45,12 +45,12 @@ function currentRouteNeedsWorldCupStaticData() {
 
 function currentRouteNeedsCloudBootstrap() {
   const hash = window.location.hash || "";
-  return hash === "#sporttery" || hash === "#locks" || hash === "#model-stats" || hash === "#odds-map" || /^#sporttery-match-/.test(hash);
+  return hash === "#worldcup" || hash === "#worldcup-knockout" || hash === "#sporttery" || hash === "#locks" || hash === "#model-stats" || hash === "#odds-map" || /^#sporttery-match-/.test(hash);
 }
 
 function currentRouteNeedsFullCloudBootstrap() {
   const hash = window.location.hash || "";
-  return hash === "#model-stats" || hash === "#odds-map";
+  return hash === "#worldcup" || hash === "#worldcup-knockout" || hash === "#model-stats" || hash === "#odds-map";
 }
 
 tabs.forEach((tab) => {

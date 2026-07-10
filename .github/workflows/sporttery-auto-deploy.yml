@@ -47,6 +47,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify production baseline
+        run: npm run verify:production-baseline
+
       - name: Deploy website or update Sporttery data
         shell: bash
         run: |
