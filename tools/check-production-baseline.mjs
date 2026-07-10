@@ -69,6 +69,9 @@ if (!appCore.includes("const resolvedHandicap = originalHandicap || primaryHandi
 if (!appDetail.includes("handicapLine(match)")) {
   throw new Error("Production baseline requires full fixture identity for detail-page handicap lookup.");
 }
+if (appDetail.includes("renderProjectionFlowGrid") || appDetail.includes('class="match-page-section projection-flow"')) {
+  throw new Error("Production baseline rejects the duplicate pre-summary projection flow grid.");
+}
 if (appDetail.includes("handicapLine(match.no)")) {
   throw new Error("Production baseline rejects repeated three-digit match numbers as detail-page handicap identity.");
 }

@@ -3202,39 +3202,6 @@ function renderProjectionDecisionDeck(match, pred, filter, options = {}) {
   `;
 }
 
-function renderProjectionFlowGrid(pred, filter, options = {}) {
-  const scorePick = projectionScorePick(pred, options.scorePick);
-  const totalPick = pred?.totalGoalsPick || options.totalPick || "-";
-  const cards = [
-    ["概率底盘", firstModelText(probabilityBaselineText(pred), unifiedStepText(pred, 1)), pred?.poisson ? `泊松比分簇：${pred.poisson}` : ""],
-    ["盘口偏差", firstModelText(pred?.marketGap, pred?.institutionLine, options.marketGap, unifiedStepText(pred, 5)), "赔率预期与比赛脚本是否同向"],
-    ["比赛脚本", firstModelText(pred?.script, options.script, unifiedStepText(pred, 7)), "优先看第一球、半场状态和节奏转移"],
-    ["赛事权重", firstModelText(pred?.groupSituation, pred?.pathMotive, filter?.favoriteIntent, unifiedStepText(pred, 2)), "积分、出线收益、赛程动机和必要性"],
-    ["对位/近况", firstModelText(pred?.recentAnalysis, pred?.teamState, pred?.styleMatchup, filter?.underdogResistance, unifiedStepText(pred, 3)), "球队状态、风格对位和真实场景"],
-    ["让球闸门", firstModelText(pred?.handicapGate, filter?.lineMovement, unifiedStepText(pred, 11), `让球选择：${handicapPick(pred) || options.handicapPick || "-"}`), "单选与让球盘分开判断"],
-    ["总进球/比分", firstModelText(pred?.totalGoalsValidation, unifiedStepText(pred, 10), `总进球 ${totalPick}；比分 ${scorePick}`), pred?.scoreElimination || filter?.scoreElimination || "只保留最顺的两个比分峰值"],
-    ["风险排除", firstModelText(pred?.noiseFilter, pred?.failureMode, filter?.excludedNoise, filter?.keyFailureRisk, unifiedStepText(pred, 12)), filter?.eventRisk || "用于降级或跳过，不覆盖核心脚本"],
-  ].filter(([, value]) => Boolean(value));
-  return `
-    <section class="match-page-section projection-flow">
-      <span>推演链路</span>
-      <div class="projection-flow-grid">
-        ${cards
-          .map(
-            ([label, value, note], index) => `
-              <article>
-                <small>${String(index + 1).padStart(2, "0")} · ${label}</small>
-                <p>${compactProjectionValue(value)}</p>
-                ${note ? `<em>${compactProjectionValue(note)}</em>` : ""}
-              </article>
-            `
-          )
-          .join("")}
-      </div>
-    </section>
-  `;
-}
-
 function renderWorldCupFullProjection(match, pred, filter, odds) {
   if (!pred) {
     return `
@@ -3246,7 +3213,6 @@ function renderWorldCupFullProjection(match, pred, filter, odds) {
   }
   return `
     ${renderProjectionDecisionDeck(match, pred, filter)}
-    ${renderProjectionFlowGrid(pred, filter)}
     ${renderLeagueProfilePanel(match, pred)}
     ${renderDecisionGatePanel(match.no, pred)}
     ${renderSpRadarPanel(match.no, "detail")}
@@ -4199,13 +4165,6 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
       scorePick: research.scorePick,
       handicapPick: research.handicapPick,
       directionPick: research.directionPick,
-    })}
-    ${renderProjectionFlowGrid(modelPred, filter, {
-      totalPick: research.totalPick,
-      scorePick: research.scorePick,
-      handicapPick: research.handicapPick,
-      marketGap: research.marketNote,
-      script: research.script,
     })}
     ${renderSportteryEvidenceGate(item, modelPred, research)}
     ${renderLeagueProfilePanel(item, modelPred)}

@@ -416,47 +416,6 @@ function renderProjectionDecisionDeck(match, pred, filter, options = {}) {
   `;
 }
 
-function renderProjectionFlowGrid(pred, filter, options = {}) {
-  const scorePick = projectionScorePick(pred, options.scorePick);
-  const totalPick = pred?.totalGoalsPick || options.totalPick || "-";
-  const currentItem = options.match || options.item || null;
-  const competitionWeight = competitionWeightDetail(pred, filter, currentItem);
-  const marketOpeningReview = marketOpeningReviewText(pred, currentItem, {
-    marketGap: options.marketGap,
-    handicapPick: options.handicapPick,
-    scorePick,
-    totalPick,
-  });
-  const cards = [
-    ["当前胜平负 SP 复核", probabilityBaselineText(pred, currentItem), pred?.poisson ? `泊松比分簇：${pred.poisson}` : ""],
-    ["体彩开盘偏差", marketOpeningReview, "体彩怎么开 / 庄家视角会怎么开 / 偏差 / 防范点"],
-    ["比赛发展推演", matchDevelopmentText(pred, currentItem, { scorePick }), "两种最可能发生的比赛情况"],
-    ["赛事权重", firstModelText(competitionWeight, pred?.groupSituation, pred?.pathMotive, filter?.favoriteIntent, unifiedStepText(pred, 2)), "积分、出线收益、赛程动机和必要性"],
-    ["对位/近况", firstModelText(pred?.recentAnalysis, pred?.teamState, pred?.styleMatchup, filter?.underdogResistance, unifiedStepText(pred, 3)), "球队状态、风格对位和真实场景"],
-    ["让球闸门", firstModelText(pred?.handicapGate, filter?.lineMovement, unifiedStepText(pred, 11), `让球选择：${handicapPick(pred) || options.handicapPick || "-"}`), "单选与让球盘分开判断"],
-    ["总进球/比分", firstModelText(pred?.totalGoalsValidation, unifiedStepText(pred, 10), `总进球 ${totalPick}；比分 ${scorePick}`), pred?.scoreElimination || filter?.scoreElimination || "只保留最顺的两个比分峰值"],
-    ["风险排除", firstModelText(pred?.noiseFilter, pred?.failureMode, filter?.excludedNoise, filter?.keyFailureRisk, unifiedStepText(pred, 12)), filter?.eventRisk || "用于降级或跳过，不覆盖核心脚本"],
-  ].filter(([, value]) => Boolean(value));
-  return `
-    <section class="match-page-section projection-flow">
-      <span>推演链路</span>
-      <div class="projection-flow-grid">
-        ${cards
-          .map(
-            ([label, value, note], index) => `
-              <article>
-                <small>${String(index + 1).padStart(2, "0")} · ${label}</small>
-                <p>${compactProjectionValue(value)}</p>
-                ${note ? `<em>${compactProjectionValue(note)}</em>` : ""}
-              </article>
-            `
-          )
-          .join("")}
-      </div>
-    </section>
-  `;
-}
-
 function renderWorldCupFullProjection(match, pred, filter, odds) {
   if (!pred) {
     return `
@@ -468,7 +427,6 @@ function renderWorldCupFullProjection(match, pred, filter, odds) {
   }
   return `
     ${renderProjectionDecisionDeck(match, pred, filter)}
-    ${renderProjectionFlowGrid(pred, filter, { match })}
     ${renderLeagueProfilePanel(match, pred)}
     ${renderDecisionGatePanel(match.no, pred)}
     ${renderSpRadarPanel(match.no, "detail")}
@@ -1420,14 +1378,6 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
       scorePick: research.scorePick,
       handicapPick: research.handicapPick,
       directionPick: research.directionPick,
-    })}
-    ${renderProjectionFlowGrid(modelPred, filter, {
-      item,
-      totalPick: research.totalPick,
-      scorePick: research.scorePick,
-      handicapPick: research.handicapPick,
-      marketGap: research.marketNote,
-      script: research.script,
     })}
     ${renderSportteryEvidenceGate(item, modelPred, research)}
     ${renderLeagueProfilePanel(item, modelPred)}

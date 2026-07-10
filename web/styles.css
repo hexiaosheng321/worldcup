@@ -2781,8 +2781,7 @@ body::before {
   gap: 7px;
 }
 
-.projection-deck-head span,
-.projection-flow > span {
+.projection-deck-head span {
   color: var(--gold);
   font-size: 13px;
   font-weight: 950;
@@ -2818,8 +2817,7 @@ body::before {
   background: rgba(255, 255, 255, 0.88);
 }
 
-.projection-deck-grid small,
-.projection-flow-grid small {
+.projection-deck-grid small {
   display: block;
   margin-bottom: 6px;
   color: var(--muted);
@@ -2834,45 +2832,6 @@ body::before {
   font-weight: 950;
   line-height: 1.2;
   overflow-wrap: anywhere;
-}
-
-.projection-flow {
-  display: grid;
-  gap: 12px;
-  background: linear-gradient(180deg, #ffffff, #f8fbff);
-}
-
-.projection-flow-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.projection-flow-grid article {
-  min-width: 0;
-  padding: 14px;
-  border: 1px solid rgba(7, 60, 135, 0.18);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
-}
-
-.projection-flow-grid p {
-  margin: 0;
-  color: var(--blue);
-  font-size: 15px;
-  font-weight: 950;
-  line-height: 1.55;
-  overflow-wrap: anywhere;
-}
-
-.projection-flow-grid em {
-  display: block;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 850;
-  line-height: 1.5;
 }
 
 .final-decision-gate {
@@ -3180,7 +3139,6 @@ body::before {
   }
 
   .filter-board-grid,
-  .projection-flow-grid,
   .final-decision-grid,
   .universal-model-grid,
   .v4-step-grid,
@@ -3208,7 +3166,6 @@ body::before {
   .decision-grid,
   .filter-board-grid,
   .projection-deck-grid,
-  .projection-flow-grid,
   .final-decision-grid,
   .universal-model-grid,
   .v4-step-grid,
