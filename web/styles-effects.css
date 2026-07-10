@@ -1403,8 +1403,6 @@ body::before {
   .review-table th, .review-table td { padding: 5px 3px; }
   .review-metric { padding: 8px; }
   .review-metric strong { font-size: 18px; }
-  .review-version-strip { flex-direction: column; gap: 6px; }
-
   /* ── 盘口图谱 ── */
   .odds-map-table-wrap { overflow-x: auto; }
   .odds-map-table-wrap table { font-size: 10px; min-width: 560px; }

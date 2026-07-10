@@ -1188,41 +1188,6 @@ select {
   }
 }
 
-.review-version-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.review-version-strip article {
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fffdf4;
-  color: var(--ink);
-}
-
-.review-version-strip strong {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--red);
-  font-size: 16px;
-  font-weight: 950;
-}
-
-.review-version-strip span {
-  display: block;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 850;
-}
-
-.review-version-strip .current-version-note {
-  background: #eef6ff;
-}
-
 .attribution-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));

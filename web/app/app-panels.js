@@ -1070,20 +1070,6 @@ function renderGlobalStats() {
   const attributionRows = verifiedRows.map((row) => ({ ...row, attribution: reviewAttribution(row.pred, row.match, row) }));
   const missAttributions = attributionRows.filter((row) => row.attribution.severity !== "good");
   const competitions = new Set(allRows.map((row) => row.competition));
-  const versionStats = ["V1", "V2", "V3", "V4"]
-    .map((version) => {
-      const subset = verifiedRows.filter((row) => predictionModelVersion(row.pred) === version);
-      if (!subset.length) return null;
-      return {
-        version,
-        total: subset.length,
-        directionHits: subset.filter((row) => row.directionHit).length,
-        totalGoalsHits: subset.filter((row) => row.totalGoalsHit).length,
-        scoreHits: subset.filter((row) => row.scoreHit).length,
-      };
-    })
-    .filter(Boolean);
-
   cards.innerHTML = `
     <div class="review-summary-grid">
       <article class="review-metric"><span>已锁版场次</span><strong>${allRows.length}</strong><em>${competitions.size} 个赛事类型</em></article>
@@ -1095,24 +1081,6 @@ function renderGlobalStats() {
       <article class="review-metric"><span>A/B方向</span><strong>${adviceHits}/${adviceRows.length || 0}</strong><em>${hitRate(adviceHits, adviceRows.length)}</em></article>
       <article class="review-metric"><span>A级证据</span><strong>${mainGateRows.length}</strong><em>证据完整，不代表自动主推</em></article>
       <article class="review-metric"><span>错因样本</span><strong>${missAttributions.length}</strong><em>用于迭代模型</em></article>
-    </div>
-    <div class="review-version-strip">
-      ${versionStats
-        .map(
-          (item) => `
-            <article>
-              <strong>${item.version}</strong>
-              <span>方向 ${item.directionHits}/${item.total}（${hitRate(item.directionHits, item.total)}）</span>
-              <span>总进球 ${item.totalGoalsHits}/${item.total}（${hitRate(item.totalGoalsHits, item.total)}）</span>
-              <span>比分 ${item.scoreHits}/${item.total}（${hitRate(item.scoreHits, item.total)}）</span>
-            </article>
-          `
-        )
-        .join("")}
-      <article class="current-version-note">
-        <strong>全体彩口径</strong>
-        <span>世界杯专题和联赛模型锁版统一进入本表，但保留各自赛事模型归属。</span>
-      </article>
     </div>
     ${renderCalibrationPanel(verifiedRows)}
   `;

@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 
 const index = fs.readFileSync("web/index.html", "utf8");
 const main = fs.readFileSync("web/app/app-main.js", "utf8");
+const panels = fs.readFileSync("web/app/app-panels.js", "utf8");
 const sync = fs.readFileSync("tools/sync-sporttery-cache.mjs", "utf8");
 const api = fs.readFileSync("web/functions/api/[[path]].js", "utf8");
 const leagueContext = fs.readFileSync("tools/league-v1-context.mjs", "utf8");
@@ -33,6 +34,9 @@ const requiredMarkers = [
 const missingRequired = requiredMarkers.filter((marker) => !index.includes(marker) && !main.includes(marker));
 if (missingRequired.length) {
   throw new Error(`Production baseline missing required World Cup behavior: ${missingRequired.join(", ")}`);
+}
+if (panels.includes("review-version-strip") || panels.includes("全体彩口径")) {
+  throw new Error("Production baseline rejects the retired model-version hit-rate strip.");
 }
 
 if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v2"')) {
