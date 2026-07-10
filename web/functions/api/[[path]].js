@@ -1978,8 +1978,29 @@ async function autoReviewMatch(db, matchId) {
   return { reviewed, cases, historicalSample };
 }
 
-async function reconcileCompletedSamples(db) {
-  const rows = await db.prepare("SELECT match_id FROM match_results ORDER BY reviewed_at ASC LIMIT 1000").all();
+async function reconcileCompletedSamples(db, limit = 4) {
+  const safeLimit = Math.min(Math.max(Number(limit || 4), 1), 8);
+  const rows = await db.prepare(`
+    SELECT DISTINCT mr.match_id
+    FROM match_results mr
+    WHERE (
+      EXISTS (
+        SELECT 1 FROM odds_snapshots os
+        WHERE os.match_id = mr.match_id
+          AND os.sporttery_home_sp > 1 AND os.sporttery_draw_sp > 1 AND os.sporttery_away_sp > 1
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM external_historical_samples e
+        WHERE e.sample_id = 'completed-' || mr.match_id
+      )
+    ) OR EXISTS (
+      SELECT 1 FROM locked_predictions lp
+      LEFT JOIN case_base cb ON cb.source_lock_id = lp.lock_id
+      WHERE lp.match_id = mr.match_id AND lp.lock_type = 'FINAL_LOCK' AND cb.case_id IS NULL
+    )
+    ORDER BY mr.reviewed_at ASC
+    LIMIT ?
+  `).bind(safeLimit).all();
   let reviewed = 0;
   let cases = 0;
   let historicalSamples = 0;
@@ -1991,7 +2012,7 @@ async function reconcileCompletedSamples(db) {
     if (result.historicalSample?.stored) historicalSamples += 1;
     else skipped.push({ matchId: row.match_id, reason: result.historicalSample?.reason || "unknown" });
   }
-  return { ok: true, scanned: rows.results?.length || 0, reviewed, cases, historicalSamples, skipped };
+  return { ok: true, scanned: rows.results?.length || 0, reviewed, cases, historicalSamples, skipped, batchLimit: safeLimit };
 }
 
 function sportteryResultRowsFromPages(resultPages = []) {
@@ -3454,7 +3475,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       return json(await syncOkoooResultsToD1(db, env));
     }
     if (path === "sync/reconcile-completed-samples" && request.method === "POST") {
-      return json(await reconcileCompletedSamples(db));
+      return json(await reconcileCompletedSamples(db, url.searchParams.get("limit")));
     }
 
     if (path === "sync/live-results" && request.method === "POST") {
