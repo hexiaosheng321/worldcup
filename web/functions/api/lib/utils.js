@@ -105,9 +105,19 @@ export function evaluateLock(lock, result) {
     }
   }
   if (lock.recommendation_side === "OVER" || lock.recommendation_side === "UNDER") hitStatus = "VOID";
+  const probabilities = [Number(lock.model_home_prob), Number(lock.model_draw_prob), Number(lock.model_away_prob)];
+  const outcomeIndex = result.result_1x2 === "HOME" ? 0 : result.result_1x2 === "DRAW" ? 1 : result.result_1x2 === "AWAY" ? 2 : -1;
+  const probabilityMetrics = outcomeIndex >= 0 && probabilities.every((value) => Number.isFinite(value) && value >= 0 && value <= 1)
+    ? {
+        brierScore: Number(probabilities.reduce((sum, value, index) => sum + (value - (index === outcomeIndex ? 1 : 0)) ** 2, 0).toFixed(6)),
+        logLoss: Number((-Math.log(Math.max(1e-9, probabilities[outcomeIndex]))).toFixed(6)),
+        calibrationBin: `${Math.floor(Math.max(...probabilities) * 10) * 10}-${Math.min(100, Math.floor(Math.max(...probabilities) * 10) * 10 + 9)}%`,
+      }
+    : null;
   return {
     hitStatus,
     reviewText: hitStatus === "WIN" ? "赛前推荐命中。" : hitStatus === "LOSE" ? "赛前推荐未命中。" : "该推荐不计胜负。",
+    probabilityMetrics,
   };
 }
 

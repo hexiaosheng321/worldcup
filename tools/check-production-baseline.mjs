@@ -76,16 +76,21 @@ if (!workflow.includes('cron: "*/30 * * * *"')) {
   throw new Error("Production baseline requires 24/7 completed-match synchronization.");
 }
 const unifiedPredictionMarkers = [
-  "UNIFIED_PREDICTION_V1",
+  "UNIFIED_PREDICTION_V2",
   "preMatchResearch",
   "decisionConflictResolved",
   "handicapMapping",
   "researchTemplate",
   "model-runs",
+  "tenStepResult",
+  "backtestContract",
 ];
 const missingUnifiedPredictionMarkers = unifiedPredictionMarkers.filter((marker) => !unifiedEngine.includes(marker) && !unifiedRunner.includes(marker) && !api.includes(marker));
 if (missingUnifiedPredictionMarkers.length) {
   throw new Error(`Production baseline missing unified prediction contract: ${missingUnifiedPredictionMarkers.join(", ")}`);
+}
+for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "conflicts with mainScore mapping"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing mandatory FINAL_LOCK gate: ${marker}`);
 }
 const syncPositions = syncMarkers.map((marker) => sync.indexOf(marker));
 if (!syncPositions.every((position, index) => index === 0 || position > syncPositions[index - 1])) {

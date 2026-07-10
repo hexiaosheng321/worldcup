@@ -522,6 +522,7 @@ function caseDiagnosticPayload(lock, result, review, tags) {
     : tags.failureTags[0] || (handicapHit === false ? "让球判断偏差" : totalGoalsHit === false ? "总进球判断偏差" : scoreCovered === false ? "比分路径未覆盖" : "方向判断偏差");
   return {
     reviewText: review.reviewText,
+    probabilityMetrics: review.probabilityMetrics || null,
     failureMode,
     actualHomeGoals: result.full_time_home_goals,
     actualAwayGoals: result.full_time_away_goals,
@@ -3684,6 +3685,18 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const body = await readJson(request);
       const matchId = String(body.matchId || body.match_id || "");
       if (!matchId) return json({ ok: false, error: "matchId required" }, 400);
+      const runType = String(body.runType || body.run_type || "PRE_LOCK").toUpperCase();
+      const output = body.output || body.output_json || {};
+      if (runType === "FINAL_LOCK" && (
+        output.contractVersion !== "UNIFIED_PREDICTION_V2" ||
+        output.lockType !== "FINAL_LOCK" ||
+        output.gateResult?.passed !== true ||
+        output.tenStepResult?.passed !== true ||
+        !Array.isArray(output.tenStepResult?.steps) ||
+        output.tenStepResult.steps.length !== 10
+      )) {
+        return json({ ok: false, error: "FINAL_LOCK model run must pass the complete UNIFIED_PREDICTION_V2 ten-step contract" }, 400);
+      }
       const runId = body.runId || body.run_id || `model-run-${crypto.randomUUID()}`;
       await db.prepare(`
         INSERT INTO model_runs (run_id, match_id, model_version, run_type, input_json, output_json, created_at)
@@ -3692,9 +3705,9 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         runId,
         matchId,
         body.modelVersion || body.model_version || "V4-UNIFIED",
-        body.runType || body.run_type || "PRE_LOCK",
+        runType,
         JSON.stringify(body.input || body.input_json || {}),
-        JSON.stringify(body.output || body.output_json || {}),
+        JSON.stringify(output),
         body.createdAt || body.created_at || new Date().toISOString(),
       ).run();
       return json({ ok: true, runId });
@@ -3707,6 +3720,32 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const league = body.league || "世界杯";
       const payloadShape = lockPayloadShape(body);
       const payloadSummary = lockSummaryFromShape(payloadShape);
+      if (lockType === "FINAL_LOCK") {
+        const prediction = body.sportteryPrediction || body.prediction || body.payload?.sportteryPrediction || {};
+        const modelRunId = String(body.modelRunId || body.model_run_id || prediction.modelRunId || "");
+        if (!modelRunId) return json({ ok: false, error: "FINAL_LOCK requires modelRunId" }, 400);
+        const modelRun = await db.prepare("SELECT * FROM model_runs WHERE run_id = ?").bind(modelRunId).first();
+        if (!modelRun) return json({ ok: false, error: "linked model run not found" }, 400);
+        const runOutput = parseObject(modelRun.output_json);
+        const compactId = (value) => String(value || "").replace(/^sporttery-/, "");
+        if (compactId(modelRun.match_id) !== compactId(body.matchId || body.match_id)) {
+          return json({ ok: false, error: "model run match does not match lock match" }, 400);
+        }
+        if (modelRun.run_type !== "FINAL_LOCK" || runOutput.contractVersion !== "UNIFIED_PREDICTION_V2" || runOutput.gateResult?.passed !== true || runOutput.tenStepResult?.passed !== true) {
+          return json({ ok: false, error: "linked model run did not pass the complete ten-step FINAL_LOCK contract" }, 400);
+        }
+        const mainScore = String(prediction.mainScore || "").match(/(\d+)\D+(\d+)/);
+        const handicapPick = handicapPickFromPayload(prediction);
+        const handicap = Number(prediction.handicap ?? body.asianHandicap ?? body.asian_handicap);
+        if (!mainScore || !handicapPick || !Number.isFinite(handicap)) {
+          return json({ ok: false, error: "FINAL_LOCK requires mainScore, handicap and handicapPick for consistency validation" }, 400);
+        }
+        const adjusted = Number(mainScore[1]) + handicap - Number(mainScore[2]);
+        const mappedHandicap = adjusted > 0 ? "让胜" : adjusted < 0 ? "让负" : "让平";
+        if (mappedHandicap !== handicapPick) {
+          return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with mainScore mapping ${mappedHandicap}` }, 400);
+        }
+      }
       if (lockType === "FINAL_LOCK" && !isWorldCupLeague(league) && !hasFinalApproval(body)) {
         return json({
           ok: false,
