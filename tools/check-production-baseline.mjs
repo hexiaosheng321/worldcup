@@ -99,6 +99,17 @@ if (missingRegularTimeMarkers.length) {
   throw new Error(`Production baseline must preserve 90-minute result scoring: ${missingRegularTimeMarkers.join(", ")}`);
 }
 
+const okoooDirectionMarkers = [
+  'normal["16"]',
+  'normal["14"]',
+  'handicapOdds["13"]',
+  'handicapOdds["10"]',
+];
+const missingOkoooDirectionMarkers = okoooDirectionMarkers.filter((marker) => !api.includes(marker));
+if (missingOkoooDirectionMarkers.length) {
+  throw new Error(`Production baseline missing OKOOO home/away option mapping: ${missingOkoooDirectionMarkers.join(", ")}`);
+}
+
 if (!process.env.GITHUB_ACTIONS) {
   const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const remoteMain = execFileSync("git", ["rev-parse", "origin/main"], { encoding: "utf8" }).trim();

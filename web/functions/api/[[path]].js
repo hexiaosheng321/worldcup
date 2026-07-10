@@ -2600,14 +2600,17 @@ function parseOkoooJczqMatches(html = "") {
         "0"
       ),
       normal: normal ? {
-        win: oddText(normal["14"] || normal.HomeWin || normal.Win || normal.H || normal.h),
+        // OKOOO option ids follow the page buttons: 16=胜, 15=平, 14=负.
+        // Do not infer direction from the numeric order; that reverses every market.
+        win: oddText(normal["16"] || normal.HomeWin || normal.Win || normal.H || normal.h),
         draw: oddText(normal["15"] || normal.Draw || normal.D || normal.d),
-        lose: oddText(normal["16"] || normal.AwayWin || normal.Lose || normal.A || normal.a),
+        lose: oddText(normal["14"] || normal.AwayWin || normal.Lose || normal.A || normal.a),
       } : null,
       handicapOdds: handicapOdds ? {
-        win: oddText(handicapOdds["10"] || handicapOdds.HomeWin || handicapOdds.Win || handicapOdds.H || handicapOdds.h),
+        // Handicap buttons use 13=让胜, 11=让平, 10=让负.
+        win: oddText(handicapOdds["13"] || handicapOdds.HomeWin || handicapOdds.Win || handicapOdds.H || handicapOdds.h),
         draw: oddText(handicapOdds["11"] || handicapOdds.Draw || handicapOdds.D || handicapOdds.d),
-        lose: oddText(handicapOdds["13"] || handicapOdds.AwayWin || handicapOdds.Lose || handicapOdds.A || handicapOdds.a),
+        lose: oddText(handicapOdds["10"] || handicapOdds.AwayWin || handicapOdds.Lose || handicapOdds.A || handicapOdds.a),
       } : null,
       scoreOdds: [],
       totalGoalsOdds: [],
