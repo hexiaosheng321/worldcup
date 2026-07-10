@@ -6441,6 +6441,14 @@ body::before {
   white-space: nowrap;
 }
 
+.global-stats-table-toolbar button span {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(0, 20, 55, 0.35);
+}
+
 .global-stats-table-toolbar button:hover {
   background: #063879;
 }
