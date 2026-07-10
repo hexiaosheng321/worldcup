@@ -31,6 +31,13 @@ if (missingRequired.length) {
   throw new Error(`Production baseline missing required World Cup behavior: ${missingRequired.join(", ")}`);
 }
 
+if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v2"')) {
+  throw new Error("Production baseline requires the corrected score-cache namespace.");
+}
+if (!fs.readFileSync("web/lib/cloudStore.js", "utf8").includes('cache: options.cache || "no-store"')) {
+  throw new Error("Production baseline requires uncached Cloudflare bootstrap reads.");
+}
+
 const syncMarkers = [
   "/api/sync/sporttery-snapshot",
   "/api/sync/okooo-live",

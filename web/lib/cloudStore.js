@@ -7,6 +7,7 @@
     try {
       const response = await fetch(`${API_BASE}${path}`, {
         ...options,
+        cache: options.cache || "no-store",
         headers: {
           "content-type": "application/json",
           ...(options.headers || {}),
