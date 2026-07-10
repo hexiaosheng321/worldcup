@@ -114,7 +114,22 @@ async function main() {
 
   const runtime = process.env.GITHUB_ACTIONS ? "ci" : "local";
   await log(`${runtime} changed: ${changed.join(", ") || "forced deploy"}`);
-  await runCommand("npx", ["wrangler", "pages", "deploy", "web", "--project-name", "worldcup-dashboard"], "cloudflare deploy");
+  await runNode(["tools/check-production-baseline.mjs"], "production baseline");
+  await runCommand(
+    "npx",
+    [
+      "wrangler",
+      "pages",
+      "deploy",
+      "web",
+      "--project-name",
+      "worldcup-dashboard",
+      "--branch",
+      "main",
+      "--commit-dirty=true",
+    ],
+    "cloudflare deploy",
+  );
   await log("deploy complete");
 }
 
