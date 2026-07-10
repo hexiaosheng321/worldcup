@@ -1096,7 +1096,10 @@ function handicapLineFromPrediction(pred) {
 }
 
 function reviewHandicapLine(pred) {
-  return handicapLine(pred?.no) || handicapLineFromPrediction(pred);
+  // A three-digit Sporttery number repeats across sales days and leagues.
+  // The locked prediction's own line is authoritative; number-only lookup is
+  // fallback for legacy records that genuinely have no handicap field.
+  return handicapLineFromPrediction(pred) || handicapLine(pred?.no);
 }
 
 function handicapDirection(score, handicap) {
@@ -1120,18 +1123,20 @@ function resolvedPredictionDecision(pred, context = {}) {
   const primaryHandicap = handicapDirection(mainScore, context.handicapLine || reviewHandicapLine(pred));
   const originalPick = pred.pick || context.directionPick || "";
   const originalHandicap = handicapPick(pred) || context.handicapPick || "";
-  const resolvedPick = primaryDirection || originalPick || "";
-  const resolvedHandicap = primaryHandicap || originalHandicap || "";
+  // Never rewrite an explicit locked conclusion in the presentation layer.
+  // Score-derived values are only fallbacks for incomplete legacy records.
+  const resolvedPick = originalPick || primaryDirection || "";
+  const resolvedHandicap = originalHandicap || primaryHandicap || "";
   const conflicts = [];
   if (primaryDirection && originalPick && primaryDirection !== originalPick) {
-    conflicts.push(`胜平负由${originalPick}改为${primaryDirection}`);
+    conflicts.push(`锁版胜平负${originalPick}与主比分映射${primaryDirection}不一致`);
   }
   if (primaryHandicap && originalHandicap && primaryHandicap !== originalHandicap) {
-    conflicts.push(`让球由${originalHandicap}改为${primaryHandicap}`);
+    conflicts.push(`锁版让球${originalHandicap}与主比分映射${primaryHandicap}不一致`);
   }
   const hasConflict = conflicts.length > 0;
   const resolution = hasConflict
-    ? `冲突闸门：主比分 ${mainScore} 权重最高，${conflicts.join("，")}；反比分只保留为风险分支。`
+    ? `一致性告警：${conflicts.join("，")}；前端保留正式锁版结论，不做二次改写。`
     : pred.conflictResolution || pred.decisionGateConflict || "";
   return {
     pick: resolvedPick,

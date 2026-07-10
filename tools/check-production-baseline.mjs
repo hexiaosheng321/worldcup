@@ -41,6 +41,20 @@ if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('CLOUD_BOOTSTRAP_CA
 if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('return `${competition} 联赛 ${version} 模型`')) {
   throw new Error("Production baseline requires canonical public model names.");
 }
+const appCore = fs.readFileSync("web/app/app-core.js", "utf8");
+const appDetail = fs.readFileSync("web/app/app-detail.js", "utf8");
+if (!appCore.includes("return handicapLineFromPrediction(pred) || handicapLine(pred?.no)")) {
+  throw new Error("Production baseline requires the locked prediction handicap before any number-only fallback.");
+}
+if (!appCore.includes("const resolvedHandicap = originalHandicap || primaryHandicap")) {
+  throw new Error("Production baseline forbids presentation code from rewriting an explicit locked handicap conclusion.");
+}
+if (!appDetail.includes("handicapLine(match)")) {
+  throw new Error("Production baseline requires full fixture identity for detail-page handicap lookup.");
+}
+if (appDetail.includes("handicapLine(match.no)")) {
+  throw new Error("Production baseline rejects repeated three-digit match numbers as detail-page handicap identity.");
+}
 if (!fs.readFileSync("web/lib/cloudStore.js", "utf8").includes('cache: options.cache || "no-store"')) {
   throw new Error("Production baseline requires uncached Cloudflare bootstrap reads.");
 }

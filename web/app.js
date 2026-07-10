@@ -1029,7 +1029,7 @@ function handicapLineFromPrediction(pred) {
 }
 
 function reviewHandicapLine(pred) {
-  return handicapLine(pred?.no) || handicapLineFromPrediction(pred);
+  return handicapLineFromPrediction(pred) || handicapLine(pred?.no);
 }
 
 function handicapDirection(score, handicap) {
@@ -1053,18 +1053,18 @@ function resolvedPredictionDecision(pred, context = {}) {
   const primaryHandicap = handicapDirection(mainScore, context.handicapLine || reviewHandicapLine(pred));
   const originalPick = pred.pick || context.directionPick || "";
   const originalHandicap = handicapPick(pred) || context.handicapPick || "";
-  const resolvedPick = primaryDirection || originalPick || "";
-  const resolvedHandicap = primaryHandicap || originalHandicap || "";
+  const resolvedPick = originalPick || primaryDirection || "";
+  const resolvedHandicap = originalHandicap || primaryHandicap || "";
   const conflicts = [];
   if (primaryDirection && originalPick && primaryDirection !== originalPick) {
-    conflicts.push(`胜平负由${originalPick}改为${primaryDirection}`);
+    conflicts.push(`锁版胜平负${originalPick}与主比分映射${primaryDirection}不一致`);
   }
   if (primaryHandicap && originalHandicap && primaryHandicap !== originalHandicap) {
-    conflicts.push(`让球由${originalHandicap}改为${primaryHandicap}`);
+    conflicts.push(`锁版让球${originalHandicap}与主比分映射${primaryHandicap}不一致`);
   }
   const hasConflict = conflicts.length > 0;
   const resolution = hasConflict
-    ? `冲突闸门：主比分 ${mainScore} 权重最高，${conflicts.join("，")}；反比分只保留为风险分支。`
+    ? `一致性告警：${conflicts.join("，")}；前端保留正式锁版结论，不做二次改写。`
     : pred.conflictResolution || pred.decisionGateConflict || "";
   return {
     pick: resolvedPick,
@@ -3165,7 +3165,7 @@ function projectionScorePick(pred, fallback = "") {
 
 function renderProjectionDecisionDeck(match, pred, filter, options = {}) {
   const gate = options.gate === false ? null : match?.no ? autoDecisionGate(match.no, pred) : null;
-  const resolved = resolvedPredictionDecision(pred, { handicapLine: match ? handicapLine(match.no) : "" });
+  const resolved = resolvedPredictionDecision(pred, { handicapLine: match ? handicapLine(match) : "" });
   const scorePick = projectionScorePick(pred, options.scorePick);
   const totalPick = pred?.totalGoalsPick || options.totalPick || "-";
   const handicap = resolved?.handicapPick || handicapPick(pred) || options.handicapPick || "-";

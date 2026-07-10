@@ -377,7 +377,9 @@ function competitionWeightDetail(pred = {}, filter = {}, item = null) {
 
 function renderProjectionDecisionDeck(match, pred, filter, options = {}) {
   const gate = options.gate === false ? null : match?.no ? autoDecisionGate(match.no, pred) : null;
-  const resolved = resolvedPredictionDecision(pred, { handicapLine: match ? handicapLine(match.no) : "" });
+  // Pass the complete fixture identity. Using only `201` can resolve another
+  // league/day's repeated Sporttery number and corrupt the handicap mapping.
+  const resolved = resolvedPredictionDecision(pred, { handicapLine: match ? handicapLine(match) : "" });
   const scorePick = projectionScorePick(pred, options.scorePick);
   const totalPick = pred?.totalGoalsPick || options.totalPick || "-";
   const handicap = resolved?.handicapPick || handicapPick(pred) || options.handicapPick || "-";
