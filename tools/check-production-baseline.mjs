@@ -134,10 +134,12 @@ if (!syncWorkerConfig.includes('"*/5 * * * *"') || !syncWorker.includes('postPag
   throw new Error("Production baseline requires Cloudflare 5-minute OKOOO live schedule synchronization.");
 }
 const unifiedPredictionMarkers = [
-  "UNIFIED_PREDICTION_V2",
+  "UNIFIED_PREDICTION_V3",
   "preMatchResearch",
   "decisionConflictResolved",
-  "handicapMapping",
+  "handicapIndependent",
+  "scoreIndependent",
+  "totalsIndependent",
   "researchTemplate",
   "model-runs",
   "tenStepResult",
@@ -151,7 +153,7 @@ const missingUnifiedPredictionMarkers = unifiedPredictionMarkers.filter((marker)
 if (missingUnifiedPredictionMarkers.length) {
   throw new Error(`Production baseline missing unified prediction contract: ${missingUnifiedPredictionMarkers.join(", ")}`);
 }
-for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "conflicts with mainScore mapping"]) {
+for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "independent handicap probabilities", "independent handicap probability leader", "independent score probabilities", "independent total-goals probabilities"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing mandatory FINAL_LOCK gate: ${marker}`);
 }
 for (const marker of ["enrichPredictionFromUnifiedRun", "body.sportteryPrediction = enrichPredictionFromUnifiedRun"]) {

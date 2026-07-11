@@ -3756,6 +3756,7 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
   const decision = parseObject(runOutput.finalDecision);
   const scenarios = Array.isArray(runOutput.scenarioSet) ? runOutput.scenarioSet : [];
   const movement = parseObject(featureSet.oddsMovement);
+  const handicapEvidence = parseObject(featureSet.handicap);
   const probabilities = parseObject(featureSet.probabilities);
   const scoreA = decision.scores?.[0] || scenarios[0]?.score || prediction.mainScore || "-";
   const scoreB = decision.scores?.[1] || scenarios[1]?.score || prediction.counterScore || "-";
@@ -3771,9 +3772,8 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
     ? `当前胜平负SP ${odds.join(" / ")}；去水模型概率主胜 ${((Number(probabilities.HOME) || 0) * 100).toFixed(1)}%、平 ${((Number(probabilities.DRAW) || 0) * 100).toFixed(1)}%、客胜 ${((Number(probabilities.AWAY) || 0) * 100).toFixed(1)}%。`
     : "当前胜平负SP已由统一模型复核。";
   const scenarioText = `情况一落点 ${scoreA}；情况二落点 ${scoreB}。结合球队状态、风格对位、盘口低位和赛事动机，第一球与半场前后的节奏决定比赛是否打开。`;
-  const handicapText = scenarios.length
-    ? scenarios.map((item) => `${item.score}对应${item.handicapResult || "待判"}`).join("；")
-    : `${scoreA}对应${decision.handicapPick || prediction.handicapPick || "待判"}`;
+  const handicapProbabilities = parseObject(handicapEvidence.probabilities);
+  const handicapText = `让球独立模型：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；融合全比分矩阵、让球SP去水和${handicapEvidence.historicalSampleCount || 0}场相似历史分布。主比分${scoreA}只作校验，不生成让球结论。`;
   const finalText = `胜平负 ${decision.winDrawLose || prediction.pick || "-"}；让球 ${decision.handicapPick || prediction.handicapPick || "-"}；总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}；比分 ${scoreA} / ${scoreB}；类型 ${decision.matchType || prediction.matchType || "-"}；建议 ${decision.confidence ?? prediction.confidenceScore ?? "-"}% / ${decision.advice || prediction.advice || "-"}。`;
   return {
     ...prediction,
@@ -4049,14 +4049,14 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const runType = String(body.runType || body.run_type || "PRE_LOCK").toUpperCase();
       const output = body.output || body.output_json || {};
       if (runType === "FINAL_LOCK" && (
-        output.contractVersion !== "UNIFIED_PREDICTION_V2" ||
+        output.contractVersion !== "UNIFIED_PREDICTION_V3" ||
         output.lockType !== "FINAL_LOCK" ||
         output.gateResult?.passed !== true ||
         output.tenStepResult?.passed !== true ||
         !Array.isArray(output.tenStepResult?.steps) ||
         output.tenStepResult.steps.length !== 10
       )) {
-        return json({ ok: false, error: "FINAL_LOCK model run must pass the complete UNIFIED_PREDICTION_V2 ten-step contract" }, 400);
+        return json({ ok: false, error: "FINAL_LOCK model run must pass the complete UNIFIED_PREDICTION_V3 ten-step contract" }, 400);
       }
       const runId = body.runId || body.run_id || `model-run-${crypto.randomUUID()}`;
       await db.prepare(`
@@ -4090,20 +4090,27 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         if (compactId(modelRun.match_id) !== compactId(body.matchId || body.match_id)) {
           return json({ ok: false, error: "model run match does not match lock match" }, 400);
         }
-        if (modelRun.run_type !== "FINAL_LOCK" || runOutput.contractVersion !== "UNIFIED_PREDICTION_V2" || runOutput.gateResult?.passed !== true || runOutput.tenStepResult?.passed !== true) {
+        if (modelRun.run_type !== "FINAL_LOCK" || runOutput.contractVersion !== "UNIFIED_PREDICTION_V3" || runOutput.gateResult?.passed !== true || runOutput.tenStepResult?.passed !== true) {
           return json({ ok: false, error: "linked model run did not pass the complete ten-step FINAL_LOCK contract" }, 400);
         }
         body.sportteryPrediction = enrichPredictionFromUnifiedRun(prediction, runOutput);
-        const mainScore = String(prediction.mainScore || "").match(/(\d+)\D+(\d+)/);
         const handicapPick = handicapPickFromPayload(prediction);
-        const handicap = Number(prediction.handicap ?? body.asianHandicap ?? body.asian_handicap);
-        if (!mainScore || !handicapPick || !Number.isFinite(handicap)) {
-          return json({ ok: false, error: "FINAL_LOCK requires mainScore, handicap and handicapPick for consistency validation" }, 400);
+        const handicapEvidence = parseObject(runOutput.featureSet?.handicap);
+        const scoreEvidence = parseObject(runOutput.featureSet?.score);
+        const totalsEvidence = parseObject(runOutput.featureSet?.totals);
+        const handicapProbabilities = parseObject(handicapEvidence.probabilities);
+        const rankedHandicap = ["让胜", "让平", "让负"].map((label) => [label, Number(handicapProbabilities[label])]).filter(([, value]) => Number.isFinite(value)).sort((a, b) => b[1] - a[1]);
+        if (!handicapPick || rankedHandicap.length !== 3 || !Array.isArray(handicapEvidence.components) || handicapEvidence.components.length < 2) {
+          return json({ ok: false, error: "FINAL_LOCK requires independent handicap probabilities from score grid and handicap market" }, 400);
         }
-        const adjusted = Number(mainScore[1]) + handicap - Number(mainScore[2]);
-        const mappedHandicap = adjusted > 0 ? "让胜" : adjusted < 0 ? "让负" : "让平";
-        if (mappedHandicap !== handicapPick) {
-          return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with mainScore mapping ${mappedHandicap}` }, 400);
+        if (rankedHandicap[0][0] !== handicapPick) {
+          return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with independent handicap probability leader ${rankedHandicap[0][0]}` }, 400);
+        }
+        if (!Array.isArray(scoreEvidence.components) || scoreEvidence.components.length < 2 || scoreEvidence.marketComplete !== true) {
+          return json({ ok: false, error: "FINAL_LOCK requires independent score probabilities from score model and score market" }, 400);
+        }
+        if (!Array.isArray(totalsEvidence.components) || totalsEvidence.components.length < 2 || totalsEvidence.marketComplete !== true) {
+          return json({ ok: false, error: "FINAL_LOCK requires independent total-goals probabilities from score distribution and total-goals market" }, 400);
         }
       }
       const payloadShape = lockPayloadShape(body);

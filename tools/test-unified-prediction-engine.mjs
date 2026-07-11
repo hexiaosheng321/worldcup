@@ -24,8 +24,8 @@ const context = {
   market: {
     normal: { win: "2.30", draw: "3.10", lose: "2.80" },
     handicapOdds: { win: "2.30", draw: "3.10", lose: "2.80" },
-    scoreOdds: Array.from({ length: 8 }, (_, index) => ({ score: `${index % 4}:${index % 3}`, odds: String(6 + index) })),
-    totalGoalsOdds: Array.from({ length: 8 }, (_, index) => ({ goals: String(index), odds: String(3 + index) })),
+    scoreOdds: ["0:0", "1:0", "0:1", "1:1", "2:0", "0:2", "2:1", "1:2"].map((score, index) => ({ score, odds: String(6 + index) })),
+    totalGoalsOdds: Array.from({ length: 8 }, (_, index) => ({ goals: index === 7 ? "7+" : String(index), odds: String(3 + index) })),
   },
   oddsHistory: { had: [{ h: 2.4, d: 3.1, a: 2.7 }, { h: 2.3, d: 3.1, a: 2.8 }] },
   samples,
@@ -33,12 +33,17 @@ const context = {
 };
 
 const final = runUnifiedPrediction(context, { lockType: "FINAL_LOCK" });
-assert.equal(final.contractVersion, "UNIFIED_PREDICTION_V2");
+assert.equal(final.contractVersion, "UNIFIED_PREDICTION_V3");
 assert.equal(final.lockType, "FINAL_LOCK");
 assert.deepEqual(final.gateResult.blockers, []);
 assert.equal(final.tenStepResult.steps.length, 10);
 assert.equal(final.tenStepResult.passed, true);
 assert.equal(final.modelLessons.counterScriptDiverges, true);
+assert.equal(final.featureSet.handicap.components.length >= 2, true);
+assert.equal(final.featureSet.score.components.length >= 2, true);
+assert.equal(final.featureSet.totals.components.length >= 2, true);
+assert.equal(Object.keys(final.featureSet.handicap.probabilities).length, 3);
+assert.equal(Object.keys(final.featureSet.totals.probabilities).length >= 2, true);
 assert.notEqual(final.scenarioSet[0].score.split("-")[0] > final.scenarioSet[0].score.split("-")[1], final.scenarioSet[1].score.split("-")[0] > final.scenarioSet[1].score.split("-")[1]);
 
 const blocked = runUnifiedPrediction({ ...context, research: { ...research, injuries: { status: "MISSING" } } }, { lockType: "FINAL_LOCK" });
