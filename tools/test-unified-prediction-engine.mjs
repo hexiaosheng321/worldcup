@@ -33,7 +33,7 @@ const context = {
 };
 
 const final = runUnifiedPrediction(context, { lockType: "FINAL_LOCK" });
-assert.equal(final.contractVersion, "UNIFIED_PREDICTION_V3");
+assert.equal(final.contractVersion, "UNIFIED_PREDICTION_V4");
 assert.equal(final.lockType, "FINAL_LOCK");
 assert.deepEqual(final.gateResult.blockers, []);
 assert.equal(final.tenStepResult.steps.length, 10);
@@ -42,6 +42,13 @@ assert.equal(final.modelLessons.counterScriptDiverges, true);
 assert.equal(final.featureSet.handicap.components.length >= 2, true);
 assert.equal(final.featureSet.score.components.length >= 2, true);
 assert.equal(final.featureSet.totals.components.length >= 2, true);
+assert.equal(final.gateResult.gates.jointCompatibility, true);
+assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecision.recommendationSide);
+assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
+assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
+assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
+assert.equal(final.lifecycleContract.champion, "UNIFIED_PREDICTION_V4");
+assert.equal(final.scenarioSet[0].handicapResult, final.finalDecision.handicapPick);
 assert.equal(Object.keys(final.featureSet.handicap.probabilities).length, 3);
 assert.equal(Object.keys(final.featureSet.totals.probabilities).length >= 2, true);
 assert.notEqual(final.scenarioSet[0].score.split("-")[0] > final.scenarioSet[0].score.split("-")[1], final.scenarioSet[1].score.split("-")[0] > final.scenarioSet[1].score.split("-")[1]);
@@ -49,5 +56,9 @@ assert.notEqual(final.scenarioSet[0].score.split("-")[0] > final.scenarioSet[0].
 const blocked = runUnifiedPrediction({ ...context, research: { ...research, injuries: { status: "MISSING" } } }, { lockType: "FINAL_LOCK" });
 assert.equal(blocked.lockType, "PRE_LOCK");
 assert.ok(blocked.gateResult.blockers.includes("preMatchResearch"));
+
+const thinFundamentals = runUnifiedPrediction({ ...context, samples: samples.filter((_, index) => index < 4) }, { lockType: "FINAL_LOCK" });
+assert.equal(thinFundamentals.lockType, "PRE_LOCK");
+assert.ok(thinFundamentals.gateResult.blockers.includes("fundamentalData"));
 
 console.log("Unified prediction engine gates verified.");

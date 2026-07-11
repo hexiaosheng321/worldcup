@@ -4049,14 +4049,14 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const runType = String(body.runType || body.run_type || "PRE_LOCK").toUpperCase();
       const output = body.output || body.output_json || {};
       if (runType === "FINAL_LOCK" && (
-        output.contractVersion !== "UNIFIED_PREDICTION_V3" ||
+        output.contractVersion !== "UNIFIED_PREDICTION_V4" ||
         output.lockType !== "FINAL_LOCK" ||
         output.gateResult?.passed !== true ||
         output.tenStepResult?.passed !== true ||
         !Array.isArray(output.tenStepResult?.steps) ||
         output.tenStepResult.steps.length !== 10
       )) {
-        return json({ ok: false, error: "FINAL_LOCK model run must pass the complete UNIFIED_PREDICTION_V3 ten-step contract" }, 400);
+        return json({ ok: false, error: "FINAL_LOCK model run must pass the complete UNIFIED_PREDICTION_V4 ten-step contract" }, 400);
       }
       const runId = body.runId || body.run_id || `model-run-${crypto.randomUUID()}`;
       await db.prepare(`
@@ -4090,7 +4090,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         if (compactId(modelRun.match_id) !== compactId(body.matchId || body.match_id)) {
           return json({ ok: false, error: "model run match does not match lock match" }, 400);
         }
-        if (modelRun.run_type !== "FINAL_LOCK" || runOutput.contractVersion !== "UNIFIED_PREDICTION_V3" || runOutput.gateResult?.passed !== true || runOutput.tenStepResult?.passed !== true) {
+        if (modelRun.run_type !== "FINAL_LOCK" || runOutput.contractVersion !== "UNIFIED_PREDICTION_V4" || runOutput.gateResult?.passed !== true || runOutput.tenStepResult?.passed !== true) {
           return json({ ok: false, error: "linked model run did not pass the complete ten-step FINAL_LOCK contract" }, 400);
         }
         body.sportteryPrediction = enrichPredictionFromUnifiedRun(prediction, runOutput);
@@ -4098,6 +4098,8 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         const handicapEvidence = parseObject(runOutput.featureSet?.handicap);
         const scoreEvidence = parseObject(runOutput.featureSet?.score);
         const totalsEvidence = parseObject(runOutput.featureSet?.totals);
+        const jointEvidence = parseObject(runOutput.featureSet?.jointDecision);
+        const dataQualityEvidence = parseObject(runOutput.featureSet?.dataQuality);
         const handicapProbabilities = parseObject(handicapEvidence.probabilities);
         const rankedHandicap = ["让胜", "让平", "让负"].map((label) => [label, Number(handicapProbabilities[label])]).filter(([, value]) => Number.isFinite(value)).sort((a, b) => b[1] - a[1]);
         if (!handicapPick || rankedHandicap.length !== 3 || !Array.isArray(handicapEvidence.components) || handicapEvidence.components.length < 2) {
@@ -4111,6 +4113,12 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         }
         if (!Array.isArray(totalsEvidence.components) || totalsEvidence.components.length < 2 || totalsEvidence.marketComplete !== true) {
           return json({ ok: false, error: "FINAL_LOCK requires independent total-goals probabilities from score distribution and total-goals market" }, 400);
+        }
+        if (!jointEvidence.selected || jointEvidence.selected.direction !== runOutput.finalDecision?.recommendationSide || jointEvidence.selected.handicapPick !== handicapPick || !(Number(jointEvidence.selected.scoreProbability) > 0)) {
+          return json({ ok: false, error: "FINAL_LOCK requires a jointly compatible direction and handicap pair supported by at least one score branch" }, 400);
+        }
+        if (runOutput.gateResult?.gates?.fundamentalData !== true || dataQualityEvidence.minimumRecentMatchesPerTeam !== 5 || dataQualityEvidence.temporalIntegrity !== true) {
+          return json({ ok: false, error: "FINAL_LOCK requires complete non-market fundamentals, five recent matches per team, and pre-lock temporal integrity" }, 400);
         }
       }
       const payloadShape = lockPayloadShape(body);

@@ -170,9 +170,9 @@ function blendScoreDistribution(scoreRows, marketRows, historical) {
   const base = normalizedMap(scoreRows.map((row) => [row.score, row.probability]));
   const market = scoreMarketDistribution(marketRows);
   const parts = [
-    { label: "poisson-grid", weight: 0.55, probabilities: base },
-    market.size ? { label: "sporttery-score-market", weight: 0.3, probabilities: market } : null,
-    historical.sampleCount >= 10 ? { label: "historical-similar", weight: 0.15, probabilities: historical.probabilities } : null,
+    { label: "fundamental-score-grid", weight: 0.7, probabilities: base },
+    historical.sampleCount >= 10 ? { label: "historical-similar", weight: 0.2, probabilities: historical.probabilities } : null,
+    market.size ? { label: "sporttery-score-calibration", weight: 0.1, probabilities: market } : null,
   ].filter(Boolean);
   const keys = new Set(parts.flatMap((part) => [...part.probabilities.keys()]));
   const weightTotal = parts.reduce((sum, part) => sum + part.weight, 0);
@@ -193,7 +193,7 @@ function totalGoalModel(scoreRows, marketRows) {
   scoreRows.forEach((row) => { const key = row.home + row.away >= 7 ? "7+" : String(row.home + row.away); fromScores.set(key, (fromScores.get(key) || 0) + row.probability); });
   const scoreProbabilities = normalizedMap([...fromScores.entries()]);
   const marketProbabilities = totalMarketDistribution(marketRows);
-  const parts = [{ label: "independent-score-model", weight: 0.65, probabilities: scoreProbabilities }, marketProbabilities.size ? { label: "sporttery-total-market", weight: 0.35, probabilities: marketProbabilities } : null].filter(Boolean);
+  const parts = [{ label: "joint-score-model", weight: 0.85, probabilities: scoreProbabilities }, marketProbabilities.size ? { label: "sporttery-total-calibration", weight: 0.15, probabilities: marketProbabilities } : null].filter(Boolean);
   const weightTotal = parts.reduce((sum, part) => sum + part.weight, 0);
   const keys = new Set(parts.flatMap((part) => [...part.probabilities.keys()]));
   const probabilities = normalizedMap([...keys].map((key) => [key, parts.reduce((sum, part) => sum + (part.probabilities.get(key) || 0) * part.weight, 0) / weightTotal]));
@@ -209,7 +209,7 @@ function resultFromScores(rows) {
   ]);
 }
 
-function researchAudit(research = {}) {
+function researchAudit(research = {}, asOf = new Date().toISOString()) {
   const weights = { teamState: 0.2, injuries: 0.18, expectedLineups: 0.17, motivation: 0.12, weatherVenue: 0.05, styleMatchup: 0.18, marketNews: 0.1 };
   const freshnessHours = { teamState: 168, injuries: 24, expectedLineups: 24, motivation: 72, weatherVenue: 48, styleMatchup: 168, marketNews: 6 };
   const adjustment = { home: 0, draw: 0, away: 0, xgHome: 0, xgAway: 0 };
@@ -222,12 +222,13 @@ function researchAudit(research = {}) {
     const impact = entry.impact || {};
     const numericImpact = ["home", "draw", "away", "xgHome", "xgAway"].every((field) => Number.isFinite(Number(impact[field])));
     const evidenceGrade = String(entry.evidenceGrade || "").toUpperCase();
-    const complete = entry.status === "VERIFIED" && String(entry.summary || "").trim().length >= 20 && sources.length > 0 && capturedFresh && observedFresh && numericImpact && ["A", "B", "C"].includes(evidenceGrade);
+    const beforeLock = (!entry.capturedAt || Date.parse(entry.capturedAt) <= Date.parse(asOf)) && (!observedAt || Date.parse(observedAt) <= Date.parse(asOf));
+    const complete = entry.status === "VERIFIED" && String(entry.summary || "").trim().length >= 20 && sources.length > 0 && capturedFresh && observedFresh && beforeLock && numericImpact && ["A", "B", "C"].includes(evidenceGrade);
     if (complete) {
       const weight = weights[key] || 0;
       for (const field of Object.keys(adjustment)) adjustment[field] += Number(impact[field]) * weight;
     }
-    return { key, complete, status: entry.status || "MISSING", summary: entry.summary || "", sources, capturedAt: entry.capturedAt || "", observedAt, freshnessHours: freshnessHours[key] || 72, capturedFresh: Boolean(capturedFresh), observedFresh: Boolean(observedFresh), evidenceGrade, impact: numericImpact ? Object.fromEntries(Object.keys(adjustment).map((field) => [field, round(Number(impact[field]))])) : null };
+    return { key, complete, status: entry.status || "MISSING", summary: entry.summary || "", sources, capturedAt: entry.capturedAt || "", observedAt, freshnessHours: freshnessHours[key] || 72, capturedFresh: Boolean(capturedFresh), observedFresh: Boolean(observedFresh), beforeLock: Boolean(beforeLock), evidenceGrade, impact: numericImpact ? Object.fromEntries(Object.keys(adjustment).map((field) => [field, round(Number(impact[field]))])) : null };
   });
   const capped = Object.fromEntries(Object.entries(adjustment).map(([key, value]) => [key, round(Math.max(key.startsWith("xg") ? -0.5 : -0.12, Math.min(key.startsWith("xg") ? 0.5 : 0.12, value)))]));
   return { complete: items.every((item) => item.complete), items, missing: items.filter((item) => !item.complete).map((item) => item.key), adjustment: capped };
@@ -300,6 +301,25 @@ function historicalHandicapDistribution(samples, currentMarket, handicap) {
   return { complete: true, sampleCount: rows.length, probabilities: normalizeProbabilities(handicapLabels.map((label) => totals[label])) };
 }
 
+function jointDirectionHandicapDecision(scoreRows, directionProbabilities, handicapProbabilities, handicap) {
+  const scoreTotal = scoreRows.reduce((sum, row) => sum + Number(row.probability || 0), 0) || 1;
+  const joint = new Map();
+  for (const row of scoreRows) {
+    const key = `${scoreResult(row)}|${handicapResult(row, handicap)}`;
+    joint.set(key, (joint.get(key) || 0) + Number(row.probability || 0) / scoreTotal);
+  }
+  const candidates = [];
+  resultLabels.forEach((direction, directionIndex) => handicapLabels.forEach((handicapLabel, handicapIndex) => {
+    const key = `${direction}|${handicapLabel}`;
+    const scoreProbability = joint.get(key) || 0;
+    if (scoreProbability <= 0) return;
+    const marginalProduct = directionProbabilities[directionIndex] * handicapProbabilities[handicapIndex];
+    candidates.push({ direction, handicapPick: handicapLabel, scoreProbability, marginalProduct, score: scoreProbability * 0.65 + marginalProduct * 0.35 });
+  }));
+  candidates.sort((a, b) => b.score - a.score);
+  return { selected: candidates[0] || null, candidates };
+}
+
 function totalGoalsPick(rows) {
   const totals = new Map();
   for (const row of rows) totals.set(row.home + row.away, (totals.get(row.home + row.away) || 0) + row.probability);
@@ -325,45 +345,57 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const samples = Array.isArray(context.samples) ? context.samples.filter((sample) => sample.league === match.league) : [];
   const beforeDate = dateKey(match.matchDate || match.ticaiDate || match.kickoffTime);
   const marketBaseline = noVig([market.normal?.win, market.normal?.draw, market.normal?.lose]);
-  const research = researchAudit(context.research);
+  const asOf = context.asOf || new Date().toISOString();
+  const research = researchAudit(context.research, asOf);
   const baseXg = expectedGoals(samples, match.home, match.away, beforeDate);
   const xg = { ...baseXg, home: Math.max(0.2, baseXg.home + research.adjustment.xgHome), away: Math.max(0.2, baseXg.away + research.adjustment.xgAway) };
   const poissonScores = scoreGrid(xg);
-  const poissonBaseline = resultFromScores(poissonScores);
   const formBaseline = formProbabilities(xg.homeRows, xg.awayRows);
-  const baselineParts = [
-    marketBaseline ? { label: "market", weight: 0.4, values: marketBaseline.probabilities } : null,
-    { label: "poisson", weight: 0.35, values: poissonBaseline },
-    formBaseline ? { label: "form", weight: 0.25, values: formBaseline } : null,
-  ].filter(Boolean);
-  const weightTotal = baselineParts.reduce((sum, part) => sum + part.weight, 0);
-  const baselineProbabilities = normalizeProbabilities(resultLabels.map((_, index) => baselineParts.reduce((sum, part) => sum + part.values[index] * part.weight, 0) / weightTotal));
-  const probabilities = normalizeProbabilities(baselineProbabilities.map((value, index) => value + [research.adjustment.home, research.adjustment.draw, research.adjustment.away][index]));
-  const rankedResults = resultLabels.map((label, index) => ({ label, text: resultText[label], probability: probabilities[index] })).sort((a, b) => b.probability - a.probability);
   const historicalScores = historicalScoreDistribution(samples, market);
   const scoreModel = blendScoreDistribution(poissonScores, market.scoreOdds || [], historicalScores);
   const scores = scoreModel.rows;
-  const mainScore = scores[0];
-  const counterScore = scores.find((row) => scoreResult(row) !== scoreResult(mainScore)) || scores[1];
-  const topScores = [mainScore, counterScore].filter(Boolean);
+  // V4 stable contract: all four markets share one joint score distribution.
+  // Sporttery prices calibrate at a bounded weight and never replace missing fundamentals.
+  const scoreProbabilities = resultFromScores(scores);
+  const baselineParts = [
+    { label: "joint-score-model", weight: 0.85, values: scoreProbabilities },
+    marketBaseline ? { label: "sporttery-wdl-calibration", weight: 0.15, values: marketBaseline.probabilities } : null,
+  ].filter(Boolean);
+  const weightTotal = baselineParts.reduce((sum, part) => sum + part.weight, 0);
+  const baselineProbabilities = normalizeProbabilities(resultLabels.map((_, index) => baselineParts.reduce((sum, part) => sum + part.values[index] * part.weight, 0) / weightTotal));
+  const probabilities = normalizeProbabilities(baselineProbabilities.map((value, index) => value + [research.adjustment.home, research.adjustment.draw, research.adjustment.away][index] * 0.25));
+  const rankedResults = resultLabels.map((label, index) => ({ label, text: resultText[label], probability: probabilities[index] })).sort((a, b) => b.probability - a.probability);
+  let mainScore = scores[0];
+  let counterScore = scores.find((row) => scoreResult(row) !== scoreResult(mainScore)) || scores[1];
+  let topScores = [mainScore, counterScore].filter(Boolean);
   const totalModel = totalGoalModel(scores, market.totalGoalsOdds || []);
   const movement = oddsMovementAudit(context.oddsHistory);
   const sampleGate = samples.length >= 10;
   const oddsGate = Boolean(marketBaseline);
   const scoreGate = topScores.length === 2 && topScores.every((row) => row.probability > 0);
-  const handicapMapped = topScores.map((row) => ({ score: row.score, result: handicapResult(row, match.handicap) }));
+  let handicapMapped = topScores.map((row) => ({ score: row.score, result: handicapResult(row, match.handicap) }));
   const handicapScoreProbabilities = handicapProbabilitiesFromScores(scores, match.handicap);
   const handicapMarket = noVig([market.handicapOdds?.win, market.handicapOdds?.draw, market.handicapOdds?.lose]);
   const handicapHistory = historicalHandicapDistribution(samples, market, match.handicap);
   const handicapParts = [
-    { label: "score-grid", weight: 0.45, probabilities: handicapScoreProbabilities },
-    handicapMarket ? { label: "sporttery-market", weight: 0.4, probabilities: handicapMarket.probabilities } : null,
+    { label: "joint-score-model", weight: 0.75, probabilities: handicapScoreProbabilities },
     handicapHistory.complete ? { label: "historical-similar", weight: 0.15, probabilities: handicapHistory.probabilities } : null,
+    handicapMarket ? { label: "sporttery-handicap-calibration", weight: 0.1, probabilities: handicapMarket.probabilities } : null,
   ].filter(Boolean);
   const handicapWeightTotal = handicapParts.reduce((sum, part) => sum + part.weight, 0);
   const handicapProbabilities = normalizeProbabilities(handicapLabels.map((_, index) => handicapParts.reduce((sum, part) => sum + part.probabilities[index] * part.weight, 0) / handicapWeightTotal));
   const rankedHandicap = handicapLabels.map((label, index) => ({ label, probability: handicapProbabilities[index] })).sort((a, b) => b.probability - a.probability);
+  const jointDecision = jointDirectionHandicapDecision(scores, probabilities, handicapProbabilities, match.handicap);
+  const selectedDirection = rankedResults[0].label;
   const handicapPick = rankedHandicap[0]?.label || "待判";
+  const independentPair = jointDecision.candidates.find((item) => item.direction === selectedDirection && item.handicapPick === handicapPick) || { direction: selectedDirection, handicapPick, scoreProbability: 0, marginalProduct: 0, score: 0 };
+  const jointCompatibility = independentPair.scoreProbability > 0;
+  mainScore = scores.find((row) => scoreResult(row) === selectedDirection && handicapResult(row, match.handicap) === handicapPick)
+    || scores.find((row) => scoreResult(row) === selectedDirection)
+    || scores[0];
+  counterScore = scores.find((row) => scoreResult(row) !== selectedDirection) || scores.find((row) => row.score !== mainScore.score);
+  topScores = [mainScore, counterScore].filter(Boolean);
+  handicapMapped = topScores.map((row) => ({ score: row.score, result: handicapResult(row, match.handicap) }));
   const handicapIndependent = Boolean(handicapMarket && handicapParts.length >= 2 && rankedHandicap[0]?.probability > 0);
   const conflict = rankedResults[0].probability - rankedResults[1].probability < 0.06;
   const marketRanked = marketBaseline
@@ -381,6 +413,18 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   // as current form.
   const formFreshnessDays = match.league === "挪超" && research.complete ? 60 : 21;
   const recentFormFresh = daysBetween(newestHomeForm, beforeDate) <= formFreshnessDays && daysBetween(newestAwayForm, beforeDate) <= formFreshnessDays;
+  const fundamentalDataComplete = xg.homeRows.length >= 5 && xg.awayRows.length >= 5 && Boolean(formBaseline) && recentFormFresh;
+  const evidenceCompleteness = RESEARCH_KEYS.filter((key) => research.items.find((item) => item.key === key)?.complete).length / RESEARCH_KEYS.length;
+  const sourceCapturedAt = Date.parse(context.sourceCapturedAt || "");
+  const kickoffAt = Date.parse(match.kickoffTime || `${beforeDate}T23:59:59+08:00`);
+  const temporalIntegrity = !Number.isFinite(sourceCapturedAt) || !Number.isFinite(kickoffAt) || sourceCapturedAt <= kickoffAt;
+  const dataQualityScore = Math.round(
+    (fundamentalDataComplete ? 35 : Math.min(25, (xg.homeRows.length + xg.awayRows.length) * 2.5))
+    + Math.min(25, samples.length / 2)
+    + evidenceCompleteness * 25
+    + (movement.complete ? 10 : 0)
+    + (temporalIntegrity ? 5 : 0)
+  );
   const normalOddsComplete = Boolean(marketBaseline);
   const handicapOddsComplete = Boolean(handicapMarket);
   const scoreMarketComplete = scoreModel.marketComplete;
@@ -390,7 +434,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const stepScores = [
     { id: 1, key: "spReview", title: "当前胜平负 SP 复核", score: normalOddsComplete ? 100 : 0, passed: normalOddsComplete },
     { id: 2, key: "rulesMotivation", title: "赛事规则/动机", score: research.items.find((item) => item.key === "motivation")?.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "motivation")?.complete) },
-    { id: 3, key: "teamState", title: "球队状态", score: Math.round(["teamState", "injuries", "expectedLineups"].filter((key) => research.items.find((item) => item.key === key)?.complete).length / 3 * 100), passed: ["teamState", "injuries", "expectedLineups"].every((key) => research.items.find((item) => item.key === key)?.complete) },
+    { id: 3, key: "teamState", title: "球队状态", score: fundamentalDataComplete ? 100 : Math.round(Math.min(90, (xg.homeRows.length + xg.awayRows.length) * 9)), passed: fundamentalDataComplete && ["teamState", "injuries", "expectedLineups"].every((key) => research.items.find((item) => item.key === key)?.complete) },
     { id: 4, key: "styleMatchup", title: "风格对位", score: research.items.find((item) => item.key === "styleMatchup")?.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "styleMatchup")?.complete) },
     { id: 5, key: "marketSamples", title: "盘口和样本", score: Math.round((normalOddsComplete ? 40 : 0) + Math.min(40, samples.length / 2) + (recentFormFresh ? 20 : 0)), passed: normalOddsComplete && samples.length >= 30 && recentFormFresh },
     { id: 6, key: "stateTransfer", title: "状态转移", score: movement.complete && research.items.find((item) => item.key === "marketNews")?.complete ? 100 : 0, passed: movement.complete && Boolean(research.items.find((item) => item.key === "marketNews")?.complete) },
@@ -402,6 +446,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   stepScores.push({ id: 10, key: "finalLock", title: "最终锁版", score: tenStepPassed ? 100 : 0, passed: tenStepPassed });
   const gates = {
     completeOdds: oddsGate,
+    fundamentalData: fundamentalDataComplete,
+    temporalIntegrity,
     historicalSamples: sampleGate,
     oddsMovement: movement.complete,
     preMatchResearch: research.complete,
@@ -410,6 +456,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     totalsIndependent,
     decisionConflictResolved: !conflict || research.complete,
     handicapIndependent,
+    jointCompatibility,
     counterScriptDiverges,
     drawOverrideJustified,
     recentFormFresh,
@@ -421,7 +468,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const confidence = Math.round(Math.max(0, Math.min(100, rankedResults[0].probability * 100 - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
   const advice = !allGatesPass ? "观察" : confidence >= 62 ? "主打" : confidence >= 55 ? "可选" : confidence >= 48 ? "谨慎" : "跳过";
   return {
-    contractVersion: "UNIFIED_PREDICTION_V3",
+    contractVersion: "UNIFIED_PREDICTION_V4",
     generatedAt: new Date().toISOString(),
     match,
     requestedLockType: requestedFinal ? "FINAL_LOCK" : "PRE_LOCK",
@@ -435,6 +482,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       xg: { home: round(xg.home, 2), away: round(xg.away, 2) },
       recentForm: { home: xg.homeRows, away: xg.awayRows },
       recentFormFresh,
+      fundamentalDataComplete,
+      dataQuality: { score: dataQualityScore, grade: dataQualityScore >= 85 ? "A" : dataQualityScore >= 70 ? "B" : dataQualityScore >= 55 ? "C" : "D", temporalIntegrity, evidenceCompleteness: round(evidenceCompleteness), minimumRecentMatchesPerTeam: 5 },
       sampleCount: samples.length,
       oddsMovement: movement,
       research,
@@ -449,11 +498,13 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       },
       score: { components: scoreModel.parts, historicalSampleCount: scoreModel.historicalSampleCount, marketComplete: scoreModel.marketComplete },
       totals: { probabilities: Object.fromEntries(totalModel.probabilities), components: totalModel.components, marketComplete: totalModel.marketComplete },
+      jointDecision: { selected: independentPair, candidateCount: jointDecision.candidates.length, independentDirectionLeader: selectedDirection, independentHandicapLeader: handicapPick, role: "HARD_CONSTRAINT_ONLY" },
     },
     scenarioSet: topScores.map((row, index) => ({ rank: index + 1, score: row.score, probability: round(row.probability), handicapResult: handicapMapped[index]?.result })),
     tenStepResult: { passed: tenStepPassed, steps: stepScores, averageScore: round(stepScores.reduce((sum, step) => sum + step.score, 0) / stepScores.length, 1) },
     gateResult: { passed: allGatesPass, gates, blockers: Object.entries(gates).filter(([, passed]) => !passed).map(([name]) => name) },
-    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current" },
+    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", immutablePreMatchSnapshot: true },
+    lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "shadow-only until out-of-sample calibration and loss metrics improve with sufficient samples" },
     modelLessons: {
       version: "LESSONS_2026-07-10",
       rules: [
@@ -463,14 +514,18 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "明显市场热门改选平局至少需要两项独立量化证据",
         "状态、阵容和市场消息必须按各自新鲜度验收",
         "PRE_LOCK不计正式模型命中率",
+        "体彩赔率只做有上限的校准，不得替代缺失的基本面",
+        "胜平负、让球、总进球和比分必须共享同一联合比分分布",
+        "每队至少五场新鲜赛前比赛数据，缺失时进入DATA_REPAIR",
+        "只有preferred FINAL_LOCK赛后结算才能生成并复用Base Case",
       ],
       drawOverrideNeeded,
       drawEvidenceCount,
       counterScriptDiverges,
     },
     finalDecision: {
-      winDrawLose: rankedResults[0].text,
-      recommendationSide: rankedResults[0].label,
+      winDrawLose: resultText[selectedDirection],
+      recommendationSide: selectedDirection,
       handicapPick,
       totalGoalsPick: totalModel.pick,
       scores: topScores.map((row) => row.score),
