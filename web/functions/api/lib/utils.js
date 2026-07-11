@@ -200,6 +200,7 @@ export function parseArray(text) {
 }
 
 export function parseObject(text, fallback = {}) {
+  if (text && typeof text === "object" && !Array.isArray(text)) return text;
   try {
     const value = JSON.parse(text || "{}");
     return value && typeof value === "object" ? value : fallback;
