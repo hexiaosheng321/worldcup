@@ -508,11 +508,13 @@ function actualHandicapResult(lock, result) {
 
 function caseDiagnosticPayload(lock, result, review, tags) {
   const lockPayload = parseObject(lock.payload_json);
+  const predictionPayload = parseObject(lockPayload.sportteryPrediction);
+  const diagnosticSource = { ...lockPayload, ...predictionPayload };
   const resultPayload = parseObject(result.payload_json);
   const actualScore = scoreText(result.full_time_home_goals, result.full_time_away_goals);
-  const scorePicks = scorePicksFromPayload(lockPayload);
-  const totalGoalPick = totalGoalPickFromPayload(lockPayload);
-  const handicapPick = handicapPickFromPayload(lockPayload);
+  const scorePicks = scorePicksFromPayload(diagnosticSource);
+  const totalGoalPick = totalGoalPickFromPayload(diagnosticSource);
+  const handicapPick = handicapPickFromPayload(diagnosticSource);
   const actualHandicap = actualHandicapResult(lock, result);
   const totalGoalsHit = totalGoalPick.picks.length ? totalGoalPick.picks.includes(Number(result.total_goals)) : null;
   const scoreCovered = scorePicks.length ? scorePicks.includes(actualScore) : null;
@@ -537,7 +539,7 @@ function caseDiagnosticPayload(lock, result, review, tags) {
     totalGoalsHit,
     predictedScores: scorePicks,
     scoreCovered,
-    matchType: firstText(lockPayload.matchType, lockPayload.gameType, lockPayload.predictedMatchType),
+    matchType: firstText(diagnosticSource.matchType, diagnosticSource.gameType, diagnosticSource.predictedMatchType),
     matchTypeHit: null,
     diagnosisSummary: review.hitStatus === "WIN"
       ? "赛前方向命中，保留为正样本。"
@@ -589,10 +591,16 @@ async function createModelUpgradeNoteForCase(db, lock, result, review, caseId, d
   await ensureModelUpgradeSchema(db);
   const note = upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayload);
   await db.prepare(`
-    INSERT OR IGNORE INTO model_upgrade_notes (
+    INSERT INTO model_upgrade_notes (
       note_id, source_case_id, source_lock_id, match_id, model_version, league, trigger_type,
       severity, status, title, diagnosis_json, recommendation_json, created_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(note_id) DO UPDATE SET
+      diagnosis_json=excluded.diagnosis_json,
+      recommendation_json=excluded.recommendation_json,
+      severity=excluded.severity,
+      status=excluded.status,
+      title=excluded.title
   `).bind(
     note.noteId,
     note.sourceCaseId,
@@ -661,12 +669,29 @@ async function createCaseForLock(db, lockId) {
   }
   const result = await db.prepare("SELECT * FROM match_results WHERE match_id = ?").bind(lock.match_id).first();
   if (!result) return { ok: false, status: 400, error: "result not found" };
-  const existing = await db.prepare("SELECT case_id FROM case_base WHERE source_lock_id = ?").bind(lock.lock_id).first();
-  if (existing) return { ok: true, caseId: existing.case_id, duplicated: true };
   const review = evaluateLock(lock, result);
   const tags = caseTags(lock, result, review);
   const caseId = `case-${lock.lock_id}`;
   const diagnosticPayload = caseDiagnosticPayload(lock, result, review, tags);
+  const existing = await db.prepare("SELECT case_id FROM case_base WHERE source_lock_id = ?").bind(lock.lock_id).first();
+  if (existing) {
+    await db.prepare(`
+      UPDATE case_base
+      SET actual_result = ?, actual_goals = ?, hit_status = ?, failure_tags_json = ?, success_tags_json = ?, payload_json = ?
+      WHERE source_lock_id = ?
+    `).bind(
+      result.result_1x2,
+      result.total_goals,
+      review.hitStatus,
+      JSON.stringify(tags.failureTags),
+      JSON.stringify(tags.successTags),
+      JSON.stringify(diagnosticPayload),
+      lock.lock_id
+    ).run();
+    await db.prepare("UPDATE locked_predictions SET result_status = ? WHERE lock_id = ?").bind(review.hitStatus, lock.lock_id).run();
+    const upgradeNote = await createModelUpgradeNoteForCase(db, lock, result, review, existing.case_id, diagnosticPayload);
+    return { ok: true, caseId: existing.case_id, duplicated: true, refreshed: true, review, upgradeNote };
+  }
   await db.prepare(`
     INSERT INTO case_base (
       case_id, source_lock_id, match_id, league, home_team, away_team, kickoff_time, model_version,
