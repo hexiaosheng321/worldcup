@@ -509,6 +509,14 @@ async function syncViaPagesApi(env) {
     steps.push({ step: "sporttery-results", ok: false, error: error.message });
   }
 
+  let okoooLivePayload = null;
+  try {
+    okoooLivePayload = await postPagesApi(env, "/api/sync/okooo-live", {});
+    steps.push({ step: "okooo-live", ok: true, payload: okoooLivePayload });
+  } catch (error) {
+    steps.push({ step: "okooo-live", ok: false, error: error.message });
+  }
+
   let okoooPayload = null;
   try {
     okoooPayload = await postPagesApi(env, "/api/sync/okooo-results");
@@ -525,7 +533,15 @@ async function syncViaPagesApi(env) {
     steps.push({ step: "live-results", ok: false, error: error.message });
   }
 
-  const ok = steps.some((step) => step.ok);
+  let reconcilePayload = null;
+  try {
+    reconcilePayload = await postPagesApi(env, "/api/sync/reconcile-completed-samples", {});
+    steps.push({ step: "reconcile-completed-samples", ok: true, payload: reconcilePayload });
+  } catch (error) {
+    steps.push({ step: "reconcile-completed-samples", ok: false, error: error.message });
+  }
+
+  const ok = Boolean(okoooLivePayload) && Boolean(reconcilePayload);
   const payload = {
     ok,
     capturedAt,
@@ -537,6 +553,8 @@ async function syncViaPagesApi(env) {
     officialResults: officialResultsPayload,
     okooo: okoooPayload,
     liveFallback: fallbackPayload,
+    okoooLive: okoooLivePayload,
+    reconciled: reconcilePayload,
   };
   if (env.DB) {
     await insertLog(env.DB, "pages-api-cron", ok ? "OK" : "ERROR", ok ? "pages sync completed" : "pages sync failed", payload);

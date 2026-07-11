@@ -10,6 +10,8 @@ const sync = fs.readFileSync("tools/sync-sporttery-cache.mjs", "utf8");
 const api = fs.readFileSync("web/functions/api/[[path]].js", "utf8");
 const leagueContext = fs.readFileSync("tools/league-v1-context.mjs", "utf8");
 const workflow = fs.readFileSync(".github/workflows/sporttery-auto-deploy.yml", "utf8");
+const syncWorker = fs.readFileSync("worker/sync-worker.js", "utf8");
+const syncWorkerConfig = fs.readFileSync("wrangler.sync.jsonc", "utf8");
 const unifiedEngine = fs.readFileSync("tools/lib/unified-prediction-engine.mjs", "utf8");
 const unifiedRunner = fs.readFileSync("tools/run-unified-prediction.mjs", "utf8");
 
@@ -127,6 +129,9 @@ if (!leagueContext.includes("/api/historical-samples/rolling?limit=1000")) {
 }
 if (!workflow.includes('cron: "*/30 * * * *"')) {
   throw new Error("Production baseline requires 24/7 completed-match synchronization.");
+}
+if (!syncWorkerConfig.includes('"*/5 * * * *"') || !syncWorker.includes('postPagesApi(env, "/api/sync/okooo-live"') || !syncWorker.includes('postPagesApi(env, "/api/sync/reconcile-completed-samples"')) {
+  throw new Error("Production baseline requires Cloudflare 5-minute OKOOO live schedule synchronization.");
 }
 const unifiedPredictionMarkers = [
   "UNIFIED_PREDICTION_V2",
