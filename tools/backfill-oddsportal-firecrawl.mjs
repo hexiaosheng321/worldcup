@@ -18,6 +18,7 @@ const concurrency = Math.min(8, Math.max(1, Number(args.get("concurrency") || 4)
 const apply = args.get("apply") === "true";
 const debug = args.get("debug") === "true";
 const normalizeOnly = args.get("normalize-only") === "true";
+const addRecent = args.get("add-recent") === "true";
 const output = args.get("output") || "web/data/externalHistoricalSamples.js";
 const apiKey = process.env.FIRECRAWL_API_KEY || "";
 
@@ -232,7 +233,7 @@ if (normalizeOnly) {
   process.exit(0);
 }
 if (!apiKey) throw new Error("FIRECRAWL_API_KEY is required");
-const targets = samples.filter((sample) => sample.league === league && String(sample.season) === season);
+let targets = samples.filter((sample) => sample.league === league && String(sample.season) === season);
 const discovered = [];
 for (let page = 1; page <= maxPages; page += 1) {
   const data = await firecrawl(resultsUrl(page));
@@ -244,6 +245,64 @@ for (let page = 1; page <= maxPages; page += 1) {
   if (!fresh.length) break;
 }
 
+function desiredKLeaguePattern(row) {
+  if (league !== "韩职" || row.odds1x2.length !== 3) return true;
+  const [home, , away] = row.odds1x2;
+  return (away >= 1.4 && away <= 1.8)
+    || (home >= 1.55 && home <= 1.95)
+    || (home >= 2.1 && home <= 2.7 && away >= 2.1 && away <= 3.3);
+}
+
+if (addRecent) {
+  const known = new Set(targets.map((sample) => `${sampleDate(sample)}|${normalizedTeam(sample.homeTeam)}|${normalizedTeam(sample.awayTeam)}`));
+  const additions = discovered
+    .filter(desiredKLeaguePattern)
+    .filter((row) => !known.has(`${row.date}|${normalizedTeam(row.home)}|${normalizedTeam(row.away)}`))
+    .slice(0, Math.max(limit * 4, limit))
+    .map((row) => {
+      const odds = row.odds1x2;
+      const raw = odds.length === 3 ? odds.map((value) => 1 / value) : [];
+      const total = raw.reduce((sum, value) => sum + value, 0);
+      const actualResult = row.homeGoals > row.awayGoals ? "HOME" : row.homeGoals < row.awayGoals ? "AWAY" : "DRAW";
+      return {
+        caseId: `external-oddsportal-${league}-${season}-${row.date}-${normalizedTeam(row.home)}-${normalizedTeam(row.away)}`,
+        sampleType: "external-history",
+        source: "oddsportal+firecrawl",
+        sourceUrl: row.url,
+        sourceCapturedAt: new Date().toISOString(),
+        matchId: `oddsportal-${row.date}-${normalizedTeam(row.home)}-${normalizedTeam(row.away)}`,
+        league,
+        sourceLeague: config.sourceLeague,
+        season,
+        homeTeam: row.home,
+        awayTeam: row.away,
+        kickoffTime: row.date,
+        modelVersion: "EXTERNAL_HISTORY",
+        recommendation: odds.length === 3 ? ["市场主胜", "市场平", "市场客胜"][odds.indexOf(Math.min(...odds))] : "",
+        recommendationSide: odds.length === 3 ? ["HOME", "DRAW", "AWAY"][odds.indexOf(Math.min(...odds))] : "",
+        sportteryHomeSp: odds[0] || null,
+        sportteryDrawSp: odds[1] || null,
+        sportteryAwaySp: odds[2] || null,
+        euroHomeOdds: odds[0] || null,
+        euroDrawOdds: odds[1] || null,
+        euroAwayOdds: odds[2] || null,
+        euroHomeProb: total ? Number((raw[0] / total).toFixed(4)) : null,
+        euroDrawProb: total ? Number((raw[1] / total).toFixed(4)) : null,
+        euroAwayProb: total ? Number((raw[2] / total).toFixed(4)) : null,
+        dataQuality: "MEDIUM",
+        actualResult,
+        actualHomeGoals: row.homeGoals,
+        actualAwayGoals: row.awayGoals,
+        actualGoals: row.homeGoals + row.awayGoals,
+        score: `${row.homeGoals}-${row.awayGoals}`,
+        hitStatus: "PENDING",
+        payload: { sampleRole: "external-market-reference", sourceProvider: "OddsPortal via Firecrawl", ninetyMinuteResult: true },
+      };
+    });
+  targets = additions;
+  console.log(JSON.stringify({ step: "add-recent", candidates: additions.length }));
+}
+
 const matches = [];
 for (const sample of targets) {
   const ranked = discovered.map((row) => ({ row, score: matchRow(sample, row) })).filter((item) => item.score >= 1.45).sort((a, b) => b.score - a.score);
@@ -251,9 +310,11 @@ for (const sample of targets) {
 }
 
 let updated = 0;
-const selectedMatches = matches.slice(0, limit);
+const selectedMatches = matches;
+const successfulAdditions = [];
 let cursor = 0;
 async function enrichNext() {
+  if (updated >= limit) return;
   const index = cursor++;
   if (index >= selectedMatches.length) return;
   const item = selectedMatches[index];
@@ -262,6 +323,10 @@ async function enrichNext() {
   const oneXTwo = detail.oneXTwo || (item.row.odds1x2.length === 3 ? {
     home: item.row.odds1x2[0], draw: item.row.odds1x2[1], away: item.row.odds1x2[2], bookmakerCount: 1,
   } : null);
+  if (addRecent && (!oneXTwo || !detail.asianHandicap.selected)) {
+    console.log(JSON.stringify({ step: "detail-skip-incomplete", caseId: item.sample.caseId, url: item.row.url, hasOneXTwo: Boolean(oneXTwo), hasAsianHandicap: Boolean(detail.asianHandicap.selected) }));
+    return enrichNext();
+  }
   if (oneXTwo) {
     item.sample.euroHomeOdds = oneXTwo.home;
     item.sample.euroDrawOdds = oneXTwo.draw;
@@ -292,6 +357,7 @@ async function enrichNext() {
     oddsPortalCapturedAt: new Date().toISOString(),
   };
   item.sample.source = String(item.sample.source || "").includes("oddsportal") ? item.sample.source : `${item.sample.source}+oddsportal`;
+  if (addRecent) successfulAdditions.push(item.sample);
   updated += 1;
   console.log(JSON.stringify({ step: "detail", updated, caseId: item.sample.caseId, url: item.row.url, oneXTwo, asian: detail.asianHandicap.selected, total: detail.overUnder.selected }));
   } catch (error) {
@@ -302,7 +368,8 @@ async function enrichNext() {
 await Promise.all(Array.from({ length: Math.min(concurrency, selectedMatches.length) }, () => enrichNext()));
 
 if (apply && updated) {
+  if (addRecent) samples.push(...successfulAdditions);
   normalizeTwoPointFiveOdds();
   await fs.writeFile(output, `window.WC_EXTERNAL_HISTORICAL_SAMPLES = ${JSON.stringify(samples, null, 2)};\n`, "utf8");
 }
-console.log(JSON.stringify({ league, season, targets: targets.length, discovered: discovered.length, matched: matches.length, processed: Math.min(matches.length, limit), updated, applied: apply, output }, null, 2));
+console.log(JSON.stringify({ league, season, targets: targets.length, discovered: discovered.length, matched: matches.length, processed: cursor, updated, applied: apply, output }, null, 2));
