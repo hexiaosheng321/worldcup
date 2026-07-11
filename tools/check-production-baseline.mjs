@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 
 const index = fs.readFileSync("web/index.html", "utf8");
 const main = fs.readFileSync("web/app/app-main.js", "utf8");
+const detailApp = fs.readFileSync("web/app/app-detail.js", "utf8");
 const panels = fs.readFileSync("web/app/app-panels.js", "utf8");
 const styles = fs.readFileSync("web/styles.css", "utf8");
 const sync = fs.readFileSync("tools/sync-sporttery-cache.mjs", "utf8");
@@ -135,6 +136,12 @@ if (missingUnifiedPredictionMarkers.length) {
 }
 for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "conflicts with mainScore mapping"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing mandatory FINAL_LOCK gate: ${marker}`);
+}
+for (const marker of ["enrichPredictionFromUnifiedRun", "body.sportteryPrediction = enrichPredictionFromUnifiedRun"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline requires FINAL_LOCK evidence hydration: ${marker}`);
+}
+for (const marker of ["renderJudgementRiskPanel", 'data-fixed-detail-panel="judgement-risk"']) {
+  if (!detailApp.includes(marker)) throw new Error(`Production baseline requires persistent judgement risk panel: ${marker}`);
 }
 if (!api.includes("only the preferred FINAL_LOCK can enter Case Base")) {
   throw new Error("Production baseline requires one official Case per preferred FINAL_LOCK.");

@@ -3237,6 +3237,29 @@ function renderWorldCupFullProjection(match, pred, filter, odds) {
   `;
 }
 
+function renderJudgementRiskPanel(pred = {}, fallbackNotes = []) {
+  const notes = [
+    pred?.decisionConflict,
+    pred?.keyFailureRisk,
+    pred?.eventRisk,
+    pred?.dataQuality,
+    ...(Array.isArray(fallbackNotes) ? fallbackNotes : []),
+  ]
+    .map((note) => displayModelText(note))
+    .filter(Boolean)
+    .filter((note, index, rows) => rows.indexOf(note) === index)
+    .slice(0, 4);
+  if (!notes.length) notes.push("当前没有完整风险证据，正式判断前仍需复核盘口冲突、阵容变化和最可能失败方式。");
+  return `
+    <section class="match-page-section sporttery-risk-panel judgement-risk-panel" data-fixed-detail-panel="judgement-risk">
+      <span>判断风险</span>
+      <div class="sporttery-risk-list">
+        ${notes.map((note) => `<em>${note}</em>`).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderMatchDetail(no) {
   const content = document.querySelector("#match-detail-body");
   const match = matches.find((item) => item.no === no);
@@ -3287,6 +3310,7 @@ function renderMatchDetail(no) {
     <div class="match-mode-panel" data-match-mode-panel="full" hidden>
       ${renderWorldCupFullProjection(match, pred, filter, odds)}
     </div>
+    ${renderJudgementRiskPanel(pred)}
     <div class="match-page-actions">
       <button type="button" data-detail-model="${match.no}">赛事推演锁版</button>
       <button type="button" class="secondary" data-detail-review="${match.no}">模型复盘统计</button>
@@ -4344,16 +4368,6 @@ function renderSportteryMatchDetail(key) {
               : "这场比赛还没有真实模型推演记录。当前只显示盘口预筛信息，完成推演并锁版后会展示完整模型链路和最终结论。"
         }</p>
       </section>
-      <section class="match-page-section sporttery-risk-panel">
-        <span>判断风险</span>
-        <div class="sporttery-risk-list">
-          ${
-            research.riskNotes.length
-              ? research.riskNotes.map((note) => `<em>${note}</em>`).join("")
-              : "<em>盘口结构暂未出现明显冲突，仍需结合临场阵容和赛程动机。</em>"
-          }
-        </div>
-      </section>
       ${renderFootballDataLayerPanel(item, modelPred)}
       ${renderLeagueProfilePanel(item, modelPred)}
       ${renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp)}
@@ -4361,6 +4375,7 @@ function renderSportteryMatchDetail(key) {
     <div class="match-mode-panel" data-match-mode-panel="full" hidden>
       ${renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreOdds, sourceStamp)}
     </div>
+    ${renderJudgementRiskPanel(modelPred, research.riskNotes)}
     <div class="match-page-actions">
       ${item.linkedNo ? `<button type="button" data-detail-model="${item.linkedNo}">赛事推演锁版</button>` : ""}
       ${modelPred && !item.linkedNo ? `<button type="button" data-detail-global-stats>统计和回测</button>` : ""}

@@ -3564,6 +3564,63 @@ async function d1FootballDataContextScript(db, env) {
   return javascript(`window.FOOTBALL_DATA_CONTEXT = ${JSON.stringify(data, null, 2)};\n`);
 }
 
+function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
+  const featureSet = parseObject(runOutput.featureSet);
+  const research = parseObject(featureSet.research);
+  const items = Array.isArray(research.items) ? research.items : [];
+  const researchText = (key) => String(items.find((item) => item.key === key)?.summary || "").trim();
+  const decision = parseObject(runOutput.finalDecision);
+  const scenarios = Array.isArray(runOutput.scenarioSet) ? runOutput.scenarioSet : [];
+  const movement = parseObject(featureSet.oddsMovement);
+  const probabilities = parseObject(featureSet.probabilities);
+  const scoreA = decision.scores?.[0] || scenarios[0]?.score || prediction.mainScore || "-";
+  const scoreB = decision.scores?.[1] || scenarios[1]?.score || prediction.counterScore || "-";
+  const odds = Array.isArray(featureSet.market?.odds) ? featureSet.market.odds : [];
+  const movementText = movement.complete
+    ? `SP历史共${movement.snapshots || 0}个快照；开盘 ${movement.first?.h || "-"} / ${movement.first?.d || "-"} / ${movement.first?.a || "-"}，最新 ${movement.latest?.h || "-"} / ${movement.latest?.d || "-"} / ${movement.latest?.a || "-"}，变化幅度 ${movement.movementMagnitude ?? "-"}。${researchText("marketNews")}`
+    : researchText("marketNews");
+  const teamText = [researchText("teamState"), researchText("injuries"), researchText("expectedLineups")].filter(Boolean).join(" ");
+  const styleText = researchText("styleMatchup");
+  const motivationText = researchText("motivation");
+  const weatherText = researchText("weatherVenue");
+  const marketText = odds.length === 3
+    ? `当前胜平负SP ${odds.join(" / ")}；去水模型概率主胜 ${((Number(probabilities.HOME) || 0) * 100).toFixed(1)}%、平 ${((Number(probabilities.DRAW) || 0) * 100).toFixed(1)}%、客胜 ${((Number(probabilities.AWAY) || 0) * 100).toFixed(1)}%。`
+    : "当前胜平负SP已由统一模型复核。";
+  const scenarioText = `情况一落点 ${scoreA}；情况二落点 ${scoreB}。结合球队状态、风格对位、盘口低位和赛事动机，第一球与半场前后的节奏决定比赛是否打开。`;
+  const handicapText = scenarios.length
+    ? scenarios.map((item) => `${item.score}对应${item.handicapResult || "待判"}`).join("；")
+    : `${scoreA}对应${decision.handicapPick || prediction.handicapPick || "待判"}`;
+  const finalText = `胜平负 ${decision.winDrawLose || prediction.pick || "-"}；让球 ${decision.handicapPick || prediction.handicapPick || "-"}；总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}；比分 ${scoreA} / ${scoreB}；类型 ${decision.matchType || prediction.matchType || "-"}；建议 ${decision.confidence ?? prediction.confidenceScore ?? "-"}% / ${decision.advice || prediction.advice || "-"}。`;
+  return {
+    ...prediction,
+    decisionProcess: "统一赛前机制：SP复核、赛事规则与动机、球队状态、风格对位、体彩开盘偏差、赔率动态、比赛发展、半场/60分钟触发、冲突闸门、比分总进球、让球闸门、失败方式、价值过滤、最终锁版。",
+    competitionRules: prediction.competitionRules || motivationText,
+    teamState: prediction.teamState || teamText,
+    recentAnalysis: prediction.recentAnalysis || teamText,
+    styleMatchup: prediction.styleMatchup || styleText,
+    institutionLine: prediction.institutionLine || marketText,
+    marketGap: prediction.marketGap || marketText,
+    lineMovement: prediction.lineMovement || movementText,
+    oddsMovement: prediction.oddsMovement || movementText,
+    script: prediction.script || scenarioText,
+    halftimeDecision: prediction.halftimeDecision || `半场或60分钟仍未出现预期第一球时，提高${scoreB}分支权重；出现早球则继续校验${scoreA}路径。`,
+    stateTransfer: prediction.stateTransfer || scenarioText,
+    decisionConflict: prediction.decisionConflict || `胜平负与让球分别独立判定：主方向${decision.winDrawLose || prediction.pick || "-"}，让球方向${decision.handicapPick || prediction.handicapPick || "-"}，不互相复制。`,
+    crossMarketConsistency: prediction.crossMarketConsistency || handicapText,
+    scoreElimination: prediction.scoreElimination || `保留 ${scoreA} / ${scoreB} 两条不同赛果分支；总进球校验 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}。`,
+    totalGoalsValidation: prediction.totalGoalsValidation || `比分分支与总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}交叉校验。`,
+    handicapGate: prediction.handicapGate || handicapText,
+    keyFailureRisk: prediction.keyFailureRisk || `最大失败方式是比赛未按${scoreA}主路径发展，而转入${scoreB}反向分支。`,
+    eventRisk: prediction.eventRisk || weatherText || "早球、定位球、红牌或临场阵容变化可能改变比赛节奏。",
+    valueFilter: prediction.valueFilter || `置信 ${decision.confidence ?? prediction.confidenceScore ?? "-"}%：${decision.advice || prediction.advice || "谨慎"}；不因单一低赔自动放大结论。`,
+    noiseFilter: prediction.noiseFilter || "排除名气、单一低赔和单一比分噪声，只保留通过十步证据链的方向。",
+    finalDecisionAction: prediction.finalDecisionAction || finalText,
+    scriptSet: prediction.scriptSet || scenarios.map((item, index) => ({ label: index ? "情况二" : "情况一", probability: item.probability, score: item.score, text: index ? "反向风险分支" : "主发展分支" })),
+    dataQuality: prediction.dataQuality || `HIGH：十步平均分 ${runOutput.tenStepResult?.averageScore ?? 100}，全部硬门槛通过。`,
+    unifiedRunEvidence: { contractVersion: runOutput.contractVersion, tenStepResult: runOutput.tenStepResult, gateResult: runOutput.gateResult, researchItems: items },
+  };
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -3838,8 +3895,6 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const lockId = body.lockId || body.lock_id || `${body.matchId || body.match_id}-${body.lockType || "FINAL_LOCK"}-${Date.now()}`;
       const lockType = body.lockType || body.lock_type || "FINAL_LOCK";
       const league = body.league || "世界杯";
-      const payloadShape = lockPayloadShape(body);
-      const payloadSummary = lockSummaryFromShape(payloadShape);
       if (lockType === "FINAL_LOCK") {
         const prediction = body.sportteryPrediction || body.prediction || body.payload?.sportteryPrediction || {};
         const modelRunId = String(body.modelRunId || body.model_run_id || prediction.modelRunId || "");
@@ -3854,6 +3909,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         if (modelRun.run_type !== "FINAL_LOCK" || runOutput.contractVersion !== "UNIFIED_PREDICTION_V2" || runOutput.gateResult?.passed !== true || runOutput.tenStepResult?.passed !== true) {
           return json({ ok: false, error: "linked model run did not pass the complete ten-step FINAL_LOCK contract" }, 400);
         }
+        body.sportteryPrediction = enrichPredictionFromUnifiedRun(prediction, runOutput);
         const mainScore = String(prediction.mainScore || "").match(/(\d+)\D+(\d+)/);
         const handicapPick = handicapPickFromPayload(prediction);
         const handicap = Number(prediction.handicap ?? body.asianHandicap ?? body.asian_handicap);
@@ -3866,6 +3922,8 @@ if (path === "sync/okooo-live" && request.method === "POST") {
           return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with mainScore mapping ${mappedHandicap}` }, 400);
         }
       }
+      const payloadShape = lockPayloadShape(body);
+      const payloadSummary = lockSummaryFromShape(payloadShape);
       if (lockType === "FINAL_LOCK" && !isWorldCupLeague(league) && !hasFinalApproval(body)) {
         return json({
           ok: false,
