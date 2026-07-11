@@ -51,10 +51,12 @@ function dateKey(value = "") {
 function teamKey(value = "") {
   const raw = String(value || "").trim();
   const aliases = [
+    [/^(?:挪威|Norway)$/i, "norway"], [/^(?:英格兰|England)$/i, "england"],
+    [/^(?:阿根廷|Argentina)$/i, "argentina"], [/^(?:瑞士|Switzerland)$/i, "switzerland"],
     [/腓特烈(?:斯塔)?/i, "fredrikstad"], [/利勒斯(?:特罗姆)?/i, "lillestrom"],
     [/特罗姆(?:瑟)?/i, "tromso"], [/瓦勒伦(?:加)?/i, "valerenga"], [/奥勒松/i, "aalesund"], [/莫尔德/i, "molde"],
     [/米亚尔(?:比)?/i, "mjallby"], [/(?:AIK)?索尔纳/i, "aik"], [/厄尔格|奥尔格里特/i, "orgryte"], [/赫根/i, "hacken"],
-    [/拉赫蒂|Lahti/i, "lahti"], [/赫尔辛(?:基)?|HJK(?: Helsinki)?/i, "hjk"], [/玛丽港|Mariehamn/i, "mariehamn"],
+    [/拉赫蒂|Lahti/i, "lahti"], [/HIFK|Helsinki IFK/i, "hifk"], [/赫尔火|赫尔辛基火花|IF Gnistan/i, "gnistan"], [/赫尔辛(?:基)?|HJK(?: Helsinki)?/i, "hjk"], [/玛丽港|Mariehamn/i, "mariehamn"],
     [/AC\s*奥(?:卢)?|AC\s*Oulu/i, "acoulu"], [/TPS|Turku\s*PS/i, "tps"],
   ];
   const matched = aliases.find(([pattern]) => pattern.test(raw));
@@ -223,12 +225,18 @@ function researchAudit(research = {}, asOf = new Date().toISOString()) {
     const numericImpact = ["home", "draw", "away", "xgHome", "xgAway"].every((field) => Number.isFinite(Number(impact[field])));
     const evidenceGrade = String(entry.evidenceGrade || "").toUpperCase();
     const beforeLock = (!entry.capturedAt || Date.parse(entry.capturedAt) <= Date.parse(asOf)) && (!observedAt || Date.parse(observedAt) <= Date.parse(asOf));
-    const complete = entry.status === "VERIFIED" && String(entry.summary || "").trim().length >= 20 && sources.length > 0 && capturedFresh && observedFresh && beforeLock && numericImpact && ["A", "B", "C"].includes(evidenceGrade);
+    const verified = entry.status === "VERIFIED" && String(entry.summary || "").trim().length >= 20 && sources.length > 0 && capturedFresh && observedFresh && beforeLock && numericImpact && ["A", "B", "C"].includes(evidenceGrade);
+    const nonDecisiveUnavailable = ["injuries", "expectedLineups"].includes(key)
+      && entry.status === "NOT_PUBLISHED"
+      && String(entry.summary || "").trim().length >= 20
+      && sources.length > 0 && capturedFresh && observedFresh && beforeLock && numericImpact
+      && ["home", "draw", "away", "xgHome", "xgAway"].every((field) => Number(impact[field]) === 0);
+    const complete = verified || nonDecisiveUnavailable;
     if (complete) {
       const weight = weights[key] || 0;
       for (const field of Object.keys(adjustment)) adjustment[field] += Number(impact[field]) * weight;
     }
-    return { key, complete, status: entry.status || "MISSING", summary: entry.summary || "", sources, capturedAt: entry.capturedAt || "", observedAt, freshnessHours: freshnessHours[key] || 72, capturedFresh: Boolean(capturedFresh), observedFresh: Boolean(observedFresh), beforeLock: Boolean(beforeLock), evidenceGrade, impact: numericImpact ? Object.fromEntries(Object.keys(adjustment).map((field) => [field, round(Number(impact[field]))])) : null };
+    return { key, complete, verified, nonDecisiveUnavailable, status: entry.status || "MISSING", summary: entry.summary || "", sources, capturedAt: entry.capturedAt || "", observedAt, freshnessHours: freshnessHours[key] || 72, capturedFresh: Boolean(capturedFresh), observedFresh: Boolean(observedFresh), beforeLock: Boolean(beforeLock), evidenceGrade, impact: numericImpact ? Object.fromEntries(Object.keys(adjustment).map((field) => [field, round(Number(impact[field]))])) : null };
   });
   const capped = Object.fromEntries(Object.entries(adjustment).map(([key, value]) => [key, round(Math.max(key.startsWith("xg") ? -0.5 : -0.12, Math.min(key.startsWith("xg") ? 0.5 : 0.12, value)))]));
   return { complete: items.every((item) => item.complete), items, missing: items.filter((item) => !item.complete).map((item) => item.key), adjustment: capped };
@@ -386,10 +394,20 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const handicapProbabilities = normalizeProbabilities(handicapLabels.map((_, index) => handicapParts.reduce((sum, part) => sum + part.probabilities[index] * part.weight, 0) / handicapWeightTotal));
   const rankedHandicap = handicapLabels.map((label, index) => ({ label, probability: handicapProbabilities[index] })).sort((a, b) => b.probability - a.probability);
   const jointDecision = jointDirectionHandicapDecision(scores, probabilities, handicapProbabilities, match.handicap);
-  const selectedDirection = rankedResults[0].label;
-  const handicapPick = rankedHandicap[0]?.label || "待判";
-  const independentPair = jointDecision.candidates.find((item) => item.direction === selectedDirection && item.handicapPick === handicapPick) || { direction: selectedDirection, handicapPick, scoreProbability: 0, marginalProduct: 0, score: 0 };
-  const jointCompatibility = independentPair.scoreProbability > 0;
+  const independentDirectionLeader = rankedResults[0].label;
+  const independentHandicapLeader = rankedHandicap[0]?.label || "待判";
+  const independentPair = jointDecision.candidates.find((item) => item.direction === independentDirectionLeader && item.handicapPick === independentHandicapLeader) || { direction: independentDirectionLeader, handicapPick: independentHandicapLeader, scoreProbability: 0, marginalProduct: 0, score: 0 };
+  // Compatibility alone never changes a pick. When independent leaders conflict,
+  // the shared score model acts as an evidence arbiter and ranks all supported
+  // pairs by joint score mass plus the two independent marginal probabilities.
+  const conditionalDirectionCandidates = jointDecision.candidates
+    .filter((item) => item.direction === independentDirectionLeader)
+    .sort((left, right) => right.score - left.score);
+  const resolvedPair = independentPair.scoreProbability > 0 ? independentPair : conditionalDirectionCandidates[0];
+  const selectedDirection = resolvedPair?.direction || independentDirectionLeader;
+  const handicapPick = resolvedPair?.handicapPick || independentHandicapLeader;
+  const jointCompatibility = Boolean(resolvedPair && resolvedPair.scoreProbability > 0);
+  const jointResolutionApplied = selectedDirection !== independentDirectionLeader || handicapPick !== independentHandicapLeader;
   mainScore = scores.find((row) => scoreResult(row) === selectedDirection && handicapResult(row, match.handicap) === handicapPick)
     || scores.find((row) => scoreResult(row) === selectedDirection)
     || scores[0];
@@ -415,13 +433,14 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const recentFormFresh = daysBetween(newestHomeForm, beforeDate) <= formFreshnessDays && daysBetween(newestAwayForm, beforeDate) <= formFreshnessDays;
   const fundamentalDataComplete = xg.homeRows.length >= 5 && xg.awayRows.length >= 5 && Boolean(formBaseline) && recentFormFresh;
   const evidenceCompleteness = RESEARCH_KEYS.filter((key) => research.items.find((item) => item.key === key)?.complete).length / RESEARCH_KEYS.length;
+  const unavailableNonDecisiveCount = research.items.filter((item) => item.nonDecisiveUnavailable).length;
   const sourceCapturedAt = Date.parse(context.sourceCapturedAt || "");
   const kickoffAt = Date.parse(match.kickoffTime || `${beforeDate}T23:59:59+08:00`);
   const temporalIntegrity = !Number.isFinite(sourceCapturedAt) || !Number.isFinite(kickoffAt) || sourceCapturedAt <= kickoffAt;
   const dataQualityScore = Math.round(
     (fundamentalDataComplete ? 35 : Math.min(25, (xg.homeRows.length + xg.awayRows.length) * 2.5))
     + Math.min(25, samples.length / 2)
-    + evidenceCompleteness * 25
+    + evidenceCompleteness * 25 - unavailableNonDecisiveCount * 4
     + (movement.complete ? 10 : 0)
     + (temporalIntegrity ? 5 : 0)
   );
@@ -483,7 +502,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       recentForm: { home: xg.homeRows, away: xg.awayRows },
       recentFormFresh,
       fundamentalDataComplete,
-      dataQuality: { score: dataQualityScore, grade: dataQualityScore >= 85 ? "A" : dataQualityScore >= 70 ? "B" : dataQualityScore >= 55 ? "C" : "D", temporalIntegrity, evidenceCompleteness: round(evidenceCompleteness), minimumRecentMatchesPerTeam: 5 },
+      dataQuality: { score: dataQualityScore, grade: dataQualityScore >= 85 ? "A" : dataQualityScore >= 70 ? "B" : dataQualityScore >= 55 ? "C" : "D", temporalIntegrity, evidenceCompleteness: round(evidenceCompleteness), unavailableNonDecisiveCount, minimumRecentMatchesPerTeam: 5 },
       sampleCount: samples.length,
       oddsMovement: movement,
       research,
@@ -498,7 +517,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       },
       score: { components: scoreModel.parts, historicalSampleCount: scoreModel.historicalSampleCount, marketComplete: scoreModel.marketComplete },
       totals: { probabilities: Object.fromEntries(totalModel.probabilities), components: totalModel.components, marketComplete: totalModel.marketComplete },
-      jointDecision: { selected: independentPair, candidateCount: jointDecision.candidates.length, independentDirectionLeader: selectedDirection, independentHandicapLeader: handicapPick, role: "HARD_CONSTRAINT_ONLY" },
+      jointDecision: { selected: resolvedPair, candidateCount: jointDecision.candidates.length, independentDirectionLeader, independentHandicapLeader, independentPairCompatible: independentPair.scoreProbability > 0, resolutionApplied: jointResolutionApplied, directionPreserved: selectedDirection === independentDirectionLeader, role: "CONDITIONAL_HANDICAP_EVIDENCE_AFTER_INDEPENDENT_CONFLICT" },
     },
     scenarioSet: topScores.map((row, index) => ({ rank: index + 1, score: row.score, probability: round(row.probability), handicapResult: handicapMapped[index]?.result })),
     tenStepResult: { passed: tenStepPassed, steps: stepScores, averageScore: round(stepScores.reduce((sum, step) => sum + step.score, 0) / stepScores.length, 1) },
@@ -517,6 +536,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "体彩赔率只做有上限的校准，不得替代缺失的基本面",
         "胜平负、让球、总进球和比分必须共享同一联合比分分布",
         "每队至少五场新鲜赛前比赛数据，缺失时进入DATA_REPAIR",
+        "伤停和预计首发必须先搜索；未发布时只允许记录NOT_PUBLISHED、中性0并降低数据质量，不得虚构",
         "只有preferred FINAL_LOCK赛后结算才能生成并复用Base Case",
       ],
       drawOverrideNeeded,

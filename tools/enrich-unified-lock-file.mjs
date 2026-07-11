@@ -5,7 +5,7 @@ if (!file) throw new Error("Usage: node tools/enrich-unified-lock-file.mjs <manu
 const locks = JSON.parse(await fs.readFile(file, "utf8"));
 for (const lock of locks) {
   const id = String(lock.matchId || "").replace(/^sporttery-/, "");
-  const run = JSON.parse(await fs.readFile(`/tmp/prediction-${id}.json`, "utf8"));
+  const run = JSON.parse(await fs.readFile(`/tmp/v4-${id}.json`, "utf8"));
   const research = Object.fromEntries((run.featureSet?.research?.items || []).map((item) => [item.key, item.summary]));
   const movement = run.featureSet?.oddsMovement || {};
   const first = movement.first || {};

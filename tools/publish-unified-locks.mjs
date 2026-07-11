@@ -13,7 +13,7 @@ const grade = (confidence) => confidence >= 70 ? "A" : confidence >= 60 ? "B" : 
 const sideText = { HOME: "胜", DRAW: "平", AWAY: "负" };
 
 for (const id of ids) {
-  const run = JSON.parse(await fs.readFile(`/tmp/prediction-${id}.json`, "utf8"));
+  const run = JSON.parse(await fs.readFile(`/tmp/v4-${id}.json`, "utf8"));
   if (run.lockType !== "FINAL_LOCK" || !run.gateResult?.passed || !run.tenStepResult?.passed) throw new Error(`${id} has not passed FINAL_LOCK gates`);
   const item = live.find((row) => String(row.matchId || row.cloudMatchId || "").replace(/^sporttery-/, "") === String(id));
   if (!item) throw new Error(`${id} missing from live pool`);
@@ -22,7 +22,7 @@ for (const id of ids) {
   const modelRunId = run.sourceContext?.modelRunId;
   const handicap = Number(String(item.handicap || "0").replace("+", ""));
   const lock = {
-    lockId: `manual-sporttery-${id}-20260711-v3-final-r2`, matchId: `sporttery-${id}`, modelRunId,
+    lockId: `manual-sporttery-${id}-20260711-v4-final-r1`, matchId: `sporttery-${id}`, modelRunId,
     matchCode: item.issue || item.no || "", homeTeam: item.home, awayTeam: item.away, league: run.match.league,
     kickoffTime: `${item.matchDate || item.ticaiDate} ${item.kickoffTime}`, lockedAt: new Date().toISOString(), lockType: "FINAL_LOCK",
     modelVersion: run.modelVersion, finalApproval: true,
@@ -31,10 +31,10 @@ for (const id of ids) {
     finalGrade: grade(decision.confidence), finalAction: decision.advice, confidenceScore: decision.confidence,
     riskScore: 100 - decision.confidence, consistencyScore: 100,
     sportteryHomeSp: Number(item.normal?.win), sportteryDrawSp: Number(item.normal?.draw), sportteryAwaySp: Number(item.normal?.lose),
-    asianHandicap: handicap, dataQuality: "HIGH",
+    asianHandicap: handicap, dataQuality: run.featureSet?.dataQuality?.grade || "D",
     reasoningSummary: `统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立映射、失败方式和价值过滤。主脚本${decision.scores[0]}，风险脚本${decision.scores[1]}。`,
     sportteryPrediction: {
-      type: `${run.match.league} 联赛 V1 模型锁版`, matchId: id, no: item.no || "", issue: item.issue || "",
+      type: `${run.match.league} 稳定 V4 模型锁版`, matchId: id, no: item.no || "", issue: item.issue || "",
       matchDate: item.matchDate || item.ticaiDate, kickoffTime: item.kickoffTime, competition: run.match.league,
       home: item.home, away: item.away, modelVersion: run.modelVersion, pick: decision.winDrawLose,
       handicap: item.handicap, handicapPick: decision.handicapPick, totalGoalsPick: decision.totalGoalsPick,
@@ -50,6 +50,6 @@ for (const id of ids) {
   console.log(JSON.stringify({ id, lockId: result.lockId, decision }));
 }
 
-const output = `web/data/manual-locks-20260711-v3-r2.json`;
+const output = `web/data/manual-locks-20260711-v4-r1.json`;
 await fs.writeFile(output, `${JSON.stringify(locks, null, 2)}\n`, "utf8");
 console.log(JSON.stringify({ ok: true, output, count: locks.length }, null, 2));
