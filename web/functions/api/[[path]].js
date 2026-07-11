@@ -915,6 +915,7 @@ const sportteryHeaders = {
 };
 
 const okoooJczqUrl = "https://m.okooo.com/jczq/";
+const fiveHundredJczqUrl = "https://trade.500.com/jczq/";
 const okoooHeaders = {
   accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   "accept-language": "zh-CN,zh;q=0.9",
@@ -2835,9 +2836,40 @@ async function fetchOkoooJczqMatches(env) {
   if (!response.ok) throw new Error(`OKOOO ${response.status}: ${text.slice(0, 200)}`);
   return parseOkoooJczqMatches(text);
 }
+
+function parseFiveHundredKickoffs(html = "") {
+  const rows = new Map();
+  const pattern = /<tr\b[^>]*class="[^"]*bet-tb-tr[^"]*"[^>]*>/gi;
+  for (const tag of html.match(pattern) || []) {
+    const attr = (name) => tag.match(new RegExp(`${name}="([^"]*)"`, "i"))?.[1] || "";
+    const orderId = attr("data-processname");
+    const matchDate = attr("data-matchdate");
+    const kickoffTime = attr("data-matchtime").slice(0, 5);
+    const salesCloseAt = attr("data-buyendtime");
+    if (!orderId || !/^\d{4}-\d{2}-\d{2}$/.test(matchDate) || !/^\d{2}:\d{2}$/.test(kickoffTime)) continue;
+    rows.set(orderId, { matchDate, kickoffTime, salesCloseAt, fixtureId: attr("data-fixtureid") });
+  }
+  return rows;
+}
+
+async function fetchFiveHundredKickoffs(env) {
+  const response = await fetch(env.FIVE_HUNDRED_JCZQ_URL || fiveHundredJczqUrl, {
+    headers: { accept: "text/html", "user-agent": okoooHeaders["user-agent"] },
+    signal: AbortSignal.timeout(12000),
+  });
+  const text = decodeTextBody(await response.arrayBuffer());
+  if (!response.ok) throw new Error(`500.com ${response.status}: ${text.slice(0, 160)}`);
+  return parseFiveHundredKickoffs(text);
+}
 async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
   const capturedAt = new Date().toISOString();
   const okoooMatches = await fetchOkoooJczqMatches(env);
+  let fiveHundredByOrderId = new Map();
+  try {
+    fiveHundredByOrderId = await fetchFiveHundredKickoffs(env);
+  } catch {
+    fiveHundredByOrderId = new Map();
+  }
   let calculatorRaw = suppliedCalculatorRaw;
   if (!calculatorRaw) {
     try {
@@ -2856,11 +2888,14 @@ async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
   );
   const matches = okoooMatches.map((match) => {
     const official = officialByOrderId.get(match.orderId);
+    const fiveHundred = fiveHundredByOrderId.get(match.orderId);
     return {
       ...match,
-      matchDate: official?.matchDate || "",
-      kickoffTime: official?.kickoffTime || "",
-      kickoffSource: official ? "sporttery-official" : "pending-official-schedule",
+      matchDate: official?.matchDate || fiveHundred?.matchDate || "",
+      kickoffTime: official?.kickoffTime || fiveHundred?.kickoffTime || "",
+      kickoffSource: official ? "sporttery-official" : fiveHundred ? "500-jczq-matchtime" : "pending-official-schedule",
+      fiveHundredFixtureId: fiveHundred?.fixtureId || "",
+      salesCloseAt: fiveHundred?.salesCloseAt || match.salesCloseTime || "",
       officialMatchId: official?.matchId || "",
     };
   });
@@ -2869,6 +2904,15 @@ async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
 
   for (const match of matches) {
     const matchId = sportteryDbMatchId(match);
+    if (!match.kickoffTime) {
+      const existing = await db.prepare("SELECT kickoff_time, payload_json FROM matches WHERE match_id = ?").bind(matchId).first();
+      const existingPayload = parseObject(existing?.payload_json);
+      if (existingPayload.kickoffTime) {
+        match.matchDate = existingPayload.matchDate || String(existing.kickoff_time || "").slice(0, 10) || match.ticaiDate;
+        match.kickoffTime = existingPayload.kickoffTime;
+        match.kickoffSource = existingPayload.kickoffSource || "existing-reliable-schedule";
+      }
+    }
 
     await db.prepare(`
       INSERT INTO matches (match_id, match_code, league, home_team, away_team, kickoff_time, status, payload_json, updated_at)

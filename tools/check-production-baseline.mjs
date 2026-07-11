@@ -200,6 +200,9 @@ if (missingRegularTimeMarkers.length) {
 for (const marker of ["beijingDateTimeFromUtc", 'timezone", "Asia/Shanghai"', "kickoffUpdated", "live-schedule-"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires real kickoff-time hydration: ${marker}`);
 }
+for (const marker of ["parseFiveHundredKickoffs", 'data-matchtime', 'data-buyendtime', '500-jczq-matchtime', 'existing-reliable-schedule']) {
+  if (!api.includes(marker)) throw new Error(`Production baseline requires preferred 500.com kickoff-time ingestion: ${marker}`);
+}
 
 const okoooDirectionMarkers = [
   'normal["16"]',
