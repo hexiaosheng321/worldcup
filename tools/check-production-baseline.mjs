@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 
 const index = fs.readFileSync("web/index.html", "utf8");
 const main = fs.readFileSync("web/app/app-main.js", "utf8");
+const homeApp = fs.readFileSync("web/app/app-home.js", "utf8");
 const detailApp = fs.readFileSync("web/app/app-detail.js", "utf8");
 const panels = fs.readFileSync("web/app/app-panels.js", "utf8");
 const styles = fs.readFileSync("web/styles.css", "utf8");
@@ -236,6 +237,9 @@ if (missingKickoffSourceMarkers.length) {
 }
 for (const marker of ["okoooLiveCenterUrl", "fetchOkoooJczqLiveScores", "OKOOO-live", "ctrl_homescore", "ctrl_awayscore"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires OKOOO in-play score ingestion: ${marker}`);
+}
+for (const marker of ['data-live-score-active', 'dataset.liveScoreActive === "1"']) {
+  if (!homeApp.includes(marker)) throw new Error(`Production baseline requires homepage live-score timer protection: ${marker}`);
 }
 if (!sync.includes('postApi("/api/sync/okooo-live", { calculatorRaw })')) {
   throw new Error("Production baseline requires the reachable sync runner to supply official kickoff times to OKOOO odds sync.");

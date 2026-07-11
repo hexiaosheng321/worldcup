@@ -532,6 +532,9 @@ function updateMatchFlowTimers() {
     const kickoffAt = Number(node.dataset.kickoffAt);
     const homeCard = node.closest(".home-match-card");
     if (homeCard?.classList.contains("finished")) return;
+    // A live score is authoritative. The one-second countdown timer must not
+    // replace it with the generic "进行中 / 等待回填" placeholder.
+    if (homeCard?.dataset.liveScoreActive === "1") return;
     node.textContent = formatMatchCountdown(kickoffAt);
     const card = node.closest(".match-card");
     if (card && kickoffAt && Date.now() >= kickoffAt && !card.classList.contains("finished")) {
@@ -658,7 +661,7 @@ function renderHome() {
       const countdownLabel = liveStatus.tone === "countdown" ? "距离开赛" : liveStatus.label;
       const countdownNote = liveStatus.tone === "countdown" ? `${kickoffLabel} 北京时间` : liveStatus.note;
       return `
-        <button type="button" class="home-match-card ${liveStatus.tone === "live" ? "is-live" : ""} ${liveStatus.tone === "pending-result" ? "pending-result" : ""} ${liveStatus.tone === "finished" ? "finished" : ""}" ${cardTarget}>
+        <button type="button" class="home-match-card ${liveStatus.tone === "live" ? "is-live" : ""} ${liveStatus.tone === "pending-result" ? "pending-result" : ""} ${liveStatus.tone === "finished" ? "finished" : ""}" data-live-score-active="${liveStatus.tone === "live" && normalizeResultScore(liveStatus.value) ? "1" : "0"}" ${cardTarget}>
           <span>${groupLabel}</span>
           <em>${formatDate(match.date)}</em>
           <strong>${match.home}<small>vs</small>${match.away}</strong>
