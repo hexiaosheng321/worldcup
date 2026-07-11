@@ -462,8 +462,8 @@ async function historicalSimilarSamples(db, current) {
   const summary = stats(pool, current);
   summary.lockedSampleCount = 0;
   summary.externalSampleCount = pool.length;
-  summary.strictSampleCount = strictPool.length;
-  summary.distributionSampleCount = Math.max(0, pool.length - Math.min(pool.length, strictPool.length));
+  summary.strictSampleCount = Math.min(pool.length, strictPool.length);
+  summary.distributionSampleCount = Math.max(0, pool.length - summary.strictSampleCount);
   summary.samplePolicyLabel = pool.length >= 30 ? "参与分布校验" : summary.samplePolicyLabel;
   summary.samplePolicyNote = fallbackPool.length
     ? `严格相似盘口 ${strictPool.length} 场；不足部分已用同联赛历史分布样本补充。补充样本只校验赛果、比分和总进球，不修正模型置信。`
