@@ -128,6 +128,8 @@ const gradeRank = { A: 4, B: 3, C: 2, D: 1 };
 const competitionRules = [
   ["世界杯", /世界杯|World Cup/i],
   ["芬超", /芬超|Finland|Veikkausliiga/i],
+  ["瑞超", /瑞典超|瑞超|Allsvenskan|Sweden/i],
+  ["挪超", /挪超|Eliteserien|Norway/i],
   ["日职", /日职|J1|J联赛|Japan/i],
   ["韩职", /韩职|K联赛|K League/i],
   ["欧冠", /欧冠|Champions League/i],
@@ -433,27 +435,50 @@ async function historicalSimilarSamples(db, current) {
   const { results } = await db.prepare(query).bind(...bindings).all();
   const mapped = (results || []).map(rowToExternalSample);
   const hasCurrentMarket = has(current.euroHomeOdds, current.euroDrawOdds, current.euroAwayOdds) || has(current.sportteryHomeSp, current.sportteryDrawSp, current.sportteryAwaySp);
-  const pool = dedupeHistoricalSamples(mapped
+  const strictPool = dedupeHistoricalSamples(mapped
     .map((item) => ({ ...item, similarityScore: similarity(current, item), distributionOnly: !hasCurrentMarket }))
     .filter((item) => item.distributionOnly || item.similarityScore >= threshold)
   )
+    .sort((a, b) => Number(a.distributionOnly) - Number(b.distributionOnly) || b.similarityScore - a.similarityScore);
+  const sampleLimit = Math.min(Math.max(Number(current.sampleLimit || 50), 10), 100);
+  let fallbackPool = [];
+  if (strictPool.length < 10) {
+    const broad = await db.prepare(`
+      SELECT * FROM external_historical_samples
+      WHERE league = ? AND data_quality IN ('HIGH', 'MEDIUM')
+      ORDER BY kickoff_time DESC LIMIT ?
+    `).bind(league, candidateLimit).all();
+    const strictKeys = new Set(strictPool.map(historicalFixtureKey));
+    fallbackPool = dedupeHistoricalSamples((broad.results || [])
+      .map(rowToExternalSample)
+      .filter((item) => !strictKeys.has(historicalFixtureKey(item)))
+      .map((item) => ({ ...item, similarityScore: similarity(current, item), distributionOnly: true }))
+    ).sort((a, b) => b.similarityScore - a.similarityScore);
+  }
+  const pool = [...strictPool, ...fallbackPool]
     .sort((a, b) => Number(a.distributionOnly) - Number(b.distributionOnly) || b.similarityScore - a.similarityScore)
-    .slice(0, Math.min(Math.max(Number(current.sampleLimit || 50), 10), 100));
+    .slice(0, sampleLimit);
   const topCases = pool.slice(0, Math.min(Math.max(Number(current.topLimit || 5), 1), 20));
   const summary = stats(pool, current);
   summary.lockedSampleCount = 0;
   summary.externalSampleCount = pool.length;
+  summary.strictSampleCount = strictPool.length;
+  summary.distributionSampleCount = Math.max(0, pool.length - Math.min(pool.length, strictPool.length));
   summary.samplePolicyLabel = pool.length >= 30 ? "参与分布校验" : summary.samplePolicyLabel;
-  summary.samplePolicyNote = pool.length >= 30
-    ? "外部历史样本只参与赛果、进球和盘口分布校验，不修正模型命中率。"
-    : summary.samplePolicyNote;
+  summary.samplePolicyNote = fallbackPool.length
+    ? `严格相似盘口 ${strictPool.length} 场；不足部分已用同联赛历史分布样本补充。补充样本只校验赛果、比分和总进球，不修正模型置信。`
+    : pool.length >= 30
+      ? "外部历史样本参与盘口、赛果、比分和总进球分布校验，不修正模型命中率。"
+      : summary.samplePolicyNote;
   return {
     ok: true,
     sampleCount: pool.length,
     topCases,
     stats: summary,
     confidenceAdjustment: 0,
-    warningFlags: pool.length < 10 ? ["同赛事外部样本不足"] : [],
+    warningFlags: pool.length < 10
+      ? ["同赛事外部样本不足"]
+      : fallbackPool.length ? ["严格相似盘口不足，已补同联赛分布样本"] : [],
     summaryText: summary.samplePolicyNote,
   };
 }

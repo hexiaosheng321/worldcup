@@ -4049,11 +4049,16 @@ function renderSimilarCasePanel(pred, match) {
   const hasAnyOddsSample = result.topCases.some((item) =>
     [item.sportteryHomeSp, item.sportteryDrawSp, item.sportteryAwaySp, item.euroHomeOdds, item.euroDrawOdds, item.euroAwayOdds].some((value) => Number(value))
   );
-  const casePanelTitle = hasAnyOddsSample ? "相似盘口历史样本" : "联赛历史分布样本";
-  const caseUsageText = hasAnyOddsSample ? "盘口形态 + 赛果分布" : "赛果、比分和总进球分布";
-  const caseSummaryText = hasAnyOddsSample
-    ? "这里只记录历史相似盘口当时怎么开、低位落在哪里、最后打成什么比分；不按命中或失败评价当前模型。"
-    : "这些外部样本目前以赛果为主，用来校验联赛胜平负、比分和总进球分布，不直接推断盘口低位。";
+  const strictSampleCount = Number(stats.strictSampleCount ?? result.topCases.filter((item) => !item.distributionOnly).length);
+  const distributionSampleCount = Number(stats.distributionSampleCount ?? result.topCases.filter((item) => item.distributionOnly).length);
+  const hasDistributionFallback = distributionSampleCount > 0;
+  const casePanelTitle = hasDistributionFallback ? "相似盘口 + 联赛分布样本" : hasAnyOddsSample ? "相似盘口历史样本" : "联赛历史分布样本";
+  const caseUsageText = hasDistributionFallback ? `严格 ${strictSampleCount}场 + 分布补充 ${distributionSampleCount}场` : hasAnyOddsSample ? "盘口形态 + 赛果分布" : "赛果、比分和总进球分布";
+  const caseSummaryText = hasDistributionFallback
+    ? "表中先列严格相似盘口，不足部分标记为‘同赛事分布’。分布样本只校验赛果、比分和总进球，不参与置信度修正。"
+    : hasAnyOddsSample
+      ? "这里只记录历史相似盘口当时怎么开、低位落在哪里、最后打成什么比分；不按命中或失败评价当前模型。"
+      : "这些外部样本目前以赛果为主，用来校验联赛胜平负、比分和总进球分布，不直接推断盘口低位。";
   const referenceHeader = hasAnyOddsSample ? "相似度" : "参考类型";
   const referenceText = (item) => {
     if (item.distributionOnly || !hasAnyOddsSample) return "同赛事分布";
