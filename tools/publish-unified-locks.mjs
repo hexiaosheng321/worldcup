@@ -22,7 +22,7 @@ for (const id of ids) {
   const modelRunId = run.sourceContext?.modelRunId;
   const handicap = Number(String(item.handicap || "0").replace("+", ""));
   const lock = {
-    lockId: `manual-sporttery-${id}-20260711-unified-final-r1`, matchId: `sporttery-${id}`, modelRunId,
+    lockId: `manual-sporttery-${id}-20260711-v3-final-r2`, matchId: `sporttery-${id}`, modelRunId,
     matchCode: item.issue || item.no || "", homeTeam: item.home, awayTeam: item.away, league: run.match.league,
     kickoffTime: `${item.matchDate || item.ticaiDate} ${item.kickoffTime}`, lockedAt: new Date().toISOString(), lockType: "FINAL_LOCK",
     modelVersion: run.modelVersion, finalApproval: true,
@@ -50,6 +50,6 @@ for (const id of ids) {
   console.log(JSON.stringify({ id, lockId: result.lockId, decision }));
 }
 
-const output = `web/data/manual-locks-20260711-204-211.json`;
+const output = `web/data/manual-locks-20260711-v3-r2.json`;
 await fs.writeFile(output, `${JSON.stringify(locks, null, 2)}\n`, "utf8");
 console.log(JSON.stringify({ ok: true, output, count: locks.length }, null, 2));

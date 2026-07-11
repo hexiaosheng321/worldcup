@@ -11,6 +11,7 @@ for (const lock of locks) {
   const first = movement.first || {};
   const latest = movement.latest || {};
   const scores = run.finalDecision.scores;
+  const handicapProbabilities = run.featureSet?.handicap?.probabilities || {};
   const formText = (rows = []) => {
     const recent = rows.slice(0, 5);
     const wins = recent.filter((row) => row.result === "W").length;
@@ -34,7 +35,7 @@ for (const lock of locks) {
       `05 盘口与样本：完整盘口样本${run.featureSet.sampleCount}场，两队近期赛果已命中。`,
       `06 赔率动态：${first.updateDate} ${first.updateTime} ${first.h}/${first.d}/${first.a} -> ${latest.updateDate} ${latest.updateTime} ${latest.h}/${latest.d}/${latest.a}，状态${movement.marketState}。`,
       `07 比分/总进球验证：比分${scores.join(" / ")}，总进球${run.finalDecision.totalGoalsPick}，已结合联赛画像与近期进失球。`,
-      `08 让球独立闸门：让球${lock.asianHandicap}，主比分${scores[0]}独立映射为${run.finalDecision.handicapPick}，不复制胜平负。`,
+      `08 让球独立闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%，结论${run.finalDecision.handicapPick}。主比分只作校验，不生成让球结论。`,
       `09 决策冲突闸门与失败方式：主脚本${scores[0]}，反向风险${scores[1]}，已经球队状态、联赛画像、赔率动态、让球映射和相似样本校验。`,
       `10 最终锁版：${run.finalDecision.winDrawLose}；${run.finalDecision.handicapPick}；${run.finalDecision.totalGoalsPick}；${scores.join(" / ")}；${run.finalDecision.advice}。`,
     ],
