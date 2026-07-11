@@ -1517,6 +1517,8 @@ function renderSportteryMatchDetail(key) {
         ? "← 赛事推演锁版"
       : matchDetailReturnTarget === "model-stats"
         ? "← 统计和回测"
+      : matchDetailReturnTarget === "odds-map"
+        ? "← 返回盘口图谱"
         : "← 赛事池";
   const scoreText = item.score || (item.status === "进行中" ? "LIVE" : "vs");
   const totalGoals = item.totalGoalsOdds || [];

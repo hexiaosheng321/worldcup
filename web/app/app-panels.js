@@ -2476,11 +2476,13 @@ function renderSpBacktest(rows) {
 function renderOddsPreTable(rows) {
   const tableRows = rows
     .map(
-      (row) => `
+      (row) => {
+        const detailKey = encodeURIComponent(sportteryItemKey(row));
+        return `
         <tr>
           <td>${row.issue || row.no}</td>
           <td>${row.league}</td>
-          <td class="text-cell">${row.home} vs ${row.away}</td>
+          <td class="text-cell"><button type="button" class="review-match-link odds-map-match-link" data-odds-open-detail="${detailKey}" title="进入比赛详情">${row.home} vs ${row.away}</button></td>
           <td>${formatDate(row.ticaiDate)}</td>
           <td>${row.handicap}</td>
           <td>${row.analyses.map(renderPlayTrend).join("")}</td>
@@ -2494,7 +2496,8 @@ function renderOddsPreTable(rows) {
           })()}
           <td>${row.riskFlags.length ? row.riskFlags.join(" / ") : "结构正常"}</td>
         </tr>
-      `
+      `;
+      }
     )
     .join("") || `<tr><td colspan="10" class="empty-cell">暂无赛前 SP 历史，先运行体彩实时抓取。</td></tr>`;
 

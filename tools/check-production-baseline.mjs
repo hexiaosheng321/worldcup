@@ -46,6 +46,12 @@ if (panels.includes("review-version-strip") || panels.includes("全体彩口径"
 for (const marker of ["function statsLeagueName", "allRows.map((row) => row.league)", 'aria-label="选择联赛"']) {
   if (!panels.includes(marker)) throw new Error(`Production baseline requires league-only stats filtering: ${marker}`);
 }
+for (const marker of ['data-odds-open-detail=', 'title="进入比赛详情"']) {
+  if (!panels.includes(marker)) throw new Error(`Production baseline requires odds-map match detail navigation: ${marker}`);
+}
+if (!detailApp.includes('matchDetailReturnTarget === "odds-map"') || !detailApp.includes("← 返回盘口图谱")) {
+  throw new Error("Production baseline requires odds-map detail return navigation.");
+}
 if (panels.includes("全部联赛 / 专题") || panels.includes('aria-label="选择联赛或专题"')) {
   throw new Error("Production baseline rejects model/topic categories in the league filter.");
 }
