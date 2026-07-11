@@ -2116,7 +2116,17 @@ async function reconcileCompletedSamples(db, limit = 4) {
     ) OR EXISTS (
       SELECT 1 FROM locked_predictions lp
       LEFT JOIN case_base cb ON cb.source_lock_id = lp.lock_id
-      WHERE lp.match_id = mr.match_id AND lp.lock_type = 'FINAL_LOCK' AND cb.case_id IS NULL
+      WHERE lp.match_id = mr.match_id
+        AND lp.lock_type = 'FINAL_LOCK'
+        AND (
+          cb.case_id IS NULL
+          OR json_extract(cb.payload_json, '$.match.matchId') IS NULL
+          OR json_extract(cb.payload_json, '$.leagueType') IS NULL
+          OR json_extract(cb.payload_json, '$.lockedOdds.homeSp') IS NULL
+          OR json_extract(cb.payload_json, '$.oddsMovement') IS NULL
+          OR json_extract(cb.payload_json, '$.judgementBasis') IS NULL
+          OR json_extract(cb.payload_json, '$.actualScore') IS NULL
+        )
     )
     ORDER BY mr.reviewed_at ASC
     LIMIT ?
