@@ -35,6 +35,8 @@ function leagueName(value = "") {
   const text = String(value || "");
   if (/世界杯|World Cup/i.test(text)) return "世界杯";
   if (/芬超|Veikkausliiga/i.test(text)) return "芬超";
+  if (/瑞典超|瑞超|Allsvenskan|Sweden/i.test(text)) return "瑞超";
+  if (/挪超|Eliteserien|Norway/i.test(text)) return "挪超";
   if (/韩职|K联赛|K League/i.test(text)) return "韩职";
   return text;
 }

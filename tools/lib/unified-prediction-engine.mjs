@@ -49,7 +49,17 @@ function dateKey(value = "") {
 }
 
 function teamKey(value = "") {
-  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+  const raw = String(value || "").trim();
+  const aliases = [
+    [/腓特烈(?:斯塔)?/i, "fredrikstad"], [/利勒斯(?:特罗姆)?/i, "lillestrom"],
+    [/特罗姆(?:瑟)?/i, "tromso"], [/瓦勒伦(?:加)?/i, "valerenga"], [/奥勒松/i, "aalesund"], [/莫尔德/i, "molde"],
+    [/米亚尔(?:比)?/i, "mjallby"], [/(?:AIK)?索尔纳/i, "aik"], [/厄尔格|奥尔格里特/i, "orgryte"], [/赫根/i, "hacken"],
+    [/拉赫蒂|Lahti/i, "lahti"], [/赫尔辛(?:基)?|HJK(?: Helsinki)?/i, "hjk"], [/玛丽港|Mariehamn/i, "mariehamn"],
+    [/AC\s*奥(?:卢)?|AC\s*Oulu/i, "acoulu"], [/TPS|Turku\s*PS/i, "tps"],
+  ];
+  const matched = aliases.find(([pattern]) => pattern.test(raw));
+  if (matched) return matched[1];
+  return raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
 function sameTeam(left, right) {
@@ -262,7 +272,12 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const counterScriptDiverges = topScores.length === 2 && scoreResult(topScores[0]) !== scoreResult(topScores[1]);
   const newestHomeForm = xg.homeRows[0]?.date || "";
   const newestAwayForm = xg.awayRows[0]?.date || "";
-  const recentFormFresh = daysBetween(newestHomeForm, beforeDate) <= 21 && daysBetween(newestAwayForm, beforeDate) <= 21;
+  // The 2026 Eliteserien pauses across the World Cup window. Keep the normal
+  // 21-day gate everywhere else, but allow the verified pre-match research
+  // layer to bridge that scheduled league break without treating old seasons
+  // as current form.
+  const formFreshnessDays = match.league === "挪超" && research.complete ? 60 : 21;
+  const recentFormFresh = daysBetween(newestHomeForm, beforeDate) <= formFreshnessDays && daysBetween(newestAwayForm, beforeDate) <= formFreshnessDays;
   const normalOddsComplete = Boolean(marketBaseline);
   const handicapOddsComplete = Boolean(noVig([market.handicapOdds?.win, market.handicapOdds?.draw, market.handicapOdds?.lose]));
   const scoreMarketComplete = Array.isArray(market.scoreOdds) && market.scoreOdds.length >= 8;
