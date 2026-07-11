@@ -43,6 +43,12 @@ if (index.includes("odds-map-updated") || panels.includes("预赛日期") || pan
 if (panels.includes("review-version-strip") || panels.includes("全体彩口径")) {
   throw new Error("Production baseline rejects the retired model-version hit-rate strip.");
 }
+for (const marker of ["function statsLeagueName", "allRows.map((row) => row.league)", 'aria-label="选择联赛"']) {
+  if (!panels.includes(marker)) throw new Error(`Production baseline requires league-only stats filtering: ${marker}`);
+}
+if (panels.includes("全部联赛 / 专题") || panels.includes('aria-label="选择联赛或专题"')) {
+  throw new Error("Production baseline rejects model/topic categories in the league filter.");
+}
 if (panels.includes("renderCalibrationPanel") || panels.includes("calibration-panel") || panels.includes("模型校准统计")) {
   throw new Error("Production baseline rejects the retired calibration summary panels.");
 }

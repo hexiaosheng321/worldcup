@@ -5450,6 +5450,16 @@ function hitRate(hits, total) {
   return `${((hits / total) * 100).toFixed(1)}%`;
 }
 
+function statsLeagueName(match = {}, pred = {}) {
+  const text = [match.league, match.competition, match.group, pred.competition, pred.competitionModel, pred.type].filter(Boolean).join(" ");
+  if (/世界杯|World Cup/i.test(text)) return "世界杯";
+  if (/韩职|K联赛|K League/i.test(text)) return "韩职";
+  if (/芬超|Veikkausliiga/i.test(text)) return "芬超";
+  if (/瑞超|Allsvenskan/i.test(text)) return "瑞超";
+  if (/日职|J联赛|J1/i.test(text)) return "日职";
+  return String(match.league || match.competition || pred.competition || "其他赛事").replace(/\s*(联赛\s*)?V\d+(?:[-\w]*)?\s*模型.*$/i, "").trim() || "其他赛事";
+}
+
 function modelAuditRows() {
   const worldCupRows = groupedPredictions()
     .slice()
@@ -5462,6 +5472,7 @@ function modelAuditRows() {
         match,
         pred,
         review,
+        league: statsLeagueName(match, pred),
         competition: modelDisplayName(pred, match, match.competition || match.league || "世界杯"),
         playType: pred.playType || "竞彩足球",
       };
@@ -5487,6 +5498,7 @@ function modelAuditRows() {
       match,
       pred,
       review: predictionReviewData(pred, match),
+      league: statsLeagueName(match, pred),
       competition: modelDisplayName(pred, match, pred.competitionModel || pred.competition || "体彩联赛"),
       playType: pred.playType || "竞彩足球",
     };
@@ -5531,7 +5543,7 @@ function renderGlobalStats() {
   const dates = [...new Set(allRows.map(({ match }) => match.date))];
   const latestDate = dates.at(-1) || "";
   const months = [...new Set(dates.map((date) => String(date).slice(0, 7)))].filter(Boolean).sort().reverse();
-  const leagues = [...new Set(allRows.map((row) => row.competition).filter(Boolean))];
+  const leagues = [...new Set(allRows.map((row) => row.league).filter(Boolean))];
   const validDateSelection = activeGlobalStatsDate === "all"
     || ["last7", "last15"].includes(activeGlobalStatsDate)
     || (activeGlobalStatsDate.startsWith("month:") && months.includes(activeGlobalStatsDate.slice(6)))
@@ -5543,9 +5555,9 @@ function renderGlobalStats() {
     activeGlobalStatsLeague = "all";
   }
   const visibleRows =
-    allRows.filter(({ match, competition }) => {
+    allRows.filter(({ match, league }) => {
       const dateOk = globalStatsDateMatches(match.date, activeGlobalStatsDate, latestDate);
-      const leagueOk = activeGlobalStatsLeague === "all" || competition === activeGlobalStatsLeague;
+      const leagueOk = activeGlobalStatsLeague === "all" || league === activeGlobalStatsLeague;
       return dateOk && leagueOk;
     });
   const rows = visibleRows.map((row) => ({ ...row, ...row.review }));
@@ -5562,7 +5574,7 @@ function renderGlobalStats() {
   const mainGateRows = gateRows.filter((row) => row.gate.level === "A");
   const attributionRows = verifiedRows.map((row) => ({ ...row, attribution: reviewAttribution(row.pred, row.match, row) }));
   const missAttributions = attributionRows.filter((row) => row.attribution.severity !== "good");
-  const competitions = new Set(allRows.map((row) => row.competition));
+  const competitions = new Set(allRows.map((row) => row.league));
   cards.innerHTML = `
     <div class="review-summary-grid">
       <article class="review-metric"><span>已锁版场次</span><strong>${allRows.length}</strong><em>${competitions.size} 个赛事类型</em></article>
@@ -5598,7 +5610,7 @@ function renderGlobalStats() {
   const dateScopeLabel = globalStatsDateLabel(activeGlobalStatsDate);
   if (leagueFilter) {
     const leagueOptions = [
-      `<option value="all"${activeGlobalStatsLeague === "all" ? " selected" : ""}>全部联赛 / 专题</option>`,
+      `<option value="all"${activeGlobalStatsLeague === "all" ? " selected" : ""}>全部联赛</option>`,
       ...leagues.map(
         (league) => `<option value="${league}"${activeGlobalStatsLeague === league ? " selected" : ""}>${league}</option>`
       ),
@@ -5608,10 +5620,10 @@ function renderGlobalStats() {
         <section>
           <div>
             <span>按联赛回测</span>
-            <strong>${activeGlobalStatsLeague === "all" ? "全部联赛 / 专题" : activeGlobalStatsLeague}</strong>
+            <strong>${activeGlobalStatsLeague === "all" ? "全部联赛" : activeGlobalStatsLeague}</strong>
             <em>${visibleRows.length}/${allRows.length} 场</em>
           </div>
-          <select data-global-stats-league aria-label="选择联赛或专题">${leagueOptions}</select>
+          <select data-global-stats-league aria-label="选择联赛">${leagueOptions}</select>
         </section>
         <section>
           <div>
@@ -5648,7 +5660,7 @@ function renderGlobalStats() {
       `;
     })
     .join("") || `<tr><td colspan="13" class="empty-cell">当前范围暂无模型推演记录</td></tr>`;
-  const tableSummary = `${activeGlobalStatsLeague === "all" ? "全部联赛 / 专题" : activeGlobalStatsLeague} · ${dateScopeLabel} · ${visibleRows.length}/${allRows.length} 场`;
+  const tableSummary = `${activeGlobalStatsLeague === "all" ? "全部联赛" : activeGlobalStatsLeague} · ${dateScopeLabel} · ${visibleRows.length}/${allRows.length} 场`;
 
   table.innerHTML = `
     <div class="global-stats-table-toolbar">
