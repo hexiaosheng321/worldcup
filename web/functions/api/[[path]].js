@@ -1234,6 +1234,16 @@ function dashScoreText(home, away) {
   return `${Number(home)}-${Number(away)}`;
 }
 
+function beijingDateTimeFromUtc(value = "") {
+  const timestamp = Date.parse(String(value || ""));
+  if (!Number.isFinite(timestamp)) return { date: "", time: "" };
+  const shifted = new Date(timestamp + BJT_OFFSET_MS);
+  return {
+    date: shifted.toISOString().slice(0, 10),
+    time: shifted.toISOString().slice(11, 16),
+  };
+}
+
 function penaltyScoreText(home, away) {
   return dashScoreText(home, away);
 }
@@ -1269,6 +1279,7 @@ async function fetchApiFootballDay(env, date) {
   url.searchParams.set("action", "get_events");
   url.searchParams.set("from", date);
   url.searchParams.set("to", date);
+  url.searchParams.set("timezone", "Asia/Shanghai");
   url.searchParams.set("APIkey", key);
   const response = await fetch(url, { signal: AbortSignal.timeout(12000) });
   if (!response.ok) throw new Error(`APIfootball ${response.status}`);
@@ -1315,11 +1326,12 @@ async function fetchFootballDataDay(env, date) {
     const home = match.homeTeam?.name || match.homeTeam?.shortName || "";
     const away = match.awayTeam?.name || match.awayTeam?.shortName || "";
     const score = footballDataScoreParts(match.score || {});
+    const kickoff = beijingDateTimeFromUtc(match.utcDate);
     return {
       source: "football-data.org",
       externalId: String(match.id || ""),
-      date: String(match.utcDate || "").slice(0, 10),
-      time: String(match.utcDate || "").slice(11, 16),
+      date: kickoff.date,
+      time: kickoff.time,
       league: match.competition?.name || "Football",
       home,
       away,
@@ -1352,11 +1364,12 @@ async function fetchFootballDataCompetition(env, code, season = "") {
     const home = match.homeTeam?.name || match.homeTeam?.shortName || "";
     const away = match.awayTeam?.name || match.awayTeam?.shortName || "";
     const score = footballDataScoreParts(match.score || {});
+    const kickoff = beijingDateTimeFromUtc(match.utcDate);
     return {
       source: "football-data.org",
       externalId: String(match.id || ""),
-      date: String(match.utcDate || "").slice(0, 10),
-      time: String(match.utcDate || "").slice(11, 16),
+      date: kickoff.date,
+      time: kickoff.time,
       league: match.competition?.name || "Football",
       home,
       away,
@@ -3027,11 +3040,34 @@ async function syncLiveFallbackToD1(db, env) {
 
   const sourceSummary = liveFallbackSourceSummary(matches, liveRows.matches);
   let liveFallbackCount = 0;
+  let kickoffUpdated = 0;
   let reviewed = 0;
   let cases = 0;
   const liveFallbackCandidates = [];
   for (const match of matches) {
     const matchId = match.cloudMatchId || sportteryDbMatchId(match);
+    const scheduleRow = liveRows.matches.find((row) =>
+      row.time &&
+      liveDateMatchesSporttery(match, row) &&
+      liveTeamMatches(match.home, row.home) &&
+      liveTeamMatches(match.away, row.away)
+    );
+    if (!match.kickoffTime && scheduleRow) {
+      match.matchDate = scheduleRow.date || match.matchDate || match.ticaiDate;
+      match.kickoffTime = String(scheduleRow.time || "").slice(0, 5);
+      match.kickoffSource = `live-schedule-${String(scheduleRow.source || "external").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+      await db.prepare(`
+        UPDATE matches
+        SET kickoff_time = ?, payload_json = ?, updated_at = ?
+        WHERE match_id = ?
+      `).bind(
+        `${match.matchDate} ${match.kickoffTime}`,
+        JSON.stringify(match),
+        capturedAt,
+        matchId
+      ).run();
+      kickoffUpdated += 1;
+    }
     const live = liveResultForSportteryMatch(match, liveRows.matches);
     if (!live) {
       const nearLive = liveRows.matches.find((row) =>
@@ -3139,6 +3175,7 @@ async function syncLiveFallbackToD1(db, env) {
     JSON.stringify({
       matchCount: matches.length,
       liveFallbackCount,
+      kickoffUpdated,
       reviewed,
       cases,
       liveFallbackErrors: liveRows.errors,
@@ -3149,7 +3186,7 @@ async function syncLiveFallbackToD1(db, env) {
     capturedAt
   ).run();
 
-  return { ok: true, capturedAt, matchCount: matches.length, liveFallbackCount, reviewed, cases, liveFallbackErrors: liveRows.errors, liveFallbackCandidates: liveFallbackCandidates.slice(0, 30), sourceSummary };
+  return { ok: true, capturedAt, matchCount: matches.length, liveFallbackCount, kickoffUpdated, reviewed, cases, liveFallbackErrors: liveRows.errors, liveFallbackCandidates: liveFallbackCandidates.slice(0, 30), sourceSummary };
 }
 
 function liveFallbackSourceSummary(sportteryMatches = [], liveRows = []) {

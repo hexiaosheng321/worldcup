@@ -197,6 +197,9 @@ const missingRegularTimeMarkers = regularTimeMarkers.filter((marker) => !api.inc
 if (missingRegularTimeMarkers.length) {
   throw new Error(`Production baseline must preserve 90-minute result scoring: ${missingRegularTimeMarkers.join(", ")}`);
 }
+for (const marker of ["beijingDateTimeFromUtc", 'timezone", "Asia/Shanghai"', "kickoffUpdated", "live-schedule-"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline requires real kickoff-time hydration: ${marker}`);
+}
 
 const okoooDirectionMarkers = [
   'normal["16"]',
