@@ -3213,7 +3213,6 @@ function renderWorldCupFullProjection(match, pred, filter, odds) {
   }
   return `
     ${renderProjectionDecisionDeck(match, pred, filter)}
-    ${renderLeagueProfilePanel(match, pred)}
     ${renderDecisionGatePanel(match.no, pred)}
     ${renderSpRadarPanel(match.no, "detail")}
     ${renderModelTriadPanel(match.no, pred)}
@@ -4148,10 +4147,9 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
       <section class="match-page-section sporttery-model-panel">
         <span>模型状态</span>
         <h3>待推演 / 待锁版</h3>
-        <p>这场比赛已经可以进入详情页，但还没有写入真实模型锁版记录。当前只展示体彩盘口、联赛画像和数据支持；正式推演完成后，这里会替换为模型真实推演链和锁版结论。</p>
+        <p>这场比赛已经可以进入详情页，但还没有写入真实模型锁版记录。当前完整推演只展示证据质量和数据支持；联赛画像统一保留在快速判断中。正式推演完成后，这里会替换为模型真实推演链和锁版结论。</p>
       </section>
       ${renderSportteryEvidenceGate(item, modelPred, research)}
-      ${renderLeagueProfilePanel(item, modelPred)}
       ${renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp)}
     `;
   }
@@ -4167,7 +4165,6 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
       directionPick: research.directionPick,
     })}
     ${renderSportteryEvidenceGate(item, modelPred, research)}
-    ${renderLeagueProfilePanel(item, modelPred)}
     ${renderUniversalModelPanel(modelPred)}
     ${renderD1CaseBasePanel(modelPred, item)}
     ${renderSimilarCasePanel(modelPred, item)}
