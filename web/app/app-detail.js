@@ -448,6 +448,7 @@ function renderWorldCupFullProjection(match, pred, filter, odds) {
     ${renderD1CaseBasePanel(pred, match)}
     ${renderSimilarCasePanel(pred, match)}
     ${renderFinalDecisionGatePanel(pred)}
+    ${renderJudgementRiskPanel(pred)}
   `;
 }
 
@@ -524,7 +525,6 @@ function renderMatchDetail(no) {
     <div class="match-mode-panel" data-match-mode-panel="full" hidden>
       ${renderWorldCupFullProjection(match, pred, filter, odds)}
     </div>
-    ${renderJudgementRiskPanel(pred)}
     <div class="match-page-actions">
       <button type="button" data-detail-model="${match.no}">赛事推演锁版</button>
       <button type="button" class="secondary" data-detail-review="${match.no}">模型复盘统计</button>
@@ -1388,6 +1388,7 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
       </section>
       ${renderSportteryEvidenceGate(item, modelPred, research)}
       ${renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp)}
+      ${renderJudgementRiskPanel(modelPred, research.riskNotes)}
     `;
   }
   const filter = sportteryV4Filter(modelPred, research);
@@ -1406,6 +1407,7 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
     ${renderD1CaseBasePanel(modelPred, item)}
     ${renderSimilarCasePanel(modelPred, item)}
     ${renderFinalDecisionGatePanel(modelPred)}
+    ${renderJudgementRiskPanel(modelPred, research.riskNotes)}
   `;
 }
 
@@ -1588,7 +1590,6 @@ function renderSportteryMatchDetail(key) {
     <div class="match-mode-panel" data-match-mode-panel="full" hidden>
       ${renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreOdds, sourceStamp)}
     </div>
-    ${renderJudgementRiskPanel(modelPred, research.riskNotes)}
     <div class="match-page-actions">
       ${item.linkedNo ? `<button type="button" data-detail-model="${item.linkedNo}">赛事推演锁版</button>` : ""}
       ${modelPred && !item.linkedNo ? `<button type="button" data-detail-global-stats>统计和回测</button>` : ""}

@@ -143,6 +143,16 @@ for (const marker of ["enrichPredictionFromUnifiedRun", "body.sportteryPredictio
 for (const marker of ["renderJudgementRiskPanel", 'data-fixed-detail-panel="judgement-risk"']) {
   if (!detailApp.includes(marker)) throw new Error(`Production baseline requires persistent judgement risk panel: ${marker}`);
 }
+const worldCupFullMode = detailApp.slice(detailApp.indexOf("function renderWorldCupFullProjection"), detailApp.indexOf("function renderMatchDetail"));
+const worldCupDetailShell = detailApp.slice(detailApp.indexOf("function renderMatchDetail"), detailApp.indexOf("function openMatchPage"));
+const sportteryFullMode = detailApp.slice(detailApp.indexOf("function renderSportteryV4FullMode"), detailApp.indexOf("function renderSportteryDataSupport"));
+const sportteryDetailShell = detailApp.slice(detailApp.indexOf("function renderSportteryMatchDetail"), detailApp.indexOf("function openSportteryMatchPage"));
+if (!worldCupFullMode.includes("renderJudgementRiskPanel(pred)") || !sportteryFullMode.includes("renderJudgementRiskPanel(modelPred, research.riskNotes)")) {
+  throw new Error("Production baseline requires judgement risk inside every full projection mode.");
+}
+if (worldCupDetailShell.includes("renderJudgementRiskPanel(") || sportteryDetailShell.includes("renderJudgementRiskPanel(")) {
+  throw new Error("Production baseline rejects judgement risk outside full projection mode.");
+}
 if (!api.includes("only the preferred FINAL_LOCK can enter Case Base")) {
   throw new Error("Production baseline requires one official Case per preferred FINAL_LOCK.");
 }
