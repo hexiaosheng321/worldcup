@@ -2,8 +2,12 @@ import fs from "node:fs/promises";
 import vm from "node:vm";
 
 const output = "web/data/externalHistoricalSamples.js";
-const limit = Math.max(1, Number(process.argv[2] || 20));
-const seasonId = 19554;
+const limit = Math.max(1, Number(process.argv[2] || 120));
+const earliestDate = "2025-07-11";
+const seasons = [
+  { seasonId: 19554, season: "2026", rounds: 16 },
+  { seasonId: 7396, season: "2025", rounds: 33 },
+];
 
 async function fetchText(url) {
   const response = await fetch(url, { headers: { "user-agent": "Mozilla/5.0" } });
@@ -33,10 +37,12 @@ function parseAsian(html) {
 }
 
 const rows = [];
-for (let round = 1; round <= 16; round += 1) {
-  const text = await fetchText(`https://liansai.500.com/index.php?c=match&a=getmatch&sid=${seasonId}&round=${round}`);
-  const list = JSON.parse(text);
-  rows.push(...list.filter((row) => Number(row.status) === 5).map((row) => ({ ...row, round })));
+for (const season of seasons) {
+  for (let round = 1; round <= season.rounds; round += 1) {
+    const text = await fetchText(`https://liansai.500.com/index.php?c=match&a=getmatch&sid=${season.seasonId}&round=${round}`);
+    const list = JSON.parse(text);
+    rows.push(...list.filter((row) => Number(row.status) === 5 && String(row.stime).slice(0, 10) >= earliestDate).map((row) => ({ ...row, round, season: season.season })));
+  }
 }
 
 const context = { window: {} };
@@ -48,15 +54,15 @@ if (existingSourceSamples.length >= limit) {
   process.exit(0);
 }
 const known = new Set(samples.filter((sample) => sample.league === "韩职").map((sample) => `${String(sample.kickoffTime).slice(0, 10)}|${sample.homeTeam}|${sample.awayTeam}`));
+const needed = limit - existingSourceSamples.length;
 const candidates = rows
-  .filter(pattern)
   .filter((row) => !known.has(`${row.stime.slice(0, 10)}|${row.hname}|${row.gname}`))
-  .sort((a, b) => String(b.stime).localeCompare(String(a.stime)))
-  .slice(0, limit * 2);
+  .sort((a, b) => Number(pattern(b)) - Number(pattern(a)) || String(b.stime).localeCompare(String(a.stime)))
+  .slice(0, needed * 2);
 
 const added = [];
 for (const row of candidates) {
-  if (added.length >= limit) break;
+  if (added.length >= needed) break;
   const asian = parseAsian(await fetchText(`https://odds.500.com/fenxi/yazhi-${row.fid}.shtml`));
   if (!asian || !Number.isFinite(asian.opening)) continue;
   const raw = [1 / row.win, 1 / row.draw, 1 / row.lost];
@@ -71,7 +77,7 @@ for (const row of candidates) {
     matchId: `500-${row.fid}`,
     league: "韩职",
     sourceLeague: "K1联赛",
-    season: "2026",
+    season: row.season,
     homeTeam: row.hname,
     awayTeam: row.gname,
     kickoffTime: row.stime,
@@ -110,7 +116,7 @@ for (const row of candidates) {
   });
 }
 
-if (added.length < 15) throw new Error(`Only ${added.length} complete samples found; refusing partial backfill`);
+if (added.length < Math.min(15, needed)) throw new Error(`Only ${added.length} complete samples found; refusing partial backfill`);
 samples.push(...added);
 await fs.writeFile(output, `window.WC_EXTERNAL_HISTORICAL_SAMPLES = ${JSON.stringify(samples, null, 2)};\n`, "utf8");
 console.log(JSON.stringify({ discovered: rows.length, candidates: candidates.length, added: added.length, total: samples.length, samples: added.map((sample) => ({ matchId: sample.matchId, teams: `${sample.homeTeam} vs ${sample.awayTeam}`, odds: [sample.euroHomeOdds, sample.euroDrawOdds, sample.euroAwayOdds], asianHandicap: sample.asianHandicap, score: sample.score })) }, null, 2));
