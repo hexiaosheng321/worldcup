@@ -1,0 +1,62 @@
+[
+  {
+    "lockId": "manual-sporttery-1277397-20260711-v4-final",
+    "matchId": "sporttery-1277397",
+    "modelRunId": "model-run-90bd1661-b1f4-4586-ba8e-7b3f8e89fe43",
+    "matchCode": "六099", "homeTeam": "挪威", "awayTeam": "英格兰", "league": "世界杯",
+    "kickoffTime": "2026-07-12 05:00", "lockedAt": "2026-07-11T02:50:00.000Z", "lockType": "FINAL_LOCK", "modelVersion": "V4-UNIFIED-10STEP",
+    "modelHomeProb": 0.3126, "modelDrawProb": 0.2312, "modelAwayProb": 0.4562,
+    "recommendation": "负", "recommendationSide": "AWAY", "finalGrade": "C+", "finalAction": "谨慎", "confidenceScore": 54, "riskScore": 46, "consistencyScore": 100,
+    "sportteryHomeSp": 3.45, "sportteryDrawSp": 3.65, "sportteryAwaySp": 1.77, "asianHandicap": 1,
+    "dataQuality": "HIGH", "reasoningSummary": "统一十步模型完成SP、淘汰赛90分钟规则、球队状态、风格、盘口样本、状态转移、比分总进球、让球、失败方式和值过滤校验。英格兰方向占优，但挪威的直接进攻保留追球路径。",
+    "sportteryPrediction": {"type":"世界杯 V4 模型锁版","matchId":"1277397","no":"099","issue":"六099","matchDate":"2026-07-12","kickoffTime":"05:00","competition":"世界杯","home":"挪威","away":"英格兰","modelVersion":"世界杯 V4 模型","pick":"负","handicap":"+1","handicapPick":"让平","totalGoalsPick":"3/4球","mainScore":"1-2","counterScore":"1-1","matchType":"开放局","confidence":"C+","confidenceScore":54,"advice":"谨慎","modelRunId":"model-run-90bd1661-b1f4-4586-ba8e-7b3f8e89fe43","lockType":"FINAL_LOCK"}
+  },
+  {
+    "lockId": "manual-sporttery-1277398-20260711-v4-final",
+    "matchId": "sporttery-1277398",
+    "modelRunId": "model-run-8b8d4c2a-2e79-48fe-8298-08819386a5a4",
+    "matchCode": "六100", "homeTeam": "阿根廷", "awayTeam": "瑞士", "league": "世界杯",
+    "kickoffTime": "2026-07-12 09:00", "lockedAt": "2026-07-11T02:50:00.000Z", "lockType": "FINAL_LOCK", "modelVersion": "V4-UNIFIED-10STEP",
+    "modelHomeProb": 0.4716, "modelDrawProb": 0.2367, "modelAwayProb": 0.2918,
+    "recommendation": "胜", "recommendationSide": "HOME", "finalGrade": "C+", "finalAction": "可选", "confidenceScore": 55, "riskScore": 45, "consistencyScore": 100,
+    "sportteryHomeSp": 1.51, "sportteryDrawSp": 3.42, "sportteryAwaySp": 5.75, "asianHandicap": -1,
+    "dataQuality": "HIGH", "reasoningSummary": "阿根廷最新3-2埃及的90分钟赛果和完整体彩赔率已进入滚动样本后重跑；十步闸门全部通过。主胜为主方向，但淘汰赛瑞士防守韧性限制穿盘。",
+    "sportteryPrediction": {"type":"世界杯 V4 模型锁版","matchId":"1277398","no":"100","issue":"六100","matchDate":"2026-07-12","kickoffTime":"09:00","competition":"世界杯","home":"阿根廷","away":"瑞士","modelVersion":"世界杯 V4 模型","pick":"胜","handicap":"-1","handicapPick":"让平","totalGoalsPick":"3/4球","mainScore":"2-1","counterScore":"1-1","matchType":"开放局","confidence":"C+","confidenceScore":55,"advice":"可选","modelRunId":"model-run-8b8d4c2a-2e79-48fe-8298-08819386a5a4","lockType":"FINAL_LOCK"}
+  },
+  {
+    "lockId": "manual-sporttery-1320348-20260711-v1-final",
+    "matchId": "sporttery-1320348",
+    "modelRunId": "model-run-37d31df3-ce8f-4993-b429-37476b74edf8",
+    "matchCode": "六201", "homeTeam": "光州F", "awayTeam": "浦项制", "league": "韩职",
+    "kickoffTime": "2026-07-11 18:30", "lockedAt": "2026-07-11T02:50:00.000Z", "lockType": "FINAL_LOCK", "modelVersion": "V1-UNIFIED-10STEP", "finalApproval": true,
+    "modelHomeProb": 0.1501, "modelDrawProb": 0.2260, "modelAwayProb": 0.6239,
+    "recommendation": "负", "recommendationSide": "AWAY", "finalGrade": "B+", "finalAction": "主打", "confidenceScore": 70, "riskScore": 30, "consistencyScore": 100,
+    "sportteryHomeSp": 5.40, "sportteryDrawSp": 3.35, "sportteryAwaySp": 1.55, "asianHandicap": 1,
+    "dataQuality": "HIGH", "reasoningSummary": "K联赛V1统一十步校验通过，完整SP漂移、近期状态、阵容信息和扩充后的近期韩职真实样本共同支持浦项90分钟客胜及两球优势主脚本。",
+    "sportteryPrediction": {"type":"韩职 联赛 V1 模型锁版","matchId":"1320348","no":"201","issue":"六201","matchDate":"2026-07-11","kickoffTime":"18:30","competition":"韩职","home":"光州F","away":"浦项制","modelVersion":"韩职 联赛 V1 模型","pick":"负","handicap":"+1","handicapPick":"让负","totalGoalsPick":"2/3球","mainScore":"0-2","counterScore":"1-1","matchType":"常规局","confidence":"B+","confidenceScore":70,"advice":"主打","modelRunId":"model-run-37d31df3-ce8f-4993-b429-37476b74edf8","lockType":"FINAL_LOCK"}
+  },
+  {
+    "lockId": "manual-sporttery-1320347-20260711-v1-final",
+    "matchId": "sporttery-1320347",
+    "modelRunId": "model-run-d1f4b7f9-7165-467f-8d7e-d0cb59cc4049",
+    "matchCode": "六202", "homeTeam": "金泉尚", "awayTeam": "富川F", "league": "韩职",
+    "kickoffTime": "2026-07-11 18:30", "lockedAt": "2026-07-11T02:50:00.000Z", "lockType": "FINAL_LOCK", "modelVersion": "V1-UNIFIED-10STEP", "finalApproval": true,
+    "modelHomeProb": 0.4343, "modelDrawProb": 0.2821, "modelAwayProb": 0.2836,
+    "recommendation": "胜", "recommendationSide": "HOME", "finalGrade": "C+", "finalAction": "谨慎", "confidenceScore": 51, "riskScore": 49, "consistencyScore": 100,
+    "sportteryHomeSp": 1.81, "sportteryDrawSp": 3.25, "sportteryAwaySp": 3.72, "asianHandicap": -1,
+    "dataQuality": "HIGH", "reasoningSummary": "K联赛V1统一十步校验通过。金泉主胜方向略强，但让一球穿盘证据不足，主脚本只保留一球小胜，平局作为反向风险分支。",
+    "sportteryPrediction": {"type":"韩职 联赛 V1 模型锁版","matchId":"1320347","no":"202","issue":"六202","matchDate":"2026-07-11","kickoffTime":"18:30","competition":"韩职","home":"金泉尚","away":"富川F","modelVersion":"韩职 联赛 V1 模型","pick":"胜","handicap":"-1","handicapPick":"让平","totalGoalsPick":"1/2球","mainScore":"1-0","counterScore":"1-1","matchType":"常规局","confidence":"C+","confidenceScore":51,"advice":"谨慎","modelRunId":"model-run-d1f4b7f9-7165-467f-8d7e-d0cb59cc4049","lockType":"FINAL_LOCK"}
+  },
+  {
+    "lockId": "manual-sporttery-1320349-20260711-v1-final",
+    "matchId": "sporttery-1320349",
+    "modelRunId": "model-run-84c598d4-7d32-4129-90ee-8905eb531d25",
+    "matchCode": "六203", "homeTeam": "蔚山现", "awayTeam": "全北现", "league": "韩职",
+    "kickoffTime": "2026-07-11 18:30", "lockedAt": "2026-07-11T02:50:00.000Z", "lockType": "FINAL_LOCK", "modelVersion": "V1-UNIFIED-10STEP", "finalApproval": true,
+    "modelHomeProb": 0.2986, "modelDrawProb": 0.2875, "modelAwayProb": 0.4139,
+    "recommendation": "负", "recommendationSide": "AWAY", "finalGrade": "C", "finalAction": "谨慎", "confidenceScore": 49, "riskScore": 51, "consistencyScore": 100,
+    "sportteryHomeSp": 2.44, "sportteryDrawSp": 3.03, "sportteryAwaySp": 2.57, "asianHandicap": -1,
+    "dataQuality": "HIGH", "reasoningSummary": "K联赛V1统一十步校验通过。全北近期稳定性和对位占优，客胜为主方向；蔚山让一球下对应让负，低比分与平局是主要失败方式。",
+    "sportteryPrediction": {"type":"韩职 联赛 V1 模型锁版","matchId":"1320349","no":"203","issue":"六203","matchDate":"2026-07-11","kickoffTime":"18:30","competition":"韩职","home":"蔚山现","away":"全北现","modelVersion":"韩职 联赛 V1 模型","pick":"负","handicap":"-1","handicapPick":"让负","totalGoalsPick":"1/2球","mainScore":"0-1","counterScore":"1-1","matchType":"常规局","confidence":"C","confidenceScore":49,"advice":"谨慎","modelRunId":"model-run-84c598d4-7d32-4129-90ee-8905eb531d25","lockType":"FINAL_LOCK"}
+  }
+]
