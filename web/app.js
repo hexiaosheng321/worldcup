@@ -3667,7 +3667,7 @@ function runtimeCaseBase() {
 let externalHistoricalSamplesLoading = null;
 let leagueProfilesLoading = null;
 const EXTERNAL_HISTORICAL_SAMPLE_SCRIPTS = [
-  "./data/externalHistoricalSamples.js?v=202607032000",
+  "./data/externalHistoricalSamples.js?v=202607111230",
   "./data/externalHistoricalSamplesBig5England.js?v=202607032000",
   "./data/externalHistoricalSamplesBig5Spain.js?v=202607032000",
   "./data/externalHistoricalSamplesBig5Germany.js?v=202607032000",
@@ -3710,7 +3710,7 @@ function ensureLeagueProfilesLoaded(callback) {
   if (!leagueProfilesLoading) {
     leagueProfilesLoading = new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = "./data/leagueProfiles.js?v=202607031810";
+      script.src = "./data/leagueProfiles.js?v=202607111230";
       script.async = true;
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
