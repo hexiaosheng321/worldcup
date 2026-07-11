@@ -578,17 +578,10 @@ function renderHomeResearchLab() {
   const highCount = oddsRows.filter((row) => row.pressureLevel === "强异动").length;
   const teams = buildTeamTable();
   const topPath = teams.slice().sort((a, b) => b.title - a.title)[0];
-  const locked = uniquePredictionCount();
-  const verified = new Set(
-    [...(data.predictions || []), ...(data.sportteryPredictions || [])]
-      .filter((pred) => {
-        const item = findSportteryItemForPrediction(pred);
-        if (item) return Boolean(verifiedSportteryScore(item));
-        const match = matches.find((row) => row.no === pred.no);
-        return Boolean(match && parseScore(officialScoreForMatch(match)));
-      })
-      .map((pred) => pred.sportteryKey || pred.matchId || `${pred.no}-${pred.date || pred.matchDate || ""}`)
-  ).size;
+  const auditRows = modelAuditRows();
+  const locked = auditRows.length;
+  const currentPreferred = uniquePredictionCount();
+  const verified = auditRows.filter((row) => row.review?.actualDirection).length;
   const services = [
     {
       label: "实时数据服务",
@@ -605,7 +598,7 @@ function renderHomeResearchLab() {
     {
       label: "模型锁版库",
       value: `${locked} 条`,
-      note: `${verified} 条已有赛果可回测`,
+      note: `${currentPreferred} 条当前首选 · ${verified} 条已有赛果`,
       tone: "model",
     },
     {
