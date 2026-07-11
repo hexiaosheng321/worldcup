@@ -364,6 +364,42 @@ function rowToExternalSample(row) {
   };
 }
 
+function canonicalHistoricalTeam(value = "") {
+  const text = String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const aliases = [
+    ["gwangju", /光州|gwangju/], ["ulsan", /蔚山|ulsan/], ["daejeon", /大田|daejeon/],
+    ["bucheon", /富川|bucheon/], ["gangwon", /江原|gangwon/], ["jeonbuk", /全北|jeonbuk/],
+    ["pohang", /浦项|pohang/], ["gimcheon", /金泉|gimcheon/], ["seoul", /首尔|seoul/],
+    ["jeju", /济州|jeju/], ["daegu", /大邱|daegu/], ["suwon", /水原|suwon/],
+  ];
+  return aliases.find(([, pattern]) => pattern.test(text))?.[0] || text.replace(/\b(fc|football club|citizen|motors|hyundai|1995)\b/g, "").replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function historicalFixtureKey(sample = {}) {
+  const date = String(sample.kickoffTime || "").match(/\d{4}-\d{2}-\d{2}/)?.[0] || String(sample.season || "");
+  return [normalizeCompetition(sample.league), date, canonicalHistoricalTeam(sample.homeTeam), canonicalHistoricalTeam(sample.awayTeam)].join("|");
+}
+
+function dedupeHistoricalSamples(samples = []) {
+  const groups = new Map();
+  samples.forEach((sample) => {
+    const key = historicalFixtureKey(sample);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(sample);
+  });
+  const quality = (sample) => ({ HIGH: 3, MEDIUM: 2, LOW: 1 }[String(sample.dataQuality || "MEDIUM").toUpperCase()] || 2);
+  const completeness = (sample) => [sample.sportteryHomeSp, sample.sportteryDrawSp, sample.sportteryAwaySp, sample.asianHandicap, sample.over25Odds, sample.under25Odds].filter((value) => value !== null && value !== undefined && value !== "").length;
+  return [...groups.values()].map((rows) => {
+    const ranked = [...rows].sort((a, b) => quality(b) - quality(a) || completeness(b) - completeness(a) || Number(b.similarityScore || 0) - Number(a.similarityScore || 0));
+    const merged = { ...ranked[0] };
+    ranked.slice(1).forEach((row) => Object.entries(row).forEach(([key, value]) => {
+      if ((merged[key] === null || merged[key] === undefined || merged[key] === "") && value !== null && value !== undefined && value !== "") merged[key] = value;
+    }));
+    merged.duplicateSources = [...new Set(rows.map((row) => row.source).filter(Boolean))];
+    return merged;
+  });
+}
+
 async function historicalSimilarSamples(db, current) {
   if (!has(current.euroHomeProb, current.euroDrawProb, current.euroAwayProb) && has(current.euroHomeOdds, current.euroDrawOdds, current.euroAwayOdds)) {
     const raw = [1 / Number(current.euroHomeOdds), 1 / Number(current.euroDrawOdds), 1 / Number(current.euroAwayOdds)];
@@ -397,9 +433,10 @@ async function historicalSimilarSamples(db, current) {
   const { results } = await db.prepare(query).bind(...bindings).all();
   const mapped = (results || []).map(rowToExternalSample);
   const hasCurrentMarket = has(current.euroHomeOdds, current.euroDrawOdds, current.euroAwayOdds) || has(current.sportteryHomeSp, current.sportteryDrawSp, current.sportteryAwaySp);
-  const pool = mapped
+  const pool = dedupeHistoricalSamples(mapped
     .map((item) => ({ ...item, similarityScore: similarity(current, item), distributionOnly: !hasCurrentMarket }))
     .filter((item) => item.distributionOnly || item.similarityScore >= threshold)
+  )
     .sort((a, b) => Number(a.distributionOnly) - Number(b.distributionOnly) || b.similarityScore - a.similarityScore)
     .slice(0, Math.min(Math.max(Number(current.sampleLimit || 50), 10), 100));
   const topCases = pool.slice(0, Math.min(Math.max(Number(current.topLimit || 5), 1), 20));

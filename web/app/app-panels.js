@@ -783,25 +783,33 @@ function matchTypeHit(pred, score) {
 }
 
 function confidenceGrade(pred) {
-  return pred.confidence || "未评级";
+  const raw = pred?.confidence ?? pred?.confidenceScore ?? pred?.confidence_score;
+  const text = String(raw ?? "").trim().toUpperCase();
+  if (/^A(?:-)?$/.test(text)) return "A";
+  if (/^B(?:\+|-)?$/.test(text)) return "B";
+  if (/^C(?:\+|-)?$/.test(text)) return "C";
+  if (text === "D") return "D";
+  const score = Number.parseFloat(text.replace("%", ""));
+  if (!Number.isFinite(score)) return "未评级";
+  if (score >= 70) return "A";
+  if (score >= 60) return "B";
+  if (score >= 50) return "C";
+  return "D";
 }
 
 function confidenceAdvice(grade) {
   return {
     A: "主打",
-    "A-": "主打观察",
     B: "可选",
-    "B-": "可选观察",
-    "C+": "谨慎+",
     C: "谨慎",
     D: "证据不足",
   }[grade] || "旧模型不计入";
 }
 
 function confidenceTone(grade) {
-  if (["A", "A-"].includes(grade)) return "hot";
-  if (["B", "B-"].includes(grade)) return "warm";
-  if (["C+", "C"].includes(grade)) return "watch";
+  if (grade === "A") return "hot";
+  if (grade === "B") return "warm";
+  if (grade === "C") return "watch";
   return "cold";
 }
 

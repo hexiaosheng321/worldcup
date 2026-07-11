@@ -668,7 +668,7 @@ function sportteryV4Filter(modelPred, research) {
   if (!modelPred) return null;
   return {
     type: modelPred.matchType || modelPred.type || "常规局",
-    grade: modelPred.confidence || confidenceGrade(modelPred) || "-",
+    grade: confidenceGrade(modelPred) || "-",
     advice: modelPred.advice || research?.action || "复核",
     scorePool: [modelPred.mainScore, modelPred.counterScore].filter(Boolean).join(" / ") || research?.scorePick || "-",
     favoriteIntent: modelPred.favoriteIntent || modelPred.groupSituation || "按世界杯V4经验链判断，但联赛/杯赛保留各自版本号；赛事规则层分别解释动机。",

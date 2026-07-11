@@ -140,6 +140,16 @@ for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did no
 for (const marker of ["enrichPredictionFromUnifiedRun", "body.sportteryPrediction = enrichPredictionFromUnifiedRun"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires FINAL_LOCK evidence hydration: ${marker}`);
 }
+for (const marker of ["dedupeHistoricalSamples", "canonicalHistoricalTeam", "duplicateSources"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline requires cross-source historical sample deduplication: ${marker}`);
+}
+const confidenceGradeBlock = panels.slice(panels.indexOf("function confidenceGrade"), panels.indexOf("function confidenceAdvice"));
+for (const marker of ['score >= 70', 'score >= 60', 'score >= 50']) {
+  if (!confidenceGradeBlock.includes(marker)) throw new Error(`Production baseline requires unified A/B/C/D confidence grading: ${marker}`);
+}
+if (/return "[ABC][+-]"/.test(confidenceGradeBlock)) {
+  throw new Error("Production baseline rejects plus/minus confidence grades.");
+}
 for (const marker of ["renderJudgementRiskPanel", 'data-fixed-detail-panel="judgement-risk"']) {
   if (!detailApp.includes(marker)) throw new Error(`Production baseline requires persistent judgement risk panel: ${marker}`);
 }
