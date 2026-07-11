@@ -48,6 +48,12 @@ if (panels.includes("renderCalibrationPanel") || panels.includes("calibration-pa
 for (const marker of ['value="last7"', 'value="last15"', 'label="按月份"', 'label="按单日"', "globalStatsDateMatches"]) {
   if (!panels.includes(marker)) throw new Error(`Production baseline missing date-range filter marker: ${marker}`);
 }
+for (const marker of ["openOddsSignalSummaryModal", "oddsSignalSummaryRows", 'data-odds-signal-summary="strong"', 'data-odds-signal-summary="conflict"', 'data-odds-signal-summary="home-hot"']) {
+  if (!panels.includes(marker)) throw new Error(`Production baseline missing odds signal modal marker: ${marker}`);
+}
+if (!main.includes("[data-odds-signal-summary]")) {
+  throw new Error("Production baseline requires click handling for odds signal summary cards.");
+}
 if (!styles.includes(".global-stats-table-toolbar button span") || !styles.includes("color: #ffffff;")) {
   throw new Error("Production baseline requires high-contrast text in the global-stats maximize button.");
 }

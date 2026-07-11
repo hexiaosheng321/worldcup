@@ -193,6 +193,11 @@ document.querySelector("#odds-map")?.addEventListener("click", (event) => {
     renderOddsMap();
     return;
   }
+  const summaryButton = event.target.closest("[data-odds-signal-summary]");
+  if (summaryButton) {
+    openOddsSignalSummaryModal(summaryButton.dataset.oddsSignalSummary);
+    return;
+  }
   const detailButton = event.target.closest("[data-odds-backtest-detail]");
   if (detailButton) {
     openOddsBacktestModal(detailButton.dataset.oddsBacktestDetail);

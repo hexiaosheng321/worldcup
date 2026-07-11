@@ -2607,6 +2607,64 @@ function openOddsBacktestModal(encodedKey = "") {
   document.body.appendChild(modal);
 }
 
+function oddsSignalSummaryRows(type, rows = []) {
+  if (type === "strong") return rows.filter((row) => row.pressureLevel === "强异动");
+  if (type === "conflict") return rows.filter((row) => row.riskFlags.length);
+  if (type === "home-hot") {
+    return rows.filter((row) => row.analyses.some(
+      (item) => item.playType === "had" && item.strongest?.code === "H" && item.strongest?.trend === "strengthening"
+    ));
+  }
+  return [];
+}
+
+function oddsSignalMovementText(row) {
+  return row.analyses
+    .filter((item) => item.available && item.strongest)
+    .map((item) => {
+      const top = item.strongest;
+      return `<li><b>${item.label} · ${top.label}</b><span>SP ${top.openingSp} → ${top.sp}</span><em>权重 ${deltaText(top.weightDelta)} · ${top.trend === "strengthening" ? "升温" : top.trend === "weakening" ? "降温" : "稳定"}</em></li>`;
+    })
+    .join("");
+}
+
+function openOddsSignalSummaryModal(type = "") {
+  const { preRows } = splitOddsMapRows(oddsMapRows());
+  const rows = oddsSignalSummaryRows(type, preRows).sort((a, b) => b.volatility - a.volatility);
+  const config = {
+    strong: { title: "强异动比赛", note: "最大 SP 变化超过 8%，需要优先复核盘口方向。" },
+    conflict: { title: "冲突信号比赛", note: "胜平负、让球或总进球市场出现不一致信号。" },
+    "home-hot": { title: "主胜升温比赛", note: "胜平负市场中主胜去水权重相比开盘明显抬升。" },
+  }[type];
+  if (!config) return;
+  document.querySelector(".odds-backtest-modal")?.remove();
+  const modal = document.createElement("div");
+  modal.className = "odds-backtest-modal odds-signal-modal";
+  modal.innerHTML = `
+    <div class="odds-backtest-dialog odds-signal-dialog" role="dialog" aria-modal="true" aria-label="${config.title}">
+      <header>
+        <div><span>SP Radar · 赛前监控</span><strong>${config.title}</strong><em>${config.note}</em></div>
+        <button type="button" aria-label="关闭" data-odds-backtest-close>×</button>
+      </header>
+      <section class="odds-signal-list">
+        ${rows.length ? rows.map((row) => {
+          const key = oddsMapRowKey(row);
+          return `
+            <article class="odds-signal-row">
+              <div class="odds-signal-row-head">
+                <div><span>${row.issue || row.no} · ${row.league || "体彩赛事"}</span><strong>${row.home} vs ${row.away}</strong><em>${formatDate(row.matchDate || row.ticaiDate)} · ${row.pressureLevel}</em></div>
+                <button type="button" data-odds-open-detail="${encodeURIComponent(key)}">进入详情</button>
+              </div>
+              <div class="odds-signal-flags">${(row.riskFlags.length ? row.riskFlags : [row.pressureLevel]).map((flag) => `<span>${flag}</span>`).join("")}</div>
+              <ul>${oddsSignalMovementText(row)}</ul>
+            </article>`;
+        }).join("") : `<div class="odds-signal-empty">当前赛前场次没有符合该信号的比赛。</div>`}
+      </section>
+      <footer><button type="button" class="secondary" data-odds-backtest-close>关闭</button></footer>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
 function oddsMapResearchMetrics(row) {
   const pred = oddsMapPredictionForRow(row);
   const math = oddsMathForMatch(row.no, pred);
@@ -2671,9 +2729,9 @@ function renderOddsMap() {
   cards.innerHTML = `
     <div class="odds-radar-summary">
       <article><span>赛前监控</span><strong>${preRows.length}</strong><em>未完场开盘场次</em></article>
-      <article><span>强异动</span><strong>${highCount}</strong><em>SP 变化超过 8%</em></article>
-      <article><span>冲突信号</span><strong>${conflictCount}</strong><em>胜平负 / 让球不一致</em></article>
-      <article><span>主胜升温</span><strong>${hadHomeHot}</strong><em>胜平负主胜权重抬升</em></article>
+      <button type="button" data-odds-signal-summary="strong"><span>强异动</span><strong>${highCount}</strong><em>SP 变化超过 8%</em><small>点击查看明细</small></button>
+      <button type="button" data-odds-signal-summary="conflict"><span>冲突信号</span><strong>${conflictCount}</strong><em>胜平负 / 让球不一致</em><small>点击查看明细</small></button>
+      <button type="button" data-odds-signal-summary="home-hot"><span>主胜升温</span><strong>${hadHomeHot}</strong><em>胜平负主胜权重抬升</em><small>点击查看明细</small></button>
     </div>
     <div class="odds-spotlight-grid">
       ${
