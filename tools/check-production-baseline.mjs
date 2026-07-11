@@ -234,6 +234,9 @@ const missingKickoffSourceMarkers = kickoffSourceMarkers.filter((marker) => !api
 if (missingKickoffSourceMarkers.length) {
   throw new Error(`Production baseline must keep sale-close and real kickoff clocks separate: ${missingKickoffSourceMarkers.join(", ")}`);
 }
+for (const marker of ["okoooLiveCenterUrl", "fetchOkoooJczqLiveScores", "OKOOO-live", "ctrl_homescore", "ctrl_awayscore"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline requires OKOOO in-play score ingestion: ${marker}`);
+}
 if (!sync.includes('postApi("/api/sync/okooo-live", { calculatorRaw })')) {
   throw new Error("Production baseline requires the reachable sync runner to supply official kickoff times to OKOOO odds sync.");
 }

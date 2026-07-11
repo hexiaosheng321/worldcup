@@ -940,6 +940,7 @@ const sportteryHeaders = {
 };
 
 const okoooJczqUrl = "https://m.okooo.com/jczq/";
+const okoooLiveCenterUrl = "https://www.okooo.com/livecenter/football/";
 const fiveHundredJczqUrl = "https://trade.500.com/jczq/";
 const okoooHeaders = {
   accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -1585,7 +1586,14 @@ async function fetchLiveFallbackMatches(env, sportteryMatches = []) {
   const dates = activeSportteryDates(sportteryMatches);
   if (!dates.length) return { matches: [], errors: [] };
 
+  let okoooLive = { matches: [], errors: [] };
+  try {
+    okoooLive = { matches: await fetchOkoooJczqLiveScores(env), errors: [] };
+  } catch (error) {
+    okoooLive = { matches: [], errors: [{ source: "OKOOO-live", date: "current", message: error.message || "OKOOO live score fetch failed" }] };
+  }
   const sources = [
+    okoooLive,
     await fetchFootballDataMatches(env, sportteryMatches),
     await fetchApiFootballMatches(env, sportteryMatches),
     await fetchFallbackSource(
@@ -1610,6 +1618,7 @@ function liveRowDedupeKey(row = {}) {
 }
 
 function liveRowPriority(row = {}) {
+  if (row.source === "OKOOO-live") return 5;
   if (row.source === "football-data.org" && (row.stage || row.scoreDuration || row.winnerSide)) return 4;
   if (row.source === "football-data.org") return 3;
   if (row.source === "APIfootball") return 2;
@@ -2636,6 +2645,93 @@ function parseOkoooJczqResults(html = "") {
   });
 }
 
+function parseOkoooJczqLiveScores(html = "") {
+  const objectText = extractAssignedObject(html, "var oddsData");
+  if (!objectText) throw new Error("OKOOO oddsData not found for live scores");
+  const oddsData = JSON.parse(objectText);
+  const rows = [];
+  const blockPattern = /<div id="match_(\d+)"[\s\S]*?(?=<div id="match_\d+"|<div class="listtop-new|$)/gi;
+  let matched;
+  while ((matched = blockPattern.exec(html))) {
+    const orderId = matched[1];
+    const block = matched[0];
+    const capture = (pattern) => okoooPlainText(block.match(pattern)?.[1] || "");
+    const home = capture(/class="ctrl_homename"[^>]*>([\s\S]*?)<\/em>/i);
+    const away = capture(/class="ctrl_awayname"[^>]*>([\s\S]*?)<\/em>/i);
+    const scoreText = capture(/class="[^\"]*zVS[^\"]*"[^>]*>([\s\S]*?)<\/span>/i).replace(":", "-");
+    const score = parseDashScore(scoreText);
+    if (!home || !away || !score) continue;
+    const result = oddsData[orderId]?.Result || {};
+    const isFinished = Boolean(scoreFromOkoooResult(result.SportteryScore));
+    rows.push({
+      source: "OKOOO-live",
+      externalId: orderId,
+      orderId,
+      date: "",
+      time: "",
+      league: capture(/class="liansai"[^>]*>([\s\S]*?)<\/a>/i) || "竞彩",
+      home,
+      away,
+      homeZh: home,
+      awayZh: away,
+      score: score.text,
+      halfScore: "",
+      status: isFinished ? "FINISHED" : "LIVE",
+      statusName: isFinished ? "已完赛" : "进行中",
+      isFinished,
+      live: !isFinished,
+      scoreDuration: "REGULAR",
+      scoreMode: isFinished ? "fullTime" : "liveRegularTime",
+    });
+  }
+  return rows;
+}
+
+async function fetchOkoooJczqLiveScores(env) {
+  const response = await fetch(env.OKOOO_LIVE_CENTER_URL || okoooLiveCenterUrl, { headers: okoooHeaders });
+  const text = decodeTextBody(await response.arrayBuffer());
+  if (!response.ok) throw new Error(`OKOOO live ${response.status}: ${text.slice(0, 200)}`);
+  const rows = [];
+  const rowPattern = /<tr\b[^>]*>[\s\S]*?<td[^>]*class="show_score"[^>]*val="(\d+)"[\s\S]*?<\/tr>/gi;
+  let matched;
+  while ((matched = rowPattern.exec(text))) {
+    const block = matched[0];
+    const capture = (pattern) => okoooPlainText(block.match(pattern)?.[1] || "");
+    const externalId = matched[1];
+    const home = capture(/class="ctrl_homename[^\"]*"[^>]*>([\s\S]*?)<\/a>/i);
+    const away = capture(/class="ctrl_awayname[^\"]*"[^>]*>([\s\S]*?)<\/a>/i);
+    const homeScore = Number(capture(/class="[^\"]*ctrl_homescore[^\"]*"[^>]*>([\s\S]*?)<\/b>/i));
+    const awayScore = Number(capture(/class="[^\"]*ctrl_awayscore[^\"]*"[^>]*>([\s\S]*?)<\/b>/i));
+    const status = capture(/class="ctrl_time"[^>]*>([\s\S]*?)<\/span>/i);
+    if (!home || !away || !Number.isFinite(homeScore) || !Number.isFinite(awayScore)) continue;
+    const isFinished = /完|finish|after|ft/i.test(status);
+    const live = !isFinished && /\d|半|中|live|in.?play/i.test(status);
+    if (!isFinished && !live) continue;
+    rows.push({
+      source: "OKOOO-live",
+      externalId,
+      date: "",
+      time: "",
+      league: capture(/class="match_league"[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/i) || "足球",
+      home,
+      away,
+      homeZh: home,
+      awayZh: away,
+      score: `${homeScore}-${awayScore}`,
+      halfScore: capture(/<span class="font_(?:red|blue)">\s*(\d+\s*-\s*\d+)\s*<\/span>/i).replace(/\s/g, ""),
+      status: isFinished ? "FINISHED" : status || "LIVE",
+      statusName: isFinished ? "已完赛" : status || "进行中",
+      minute: status,
+      isFinished,
+      live,
+      scoreDuration: "REGULAR",
+      scoreMode: isFinished ? "fullTime" : "liveRegularTime",
+    });
+  }
+  if (!rows.length) throw new Error("OKOOO live center returned no scored live/finished rows");
+  return rows;
+}
+
 async function fetchOkoooJczqResults(env) {
   const response = await fetch(env.OKOOO_JCZQ_URL || okoooJczqUrl, { headers: okoooHeaders });
   const text = decodeTextBody(await response.arrayBuffer());
@@ -2668,6 +2764,8 @@ async function debugOkoooJczq(env) {
   return {
     ok: true,
     count: Object.keys(oddsData).length,
+    liveScoreCount: parseOkoooJczqLiveScores(text).length,
+    liveScoreSamples: parseOkoooJczqLiveScores(text).slice(0, 12),
     samples,
   };
 }
