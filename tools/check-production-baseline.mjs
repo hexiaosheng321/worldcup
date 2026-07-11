@@ -220,7 +220,7 @@ if (missingOkoooDirectionMarkers.length) {
 
 const kickoffSourceMarkers = [
   "salesCloseTime",
-  'kickoffSource: official ? "sporttery-official" : "pending-official-schedule"',
+  'fiveHundred ? "500-jczq-matchtime" : "pending-official-schedule"',
   "officialByOrderId",
   'body.calculatorRaw || body.calculator || null',
 ];
