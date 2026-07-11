@@ -506,7 +506,7 @@ function actualHandicapResult(lock, result) {
   return "让负";
 }
 
-function caseDiagnosticPayload(lock, result, review, tags) {
+function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = []) {
   const lockPayload = parseObject(lock.payload_json);
   const predictionPayload = parseObject(lockPayload.sportteryPrediction);
   const diagnosticSource = { ...lockPayload, ...predictionPayload };
@@ -519,6 +519,14 @@ function caseDiagnosticPayload(lock, result, review, tags) {
   const totalGoalsHit = totalGoalPick.picks.length ? totalGoalPick.picks.includes(Number(result.total_goals)) : null;
   const scoreCovered = scorePicks.length ? scorePicks.includes(actualScore) : null;
   const handicapHit = handicapPick && actualHandicap ? handicapPick === actualHandicap : null;
+  const oddsMovement = oddsHistory.map((snapshot) => ({
+    capturedAt: snapshot.captured_at,
+    source: snapshot.source,
+    homeSp: snapshot.sporttery_home_sp,
+    drawSp: snapshot.sporttery_draw_sp,
+    awaySp: snapshot.sporttery_away_sp,
+    handicap: snapshot.handicap,
+  }));
   const failureMode = review.hitStatus === "WIN"
     ? "命中样本"
     : tags.failureTags[0] || (handicapHit === false ? "让球判断偏差" : totalGoalsHit === false ? "总进球判断偏差" : scoreCovered === false ? "比分路径未覆盖" : "方向判断偏差");
@@ -532,6 +540,26 @@ function caseDiagnosticPayload(lock, result, review, tags) {
     halfTimeScore: firstText(resultPayload.halfScore, resultPayload.half_time_score, resultPayload.halfTimeScore),
     actualResult: result.result_1x2,
     actualGoals: result.total_goals,
+    match: {
+      matchId: lock.match_id,
+      homeTeam: lock.home_team,
+      awayTeam: lock.away_team,
+      kickoffTime: lock.kickoff_time,
+    },
+    leagueType: lock.league,
+    lockedOdds: {
+      homeSp: lock.sporttery_home_sp,
+      drawSp: lock.sporttery_draw_sp,
+      awaySp: lock.sporttery_away_sp,
+    },
+    oddsMovement,
+    handicap: lock.asian_handicap,
+    judgementBasis: firstText(
+      lock.reasoning_summary,
+      diagnosticSource.reasoningSummary,
+      diagnosticSource.finalDecisionAction,
+      diagnosticSource.keyJudgement
+    ),
     actualHandicapResult: actualHandicap,
     predictedHandicapResult: handicapPick,
     handicapHit,
@@ -672,7 +700,15 @@ async function createCaseForLock(db, lockId) {
   const review = evaluateLock(lock, result);
   const tags = caseTags(lock, result, review);
   const caseId = `case-${lock.lock_id}`;
-  const diagnosticPayload = caseDiagnosticPayload(lock, result, review, tags);
+  const { results: oddsHistory } = await db.prepare(`
+    SELECT captured_at, source, sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp, handicap
+    FROM odds_snapshots
+    WHERE match_id = ?
+      AND sporttery_home_sp > 1 AND sporttery_draw_sp > 1 AND sporttery_away_sp > 1
+    ORDER BY captured_at ASC
+    LIMIT 200
+  `).bind(lock.match_id).all();
+  const diagnosticPayload = caseDiagnosticPayload(lock, result, review, tags, oddsHistory || []);
   const existing = await db.prepare("SELECT case_id FROM case_base WHERE source_lock_id = ?").bind(lock.lock_id).first();
   if (existing) {
     await db.prepare(`
