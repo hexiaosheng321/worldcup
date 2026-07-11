@@ -3454,6 +3454,12 @@ async function d1SportterySpHistoryScript(db, env, raw = false) {
   for (const row of snapshotRows) {
     const payload = parseObject(row.snapshot_payload, {});
     const matchPayload = parseObject(row.match_payload, {});
+    const canonicalHome = matchPayload.home || row.home_team || "";
+    const canonicalAway = matchPayload.away || row.away_team || "";
+    if (
+      payload.home && payload.away && canonicalHome && canonicalAway
+      && (!sameTeam(payload.home, canonicalHome) || !sameTeam(payload.away, canonicalAway))
+    ) continue;
     const base = payload.home && payload.away ? payload : matchPayload;
     const matchId = String(base.matchId || row.match_id || "").replace(/^sporttery-/, "");
     if (!matchId) continue;
@@ -3469,12 +3475,15 @@ async function d1SportterySpHistoryScript(db, env, raw = false) {
         matchId,
         home: base.home || row.home_team || "",
         away: base.away || row.away_team || "",
-        handicap: String(base.handicap || "0"),
+        handicap: String(matchPayload.handicap || base.handicap || "0"),
         updatedAt: "",
         history: { had: [], hhad: [], ttg: [], crs: [], hafu: [] },
       });
     }
     const item = byMatch.get(row.match_id);
+    if (matchPayload.handicap !== undefined && matchPayload.handicap !== null && matchPayload.handicap !== "") {
+      item.handicap = String(matchPayload.handicap);
+    }
     const stamp = sportterySnapshotStamp(row.captured_at);
     item.updatedAt = stamp.text || item.updatedAt;
     const normal = payload.normal || {};
@@ -3486,7 +3495,7 @@ async function d1SportterySpHistoryScript(db, env, raw = false) {
       item.history.hhad.push({
         updateDate: stamp.date,
         updateTime: stamp.time,
-        goalLine: String(payload.handicap || item.handicap || "0"),
+        goalLine: String(payload.handicap || matchPayload.handicap || item.handicap || "0"),
         h: handicapOdds.win,
         d: handicapOdds.draw,
         a: handicapOdds.lose,

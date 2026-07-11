@@ -1236,7 +1236,12 @@ function snapshotWeights(snapshot, playType) {
 }
 
 function analyzePlayHistory(match, playType) {
+  const expectedHandicap = String(match.handicap ?? "").replace("+", "");
   const snapshots = (match.history?.[playType] || [])
+    .filter((item) => {
+      if (playType !== "hhad" || !expectedHandicap) return true;
+      return String(item.goalLine ?? "").replace("+", "") === expectedHandicap;
+    })
     .filter((item) => `${item.updateDate || ""} ${item.updateTime || ""}`.trim())
     .sort((a, b) => `${a.updateDate} ${a.updateTime}`.localeCompare(`${b.updateDate} ${b.updateTime}`));
   if (snapshots.length < 2) {

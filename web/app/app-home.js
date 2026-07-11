@@ -578,8 +578,17 @@ function renderHomeResearchLab() {
   const highCount = oddsRows.filter((row) => row.pressureLevel === "强异动").length;
   const teams = buildTeamTable();
   const topPath = teams.slice().sort((a, b) => b.title - a.title)[0];
-  const locked = data.predictions.length;
-  const verified = matches.filter((match) => parseScore(officialScoreForMatch(match)) && latestPredictionFor(match.no)).length;
+  const locked = uniquePredictionCount();
+  const verified = new Set(
+    [...(data.predictions || []), ...(data.sportteryPredictions || [])]
+      .filter((pred) => {
+        const item = findSportteryItemForPrediction(pred);
+        if (item) return Boolean(verifiedSportteryScore(item));
+        const match = matches.find((row) => row.no === pred.no);
+        return Boolean(match && parseScore(officialScoreForMatch(match)));
+      })
+      .map((pred) => pred.sportteryKey || pred.matchId || `${pred.no}-${pred.date || pred.matchDate || ""}`)
+  ).size;
   const services = [
     {
       label: "实时数据服务",
