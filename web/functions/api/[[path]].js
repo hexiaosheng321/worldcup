@@ -1799,9 +1799,10 @@ function liveResultForSportteryMatch(match, liveRows = []) {
     (row) =>
       row.isFinished &&
       liveFallbackRowUsesRegularTime(row) &&
-      liveDateMatchesSporttery(match, row) &&
-      liveTeamMatches(match.home, row.home) &&
-      liveTeamMatches(match.away, row.away) &&
+      (
+        (row.source === "OKOOO-live" && String(row.externalId || "").replace(/^sporttery-/, "") === String(match.matchId || match.sportteryKey || "").replace(/^sporttery-/, "")) ||
+        (liveDateMatchesSporttery(match, row) && liveTeamMatches(match.home, row.home) && liveTeamMatches(match.away, row.away))
+      ) &&
       parseDashScore(row.score)
   );
 }

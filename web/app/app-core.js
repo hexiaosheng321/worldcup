@@ -550,6 +550,11 @@ function verifiedSportteryScore(item = {}) {
 
 function liveScoreForSportteryItem(item) {
   const rows = liveFootballData.matches || [];
+  const sportteryMatchId = String(item.matchId || item.sportteryKey || item.cloudMatchId || "").replace(/^sporttery-/, "");
+  const exactOkoooRow = sportteryMatchId
+    ? rows.find((row) => row.source === "OKOOO-live" && String(row.externalId || "").replace(/^sporttery-/, "") === sportteryMatchId)
+    : null;
+  if (exactOkoooRow) return exactOkoooRow;
   return rows.find(
     (row) =>
       liveDateMatchesSportteryItem(item, row) &&

@@ -248,6 +248,9 @@ if (missingKickoffSourceMarkers.length) {
 for (const marker of ["okoooLiveCenterUrl", "fetchOkoooJczqLiveScores", "OKOOO-live", "ctrl_homescore", "ctrl_awayscore"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires OKOOO in-play score ingestion: ${marker}`);
 }
+if (!appCore.includes('row.source === "OKOOO-live"') || !appCore.includes("row.externalId") || !api.includes('row.source === "OKOOO-live"') || !api.includes("row.externalId")) {
+  throw new Error("Production baseline requires exact OKOOO Sporttery match-id matching before ambiguous team-name fallback.");
+}
 for (const marker of ['data-live-score-active', 'dataset.liveScoreActive === "1"']) {
   if (!homeApp.includes(marker)) throw new Error(`Production baseline requires homepage live-score timer protection: ${marker}`);
 }
