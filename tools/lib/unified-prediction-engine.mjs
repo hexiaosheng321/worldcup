@@ -55,6 +55,10 @@ function teamKey(value = "") {
     [/^(?:阿根廷|Argentina)$/i, "argentina"], [/^(?:瑞士|Switzerland)$/i, "switzerland"],
     [/腓特烈(?:斯塔)?/i, "fredrikstad"], [/利勒斯(?:特罗姆)?/i, "lillestrom"],
     [/特罗姆(?:瑟)?/i, "tromso"], [/瓦勒伦(?:加)?/i, "valerenga"], [/奥勒松/i, "aalesund"], [/莫尔德/i, "molde"],
+    [/萨普斯|Sarpsborg(?:\s*08)?/i, "sarpsborg"], [/KFU|KFUM(?:\s*Oslo|奥斯陆)?/i, "kfum"],
+    [/博德闪|Bod[oø](?:\/Glimt)?/i, "bodoglimt"], [/罗森博|Rosenborg/i, "rosenborg"],
+    [/克里斯|Kristiansund/i, "kristiansund"], [/桑纳菲|Sandefjord/i, "sandefjord"],
+    [/韦斯特|V[aä]ster[aå]s/i, "vasteras"], [/代格福|Degerfors/i, "degerfors"],
     [/米亚尔(?:比)?/i, "mjallby"], [/(?:AIK)?索尔纳/i, "aik"], [/厄尔格|奥尔格里特/i, "orgryte"], [/赫根/i, "hacken"],
     [/拉赫蒂|Lahti/i, "lahti"], [/HIFK|Helsinki IFK/i, "hifk"], [/赫尔火|赫尔辛基火花|IF Gnistan/i, "gnistan"], [/赫尔辛(?:基)?|HJK(?: Helsinki)?/i, "hjk"], [/玛丽港|Mariehamn/i, "mariehamn"],
     [/AC\s*奥(?:卢)?|AC\s*Oulu/i, "acoulu"], [/TPS|Turku\s*PS/i, "tps"],
@@ -382,7 +386,10 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const marketBaseline = noVig([market.normal?.win, market.normal?.draw, market.normal?.lose]);
   const asOf = context.asOf || new Date().toISOString();
   const research = researchAudit(context.research, asOf);
-  const baseXg = expectedGoals(samples, match.home, match.away, beforeDate);
+  const verifiedRecentMatches = Array.isArray(context.research?.teamState?.recentMatches)
+    ? context.research.teamState.recentMatches
+    : [];
+  const baseXg = expectedGoals([...samples, ...verifiedRecentMatches], match.home, match.away, beforeDate);
   const xg = { ...baseXg, home: Math.max(0.2, baseXg.home + research.adjustment.xgHome), away: Math.max(0.2, baseXg.away + research.adjustment.xgAway) };
   const poissonScores = scoreGrid(xg);
   const formBaseline = formProbabilities(xg.homeRows, xg.awayRows);
@@ -535,7 +542,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       xg: { home: round(xg.home, 2), away: round(xg.away, 2) },
       venueProfile: xg.venueProfile,
       leagueProfile: xg.leagueProfile,
-      recentForm: { home: xg.homeRows, away: xg.awayRows },
+      recentForm: { home: xg.homeRows, away: xg.awayRows, verifiedEvidenceRows: verifiedRecentMatches.length },
       recentFormFresh,
       fundamentalDataComplete,
       dataQuality: { score: dataQualityScore, grade: dataQualityScore >= 85 ? "A" : dataQualityScore >= 70 ? "B" : dataQualityScore >= 55 ? "C" : "D", temporalIntegrity, evidenceCompleteness: round(evidenceCompleteness), unavailableNonDecisiveCount, minimumRecentMatchesPerTeam: 5 },
