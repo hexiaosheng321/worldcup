@@ -70,7 +70,7 @@ const modelStatsButtons = document.querySelectorAll("[data-model-stats]");
 const oddsMapButtons = document.querySelectorAll("[data-odds-map]");
 const aboutSiteButtons = document.querySelectorAll("[data-about-site]");
 let modelNoticeTimer;
-let activeGlobalStatsDate = "all";
+let activeGlobalStatsDate = "last7";
 let activeGlobalStatsLeague = "all";
 let activeSportteryPoolView = "open";
 let activeOddsMapView = "pre";

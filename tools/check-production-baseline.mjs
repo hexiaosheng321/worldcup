@@ -64,6 +64,13 @@ if (panels.includes("renderCalibrationPanel") || panels.includes("calibration-pa
 for (const marker of ['value="last7"', 'value="last15"', 'label="按月份"', 'label="按单日"', "globalStatsDateMatches"]) {
   if (!panels.includes(marker)) throw new Error(`Production baseline missing date-range filter marker: ${marker}`);
 }
+const statsCore = fs.readFileSync("web/app/app-core.js", "utf8");
+if (!statsCore.includes('let activeGlobalStatsDate = "last7"') || !panels.includes('activeGlobalStatsDate = "last7"')) {
+  throw new Error("Production baseline requires model stats to default and fall back to the latest seven days.");
+}
+if (!panels.includes('const competitions = new Set(visibleRows.map((row) => row.league))') || !panels.includes('<strong>${rows.length}</strong>')) {
+  throw new Error("Production baseline requires summary cards and detail rows to share the active date range.");
+}
 for (const marker of ["openOddsSignalSummaryModal", "oddsSignalSummaryRows", 'data-odds-signal-summary="strong"', 'data-odds-signal-summary="conflict"', 'data-odds-signal-summary="home-hot"']) {
   if (!panels.includes(marker)) throw new Error(`Production baseline missing odds signal modal marker: ${marker}`);
 }

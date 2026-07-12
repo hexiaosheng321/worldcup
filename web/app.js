@@ -69,7 +69,7 @@ const modelStatsButtons = document.querySelectorAll("[data-model-stats]");
 const oddsMapButtons = document.querySelectorAll("[data-odds-map]");
 const aboutSiteButtons = document.querySelectorAll("[data-about-site]");
 let modelNoticeTimer;
-let activeGlobalStatsDate = "all";
+let activeGlobalStatsDate = "last7";
 let activeGlobalStatsLeague = "all";
 let activeSportteryPoolView = "open";
 let activeOddsMapView = "pre";
@@ -5556,7 +5556,7 @@ function renderGlobalStats() {
     || (activeGlobalStatsDate.startsWith("month:") && months.includes(activeGlobalStatsDate.slice(6)))
     || dates.includes(activeGlobalStatsDate);
   if (!validDateSelection) {
-    activeGlobalStatsDate = "all";
+    activeGlobalStatsDate = "last7";
   }
   if (activeGlobalStatsLeague !== "all" && !leagues.includes(activeGlobalStatsLeague)) {
     activeGlobalStatsLeague = "all";
@@ -5581,10 +5581,10 @@ function renderGlobalStats() {
   const mainGateRows = gateRows.filter((row) => row.gate.level === "A");
   const attributionRows = verifiedRows.map((row) => ({ ...row, attribution: reviewAttribution(row.pred, row.match, row) }));
   const missAttributions = attributionRows.filter((row) => row.attribution.severity !== "good");
-  const competitions = new Set(allRows.map((row) => row.league));
+  const competitions = new Set(visibleRows.map((row) => row.league));
   cards.innerHTML = `
     <div class="review-summary-grid">
-      <article class="review-metric"><span>已锁版场次</span><strong>${allRows.length}</strong><em>${competitions.size} 个赛事类型</em></article>
+      <article class="review-metric"><span>已锁版场次</span><strong>${rows.length}</strong><em>${competitions.size} 个赛事类型</em></article>
       <article class="review-metric"><span>已验证</span><strong>${verifiedRows.length}</strong><em>已有实际比分</em></article>
       <article class="review-metric"><span>方向命中</span><strong>${directionHits}/${verifiedRows.length || 0}</strong><em>${hitRate(directionHits, verifiedRows.length)}</em></article>
       <article class="review-metric"><span>让球命中</span><strong>${handicapHits}/${handicapVerifiedRows.length || 0}</strong><em>${hitRate(handicapHits, handicapVerifiedRows.length)}</em></article>
