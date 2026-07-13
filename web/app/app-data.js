@@ -464,6 +464,12 @@ function restoreCloudBootstrapCache() {
     const raw = localStorage.getItem(CLOUD_BOOTSTRAP_CACHE_KEY);
     if (!raw) return false;
     const payload = JSON.parse(raw);
+    const cachedAt = Date.parse(payload.cachedAt || "");
+    const maxAgeMs = 15 * 60 * 1000;
+    if (!Number.isFinite(cachedAt) || Date.now() - cachedAt > maxAgeMs) {
+      localStorage.removeItem(CLOUD_BOOTSTRAP_CACHE_KEY);
+      return false;
+    }
     return applyCloudBootstrapPayload(payload, { cached: true });
   } catch {
     return false;

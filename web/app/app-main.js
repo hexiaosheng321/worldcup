@@ -454,15 +454,13 @@ if (currentRouteNeedsCloudBootstrap()) {
     scheduleSportterySpHistoryRefresh();
   });
 } else if (!initialHash) {
-  runWhenPageIdle(() => {
-    loadCloudBootstrapData({ rerender: true, scope: "initial" }).then(async (changed) => {
-      const synced = await syncCloudSportteryResultsIfNeeded({ rerender: true });
-      if (changed) {
-        refreshLiveFootballScoresData({ rerender: true });
-        renderCurrentRouteSurfaces();
-      } else if (synced) renderCurrentRouteSurfaces();
-    });
-  }, 2200);
+  Promise.allSettled([
+    loadCloudBootstrapData({ rerender: false, scope: "initial" }),
+    refreshLiveFootballScoresData({ rerender: false }),
+  ]).then(async () => {
+    await syncCloudSportteryResultsIfNeeded({ rerender: false });
+    renderCurrentRouteSurfaces();
+  });
 } else {
   runWhenPageIdle(() => {
     loadStaticSnapshotFallback({ rerender: false });
@@ -480,12 +478,6 @@ runWhenPageIdle(() => {
   }
 }, initialHash ? 4200 : 2600);
 
-// 强制预加载静态数据作为基底，再加载云端数据
-if (currentRouteNeedsCloudBootstrap()) {
-  loadStaticSnapshotFallback({ force: true, rerender: false }).then(() => {
-    return loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" });
-  });
-}
 setInterval(refreshSportteryCloudData, 5 * 60 * 1000);
 
 /* ── 返回顶部 ── */

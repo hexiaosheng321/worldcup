@@ -75,6 +75,7 @@ let activeGlobalStatsLeague = "all";
 let activeSportteryPoolView = "open";
 let activeOddsMapView = "pre";
 let matchDetailReturnTarget = "path";
+let sportteryDetailNavigationPending = false;
 let sportteryPoolItemCache = new Map();
 let homeCountdownTimer;
 let matchFlowTimer;

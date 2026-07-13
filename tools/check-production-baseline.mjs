@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 
 const index = fs.readFileSync("web/index.html", "utf8");
 const main = fs.readFileSync("web/app/app-main.js", "utf8");
+const dataApp = fs.readFileSync("web/app/app-data.js", "utf8");
 const homeApp = fs.readFileSync("web/app/app-home.js", "utf8");
 const detailApp = fs.readFileSync("web/app/app-detail.js", "utf8");
 const panels = fs.readFileSync("web/app/app-panels.js", "utf8");
@@ -262,6 +263,24 @@ if (!sync.includes('postApi("/api/sync/okooo-live", { calculatorRaw })')) {
 }
 for (const marker of ["syncHealthDecision", "retryableStatuses", 'health.level === "DEGRADED"', "process.exitCode = health.exitCode"]) {
   if (!sync.includes(marker)) throw new Error(`Production baseline requires retry/degraded-success sync policy: ${marker}`);
+}
+if (index.includes('<script src="./live-sporttery-data.js')) {
+  throw new Error("Production baseline rejects stale local sporttery data as a first-paint script.");
+}
+for (const marker of [
+  "Promise.allSettled([",
+  'loadCloudBootstrapData({ rerender: false, scope: "initial" })',
+  "refreshLiveFootballScoresData({ rerender: false })",
+]) {
+  if (!main.includes(marker)) throw new Error(`Production baseline requires one-pass parallel mobile homepage hydration: ${marker}`);
+}
+if (!dataApp.includes("const maxAgeMs = 15 * 60 * 1000")) {
+  throw new Error("Production baseline requires a freshness limit on the first-paint cloud cache.");
+}
+for (const marker of ["sportteryDetailNavigationPending", "previousScrollY", 'behavior: "auto"']) {
+  if (!detailApp.includes(marker) && !appCore.includes(marker)) {
+    throw new Error(`Production baseline requires scroll-preserving detail refresh: ${marker}`);
+  }
 }
 
 if (!process.env.GITHUB_ACTIONS) {

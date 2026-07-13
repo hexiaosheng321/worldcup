@@ -1480,6 +1480,10 @@ function renderFootballDataLayerPanel(item, modelPred) {
 
 function renderSportteryMatchDetail(key) {
   const content = document.querySelector("#match-detail-body");
+  const resetScroll = sportteryDetailNavigationPending;
+  sportteryDetailNavigationPending = false;
+  const preserveScroll = !resetScroll && window.location.hash.startsWith("#sporttery-match-") && window.scrollY > 0;
+  const previousScrollY = preserveScroll ? window.scrollY : 0;
   if (!sportteryPoolItemCache.size) cacheSportteryPoolItems(sportteryPoolItems());
   const base = findSportteryItemByKey(key);
   if (!content) return;
@@ -1608,7 +1612,14 @@ function renderSportteryMatchDetail(key) {
   document.querySelectorAll(".home-topbar nav button").forEach((button) => button.classList.remove("active"));
   document.querySelector(".home-topbar [data-sporttery-pool]")?.classList.add("active");
   if (modelPred) refreshD1CaseBasePanel(modelPred, item);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (resetScroll) {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  } else if (preserveScroll) {
+    requestAnimationFrame(() => {
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      window.scrollTo({ top: Math.min(previousScrollY, maxScroll), behavior: "auto" });
+    });
+  }
 }
 
 function openSportteryMatchPage(key, returnTarget = "sporttery") {
@@ -1616,9 +1627,12 @@ function openSportteryMatchPage(key, returnTarget = "sporttery") {
   const lookupKey = sportteryLookupKeyFromHash(key);
   const hashKey = encodeURIComponent(lookupKey);
   if (window.location.hash !== `#sporttery-match-${hashKey}`) {
+    sportteryDetailNavigationPending = true;
     window.location.hash = `sporttery-match-${hashKey}`;
+    return;
   }
   renderSportteryMatchDetail(lookupKey);
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function closeMatchPage() {
