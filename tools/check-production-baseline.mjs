@@ -260,6 +260,9 @@ for (const marker of ['data-live-score-active', 'dataset.liveScoreActive === "1"
 if (!sync.includes('postApi("/api/sync/okooo-live", { calculatorRaw })')) {
   throw new Error("Production baseline requires the reachable sync runner to supply official kickoff times to OKOOO odds sync.");
 }
+for (const marker of ["syncHealthDecision", "retryableStatuses", 'health.level === "DEGRADED"', "process.exitCode = health.exitCode"]) {
+  if (!sync.includes(marker)) throw new Error(`Production baseline requires retry/degraded-success sync policy: ${marker}`);
+}
 
 if (!process.env.GITHUB_ACTIONS) {
   const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();

@@ -7,6 +7,7 @@
     "league-profiles:generate": "node tools/generate-league-profiles.mjs",
     "prediction:unified": "node tools/run-unified-prediction.mjs",
     "prediction:test": "node tools/test-unified-prediction-engine.mjs",
+    "sync:test": "node tools/test-sync-health.mjs",
     "history:import-api": "node tools/import-free-history-api.mjs",
     "history:import-api-football": "node tools/import-api-football-history.mjs",
     "history:import-football-data": "node tools/import-football-data-history.mjs",
