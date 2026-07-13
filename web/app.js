@@ -20,7 +20,7 @@ const SPORTTERY_RESULTS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
 const SPORTTERY_FIXED_BONUS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
-const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v2";
+const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v3";
 const SPORTTERY_RESULT_SYNC_THROTTLE_KEY = "wc_sporttery_result_sync_checked_at_v1";
 const SPORTTERY_RESULT_SYNC_DELAY_MINUTES = 105;
 const SPORTTERY_RESULT_PENDING_WINDOW_MINUTES = 135;
@@ -942,7 +942,8 @@ function hasCompleteSportteryLockFields(pred = {}) {
 
 function resultForWorldCupMatch(match) {
   const results = resultsData.results || [];
-  return results.find(
+  const matchId = String(match.matchId || match.sportteryKey || match.cloudMatchId || "").replace(/^sporttery-/, "");
+  return (matchId ? results.find((result) => String(result.matchId || result.sportteryKey || result.cloudMatchId || "").replace(/^sporttery-/, "") === matchId) : null) || results.find(
     (result) =>
       (result.ticaiDate === match.date || result.matchDate === match.date) &&
       looseTeamMatch(match.home, result.home) &&
@@ -2728,6 +2729,13 @@ function applyCloudBootstrapPayload(payload, { rerender = false, cached = false 
     if (cached) resultsData.isCachedSnapshot = true;
     window.LIVE_SPORTTERY_RESULTS = resultsData;
     changed = true;
+  }
+  if (oddsData.matches?.length) {
+    const cloudWorldCupMatches = oddsData.matches
+      .filter(isWorldCupSportteryItem)
+      .map((item) => ({ ...item, score: verifiedSportteryScore(item) || normalizeResultScore(item.score) }));
+    matches = mergeWorldCupSportteryMatches(matches, cloudWorldCupMatches);
+    data.matches = matches;
   }
   if (payload.cases?.length && window.WC_CASE_BASE?.appendCases) {
     if (window.WC_CASE_BASE.appendCases(payload.cases)) {

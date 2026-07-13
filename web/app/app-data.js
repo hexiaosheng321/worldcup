@@ -386,6 +386,13 @@ function applyCloudBootstrapPayload(payload, { rerender = false, cached = false 
     window.LIVE_SPORTTERY_RESULTS = resultsData;
     changed = true;
   }
+  if (oddsData.matches?.length) {
+    const cloudWorldCupMatches = oddsData.matches
+      .filter(isWorldCupSportteryItem)
+      .map((item) => ({ ...item, score: verifiedSportteryScore(item) || normalizeResultScore(item.score) }));
+    matches = mergeWorldCupSportteryMatches(matches, cloudWorldCupMatches);
+    data.matches = matches;
+  }
   if (payload.spHistory?.matches?.length) {
     spHistoryData = payload.spHistory;
     if (cached) spHistoryData.isCachedSnapshot = true;
