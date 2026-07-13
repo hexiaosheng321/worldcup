@@ -293,6 +293,12 @@ document.querySelector("#global-stats-table")?.addEventListener("click", (event)
   openMatchPage(matchButton.dataset.reviewOpenMatch, "model-stats");
 });
 
+document.querySelector("#schedule")?.addEventListener("click", (event) => {
+  const maximizeButton = event.target.closest("[data-goal-trend-maximize]");
+  if (!maximizeButton) return;
+  openGoalTrendModal(maximizeButton);
+});
+
 document.querySelector("#today-grid")?.addEventListener("click", (event) => {
   const sportteryCard = event.target.closest("[data-sporttery-match-key]");
   if (sportteryCard) {

@@ -81,6 +81,12 @@ if (!main.includes("[data-odds-signal-summary]")) {
 if (!styles.includes(".global-stats-table-toolbar button span") || !styles.includes("color: #ffffff;")) {
   throw new Error("Production baseline requires high-contrast text in the global-stats maximize button.");
 }
+const goalTrackDetail = fs.readFileSync("web/app/app-detail.js", "utf8");
+for (const marker of ["data-goal-trend-maximize", "openGoalTrendModal", "trend-table-expanded"]) {
+  if (!goalTrackDetail.includes(marker) && !main.includes(marker) && !styles.includes(marker)) {
+    throw new Error(`Production baseline missing goal-track maximize marker: ${marker}`);
+  }
+}
 
 if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v3"')) {
   throw new Error("Production baseline requires the corrected score-cache namespace.");

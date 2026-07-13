@@ -6363,6 +6363,15 @@ body::before {
   background: #063879;
 }
 
+.goal-trend-toolbar {
+  margin-top: 0;
+}
+
+.goal-trend-toolbar + .trend-wrap {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
 .global-stats-filterbar {
   margin-top: 18px;
 }
@@ -6396,7 +6405,8 @@ body::before {
 .global-stats-dialog {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  width: min(1880px, 98vw);
+  box-sizing: border-box;
+  width: min(1880px, calc(100vw - 36px));
   height: min(980px, 94vh);
   overflow: hidden;
   border: 1px solid rgba(207, 221, 239, 0.98);
@@ -6460,6 +6470,22 @@ body::before {
 .global-stats-record-table-expanded th,
 .global-stats-record-table-expanded td {
   padding: 9px 10px;
+}
+
+.goal-trend-dialog-body {
+  padding: 0;
+}
+
+.trend-table-expanded {
+  min-width: 1500px;
+  background: var(--panel);
+  font-size: 14px;
+}
+
+.trend-table-expanded th,
+.trend-table-expanded td {
+  height: 42px;
+  padding: 8px 12px;
 }
 
 .odds-map-panel {

@@ -1690,6 +1690,7 @@ function handleRouteFromHash() {
 function renderSchedule() {
   const filtered = getFilteredMatches();
   document.querySelector("#schedule-list").innerHTML = renderGoalTrendTable(filtered, {
+    title: "2026 世界杯进球轨道",
     dateFormatter: (match) => formatDate(ticaiDate(match)),
     issueFormatter: ticaiIssue,
     scoreFormatter: officialScoreForMatch,
@@ -1704,6 +1705,7 @@ function renderSchedule() {
     renderGoalTrendChart(goalData, "已完成场次进球走势");
   }
   document.querySelector("#schedule-2022-list").innerHTML = renderGoalTrendTable(data.worldCup2022Matches || [], {
+    title: "2022 世界杯进球轨道",
     dateFormatter: (match) => formatDate(match.date),
   });
 }
@@ -1735,6 +1737,15 @@ function renderGoalTrendTable(sourceMatches, options = {}) {
     .join("");
 
   return `
+    <div class="global-stats-table-toolbar goal-trend-toolbar">
+      <div>
+        <span>进球轨道明细</span>
+        <strong>${options.title || "世界杯进球轨道"} · ${sourceMatches.length} 场</strong>
+      </div>
+      <button type="button" data-goal-trend-maximize aria-label="最大化查看${options.title || "世界杯进球轨道"}">
+        <span>最大化查看</span>
+      </button>
+    </div>
     <div class="trend-wrap">
       <table class="trend-table">
         <thead>
@@ -1752,4 +1763,31 @@ function renderGoalTrendTable(sourceMatches, options = {}) {
       </table>
     </div>
   `;
+}
+
+function openGoalTrendModal(button) {
+  const timeline = button?.closest(".timeline");
+  const sourceTable = timeline?.querySelector(".trend-table");
+  if (!sourceTable) return;
+  document.querySelector(".global-stats-modal")?.remove();
+  const summary = timeline.querySelector(".goal-trend-toolbar strong")?.textContent || "世界杯进球轨道";
+  const modal = document.createElement("div");
+  modal.className = "global-stats-modal goal-trend-modal";
+  modal.innerHTML = `
+    <div class="global-stats-dialog goal-trend-dialog" role="dialog" aria-modal="true" aria-label="进球轨道最大化表格">
+      <header>
+        <div>
+          <span>进球轨道</span>
+          <strong>${summary}</strong>
+          <em>横向滚动查看进球区间，纵向滚动查看更多比赛。</em>
+        </div>
+        <button type="button" data-global-stats-close aria-label="关闭最大化表格">×</button>
+      </header>
+      <div class="global-stats-dialog-body goal-trend-dialog-body"></div>
+    </div>
+  `;
+  const tableClone = sourceTable.cloneNode(true);
+  tableClone.classList.add("trend-table-expanded");
+  modal.querySelector(".goal-trend-dialog-body")?.appendChild(tableClone);
+  document.body.appendChild(modal);
 }
