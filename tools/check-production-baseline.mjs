@@ -268,11 +268,11 @@ if (index.includes('<script src="./live-sporttery-data.js')) {
   throw new Error("Production baseline rejects stale local sporttery data as a first-paint script.");
 }
 for (const marker of [
-  "Promise.allSettled([",
+  "const liveScoresReady = refreshLiveFootballScoresData({ rerender: false })",
   'loadCloudBootstrapData({ rerender: false, scope: "initial" })',
-  "refreshLiveFootballScoresData({ rerender: false })",
+  "if (await liveScoresReady) renderCurrentRouteSurfaces()",
 ]) {
-  if (!main.includes(marker)) throw new Error(`Production baseline requires one-pass parallel mobile homepage hydration: ${marker}`);
+  if (!main.includes(marker)) throw new Error(`Production baseline requires non-blocking parallel mobile homepage hydration: ${marker}`);
 }
 if (!dataApp.includes("const maxAgeMs = 15 * 60 * 1000")) {
   throw new Error("Production baseline requires a freshness limit on the first-paint cloud cache.");

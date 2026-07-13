@@ -454,12 +454,11 @@ if (currentRouteNeedsCloudBootstrap()) {
     scheduleSportterySpHistoryRefresh();
   });
 } else if (!initialHash) {
-  Promise.allSettled([
-    loadCloudBootstrapData({ rerender: false, scope: "initial" }),
-    refreshLiveFootballScoresData({ rerender: false }),
-  ]).then(async () => {
-    await syncCloudSportteryResultsIfNeeded({ rerender: false });
+  const liveScoresReady = refreshLiveFootballScoresData({ rerender: false });
+  loadCloudBootstrapData({ rerender: false, scope: "initial" }).then(async () => {
     renderCurrentRouteSurfaces();
+    syncCloudSportteryResultsIfNeeded({ rerender: false });
+    if (await liveScoresReady) renderCurrentRouteSurfaces();
   });
 } else {
   runWhenPageIdle(() => {
