@@ -11,6 +11,35 @@ const RESEARCH_KEYS = [
 const resultLabels = ["HOME", "DRAW", "AWAY"];
 const resultText = { HOME: "胜", DRAW: "平", AWAY: "负" };
 
+const LEAGUE_LEARNING_PROFILES = {
+  "韩职": {
+    version: "KLEAGUE_2026-07-12_R1", reviewSampleCount: 3,
+    xg: { home: -0.04, away: -0.04 }, confidencePenalty: 2,
+    scoreWeight: (row) => row.home + row.away === 0 ? 1.18 : row.home + row.away <= 1 ? 1.08 : 1,
+    rules: ["低节奏时必须保留0球与0-0路径", "胜负优势不得自动放大为多球差"],
+  },
+  "瑞超": {
+    version: "ALLSVENSKAN_2026-07-12_R1", reviewSampleCount: 5,
+    xg: { home: 0, away: -0.03 }, confidencePenalty: 3,
+    scoreWeight: (row) => row.home === row.away ? 0.98 : Math.abs(row.home - row.away) === 1 ? 1.06 : Math.abs(row.home - row.away) >= 3 ? 0.96 : 1,
+    rules: ["胜平负与净胜球分层建模", "-1让胜必须由净胜两球及以上概率支持", "主客队进球必须分别估计"],
+  },
+  "挪超": {
+    version: "ELITESERIEN_2026-07-12_R1", reviewSampleCount: 5,
+    xg: { home: 0.07, away: -0.03 }, confidencePenalty: 3,
+    scoreWeight: (row) => row.home > row.away ? 1.04 : row.home < row.away ? 0.97 : 1.01,
+    rules: ["客场强队必须接受主场攻防方差修正", "主胜不得直接映射为-1让胜", "领先后降速和客队反击必须进入第二路径"],
+  },
+};
+
+function leagueLearningProfile(league = "") {
+  return LEAGUE_LEARNING_PROFILES[String(league || "").trim()] || {
+    version: "GENERIC_2026_V1", reviewSampleCount: 0, xg: { home: 0, away: 0 }, confidencePenalty: 0,
+    scoreWeight: () => 1,
+    rules: ["使用全局联合分布和通用十步闸门"],
+  };
+}
+
 function number(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
@@ -170,6 +199,12 @@ function scoreGrid(xg) {
     }
   }
   return rows.sort((a, b) => b.probability - a.probability);
+}
+
+function applyLeagueScoreLearning(rows, profile) {
+  const weighted = rows.map((row) => ({ ...row, probability: row.probability * profile.scoreWeight(row) }));
+  const total = weighted.reduce((sum, row) => sum + row.probability, 0) || 1;
+  return weighted.map((row) => ({ ...row, probability: row.probability / total })).sort((a, b) => b.probability - a.probability);
 }
 
 function normalizedMap(entries = []) {
@@ -386,12 +421,17 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const marketBaseline = noVig([market.normal?.win, market.normal?.draw, market.normal?.lose]);
   const asOf = context.asOf || new Date().toISOString();
   const research = researchAudit(context.research, asOf);
+  const leagueLearning = leagueLearningProfile(match.league);
   const verifiedRecentMatches = Array.isArray(context.research?.teamState?.recentMatches)
     ? context.research.teamState.recentMatches
     : [];
   const baseXg = expectedGoals([...samples, ...verifiedRecentMatches], match.home, match.away, beforeDate);
-  const xg = { ...baseXg, home: Math.max(0.2, baseXg.home + research.adjustment.xgHome), away: Math.max(0.2, baseXg.away + research.adjustment.xgAway) };
-  const poissonScores = scoreGrid(xg);
+  const xg = {
+    ...baseXg,
+    home: Math.max(0.2, baseXg.home + research.adjustment.xgHome + leagueLearning.xg.home),
+    away: Math.max(0.2, baseXg.away + research.adjustment.xgAway + leagueLearning.xg.away),
+  };
+  const poissonScores = applyLeagueScoreLearning(scoreGrid(xg), leagueLearning);
   const formBaseline = formProbabilities(xg.homeRows, xg.awayRows);
   const historicalScores = historicalScoreDistribution(samples, market);
   const scoreModel = blendScoreDistribution(poissonScores, market.scoreOdds || [], historicalScores);
@@ -448,6 +488,9 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   counterScore = scores.find((row) => scoreResult(row) !== selectedDirection) || scores.find((row) => row.score !== mainScore.score);
   topScores = [mainScore, counterScore].filter(Boolean);
   handicapMapped = topScores.map((row) => ({ score: row.score, result: handicapResult(row, match.handicap) }));
+  const selectedTotalKeys = String(totalModel.pick || "").match(/(?:[0-6]|7\+)/g) || [];
+  const scenarioTotalsCovered = topScores.some((row) => selectedTotalKeys.includes(row.home + row.away >= 7 ? "7+" : String(row.home + row.away)));
+  const scenarioHandicapCovered = handicapMapped.some((row) => row.result === handicapPick);
   const handicapIndependent = Boolean(handicapMarket && handicapParts.length >= 2 && rankedHandicap[0]?.probability > 0);
   const conflict = rankedResults[0].probability - rankedResults[1].probability < 0.06;
   const marketRanked = marketBaseline
@@ -498,7 +541,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     { id: 4, key: "styleMatchup", title: "风格对位", score: research.items.find((item) => item.key === "styleMatchup")?.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "styleMatchup")?.complete) },
     { id: 5, key: "marketSamples", title: "盘口和样本", score: Math.round((normalOddsComplete ? 40 : 0) + Math.min(40, samples.length / 2) + (recentFormFresh ? 20 : 0)), passed: normalOddsComplete && samples.length >= 30 && recentFormFresh },
     { id: 6, key: "stateTransfer", title: "状态转移", score: movement.complete && research.items.find((item) => item.key === "marketNews")?.complete ? 100 : 0, passed: movement.complete && Boolean(research.items.find((item) => item.key === "marketNews")?.complete) },
-    { id: 7, key: "scoreTotals", title: "比分/总进球独立闸门", score: [scoreGate, scoreIndependent, totalsIndependent, counterScriptDiverges].filter(Boolean).length * 25, passed: scoreGate && scoreMarketComplete && totalsMarketComplete && scoreIndependent && totalsIndependent && counterScriptDiverges },
+    { id: 7, key: "scoreTotals", title: "比分/总进球独立闸门", score: [scoreGate, scoreIndependent, totalsIndependent, counterScriptDiverges, scenarioTotalsCovered].filter(Boolean).length * 20, passed: scoreGate && scoreMarketComplete && totalsMarketComplete && scoreIndependent && totalsIndependent && counterScriptDiverges && scenarioTotalsCovered },
     { id: 8, key: "handicapGate", title: "让球独立闸门", score: handicapIndependent ? 100 : 0, passed: handicapIndependent },
     { id: 9, key: "failureValue", title: "失败方式和值过滤", score: research.complete && drawOverrideJustified ? 100 : 0, passed: research.complete && drawOverrideJustified },
   ].map((step) => ({ ...step, score: round(step.score, 0) }));
@@ -517,6 +560,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     decisionConflictResolved: !conflict || research.complete,
     handicapIndependent,
     jointCompatibility,
+    scenarioTotalsCovered,
+    scenarioHandicapCovered,
     counterScriptDiverges,
     drawOverrideJustified,
     recentFormFresh,
@@ -525,7 +570,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const allGatesPass = Object.values(gates).every(Boolean);
   const requestedFinal = String(options.lockType || "PRE_LOCK").toUpperCase() === "FINAL_LOCK";
   const lockType = requestedFinal && allGatesPass ? "FINAL_LOCK" : "PRE_LOCK";
-  const confidence = Math.round(Math.max(0, Math.min(100, selectedDirectionProbability * 100 - counterPathRisk - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
+  const confidence = Math.round(Math.max(0, Math.min(100, selectedDirectionProbability * 100 - counterPathRisk - leagueLearning.confidencePenalty - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
   const advice = !allGatesPass ? "观察" : confidence >= 62 ? "主打" : confidence >= 55 ? "可选" : confidence >= 48 ? "谨慎" : "跳过";
   return {
     contractVersion: "UNIFIED_PREDICTION_V4",
@@ -542,6 +587,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       xg: { home: round(xg.home, 2), away: round(xg.away, 2) },
       venueProfile: xg.venueProfile,
       leagueProfile: xg.leagueProfile,
+      leagueLearning: { version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, xgAdjustment: leagueLearning.xg, confidencePenalty: leagueLearning.confidencePenalty, rules: leagueLearning.rules },
       recentForm: { home: xg.homeRows, away: xg.awayRows, verifiedEvidenceRows: verifiedRecentMatches.length },
       recentFormFresh,
       fundamentalDataComplete,
@@ -568,7 +614,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", immutablePreMatchSnapshot: true },
     lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "shadow-only until out-of-sample calibration and loss metrics improve with sufficient samples" },
     modelLessons: {
-      version: "LESSONS_2026-07-12",
+      version: "LESSONS_2026-07-13_LEAGUE_R1",
       rules: [
         "让球不穿不得自动推翻胜平负方向",
         "最终方向按全部场景概率汇总，不按单一主比分决定",
@@ -583,7 +629,13 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "只有preferred FINAL_LOCK赛后结算才能生成并复用Base Case",
         "第二路径必须进入最终方向概率和置信扣分，不得只作文字保险",
         "联赛强弱差必须结合主队主场、客队客场的攻防均值与方差，并用联赛开放度校正xG",
+        "四个市场必须共享联合比分分布并在锁版前交叉验证",
+        "方向概率与净胜球概率必须分层，胜平负不得直接映射让球",
+        "主队和客队的预期进球、零封和方差必须分别建模",
+        "置信等级必须按联赛和市场回测校准，不得仅按通过闸门数量决定",
+        "第二比分必须是第二概率路径并进入方向和置信计算，不得固定为1-1",
       ],
+      leagueSpecific: { league: match.league || "通用", version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, rules: leagueLearning.rules },
       drawOverrideNeeded,
       drawEvidenceCount,
       counterScriptDiverges,
@@ -599,7 +651,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       scores: topScores.map((row) => row.score),
       matchType: matchType(scores),
       confidence,
-      confidenceAdjustments: { counterPathRisk: -counterPathRisk },
+      confidenceAdjustments: { counterPathRisk: -counterPathRisk, leagueLearning: -leagueLearning.confidencePenalty },
       advice,
       conflict,
     },

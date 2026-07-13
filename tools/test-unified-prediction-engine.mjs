@@ -53,6 +53,12 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-13_LEAGUE_R1");
+assert.equal(final.modelLessons.leagueSpecific.league, "韩职");
+assert.equal(final.featureSet.leagueLearning.version, "KLEAGUE_2026-07-12_R1");
+assert.equal(final.gateResult.gates.scenarioTotalsCovered, true);
+assert.equal(final.gateResult.gates.scenarioHandicapCovered, true);
+assert.equal(final.finalDecision.confidenceAdjustments.leagueLearning, -2);
 assert.equal(final.lifecycleContract.champion, "UNIFIED_PREDICTION_V4");
 assert.equal(final.scenarioSet[0].handicapResult, final.finalDecision.handicapPick);
 assert.equal(Object.keys(final.featureSet.handicap.probabilities).length, 3);
@@ -66,5 +72,18 @@ assert.ok(blocked.gateResult.blockers.includes("preMatchResearch"));
 const thinFundamentals = runUnifiedPrediction({ ...context, samples: samples.filter((_, index) => index < 4) }, { lockType: "FINAL_LOCK" });
 assert.equal(thinFundamentals.lockType, "PRE_LOCK");
 assert.ok(thinFundamentals.gateResult.blockers.includes("fundamentalData"));
+
+for (const [league, version, penalty] of [
+  ["韩职", "KLEAGUE_2026-07-12_R1", 2],
+  ["瑞超", "ALLSVENSKAN_2026-07-12_R1", 3],
+  ["挪超", "ELITESERIEN_2026-07-12_R1", 3],
+]) {
+  const leagueSamples = samples.map((sample) => ({ ...sample, league }));
+  const learned = runUnifiedPrediction({ ...context, match: { ...context.match, league }, samples: leagueSamples }, { lockType: "FINAL_LOCK" });
+  assert.equal(learned.featureSet.leagueLearning.version, version);
+  assert.equal(learned.modelLessons.leagueSpecific.league, league);
+  assert.equal(learned.finalDecision.confidenceAdjustments.leagueLearning, -penalty);
+  assert.ok(learned.modelLessons.leagueSpecific.rules.length >= 2);
+}
 
 console.log("Unified prediction engine gates verified.");
