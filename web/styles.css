@@ -4829,6 +4829,44 @@ body::before {
   backdrop-filter: blur(10px);
 }
 
+.language-switcher {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(5, 30, 75, 0.46);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.language-switcher button {
+  min-width: 34px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.74);
+  background: transparent;
+  font: 700 12px/1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.language-switcher button.active {
+  color: #08285d;
+  background: #f6c438;
+  box-shadow: 0 2px 8px rgba(246, 196, 56, 0.24);
+}
+
+@media (max-width: 760px) {
+  .home-topbar .language-switcher {
+    order: 2;
+    margin-left: auto;
+  }
+  .language-switcher button { min-width: 31px; min-height: 28px; padding: 0 6px; }
+}
+
 .home-topbar strong {
   color: var(--blue);
   font-size: 14px;
