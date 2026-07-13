@@ -161,6 +161,7 @@ const unifiedPredictionMarkers = [
   "LEAGUE_LEARNING_PROFILES",
   "scenarioTotalsCovered",
   "scenarioHandicapCovered",
+  "confidenceComponents",
   "counterScriptDiverges",
   "counterPathRisk",
   "venueProfile",

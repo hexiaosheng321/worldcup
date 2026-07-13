@@ -33,7 +33,15 @@ const LEAGUE_LEARNING_PROFILES = {
 };
 
 function leagueLearningProfile(league = "") {
-  return LEAGUE_LEARNING_PROFILES[String(league || "").trim()] || {
+  const raw = String(league || "").trim();
+  const normalized = /^(?:瑞典超|瑞超|Allsvenskan)$/i.test(raw)
+    ? "瑞超"
+    : /^(?:韩职|K联赛|K League)$/i.test(raw)
+      ? "韩职"
+      : /^(?:挪超|Eliteserien)$/i.test(raw)
+        ? "挪超"
+        : raw;
+  return LEAGUE_LEARNING_PROFILES[normalized] || {
     version: "GENERIC_2026_V1", reviewSampleCount: 0, xg: { home: 0, away: 0 }, confidencePenalty: 0,
     scoreWeight: () => 1,
     rules: ["使用全局联合分布和通用十步闸门"],
@@ -401,7 +409,8 @@ function totalGoalsPick(rows) {
 }
 
 function matchType(rows) {
-  const average = rows.reduce((sum, row) => sum + (row.home + row.away) * row.probability, 0);
+  const probabilityTotal = rows.reduce((sum, row) => sum + Number(row.probability || 0), 0) || 1;
+  const average = rows.reduce((sum, row) => sum + (row.home + row.away) * row.probability, 0) / probabilityTotal;
   return average < 1.9 ? "闷局" : average < 2.9 ? "常规局" : average < 3.8 ? "开放局" : "打花局";
 }
 
@@ -570,7 +579,11 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const allGatesPass = Object.values(gates).every(Boolean);
   const requestedFinal = String(options.lockType || "PRE_LOCK").toUpperCase() === "FINAL_LOCK";
   const lockType = requestedFinal && allGatesPass ? "FINAL_LOCK" : "PRE_LOCK";
-  const confidence = Math.round(Math.max(0, Math.min(100, selectedDirectionProbability * 100 - counterPathRisk - leagueLearning.confidencePenalty - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
+  const selectedHandicapProbability = handicapProbabilities[handicapLabels.indexOf(handicapPick)] || 0;
+  const selectedTotalProbability = Math.max(...selectedTotalKeys.map((key) => Number(totalModel.probabilities.get(key) || 0)), 0);
+  const selectedScenarioProbability = topScores.reduce((sum, row) => sum + Number(row.probability || 0), 0);
+  const marketConfidenceBase = selectedDirectionProbability * 65 + selectedHandicapProbability * 20 + selectedTotalProbability * 10 + selectedScenarioProbability * 5;
+  const confidence = Math.round(Math.max(0, Math.min(100, marketConfidenceBase - counterPathRisk - leagueLearning.confidencePenalty - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
   const advice = !allGatesPass ? "观察" : confidence >= 62 ? "主打" : confidence >= 55 ? "可选" : confidence >= 48 ? "谨慎" : "跳过";
   return {
     contractVersion: "UNIFIED_PREDICTION_V4",
@@ -649,8 +662,9 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       handicapPick,
       totalGoalsPick: totalModel.pick,
       scores: topScores.map((row) => row.score),
-      matchType: matchType(scores),
+      matchType: matchType(topScores),
       confidence,
+      confidenceComponents: { direction: round(selectedDirectionProbability), handicap: round(selectedHandicapProbability), totalGoals: round(selectedTotalProbability), scorePaths: round(selectedScenarioProbability) },
       confidenceAdjustments: { counterPathRisk: -counterPathRisk, leagueLearning: -leagueLearning.confidencePenalty },
       advice,
       conflict,

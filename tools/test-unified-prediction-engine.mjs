@@ -59,6 +59,8 @@ assert.equal(final.featureSet.leagueLearning.version, "KLEAGUE_2026-07-12_R1");
 assert.equal(final.gateResult.gates.scenarioTotalsCovered, true);
 assert.equal(final.gateResult.gates.scenarioHandicapCovered, true);
 assert.equal(final.finalDecision.confidenceAdjustments.leagueLearning, -2);
+assert.equal(Object.keys(final.finalDecision.confidenceComponents).length, 4);
+assert.ok(final.finalDecision.confidenceComponents.handicap > 0);
 assert.equal(final.lifecycleContract.champion, "UNIFIED_PREDICTION_V4");
 assert.equal(final.scenarioSet[0].handicapResult, final.finalDecision.handicapPick);
 assert.equal(Object.keys(final.featureSet.handicap.probabilities).length, 3);
@@ -85,5 +87,12 @@ for (const [league, version, penalty] of [
   assert.equal(learned.finalDecision.confidenceAdjustments.leagueLearning, -penalty);
   assert.ok(learned.modelLessons.leagueSpecific.rules.length >= 2);
 }
+
+const swedishAlias = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "瑞典超" },
+  samples: samples.map((sample) => ({ ...sample, league: "瑞典超" })),
+}, { lockType: "FINAL_LOCK" });
+assert.equal(swedishAlias.featureSet.leagueLearning.version, "ALLSVENSKAN_2026-07-12_R1");
 
 console.log("Unified prediction engine gates verified.");
