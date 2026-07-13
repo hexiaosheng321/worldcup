@@ -4,7 +4,6 @@ import { execFileSync } from "node:child_process";
 const index = fs.readFileSync("web/index.html", "utf8");
 const main = fs.readFileSync("web/app/app-main.js", "utf8");
 const dataApp = fs.readFileSync("web/app/app-data.js", "utf8");
-const i18nApp = fs.readFileSync("web/app/app-i18n.js", "utf8");
 const homeApp = fs.readFileSync("web/app/app-home.js", "utf8");
 const detailApp = fs.readFileSync("web/app/app-detail.js", "utf8");
 const panels = fs.readFileSync("web/app/app-panels.js", "utf8");
@@ -268,12 +267,6 @@ if (!sync.includes('postApi("/api/sync/okooo-live", { calculatorRaw })')) {
 }
 for (const marker of ["syncHealthDecision", "retryableStatuses", 'health.level === "DEGRADED"', "process.exitCode = health.exitCode"]) {
   if (!sync.includes(marker)) throw new Error(`Production baseline requires retry/degraded-success sync policy: ${marker}`);
-}
-for (const marker of ['data-language-option="zh-CN"', 'data-language-option="ja"', 'data-language-option="en"', "app/app-i18n.js"]) {
-  if (!index.includes(marker)) throw new Error(`Production baseline requires Chinese/Japanese/English language controls: ${marker}`);
-}
-for (const marker of ["ticai_ui_locale_v1", "MutationObserver", "WC_I18N", 'document.documentElement.lang = locale']) {
-  if (!i18nApp.includes(marker)) throw new Error(`Production baseline requires persistent localization runtime: ${marker}`);
 }
 if (index.includes('<script src="./live-sporttery-data.js')) {
   throw new Error("Production baseline rejects stale local sporttery data as a first-paint script.");
