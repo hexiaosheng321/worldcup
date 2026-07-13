@@ -111,6 +111,13 @@ if (appDetail.includes("handicapLine(match.no)")) {
 if (!fs.readFileSync("web/lib/cloudStore.js", "utf8").includes('cache: options.cache || "no-store"')) {
   throw new Error("Production baseline requires uncached Cloudflare bootstrap reads.");
 }
+const apiRoute = fs.readFileSync("web/functions/api/[[path]].js", "utf8");
+for (const marker of ["async function edgeCached", 'keepSearchParams: ["includeCases", "scope"]', "{ ttl: 8 }"]) {
+  if (!apiRoute.includes(marker)) throw new Error(`Production baseline missing safe edge microcache marker: ${marker}`);
+}
+if (!apiRoute.includes("const matchLimit = initialScope ? 30 : 200") || !apiRoute.includes("const lockLimit = initialScope ? 20 : 200")) {
+  throw new Error("Production baseline requires the reduced initial bootstrap scope.");
+}
 
 const syncMarkers = [
   "/api/sync/sporttery-snapshot",

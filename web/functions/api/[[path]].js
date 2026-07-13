@@ -1,5 +1,35 @@
 import { AUTO_DECISION_CUTOFF, BJT_OFFSET_MS, SALE_CLOSE_TIME, addMinutes, bjtAt, bjtParts, caseTags, enrichLockRow, evaluateLock, firstLockText, firstNumber, hasFinalApproval, id, isBlankValue, isDefaultNumber, isWorldCupLeague, isoFromMs, javascript, json, jsonHeaders, lockPayloadShape, lockSummaryFromShape, n, parseArray, parseObject, pickSideText, readJson, requireDb, rowToCase, sha256Hex, sideFromResult } from "./lib/utils.js";
 
+async function edgeCached(request, { ttl, keepSearchParams = [] }, buildResponse) {
+  if (request.method !== "GET" || typeof caches === "undefined" || !caches.default) {
+    return buildResponse();
+  }
+  const cacheUrl = new URL(request.url);
+  const allowed = new Set(keepSearchParams);
+  [...cacheUrl.searchParams.keys()].forEach((key) => {
+    if (!allowed.has(key)) cacheUrl.searchParams.delete(key);
+  });
+  const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
+  const cached = await caches.default.match(cacheKey);
+  if (cached) {
+    const headers = new Headers(cached.headers);
+    headers.set("x-edge-cache", "HIT");
+    return new Response(cached.body, { status: cached.status, headers });
+  }
+  const response = await buildResponse();
+  if (!response.ok) return response;
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", `public, max-age=0, s-maxage=${ttl}, stale-while-revalidate=${ttl}`);
+  headers.set("x-edge-cache", "MISS");
+  const cacheable = new Response(response.body, { status: response.status, headers });
+  try {
+    await caches.default.put(cacheKey, cacheable.clone());
+  } catch (error) {
+    console.warn("edge microcache write failed", error);
+  }
+  return cacheable;
+}
+
 async function ensureAnalyticsSchema(db) {
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS analytics_events (
@@ -3584,7 +3614,7 @@ async function d1OddsScript(db) {
     matchDates: [...new Set(matches.map((item) => item.ticaiDate || item.matchDate).filter(Boolean))],
     matches,
   };
-  return javascript(`window.LIVE_SPORTTERY_ODDS = ${JSON.stringify(data, null, 2)};\n`);
+  return javascript(`window.LIVE_SPORTTERY_ODDS=${JSON.stringify(data)};\n`);
 }
 
 async function d1ResultsScript(db) {
@@ -3627,7 +3657,7 @@ async function d1ResultsScript(db) {
     matchDates: [...new Set(results.map((item) => item.ticaiDate || item.matchDate).filter(Boolean))],
     results,
   };
-  return javascript(`window.LIVE_SPORTTERY_RESULTS = ${JSON.stringify(data, null, 2)};\n`);
+  return javascript(`window.LIVE_SPORTTERY_RESULTS=${JSON.stringify(data)};\n`);
 }
 
 async function d1LiveFootballScoresScript(db, env) {
@@ -3668,7 +3698,7 @@ async function d1LiveFootballScoresScript(db, env) {
     errors: liveRows.errors,
     matches: dedupedRows,
   };
-  return javascript(`window.LIVE_FOOTBALL_SCORES = ${JSON.stringify(data, null, 2)};\n`);
+  return javascript(`window.LIVE_FOOTBALL_SCORES=${JSON.stringify(data)};\n`);
 }
 
 function latestSportteryHistoryStamp(list = []) {
@@ -3844,7 +3874,7 @@ async function d1FootballDataContextScript(db, env) {
     standings: context.standings,
     matches: matchContexts,
   };
-  return javascript(`window.FOOTBALL_DATA_CONTEXT = ${JSON.stringify(data, null, 2)};\n`);
+  return javascript(`window.FOOTBALL_DATA_CONTEXT=${JSON.stringify(data)};\n`);
 }
 
 function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
@@ -3921,15 +3951,15 @@ export async function onRequest(context) {
 
   try {
     if (path === "live-sporttery-data.js" && request.method === "GET") {
-      return d1OddsScript(db);
+      return edgeCached(request, { ttl: 20 }, () => d1OddsScript(db));
     }
 
     if (path === "live-sporttery-results.js" && request.method === "GET") {
-      return d1ResultsScript(db);
+      return edgeCached(request, { ttl: 20 }, () => d1ResultsScript(db));
     }
 
     if (path === "live-football-scores.js" && request.method === "GET") {
-      return d1LiveFootballScoresScript(db, env);
+      return edgeCached(request, { ttl: 8 }, () => d1LiveFootballScoresScript(db, env));
     }
 
     if (path === "live-score-health" && request.method === "GET") {
@@ -4047,11 +4077,12 @@ if (path === "sync/okooo-live" && request.method === "POST") {
     }
 
     if (path === "bootstrap" && request.method === "GET") {
+      return edgeCached(request, { ttl: 20, keepSearchParams: ["includeCases", "scope"] }, async () => {
       const includeCases = url.searchParams.get("includeCases") === "1";
       const initialScope = url.searchParams.get("scope") !== "full";
-      const matchLimit = initialScope ? 40 : 200;
-      const lockLimit = initialScope ? 40 : 200;
-      const resultLimit = initialScope ? 40 : 200;
+      const matchLimit = initialScope ? 30 : 200;
+      const lockLimit = initialScope ? 20 : 200;
+      const resultLimit = initialScope ? 30 : 200;
       const [matches, locks, recentResults, cases, spHistoryData] = await Promise.all([
         db.prepare(`SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT ${matchLimit}`).all(),
         db.prepare(`
@@ -4091,6 +4122,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const results = [...resultsById.values()].sort((a, b) => String(b.reviewed_at || "").localeCompare(String(a.reviewed_at || "")));
       
       return json({ ok: true, matches: matches.results, locks: (locks.results || []).map(enrichLockRow), results, cases, autoPredictions: [], spHistory: spHistoryData });
+      });
     }
 
     if (path === "matches" && request.method === "GET") {
