@@ -134,12 +134,19 @@ function sampleScore(sample) {
 }
 
 function recentTeamForm(samples, team, beforeDate, limit = 8) {
+  const seen = new Set();
   return samples
     .filter((sample) => !beforeDate || dateKey(sample.kickoffTime) < beforeDate)
     .filter((sample) => sameTeam(team, sample.homeTeam) || sameTeam(team, sample.awayTeam))
     .map((sample) => ({ sample, score: sampleScore(sample) }))
     .filter((item) => item.score)
     .sort((a, b) => String(b.sample.kickoffTime || "").localeCompare(String(a.sample.kickoffTime || "")))
+    .filter(({ sample, score }) => {
+      const key = [dateKey(sample.kickoffTime), teamKey(sample.homeTeam), teamKey(sample.awayTeam), score.home, score.away].join("|");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .slice(0, limit)
     .map(({ sample, score }) => {
       const isHome = sameTeam(team, sample.homeTeam);
@@ -517,14 +524,22 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const handicapPick = resolvedPair?.handicapPick || independentHandicapLeader;
   const jointCompatibility = Boolean(resolvedPair && resolvedPair.scoreProbability > 0);
   const jointResolutionApplied = selectedDirection !== independentDirectionLeader || handicapPick !== independentHandicapLeader;
-  mainScore = scores.find((row) => scoreResult(row) === selectedDirection && handicapResult(row, match.handicap) === handicapPick)
+  const selectedTotalKeys = String(totalModel.pick || "").match(/(?:[0-6]|7\+)/g) || [];
+  const coversSelectedTotal = (row) => selectedTotalKeys.includes(row.home + row.away >= 7 ? "7+" : String(row.home + row.away));
+  const mainCandidates = scores.filter((row) => scoreResult(row) === selectedDirection && handicapResult(row, match.handicap) === handicapPick);
+  const counterCandidates = scores.filter((row) => scoreResult(row) !== selectedDirection);
+  mainScore = mainCandidates.find(coversSelectedTotal)
+    || mainCandidates[0]
+    || scores.find((row) => scoreResult(row) === selectedDirection && coversSelectedTotal(row))
     || scores.find((row) => scoreResult(row) === selectedDirection)
     || scores[0];
-  counterScore = scores.find((row) => scoreResult(row) !== selectedDirection) || scores.find((row) => row.score !== mainScore.score);
+  counterScore = counterCandidates.find(coversSelectedTotal)
+    || counterCandidates[0]
+    || scores.find((row) => row.score !== mainScore.score && coversSelectedTotal(row))
+    || scores.find((row) => row.score !== mainScore.score);
   topScores = [mainScore, counterScore].filter(Boolean);
   handicapMapped = topScores.map((row) => ({ score: row.score, result: handicapResult(row, match.handicap) }));
-  const selectedTotalKeys = String(totalModel.pick || "").match(/(?:[0-6]|7\+)/g) || [];
-  const scenarioTotalsCovered = topScores.some((row) => selectedTotalKeys.includes(row.home + row.away >= 7 ? "7+" : String(row.home + row.away)));
+  const scenarioTotalsCovered = topScores.some(coversSelectedTotal);
   const scenarioHandicapCovered = handicapMapped.some((row) => row.result === handicapPick);
   const handicapIndependent = Boolean(handicapMarket && handicapParts.length >= 2 && rankedHandicap[0]?.probability > 0);
   const conflict = rankedResults[0].probability - rankedResults[1].probability < 0.06;

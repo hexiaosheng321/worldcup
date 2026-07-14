@@ -1,0 +1,65 @@
+{
+  "match": { "matchId": "1330940", "league": "欧冠", "home": "新圣徒", "away": "沙巴巴", "kickoffTime": "2026-07-15 01:30" },
+  "generatedAt": "2026-07-14T04:56:01Z",
+  "teamState": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "新圣徒近10场6胜1平3负、进15失11，首回合客场0比2落后；沙巴巴近10场同为6胜1平3负、进16失11。双方近期基础接近，但沙巴巴已有两球总比分优势且首回合零封。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "500彩票网 新圣徒vs沙巴巴近期战绩", "url": "https://odds.500.com/fenxi/shuju-1427681.shtml" }, { "title": "UEFA The New Saints-Sabah head-to-head", "url": "https://www.uefa.com/uefachampionsleague/history/h2h/60457/2609356/" }],
+    "impact": { "home": -0.01, "draw": 0, "away": 0.01, "xgHome": -0.05, "xgAway": 0.05 },
+    "recentMatches": [
+      { "league": "欧冠", "kickoffTime": "2026-07-08", "homeTeam": "沙巴巴", "awayTeam": "新圣徒", "actualHomeGoals": 2, "actualAwayGoals": 0, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-07-01", "homeTeam": "新圣徒", "awayTeam": "班戈1876", "actualHomeGoals": 1, "actualAwayGoals": 2, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-27", "homeTeam": "韦德斯", "awayTeam": "新圣徒", "actualHomeGoals": 1, "actualAwayGoals": 2, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-25", "homeTeam": "格伦托兰", "awayTeam": "新圣徒", "actualHomeGoals": 1, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-04-19", "homeTeam": "巴利镇", "awayTeam": "新圣徒", "actualHomeGoals": 0, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-07-02", "homeTeam": "普莱西亚", "awayTeam": "沙巴巴", "actualHomeGoals": 4, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-25", "homeTeam": "克拉约瓦大学", "awayTeam": "沙巴巴", "actualHomeGoals": 1, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-05-22", "homeTeam": "托武兹", "awayTeam": "沙巴巴", "actualHomeGoals": 1, "actualAwayGoals": 2, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-05-17", "homeTeam": "沙巴巴", "awayTeam": "尼菲治巴库", "actualHomeGoals": 1, "actualAwayGoals": 2, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-05-14", "homeTeam": "沙巴巴", "awayTeam": "兹拉", "actualHomeGoals": 2, "actualAwayGoals": 1, "source": "verified-team-state-only" }
+    ]
+  },
+  "injuries": {
+    "status": "NOT_PUBLISHED", "evidenceGrade": "C",
+    "summary": "锁版检索时，UEFA阵容页、俱乐部赛前页和500赛前页均未发布可交叉核验的新增伤停名单；本层不猜测，量化影响强制为0。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "UEFA The New Saints vs Sabah squad lists", "url": "https://www.uefa.com/uefachampionsleague/match/2048635--the-new-saints-vs-sabah/lineups/" }, { "title": "The New Saints official match listing", "url": "https://tnsfc.co.uk/" }],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "expectedLineups": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "UEFA已发布本轮注册阵容并保留首回合出场记录，双方最终首发仍待开赛前确认；模型只确认可用主力框架，不把注册名单等同于首发。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "UEFA The New Saints vs Sabah squad lists", "url": "https://www.uefa.com/uefachampionsleague/match/2048635--the-new-saints-vs-sabah/lineups/" }],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "motivation": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "欧冠资格赛首轮次回合，新圣徒总比分0比2落后，必须主动提高进攻回合；沙巴巴可利用两球优势控制节奏并等待反击。体彩只按本场90分钟赛果结算。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "UEFA head-to-head and first-leg score", "url": "https://www.uefa.com/uefachampionsleague/history/h2h/60457/2609356/" }],
+    "impact": { "home": 0, "draw": -0.005, "away": 0.005, "xgHome": 0.08, "xgAway": 0.12 }
+  },
+  "weatherVenue": {
+    "status": "VERIFIED", "evidenceGrade": "C",
+    "summary": "俱乐部与UEFA赛程确认比赛在新圣徒主场进行；锁版检索未发现延期、中立场或极端天气公告，因此天气和场地层保持中性。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "The New Saints official fixture", "url": "https://tnsfc.co.uk/" }, { "title": "UEFA match page", "url": "https://www.uefa.com/uefachampionsleague/match/2048635--the-new-saints-vs-sabah/" }],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "styleMatchup": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "新圣徒两球落后必须压上，近期近10场失11球，防线身后会给沙巴巴反击空间；沙巴巴首回合零封且总比分领先，主路径偏客队不败并保留主队追回一球的开放分支。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "500彩票网双方近期进失球与首回合数据", "url": "https://odds.500.com/fenxi/shuju-1427681.shtml" }, { "title": "UEFA head-to-head", "url": "https://www.uefa.com/uefachampionsleague/history/h2h/60457/2609356/" }],
+    "impact": { "home": -0.005, "draw": 0, "away": 0.005, "xgHome": 0.03, "xgAway": 0.1 }
+  },
+  "marketNews": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "体彩胜平负从4.75/4.05/1.49变到4.90/4.10/1.47，21个同向快照显示客胜继续受压；该变化与首回合两球优势同向，但仍只做有上限的市场校准。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "体彩模型SP时间序列", "url": "https://ticai-model.com/#sporttery-match-id-1330940" }],
+    "impact": { "home": -0.005, "draw": 0, "away": 0.005, "xgHome": 0, "xgAway": 0 }
+  }
+}

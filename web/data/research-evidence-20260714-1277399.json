@@ -1,0 +1,80 @@
+{
+  "match": { "matchId": "1277399", "league": "世界杯", "home": "法国", "away": "西班牙", "kickoffTime": "2026-07-15 03:00" },
+  "generatedAt": "2026-07-14T04:56:01Z",
+  "teamState": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "法国本届六场全胜、进14失2，淘汰赛连续三场零封；西班牙首轮0比0后五连胜，近两轮均以一球优势晋级。两队均未在本届赛事落后，法国终结效率更高，西班牙控球和压迫连续性更强。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [
+      { "title": "FIFA France v Spain semi-final preview", "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/france-v-spain-live-stream-team-news-tickets-and-more" },
+      { "title": "AP France and Spain semi-final form report", "url": "https://apnews.com/article/world-cup-semifinals-france-spain-1fcbd397cb402688024b706f222b1b93" },
+      { "title": "FIFA World Cup 2026 fixtures and results", "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums" }
+    ],
+    "impact": { "home": 0.01, "draw": 0, "away": -0.01, "xgHome": 0.05, "xgAway": 0 },
+    "recentMatches": [
+      { "league": "世界杯", "kickoffTime": "2026-07-09", "homeTeam": "法国", "awayTeam": "摩洛哥", "actualHomeGoals": 2, "actualAwayGoals": 0, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-07-05", "homeTeam": "巴拉圭", "awayTeam": "法国", "actualHomeGoals": 0, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-07-01", "homeTeam": "法国", "awayTeam": "瑞典", "actualHomeGoals": 3, "actualAwayGoals": 0, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-06-26", "homeTeam": "挪威", "awayTeam": "法国", "actualHomeGoals": 1, "actualAwayGoals": 4, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-06-22", "homeTeam": "法国", "awayTeam": "伊拉克", "actualHomeGoals": 3, "actualAwayGoals": 0, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-06-16", "homeTeam": "法国", "awayTeam": "塞内加尔", "actualHomeGoals": 3, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-07-10", "homeTeam": "西班牙", "awayTeam": "比利时", "actualHomeGoals": 2, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-07-06", "homeTeam": "葡萄牙", "awayTeam": "西班牙", "actualHomeGoals": 0, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-07-03", "homeTeam": "西班牙", "awayTeam": "奥地利", "actualHomeGoals": 3, "actualAwayGoals": 0, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-06-26", "homeTeam": "乌拉圭", "awayTeam": "西班牙", "actualHomeGoals": 0, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-06-21", "homeTeam": "西班牙", "awayTeam": "沙特", "actualHomeGoals": 4, "actualAwayGoals": 0, "source": "verified-team-state-only" },
+      { "league": "世界杯", "kickoffTime": "2026-06-15", "homeTeam": "西班牙", "awayTeam": "佛得角", "actualHomeGoals": 0, "actualAwayGoals": 0, "source": "verified-team-state-only" }
+    ]
+  },
+  "injuries": {
+    "status": "VERIFIED", "evidenceGrade": "B",
+    "summary": "法国姆巴佩已参加赛前训练且主帅确认身体无碍；琼阿梅尼仍是大疑，马努·科内为轻微膝部问题但预计可选。西班牙亚马尔带着左腿后侧旧伤参赛但已连续出场，本层仅做很小的法国中场负向修正。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [
+      { "title": "AP France and Spain training and injury update", "url": "https://apnews.com/article/world-cup-semifinals-france-spain-1fcbd397cb402688024b706f222b1b93" },
+      { "title": "France injury and suspension update", "url": "https://www.sportsmole.co.uk/football/france/injury-news/injuries-and-suspensions/mbappe-tchouameni-kone-latest-france-injury-suspension-list-vs-spain_601068.html" }
+    ],
+    "impact": { "home": -0.01, "draw": 0.005, "away": 0.005, "xgHome": -0.03, "xgAway": 0.02 }
+  },
+  "expectedLineups": {
+    "status": "VERIFIED", "evidenceGrade": "B",
+    "summary": "双方官方首发尚未公布，但7月13日赛前训练和预测阵容均显示主力框架延续：法国围绕姆巴佩、登贝莱与奥利塞，西班牙继续由罗德里、法比安和亚马尔组织。本层不把预测首发当成确定名单。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [
+      { "title": "France vs Spain predicted XIs and team news", "url": "https://www.sportsmole.co.uk/football/france/world-cup-2026/team-news/france-vs-spain-injury-suspension-list-predicted-xis--world-cup-2026_601095.html" },
+      { "title": "AP pre-match training report", "url": "https://apnews.com/article/world-cup-semifinals-france-spain-1fcbd397cb402688024b706f222b1b93" }
+    ],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "motivation": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "世界杯单场半决赛，体彩按90分钟结算；平局不等于淘汰方向。法国争取连续第三届进入决赛，西班牙争取自2010年以来首次进入决赛，双方动机均为最高级。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "FIFA France v Spain semi-final preview", "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/france-v-spain-live-stream-team-news-tickets-and-more" }],
+    "impact": { "home": 0, "draw": 0.01, "away": 0, "xgHome": -0.02, "xgAway": -0.02 }
+  },
+  "weatherVenue": {
+    "status": "VERIFIED", "evidenceGrade": "B",
+    "summary": "比赛在达拉斯体育场进行，场地具备可控室内环境；锁版检索未发现延期、中立场变化或极端天气会直接改变比赛条件的公告，因此不额外修正。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "FIFA match venue and schedule", "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/france-v-spain-live-stream-team-news-tickets-and-more" }],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "styleMatchup": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "法国以更直接的前场速度和高效终结攻击西班牙控球体系身后；西班牙通过罗德里主导的控制、反抢与边路一对一压缩法国反击次数。两队防守数据都强，半决赛阶段应保留1比1低比分反路径。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [
+      { "title": "FIFA tactical preview France attacking talent vs Spain control", "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/france-v-spain-live-stream-team-news-tickets-and-more" },
+      { "title": "AP tournament form and scoring profile", "url": "https://apnews.com/article/world-cup-semifinals-france-spain-1fcbd397cb402688024b706f222b1b93" }
+    ],
+    "impact": { "home": 0.005, "draw": 0.005, "away": -0.01, "xgHome": 0, "xgAway": -0.03 }
+  },
+  "marketNews": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "体彩胜平负从2.07/3.18/3.01变到2.03/3.13/3.15，法国微降、西班牙抬高；456个同向有效快照确认变化连续。市场只以15%上限校准，不直接决定方向。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "体彩模型当前赛事与SP时间序列", "url": "https://ticai-model.com/#sporttery-match-id-1277399" }],
+    "impact": { "home": 0.005, "draw": 0, "away": -0.005, "xgHome": 0, "xgAway": 0 }
+  }
+}

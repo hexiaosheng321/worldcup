@@ -1,0 +1,68 @@
+{
+  "match": { "matchId": "1330948", "league": "欧冠", "home": "杰尔", "away": "维京人", "kickoffTime": "2026-07-15 01:00" },
+  "generatedAt": "2026-07-14T04:56:01Z",
+  "teamState": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "杰尔近10场5胜3平2负、进17失12，首回合客场0比1落后；维京人近10场9胜1负、进30失9，近期转换和连续进球更强。杰尔主场必须主动进攻，但维京人具备反击扩大空间优势的状态基础。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [
+      { "title": "500彩票网 杰尔vs维京人近期战绩", "url": "https://odds.500.com/fenxi/shuju-1427687.shtml" },
+      { "title": "UEFA Champions League fixture record", "url": "https://www.uefa.com/uefachampionsleague/" }
+    ],
+    "impact": { "home": -0.03, "draw": 0.005, "away": 0.025, "xgHome": -0.08, "xgAway": 0.12 },
+    "recentMatches": [
+      { "league": "欧冠", "kickoffTime": "2026-07-08", "homeTeam": "维京人", "awayTeam": "杰尔", "actualHomeGoals": 1, "actualAwayGoals": 0, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-28", "homeTeam": "杰尔", "awayTeam": "托波拉", "actualHomeGoals": 3, "actualAwayGoals": 2, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-27", "homeTeam": "米耶尔库雷亚丘克", "awayTeam": "杰尔", "actualHomeGoals": 3, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-25", "homeTeam": "杰尔", "awayTeam": "伏伊伏丁那", "actualHomeGoals": 2, "actualAwayGoals": 1, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-19", "homeTeam": "格拉茨AK", "awayTeam": "杰尔", "actualHomeGoals": 2, "actualAwayGoals": 2, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-07-03", "homeTeam": "维京人", "awayTeam": "KA阿克雷里", "actualHomeGoals": 3, "actualAwayGoals": 2, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-28", "homeTeam": "贝雷达比历克", "awayTeam": "维京人", "actualHomeGoals": 3, "actualAwayGoals": 0, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-26", "homeTeam": "贝雷达比历克", "awayTeam": "维京人", "actualHomeGoals": 1, "actualAwayGoals": 4, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-22", "homeTeam": "弗拉姆", "awayTeam": "维京人", "actualHomeGoals": 0, "actualAwayGoals": 5, "source": "verified-team-state-only" },
+      { "league": "欧冠", "kickoffTime": "2026-06-17", "homeTeam": "维京人", "awayTeam": "雷克雅未克", "actualHomeGoals": 2, "actualAwayGoals": 0, "source": "verified-team-state-only" }
+    ]
+  },
+  "injuries": {
+    "status": "NOT_PUBLISHED", "evidenceGrade": "C",
+    "summary": "锁版检索时，UEFA赛事页、500赛前页和公开赛前报道均未发布可交叉核验的新增伤停名单；本层不猜测，所有量化影响保持为0。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "Gyori ETO vs Vikingur team news", "url": "https://www.sportsmole.co.uk/football/gyori-eto/champions-league/preview/gyor-vs-vikingur-prediction-team-news-lineups_601111.html" }, { "title": "500彩票网赛事分析", "url": "https://odds.500.com/fenxi/shuju-1427687.shtml" }],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "expectedLineups": {
+    "status": "VERIFIED", "evidenceGrade": "B",
+    "summary": "赛前报道已给出双方可能首发，且首回合正式首发可核验；最终官方首发尚未公布，因此只确认主力框架连续，不对具体球员做额外概率修正。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "Gyori ETO vs Vikingur predicted lineups", "url": "https://www.sportsmole.co.uk/football/gyori-eto/champions-league/preview/gyor-vs-vikingur-prediction-team-news-lineups_601111.html" }, { "title": "First-leg starting lineups", "url": "https://www.skysports.com/football/vikingur-reykjavik-vs-gyor/teams/557640" }],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "motivation": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "欧冠资格赛首轮次回合，杰尔总比分0比1落后，必须至少赢一球才有延长晋级路径；维京人领先后可主动降低回合并利用反击。体彩仍只按90分钟赛果结算。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "500彩票网首回合与次回合赛程", "url": "https://odds.500.com/fenxi/shuju-1427687.shtml" }],
+    "impact": { "home": 0.01, "draw": -0.01, "away": 0, "xgHome": 0.1, "xgAway": 0.1 }
+  },
+  "weatherVenue": {
+    "status": "VERIFIED", "evidenceGrade": "C",
+    "summary": "官方赛程确认比赛在杰尔主场进行，锁版检索未发现延期、中立场或极端天气公告；天气层保持中性，不凭普通预报改写方向。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "UEFA Champions League match schedule", "url": "https://www.uefa.com/uefachampionsleague/" }],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "styleMatchup": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "杰尔需要压上追总比分，近期防守并不稳定；维京人近10场30球且客场转换效率高，最适合攻击主队身后。主路径必须保留双方进球，反路径保留杰尔主场一球小胜。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "500彩票网双方近期进失球与主客场表现", "url": "https://odds.500.com/fenxi/shuju-1427687.shtml" }],
+    "impact": { "home": -0.01, "draw": 0, "away": 0.01, "xgHome": 0.02, "xgAway": 0.1 }
+  },
+  "marketNews": {
+    "status": "VERIFIED", "evidenceGrade": "A",
+    "summary": "体彩胜平负从1.69/3.70/3.75变到1.65/3.75/3.90，21个同向快照显示主胜继续降温度上升；盘口信号只以有限权重校准，不能覆盖维京人状态与首回合优势。",
+    "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
+    "sources": [{ "title": "体彩模型SP时间序列", "url": "https://ticai-model.com/#sporttery-match-id-1330948" }],
+    "impact": { "home": 0.005, "draw": 0, "away": -0.005, "xgHome": 0, "xgAway": 0 }
+  }
+}

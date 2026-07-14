@@ -22,7 +22,7 @@ for (const id of ids) {
   const modelRunId = run.sourceContext?.modelRunId;
   const handicap = Number(String(item.handicap || "0").replace("+", ""));
   const lock = {
-    lockId: `manual-sporttery-${id}-${String(item.ticaiDate || item.matchDate || "").replaceAll("-", "")}-v4-final-r1`, matchId: `sporttery-${id}`, modelRunId,
+    lockId: `manual-sporttery-${id}-${String(item.ticaiDate || item.matchDate || "").replaceAll("-", "")}-v4-final-r2`, matchId: `sporttery-${id}`, modelRunId,
     matchCode: item.issue || item.no || "", homeTeam: item.home, awayTeam: item.away, league: run.match.league,
     kickoffTime: `${item.matchDate || item.ticaiDate} ${item.kickoffTime}`, lockedAt: new Date().toISOString(), lockType: "FINAL_LOCK",
     modelVersion: run.modelVersion, finalApproval: true,
@@ -43,6 +43,39 @@ for (const id of ids) {
       modelRunId, lockType: "FINAL_LOCK",
     },
   };
+  const research = Object.fromEntries((run.featureSet?.research?.items || []).map((entry) => [entry.key, entry.summary]));
+  const movement = run.featureSet?.oddsMovement || {};
+  const first = movement.first || {};
+  const latest = movement.latest || {};
+  const handicapProbabilities = run.featureSet?.handicap?.probabilities || {};
+  const formText = (rows = []) => {
+    const recent = rows.slice(0, 5);
+    const wins = recent.filter((row) => row.result === "W").length;
+    const draws = recent.filter((row) => row.result === "D").length;
+    const losses = recent.filter((row) => row.result === "L").length;
+    const gf = recent.reduce((sum, row) => sum + Number(row.gf || 0), 0);
+    const ga = recent.reduce((sum, row) => sum + Number(row.ga || 0), 0);
+    return `近5场${wins}胜${draws}平${losses}负，进${gf}失${ga}`;
+  };
+  lock.teamState = `主队${lock.homeTeam}${formText(run.featureSet?.recentForm?.home)}；客队${lock.awayTeam}${formText(run.featureSet?.recentForm?.away)}。${research.injuries || ""}${research.expectedLineups || ""}`;
+  lock.scorePick = decision.scores.join(" / ");
+  lock.totalGoalsPick = decision.totalGoalsPick;
+  lock.analysis = {
+    teamState: lock.teamState,
+    finalPick: { winDrawLose: decision.winDrawLose, scores: decision.scores, totalGoals: decision.totalGoalsPick },
+    unifiedSteps: [
+      `01 当前胜平负SP复核：${lock.sportteryHomeSp} / ${lock.sportteryDrawSp} / ${lock.sportteryAwaySp}。`,
+      `02 赛事规则与动机：${research.motivation}`,
+      `03 球队状态：${lock.teamState}`,
+      `04 风格对位：${research.styleMatchup}`,
+      `05 盘口与样本：完整盘口样本${run.featureSet.sampleCount}场，两队近期赛果已读取并去重。`,
+      `06 赔率动态：${first.updateDate} ${first.updateTime} ${first.h}/${first.d}/${first.a} -> ${latest.updateDate} ${latest.updateTime} ${latest.h}/${latest.d}/${latest.a}，状态${movement.marketState}。`,
+      `07 比分/总进球独立闸门：比分${decision.scores.join(" / ")}，总进球${decision.totalGoalsPick}，两个比分脚本至少覆盖一个总进球选择。`,
+      `08 让球独立闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%，结论${decision.handicapPick}。`,
+      `09 冲突与失败方式：主脚本${decision.scores[0]}，反向风险${decision.scores[1]}，已通过共同比分、反路径和价值过滤。`,
+      `10 最终锁版：${decision.winDrawLose}；${decision.handicapPick}；${decision.totalGoalsPick}；${decision.scores.join(" / ")}；${decision.advice}。`,
+    ],
+  };
   const response = await fetch(`${apiBase}/api/locks`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(lock) });
   const result = await response.json();
   if (!response.ok || !result.ok) throw new Error(`${id} lock failed: ${result.error || response.status}`);
@@ -51,6 +84,6 @@ for (const id of ids) {
 }
 
 const snapshotDate = String(live.find((item) => ids.includes(String(item.matchId)))?.ticaiDate || new Date().toISOString().slice(0, 10)).replaceAll("-", "");
-const output = `web/data/manual-locks-${snapshotDate}-v4-r1.json`;
+const output = `web/data/manual-locks-${snapshotDate}-v4-r2.json`;
 await fs.writeFile(output, `${JSON.stringify(locks, null, 2)}\n`, "utf8");
 console.log(JSON.stringify({ ok: true, output, count: locks.length }, null, 2));
