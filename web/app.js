@@ -4023,17 +4023,11 @@ function renderSimilarCasePanel(pred, match) {
     if (lockedCount < 30) warnings.push("锁版样本不足，不改模型置信");
     if (handicapHint && lockedCount < 10) warnings.push("让球结论降权");
     if (drawRate >= 0.3) warnings.push("需防平局分支");
-    const v3Advice = [
-      `胜平负参考：${directionText}`,
-      `总进球参考：${totalHint || goalText}`,
-      `比分脚本参考：${scoreHint || "等待比分样本"}`,
-      `让球参考：${handicapHint || "等待让球样本"}，仍以当前让球线和比赛脚本为准`,
-    ].join("；");
     return [
-      ["样本结论", `${directionText}，${goalText}`],
+      ["样本画像", `平均进球 ${avgGoals.toFixed(2)} · 仅用于校验正式锁版`],
       ["可用等级", `${valueLevel} · ${sampleCount}场匹配 / ${lockedCount}场锁版`],
       ["反向提醒", warnings.join("；") || "暂无强反向提醒，仍需结合当前阵容和战意"],
-      ["V3参考建议", v3Advice],
+      ["样本分布", `总进球 ${totalHint || "暂无"} · 常见比分 ${scoreHint || "暂无"} · 让球赛果 ${handicapHint || "暂无"}`],
     ];
   };
   const oddsText = (item) =>
