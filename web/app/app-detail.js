@@ -172,6 +172,7 @@ function activateTab(tabName) {
     targetTab.setAttribute("aria-selected", "true");
   }
   targetPanel.classList.add("active-panel");
+  window.WC_I18N?.schedule();
   requestAnimationFrame(function(){
     var items = targetPanel.querySelectorAll(".match-card, .insight-card, .bar-row, .hist-row, .score-table > div, .home-research-grid > article");
     items.forEach(function(el, i){

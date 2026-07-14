@@ -1167,6 +1167,7 @@ function rerenderOddsSurfaces() {
 function renderCurrentRouteSurfaces() {
   applyResultBackfill();
   refreshRuntimeCaseBase();
+  try {
   const hash = window.location.hash || "";
   const match = hash.match(/^#match-(.+)$/);
   if (match) {
@@ -1213,4 +1214,7 @@ function renderCurrentRouteSurfaces() {
     return;
   }
   renderAll();
+  } finally {
+    window.WC_I18N?.schedule();
+  }
 }
