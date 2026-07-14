@@ -899,7 +899,7 @@ function ensureLeagueProfilesLoaded(callback) {
   if (!leagueProfilesLoading) {
     leagueProfilesLoading = new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = "./data/leagueProfiles.js?v=202607111230";
+      script.src = "./data/leagueProfiles.js?v=202607141210";
       script.async = true;
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
