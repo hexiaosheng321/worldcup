@@ -17,6 +17,7 @@ const syncWorkerConfig = fs.readFileSync("wrangler.sync.jsonc", "utf8");
 const unifiedEngine = fs.readFileSync("tools/lib/unified-prediction-engine.mjs", "utf8");
 const unifiedRunner = fs.readFileSync("tools/run-unified-prediction.mjs", "utf8");
 const i18n = fs.readFileSync("web/app/app-i18n.js", "utf8");
+const baseStyles = fs.readFileSync("web/styles-base.css", "utf8");
 
 const retiredMarkers = [
   'data-tab="path"',
@@ -44,6 +45,9 @@ if (missingRequired.length) {
 }
 for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260714_i18n_safe_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing language selector marker: ${marker}`);
+}
+if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
+  throw new Error("Production baseline must keep the language menu outside the header clipping box");
 }
 for (const marker of ["activeRoots", "requestAnimationFrame", "loadDictionary", "ticai:localechange"]) {
   if (!i18n.includes(marker)) throw new Error(`Production baseline missing safe i18n runtime marker: ${marker}`);
