@@ -53,7 +53,7 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
-assert.equal(final.modelLessons.version, "LESSONS_2026-07-13_LEAGUE_R1");
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-14_LEAGUE_R2");
 assert.equal(final.modelLessons.leagueSpecific.league, "韩职");
 assert.equal(final.featureSet.leagueLearning.version, "KLEAGUE_2026-07-12_R1");
 assert.equal(final.gateResult.gates.scenarioTotalsCovered, true);
@@ -77,7 +77,7 @@ assert.ok(thinFundamentals.gateResult.blockers.includes("fundamentalData"));
 
 for (const [league, version, penalty] of [
   ["韩职", "KLEAGUE_2026-07-12_R1", 2],
-  ["瑞超", "ALLSVENSKAN_2026-07-12_R1", 3],
+  ["瑞超", "ALLSVENSKAN_2026-07-14_R2", 3],
   ["挪超", "ELITESERIEN_2026-07-12_R1", 3],
 ]) {
   const leagueSamples = samples.map((sample) => ({ ...sample, league }));
@@ -93,6 +93,29 @@ const swedishAlias = runUnifiedPrediction({
   match: { ...context.match, league: "瑞典超" },
   samples: samples.map((sample) => ({ ...sample, league: "瑞典超" })),
 }, { lockType: "FINAL_LOCK" });
-assert.equal(swedishAlias.featureSet.leagueLearning.version, "ALLSVENSKAN_2026-07-12_R1");
+assert.equal(swedishAlias.featureSet.leagueLearning.version, "ALLSVENSKAN_2026-07-14_R2");
+
+const swedishStrongFavourite = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "瑞超" },
+  market: { ...context.market, normal: { win: "1.18", draw: "5.90", lose: "8.85" } },
+  samples: samples.map((sample) => ({
+    ...sample,
+    league: "瑞超",
+    actualHomeGoals: sample.homeTeam === "客队" ? 0 : sample.actualHomeGoals,
+    actualAwayGoals: sample.awayTeam === "客队" ? 0 : sample.actualAwayGoals,
+  })),
+}, { lockType: "FINAL_LOCK" });
+assert.equal(swedishStrongFavourite.featureSet.leagueLearning.appliedSignals.strongHomeFavourite, true);
+assert.equal(swedishStrongFavourite.featureSet.leagueLearning.appliedSignals.weakAwayAttack, true);
+assert.ok(swedishStrongFavourite.modelLessons.leagueSpecific.rules.some((rule) => rule.includes("2-0/3-0")));
+
+const genericStrongFavourite = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "芬超" },
+  market: { ...context.market, normal: { win: "1.18", draw: "5.90", lose: "8.85" } },
+  samples: samples.map((sample) => ({ ...sample, league: "芬超" })),
+}, { lockType: "FINAL_LOCK" });
+assert.equal(genericStrongFavourite.featureSet.leagueLearning.appliedSignals.strongHomeFavourite, false);
 
 console.log("Unified prediction engine gates verified.");

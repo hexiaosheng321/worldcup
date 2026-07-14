@@ -19,10 +19,22 @@ const LEAGUE_LEARNING_PROFILES = {
     rules: ["低节奏时必须保留0球与0-0路径", "胜负优势不得自动放大为多球差"],
   },
   "瑞超": {
-    version: "ALLSVENSKAN_2026-07-12_R1", reviewSampleCount: 5,
+    version: "ALLSVENSKAN_2026-07-14_R2", reviewSampleCount: 6,
     xg: { home: 0, away: -0.03 }, confidencePenalty: 3,
-    scoreWeight: (row) => row.home === row.away ? 0.98 : Math.abs(row.home - row.away) === 1 ? 1.06 : Math.abs(row.home - row.away) >= 3 ? 0.96 : 1,
-    rules: ["胜平负与净胜球分层建模", "-1让胜必须由净胜两球及以上概率支持", "主客队进球必须分别估计"],
+    scoreWeight: (row, signals) => {
+      const base = row.home === row.away ? 0.98 : Math.abs(row.home - row.away) === 1 ? 1.04 : 1;
+      if (!signals.strongHomeFavourite || !signals.weakAwayAttack) return base;
+      const cleanSheet = row.away === 0 ? 1.12 : 1;
+      const multiGoalHomeWin = row.home - row.away >= 2 ? 1.1 : 1;
+      return base * cleanSheet * multiGoalHomeWin;
+    },
+    rules: [
+      "胜平负与净胜球分层建模",
+      "-1让胜必须由净胜两球及以上概率支持",
+      "主客队进球、零封概率与攻防方差必须分别估计",
+      "主胜SP不高于1.25且客队预期进球不高于0.90时，2-0/3-0零封路径和两球以上胜差必须升权",
+      "强队半场领先两球时，状态转移必须提高3-0/3-1扩展路径，不能只保留1-1风险分支",
+    ],
   },
   "挪超": {
     version: "ELITESERIEN_2026-07-12_R1", reviewSampleCount: 5,
@@ -209,8 +221,18 @@ function scoreGrid(xg) {
   return rows.sort((a, b) => b.probability - a.probability);
 }
 
-function applyLeagueScoreLearning(rows, profile) {
-  const weighted = rows.map((row) => ({ ...row, probability: row.probability * profile.scoreWeight(row) }));
+function leagueLearningSignals(league, market, xg) {
+  const homeWinOdd = validOdd(market.normal?.win);
+  return {
+    strongHomeFavourite: leagueLearningProfile(league).version.startsWith("ALLSVENSKAN_") && homeWinOdd !== null && homeWinOdd <= 1.25,
+    weakAwayAttack: Number(xg.away) <= 0.9,
+    homeWinOdd,
+    awayExpectedGoals: round(xg.away, 2),
+  };
+}
+
+function applyLeagueScoreLearning(rows, profile, signals) {
+  const weighted = rows.map((row) => ({ ...row, probability: row.probability * profile.scoreWeight(row, signals) }));
   const total = weighted.reduce((sum, row) => sum + row.probability, 0) || 1;
   return weighted.map((row) => ({ ...row, probability: row.probability / total })).sort((a, b) => b.probability - a.probability);
 }
@@ -440,7 +462,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     home: Math.max(0.2, baseXg.home + research.adjustment.xgHome + leagueLearning.xg.home),
     away: Math.max(0.2, baseXg.away + research.adjustment.xgAway + leagueLearning.xg.away),
   };
-  const poissonScores = applyLeagueScoreLearning(scoreGrid(xg), leagueLearning);
+  const learningSignals = leagueLearningSignals(match.league, market, xg);
+  const poissonScores = applyLeagueScoreLearning(scoreGrid(xg), leagueLearning, learningSignals);
   const formBaseline = formProbabilities(xg.homeRows, xg.awayRows);
   const historicalScores = historicalScoreDistribution(samples, market);
   const scoreModel = blendScoreDistribution(poissonScores, market.scoreOdds || [], historicalScores);
@@ -600,7 +623,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       xg: { home: round(xg.home, 2), away: round(xg.away, 2) },
       venueProfile: xg.venueProfile,
       leagueProfile: xg.leagueProfile,
-      leagueLearning: { version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, xgAdjustment: leagueLearning.xg, confidencePenalty: leagueLearning.confidencePenalty, rules: leagueLearning.rules },
+      leagueLearning: { version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, xgAdjustment: leagueLearning.xg, confidencePenalty: leagueLearning.confidencePenalty, appliedSignals: learningSignals, rules: leagueLearning.rules },
       recentForm: { home: xg.homeRows, away: xg.awayRows, verifiedEvidenceRows: verifiedRecentMatches.length },
       recentFormFresh,
       fundamentalDataComplete,
@@ -627,7 +650,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", immutablePreMatchSnapshot: true },
     lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "shadow-only until out-of-sample calibration and loss metrics improve with sufficient samples" },
     modelLessons: {
-      version: "LESSONS_2026-07-13_LEAGUE_R1",
+      version: "LESSONS_2026-07-14_LEAGUE_R2",
       rules: [
         "让球不穿不得自动推翻胜平负方向",
         "最终方向按全部场景概率汇总，不按单一主比分决定",

@@ -187,7 +187,7 @@ const unifiedPredictionMarkers = [
   "model-runs",
   "tenStepResult",
   "backtestContract",
-  "LESSONS_2026-07-13_LEAGUE_R1",
+  "LESSONS_2026-07-14_LEAGUE_R2",
   "LEAGUE_LEARNING_PROFILES",
   "scenarioTotalsCovered",
   "scenarioHandicapCovered",
