@@ -72,3 +72,199 @@ body.dashboard-mode .home-topbar {
     min-height: 36px;
   }
 }
+
+/* Mobile reading system: one final source of truth after accumulated themes. */
+@media (max-width: 640px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    font-size: 15px;
+    line-height: 1.58;
+  }
+
+  .home-topbar,
+  body.home-mode .home-topbar {
+    gap: 8px;
+    min-height: 64px;
+    padding: 9px 10px;
+  }
+
+  .home-logo strong,
+  .home-topbar .home-logo strong {
+    max-width: 124px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  .home-topbar nav {
+    gap: 6px;
+  }
+
+  .home-topbar nav button,
+  body.home-mode .home-topbar nav button,
+  .tab {
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+
+  .language-toggle {
+    min-width: 84px;
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .language-menu {
+    min-width: 144px;
+    padding: 7px;
+  }
+
+  .language-menu button {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 15px;
+  }
+
+  .home-hero {
+    padding: 18px 14px 22px;
+  }
+
+  .home-badge {
+    min-height: 24px;
+    font-size: 11px;
+  }
+
+  .home-copy h1,
+  .home-hero .home-copy h1 {
+    font-size: clamp(27px, 7.4vw, 32px);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+  }
+
+  .home-actions button {
+    min-height: 46px;
+    font-size: 14px;
+  }
+
+  .home-countdown-card {
+    padding: 15px;
+  }
+
+  .home-countdown-card > span,
+  .home-countdown-card small,
+  .home-section-head button,
+  .match-card-insight,
+  .match-card-tags,
+  .match-card-meta {
+    font-size: 13px;
+  }
+
+  .home-section-head h2,
+  .section-head h2,
+  .stat-title-line h3 {
+    font-size: 25px;
+    line-height: 1.18;
+  }
+
+  .panel {
+    margin-right: 8px;
+    margin-left: 8px;
+    padding: 14px;
+  }
+
+  .match-card,
+  .home-match-card {
+    padding: 15px;
+  }
+
+  .team {
+    font-size: 21px;
+    line-height: 1.2;
+  }
+
+  .model-intro-hero,
+  .model-stats-hero,
+  .odds-map-hero,
+  .about-site-hero .about-site-hero-inner {
+    gap: 18px;
+    padding: 22px 18px;
+  }
+
+  .model-intro-hero h2,
+  .model-stats-hero h2,
+  .odds-map-hero h2,
+  .about-site-hero h2 {
+    font-size: 30px;
+    line-height: 1.15;
+  }
+
+  .model-intro-hero p,
+  .model-stats-hero p,
+  .odds-map-hero p,
+  .about-site-hero p {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .model-intro-hero aside,
+  .model-stats-hero aside {
+    padding: 16px;
+  }
+
+  .global-stats-cards,
+  .global-stats-table,
+  .site-locks-list {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  body.is-detail-page .match-page-section,
+  .match-page-section {
+    padding: 16px;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .match-page-section p,
+  .match-page-tile p,
+  .analysis-step p,
+  .decision-gate-notes span {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .match-mode-switch button,
+  .match-page-toolbar button,
+  .match-page-actions button,
+  .global-stats-table-toolbar button {
+    min-height: 42px;
+    font-size: 14px;
+  }
+
+  .review-record-table,
+  .review-table table,
+  .odds-map-record-table,
+  .odds-map-table-wrap table,
+  .global-stats-record-table,
+  .trend-table,
+  .draw-rate-table {
+    font-size: 13px;
+  }
+
+  .review-record-table th,
+  .review-record-table td,
+  .review-table th,
+  .review-table td,
+  .odds-map-record-table th,
+  .odds-map-record-table td,
+  .global-stats-record-table th,
+  .global-stats-record-table td {
+    min-height: 42px;
+    padding: 9px 7px;
+  }
+}

@@ -49,6 +49,9 @@ for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", 
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
   throw new Error("Production baseline must keep the language menu outside the header clipping box");
 }
+for (const marker of ["Mobile reading system", "font-size: 15px", "min-height: 44px", "@media (max-width: 640px)"]) {
+  if (!baseStyles.includes(marker)) throw new Error(`Production baseline missing mobile readability marker: ${marker}`);
+}
 for (const marker of ["activeRoots", "requestAnimationFrame", "loadDictionary", "ticai:localechange"]) {
   if (!i18n.includes(marker)) throw new Error(`Production baseline missing safe i18n runtime marker: ${marker}`);
 }
