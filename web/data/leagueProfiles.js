@@ -1,5 +1,5 @@
 window.WC_LEAGUE_PROFILES = {
-  "generatedAt": "2026-07-11T04:28:07.740Z",
+  "generatedAt": "2026-07-14T04:00:08.194Z",
   "source": [
     "web/data/externalHistoricalSamples.js",
     "web/data/externalHistoricalSamplesBig5England.js",
@@ -8,11 +8,11 @@ window.WC_LEAGUE_PROFILES = {
     "web/data/externalHistoricalSamplesBig5Italy.js",
     "web/data/externalHistoricalSamplesBig5France.js"
   ],
-  "profileCount": 18,
+  "profileCount": 20,
   "profiles": [
     {
       "league": "世界杯",
-      "generatedAt": "2026-07-11T04:28:07.736Z",
+      "generatedAt": "2026-07-14T04:00:08.193Z",
       "sampleCount": 885,
       "completedSampleCount": 885,
       "usableSampleCount": 771,
@@ -125,8 +125,120 @@ window.WC_LEAGUE_PROFILES = {
       "modelHint": "联赛画像：世界杯 可用赛果样本 771 场，主胜 46.0%，平 21.9%，客胜 32.0%，均球 2.68；常见比分 1-0 84场 / 1-1 81场 / 0-1 68场 / 2-0 62场 / 0-0 58场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 885 场，盘口样本可作为市场画像基准。"
     },
     {
+      "league": "欧冠",
+      "generatedAt": "2026-07-14T04:00:08.192Z",
+      "sampleCount": 282,
+      "completedSampleCount": 282,
+      "usableSampleCount": 282,
+      "excludedLowQualityCount": 0,
+      "withOddsCount": 282,
+      "resultOnlyCount": 0,
+      "sampleQuality": "FULL",
+      "sampleQualityLabel": "可作为联赛画像基准",
+      "resultSampleQuality": "FULL",
+      "resultSampleQualityLabel": "可作为联赛画像基准",
+      "marketSampleQuality": "FULL",
+      "marketSampleQualityLabel": "盘口样本可作为市场画像基准",
+      "seasons": [
+        "2025/2026",
+        "2026/2027"
+      ],
+      "sourceCounts": [
+        {
+          "label": "500.com",
+          "count": 282,
+          "rate": 1
+        }
+      ],
+      "homeWinRate": 0.5,
+      "drawRate": 0.19148936170212766,
+      "awayWinRate": 0.30851063829787234,
+      "avgGoals": 3.1347517730496453,
+      "homeGoalsAvg": 1.8439716312056738,
+      "awayGoalsAvg": 1.2907801418439717,
+      "over25Rate": 0.5780141843971631,
+      "under25Rate": 0.4219858156028369,
+      "bttsRate": 0.5106382978723404,
+      "commonScores": [
+        {
+          "label": "1-0",
+          "count": 26,
+          "rate": 0.09219858156028368
+        },
+        {
+          "label": "2-0",
+          "count": 25,
+          "rate": 0.08865248226950355
+        },
+        {
+          "label": "1-1",
+          "count": 21,
+          "rate": 0.07446808510638298
+        },
+        {
+          "label": "0-0",
+          "count": 18,
+          "rate": 0.06382978723404255
+        },
+        {
+          "label": "0-1",
+          "count": 17,
+          "rate": 0.06028368794326241
+        }
+      ],
+      "totalGoalDistribution": [
+        {
+          "label": "2球",
+          "count": 58,
+          "rate": 0.20567375886524822
+        },
+        {
+          "label": "3球",
+          "count": 56,
+          "rate": 0.19858156028368795
+        },
+        {
+          "label": "1球",
+          "count": 43,
+          "rate": 0.1524822695035461
+        },
+        {
+          "label": "4球",
+          "count": 39,
+          "rate": 0.13829787234042554
+        },
+        {
+          "label": "5球",
+          "count": 35,
+          "rate": 0.12411347517730496
+        },
+        {
+          "label": "0球",
+          "count": 18,
+          "rate": 0.06382978723404255
+        },
+        {
+          "label": "6球",
+          "count": 15,
+          "rate": 0.05319148936170213
+        },
+        {
+          "label": "7球",
+          "count": 11,
+          "rate": 0.03900709219858156
+        }
+      ],
+      "styleTags": [
+        "主场优势强",
+        "开放局",
+        "大2.5偏高",
+        "含赔率样本"
+      ],
+      "modelHint": "联赛画像：欧冠 可用赛果样本 282 场，主胜 50.0%，平 19.1%，客胜 30.9%，均球 3.13；常见比分 1-0 26场 / 2-0 25场 / 1-1 21场 / 0-0 18场 / 0-1 17场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 282 场，盘口样本可作为市场画像基准。"
+    },
+    {
       "league": "韩职",
-      "generatedAt": "2026-07-11T04:28:07.735Z",
+      "generatedAt": "2026-07-14T04:00:08.192Z",
       "sampleCount": 189,
       "completedSampleCount": 189,
       "usableSampleCount": 189,
@@ -247,7 +359,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "澳超",
-      "generatedAt": "2026-07-11T04:28:07.734Z",
+      "generatedAt": "2026-07-14T04:00:08.192Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -360,7 +472,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "丹超",
-      "generatedAt": "2026-07-11T04:28:07.735Z",
+      "generatedAt": "2026-07-14T04:00:08.192Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -472,7 +584,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "德甲",
-      "generatedAt": "2026-07-11T04:28:07.739Z",
+      "generatedAt": "2026-07-14T04:00:08.193Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -583,7 +695,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "法甲",
-      "generatedAt": "2026-07-11T04:28:07.740Z",
+      "generatedAt": "2026-07-14T04:00:08.194Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -702,7 +814,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "芬超",
-      "generatedAt": "2026-07-11T04:28:07.734Z",
+      "generatedAt": "2026-07-14T04:00:08.191Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -825,7 +937,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "荷甲",
-      "generatedAt": "2026-07-11T04:28:07.734Z",
+      "generatedAt": "2026-07-14T04:00:08.192Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -936,7 +1048,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "美职",
-      "generatedAt": "2026-07-11T04:28:07.734Z",
+      "generatedAt": "2026-07-14T04:00:08.192Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1047,7 +1159,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "挪超",
-      "generatedAt": "2026-07-11T04:28:07.738Z",
+      "generatedAt": "2026-07-14T04:00:08.193Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1158,120 +1270,8 @@ window.WC_LEAGUE_PROFILES = {
       "modelHint": "联赛画像：挪超 可用赛果样本 100 场，主胜 55.0%，平 18.0%，客胜 27.0%，均球 3.04；常见比分 2-0 12场 / 1-1 11场 / 2-1 10场 / 3-1 8场 / 0-1 6场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 100 场，盘口样本可作为市场画像基准。"
     },
     {
-      "league": "欧冠",
-      "generatedAt": "2026-07-11T04:28:07.734Z",
-      "sampleCount": 100,
-      "completedSampleCount": 100,
-      "usableSampleCount": 100,
-      "excludedLowQualityCount": 0,
-      "withOddsCount": 100,
-      "resultOnlyCount": 0,
-      "sampleQuality": "FULL",
-      "sampleQualityLabel": "可作为联赛画像基准",
-      "resultSampleQuality": "FULL",
-      "resultSampleQualityLabel": "可作为联赛画像基准",
-      "marketSampleQuality": "FULL",
-      "marketSampleQualityLabel": "盘口样本可作为市场画像基准",
-      "seasons": [
-        "2025/2026"
-      ],
-      "sourceCounts": [
-        {
-          "label": "footiqo",
-          "count": 100,
-          "rate": 1
-        }
-      ],
-      "homeWinRate": 0.5,
-      "drawRate": 0.16,
-      "awayWinRate": 0.34,
-      "avgGoals": 3.45,
-      "homeGoalsAvg": 2,
-      "awayGoalsAvg": 1.45,
-      "over25Rate": 0.64,
-      "under25Rate": 0.36,
-      "bttsRate": 0.59,
-      "commonScores": [
-        {
-          "label": "2-0",
-          "count": 10,
-          "rate": 0.1
-        },
-        {
-          "label": "1-2",
-          "count": 9,
-          "rate": 0.09
-        },
-        {
-          "label": "1-1",
-          "count": 8,
-          "rate": 0.08
-        },
-        {
-          "label": "3-0",
-          "count": 8,
-          "rate": 0.08
-        },
-        {
-          "label": "2-3",
-          "count": 7,
-          "rate": 0.07
-        }
-      ],
-      "totalGoalDistribution": [
-        {
-          "label": "3球",
-          "count": 24,
-          "rate": 0.24
-        },
-        {
-          "label": "2球",
-          "count": 23,
-          "rate": 0.23
-        },
-        {
-          "label": "5球",
-          "count": 17,
-          "rate": 0.17
-        },
-        {
-          "label": "1球",
-          "count": 9,
-          "rate": 0.09
-        },
-        {
-          "label": "4球",
-          "count": 9,
-          "rate": 0.09
-        },
-        {
-          "label": "7球",
-          "count": 7,
-          "rate": 0.07
-        },
-        {
-          "label": "6球",
-          "count": 5,
-          "rate": 0.05
-        },
-        {
-          "label": "0球",
-          "count": 4,
-          "rate": 0.04
-        }
-      ],
-      "styleTags": [
-        "主场优势强",
-        "开放局",
-        "双方进球偏高",
-        "大2.5偏高",
-        "含赔率样本"
-      ],
-      "modelHint": "联赛画像：欧冠 可用赛果样本 100 场，主胜 50.0%，平 16.0%，客胜 34.0%，均球 3.45；常见比分 2-0 10场 / 1-2 9场 / 1-1 8场 / 3-0 8场 / 2-3 7场；模型使用：总进球先按开放局校验，可作为联赛画像基准；盘口样本 100 场，盘口样本可作为市场画像基准。"
-    },
-    {
       "league": "欧联",
-      "generatedAt": "2026-07-11T04:28:07.735Z",
+      "generatedAt": "2026-07-14T04:00:08.192Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1380,7 +1380,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "葡超",
-      "generatedAt": "2026-07-11T04:28:07.735Z",
+      "generatedAt": "2026-07-14T04:00:08.193Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1484,7 +1484,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "瑞超",
-      "generatedAt": "2026-07-11T04:28:07.738Z",
+      "generatedAt": "2026-07-14T04:00:08.193Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1597,7 +1597,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "西甲",
-      "generatedAt": "2026-07-11T04:28:07.739Z",
+      "generatedAt": "2026-07-14T04:00:08.193Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1707,7 +1707,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "意甲",
-      "generatedAt": "2026-07-11T04:28:07.739Z",
+      "generatedAt": "2026-07-14T04:00:08.193Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1817,7 +1817,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "英超",
-      "generatedAt": "2026-07-11T04:28:07.738Z",
+      "generatedAt": "2026-07-14T04:00:08.193Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1928,7 +1928,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "中超",
-      "generatedAt": "2026-07-11T04:28:07.718Z",
+      "generatedAt": "2026-07-14T04:00:08.183Z",
       "sampleCount": 8,
       "completedSampleCount": 8,
       "usableSampleCount": 8,
@@ -2022,6 +2022,148 @@ window.WC_LEAGUE_PROFILES = {
         "数据以赛果为主"
       ],
       "modelHint": "联赛画像：中超 可用赛果样本 8 场，主胜 50.0%，平 0.0%，客胜 50.0%，均球 3.88；常见比分 1-0 2场 / 1-2 1场 / 1-4 1场 / 1-5 1场 / 2-3 1场；模型使用：总进球先按开放局校验，只展示，不进入模型校准；盘口样本 8 场，不参与盘口相似推演。"
+    },
+    {
+      "league": "冰岛超",
+      "generatedAt": "2026-07-14T04:00:08.192Z",
+      "sampleCount": 6,
+      "completedSampleCount": 6,
+      "usableSampleCount": 6,
+      "excludedLowQualityCount": 0,
+      "withOddsCount": 6,
+      "resultOnlyCount": 0,
+      "sampleQuality": "DISPLAY",
+      "sampleQualityLabel": "只展示，不进入模型校准",
+      "resultSampleQuality": "DISPLAY",
+      "resultSampleQualityLabel": "只展示，不进入模型校准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
+      "seasons": [
+        "2026"
+      ],
+      "sourceCounts": [
+        {
+          "label": "500.com",
+          "count": 6,
+          "rate": 1
+        }
+      ],
+      "homeWinRate": 0.5,
+      "drawRate": 0,
+      "awayWinRate": 0.5,
+      "avgGoals": 4.333333333333333,
+      "homeGoalsAvg": 2,
+      "awayGoalsAvg": 2.3333333333333335,
+      "over25Rate": 0.8333333333333334,
+      "under25Rate": 0.16666666666666666,
+      "bttsRate": 0.5,
+      "commonScores": [
+        {
+          "label": "0-5",
+          "count": 1,
+          "rate": 0.16666666666666666
+        },
+        {
+          "label": "1-3",
+          "count": 1,
+          "rate": 0.16666666666666666
+        },
+        {
+          "label": "1-4",
+          "count": 1,
+          "rate": 0.16666666666666666
+        },
+        {
+          "label": "2-0",
+          "count": 1,
+          "rate": 0.16666666666666666
+        },
+        {
+          "label": "3-2",
+          "count": 1,
+          "rate": 0.16666666666666666
+        }
+      ],
+      "totalGoalDistribution": [
+        {
+          "label": "5球",
+          "count": 4,
+          "rate": 0.6666666666666666
+        },
+        {
+          "label": "2球",
+          "count": 1,
+          "rate": 0.16666666666666666
+        },
+        {
+          "label": "4球",
+          "count": 1,
+          "rate": 0.16666666666666666
+        }
+      ],
+      "styleTags": [
+        "主场优势强",
+        "开放局",
+        "大2.5偏高",
+        "数据以赛果为主"
+      ],
+      "modelHint": "联赛画像：冰岛超 可用赛果样本 6 场，主胜 50.0%，平 0.0%，客胜 50.0%，均球 4.33；常见比分 0-5 1场 / 1-3 1场 / 1-4 1场 / 2-0 1场 / 3-2 1场；模型使用：总进球先按开放局校验，只展示，不进入模型校准；盘口样本 6 场，不参与盘口相似推演。"
+    },
+    {
+      "league": "冰岛杯",
+      "generatedAt": "2026-07-14T04:00:08.192Z",
+      "sampleCount": 1,
+      "completedSampleCount": 1,
+      "usableSampleCount": 1,
+      "excludedLowQualityCount": 0,
+      "withOddsCount": 1,
+      "resultOnlyCount": 0,
+      "sampleQuality": "DISPLAY",
+      "sampleQualityLabel": "只展示，不进入模型校准",
+      "resultSampleQuality": "DISPLAY",
+      "resultSampleQualityLabel": "只展示，不进入模型校准",
+      "marketSampleQuality": "DISPLAY",
+      "marketSampleQualityLabel": "盘口样本不足，只能使用赛果画像",
+      "seasons": [
+        "2026"
+      ],
+      "sourceCounts": [
+        {
+          "label": "500.com",
+          "count": 1,
+          "rate": 1
+        }
+      ],
+      "homeWinRate": 1,
+      "drawRate": 0,
+      "awayWinRate": 0,
+      "avgGoals": 3,
+      "homeGoalsAvg": 3,
+      "awayGoalsAvg": 0,
+      "over25Rate": 1,
+      "under25Rate": 0,
+      "bttsRate": 0,
+      "commonScores": [
+        {
+          "label": "3-0",
+          "count": 1,
+          "rate": 1
+        }
+      ],
+      "totalGoalDistribution": [
+        {
+          "label": "3球",
+          "count": 1,
+          "rate": 1
+        }
+      ],
+      "styleTags": [
+        "主场优势强",
+        "开放局",
+        "大2.5偏高",
+        "数据以赛果为主"
+      ],
+      "modelHint": "联赛画像：冰岛杯 可用赛果样本 1 场，主胜 100.0%，平 0.0%，客胜 0.0%，均球 3.00；常见比分 3-0 1场；模型使用：总进球先按开放局校验，只展示，不进入模型校准；盘口样本 1 场，不参与盘口相似推演。"
     }
   ]
 };

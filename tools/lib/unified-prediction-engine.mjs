@@ -107,6 +107,8 @@ function teamKey(value = "") {
     [/萨普斯|Sarpsborg(?:\s*08)?/i, "sarpsborg"], [/KFU|KFUM(?:\s*Oslo|奥斯陆)?/i, "kfum"],
     [/博德闪|Bod[oø](?:\/Glimt)?/i, "bodoglimt"], [/罗森博|Rosenborg/i, "rosenborg"],
     [/克里斯|Kristiansund/i, "kristiansund"], [/桑纳菲|Sandefjord/i, "sandefjord"],
+    [/^(?:杰尔|吉奥里|Gy[oő]r)$/i, "gyor"], [/^(?:维京人|维京古尔|维京古|V[ií]kingur(?: Reykjav[ií]k)?)$/i, "vikingur-reykjavik"],
+    [/^(?:新圣徒|The New Saints|TNS)$/i, "the-new-saints"], [/^(?:沙巴巴|沙巴巴库|萨巴赫|Sabah(?: Baku)?)$/i, "sabah-baku"],
     [/韦斯特|V[aä]ster[aå]s/i, "vasteras"], [/代格福|Degerfors/i, "degerfors"],
     [/米亚尔(?:比)?/i, "mjallby"], [/(?:AIK)?索尔纳/i, "aik"], [/厄尔格|奥尔格里特/i, "orgryte"], [/赫根/i, "hacken"],
     [/拉赫蒂|Lahti/i, "lahti"], [/HIFK|Helsinki IFK/i, "hifk"], [/赫尔火|赫尔辛基火花|IF Gnistan/i, "gnistan"], [/赫尔辛(?:基)?|HJK(?: Helsinki)?/i, "hjk"], [/玛丽港|Mariehamn/i, "mariehamn"],
@@ -168,9 +170,9 @@ function poisson(lambda, goals) {
   return Math.exp(-lambda) * (lambda ** goals) / factorial(goals);
 }
 
-function expectedGoals(samples, homeTeam, awayTeam, beforeDate) {
-  const homeRows = recentTeamForm(samples, homeTeam, beforeDate, 8);
-  const awayRows = recentTeamForm(samples, awayTeam, beforeDate, 8);
+function expectedGoals(samples, homeTeam, awayTeam, beforeDate, teamFormSamples = samples) {
+  const homeRows = recentTeamForm(teamFormSamples, homeTeam, beforeDate, 8);
+  const awayRows = recentTeamForm(teamFormSamples, awayTeam, beforeDate, 8);
   const average = (rows, key, fallback) => rows.length ? rows.reduce((sum, row) => sum + row[key], 0) / rows.length : fallback;
   const homeVenueRows = homeRows.filter((row) => row.venue === "HOME");
   const awayVenueRows = awayRows.filter((row) => row.venue === "AWAY");
@@ -447,7 +449,8 @@ export function researchTemplate(match = {}) {
 export function runUnifiedPrediction(context = {}, options = {}) {
   const match = context.match || {};
   const market = context.market || {};
-  const samples = Array.isArray(context.samples) ? context.samples.filter((sample) => sample.league === match.league) : [];
+  const allSamples = Array.isArray(context.samples) ? context.samples : [];
+  const samples = allSamples.filter((sample) => sample.league === match.league);
   const beforeDate = dateKey(match.matchDate || match.ticaiDate || match.kickoffTime);
   const marketBaseline = noVig([market.normal?.win, market.normal?.draw, market.normal?.lose]);
   const asOf = context.asOf || new Date().toISOString();
@@ -456,7 +459,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const verifiedRecentMatches = Array.isArray(context.research?.teamState?.recentMatches)
     ? context.research.teamState.recentMatches
     : [];
-  const baseXg = expectedGoals([...samples, ...verifiedRecentMatches], match.home, match.away, beforeDate);
+  const baseXg = expectedGoals(samples, match.home, match.away, beforeDate, [...allSamples, ...verifiedRecentMatches]);
   const xg = {
     ...baseXg,
     home: Math.max(0.2, baseXg.home + research.adjustment.xgHome + leagueLearning.xg.home),
@@ -624,7 +627,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       venueProfile: xg.venueProfile,
       leagueProfile: xg.leagueProfile,
       leagueLearning: { version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, xgAdjustment: leagueLearning.xg, confidencePenalty: leagueLearning.confidencePenalty, appliedSignals: learningSignals, rules: leagueLearning.rules },
-      recentForm: { home: xg.homeRows, away: xg.awayRows, verifiedEvidenceRows: verifiedRecentMatches.length },
+      recentForm: { home: xg.homeRows, away: xg.awayRows, verifiedEvidenceRows: verifiedRecentMatches.length, lookupMode: "SAME_LEAGUE_MARKET_PLUS_CROSS_LEAGUE_TEAM_FORM" },
       recentFormFresh,
       fundamentalDataComplete,
       dataQuality: { score: dataQualityScore, grade: dataQualityScore >= 85 ? "A" : dataQualityScore >= 70 ? "B" : dataQualityScore >= 55 ? "C" : "D", temporalIntegrity, evidenceCompleteness: round(evidenceCompleteness), unavailableNonDecisiveCount, minimumRecentMatchesPerTeam: 5 },

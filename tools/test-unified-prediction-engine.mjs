@@ -118,4 +118,20 @@ const genericStrongFavourite = runUnifiedPrediction({
 }, { lockType: "FINAL_LOCK" });
 assert.equal(genericStrongFavourite.featureSet.leagueLearning.appliedSignals.strongHomeFavourite, false);
 
+const uclAliasSamples = Array.from({ length: 6 }, (_, index) => ({
+  league: index % 2 ? "匈甲" : "冰岛超",
+  kickoffTime: `2026-07-0${index + 1}`,
+  homeTeam: index % 2 ? "吉奥里" : "对手甲",
+  awayTeam: index % 2 ? "对手乙" : "维京古尔",
+  actualHomeGoals: index % 2 ? 2 : 0,
+  actualAwayGoals: index % 2 ? 0 : 1,
+}));
+const uclAliases = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "欧冠", home: "杰尔", away: "维京人" },
+  samples: uclAliasSamples,
+}, { lockType: "PRE_LOCK" });
+assert.equal(uclAliases.featureSet.recentForm.home.length, 3);
+assert.equal(uclAliases.featureSet.recentForm.away.length, 3);
+
 console.log("Unified prediction engine gates verified.");
