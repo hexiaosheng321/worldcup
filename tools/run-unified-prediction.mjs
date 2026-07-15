@@ -130,6 +130,7 @@ const result = runUnifiedPrediction({
   oddsHistory: historyRow.history || {},
   samples,
   research,
+  tieContext: research.tieContext || null,
   asOf: new Date().toISOString(),
   sourceCapturedAt: oddsData.updatedAt || "",
 }, { lockType: requestedLockType });

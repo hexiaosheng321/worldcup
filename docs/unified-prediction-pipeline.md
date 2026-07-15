@@ -14,6 +14,8 @@
 - 当前线上版本是 Champion；任何新权重先以 Challenger 影子回测，样本外 Brier Score、Log Loss 和校准率稳定优于主版本后才允许升级。
 - 只有 preferred `FINAL_LOCK` 能在90分钟赛果结算后生成 Base Case，下一次推演同时读取成功和失败案例。
 - 第二比分是反向情景分支，必须保留它所属方向的联合概率，并依其方向概率与单一比分概率对最终置信度扣分；不允许只展示不参与决策。
+- 第二比分以20%场景权重回灌胜平负概率，能够改变最终方向和置信等级；主选主胜或客胜时必须同时检查相反胜负路径，不能固定拿平局充当风险保险。
+- 两回合赛事必须提供结构化 `tieContext`，分别计算90分钟胜平负、本场净胜球差和总比分晋级状态；只有自然语言而没有回合数及赛前总比分时，阻断 `FINAL_LOCK`。
 - 联赛强弱差的 xG 必须优先使用主队主场和客队客场样本（各至少3场），记录攻防方差，并按该联赛近期场均总进球得到的开放度系数校正；样本不足才回退到总体近况。
 
 ## 每场比赛的固定顺序
@@ -45,6 +47,19 @@ npm run prediction:unified -- --match 1320350 --evidence /tmp/research-1320350.j
   "observedAt": "2026-07-10T07:30:00.000Z",
   "sources": [{ "title": "来源", "url": "https://example.com" }],
   "impact": { "home": 0.02, "draw": 0.01, "away": -0.03, "xgHome": 0.1, "xgAway": -0.1 }
+}
+```
+
+两回合赛事的资料文件还必须包含：
+
+```json
+{
+  "tieContext": {
+    "isTwoLeg": true,
+    "legNumber": 2,
+    "aggregateHomeBeforeMatch": 0,
+    "aggregateAwayBeforeMatch": 1
+  }
 }
 ```
 

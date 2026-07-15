@@ -4251,6 +4251,12 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         if (runOutput.gateResult?.gates?.fundamentalData !== true || dataQualityEvidence.minimumRecentMatchesPerTeam !== 5 || dataQualityEvidence.temporalIntegrity !== true) {
           return json({ ok: false, error: "FINAL_LOCK requires complete non-market fundamentals, five recent matches per team, and pre-lock temporal integrity" }, 400);
         }
+        if (runOutput.gateResult?.gates?.oppositeWinPathChecked !== true || runOutput.gateResult?.gates?.secondScenarioInProbability !== true) {
+          return json({ ok: false, error: "FINAL_LOCK requires a true opposite-result path and the second scenario inside final direction probabilities" }, 400);
+        }
+        if (runOutput.gateResult?.gates?.twoLegContextComplete !== true) {
+          return json({ ok: false, error: "FINAL_LOCK for a two-leg tie requires structured 90-minute, goal-difference, and aggregate-advancement context" }, 400);
+        }
       }
       const payloadShape = lockPayloadShape(body);
       const payloadSummary = lockSummaryFromShape(payloadShape);

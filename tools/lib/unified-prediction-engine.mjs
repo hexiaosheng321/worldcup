@@ -316,6 +316,43 @@ function resultFromScores(rows) {
   ]);
 }
 
+function twoLegContextAudit(context = {}, motivationSummary = "") {
+  const raw = context.tieContext || {};
+  const required = /次回合|两回合|总比分/.test(String(motivationSummary || ""));
+  const legNumber = number(raw.legNumber);
+  const aggregateHome = number(raw.aggregateHomeBeforeMatch);
+  const aggregateAway = number(raw.aggregateAwayBeforeMatch);
+  const complete = !required || (raw.isTwoLeg === true && legNumber === 2 && aggregateHome !== null && aggregateAway !== null);
+  const leader = aggregateHome === null || aggregateAway === null ? "LEVEL" : aggregateHome > aggregateAway ? "HOME" : aggregateHome < aggregateAway ? "AWAY" : "LEVEL";
+  const ninetyMinuteAdjustment = leader === "HOME" ? [-0.05, 0.04, 0.01] : leader === "AWAY" ? [0.01, 0.04, -0.05] : [0, 0, 0];
+  return {
+    required,
+    complete,
+    isTwoLeg: raw.isTwoLeg === true,
+    legNumber,
+    aggregateBeforeMatch: aggregateHome === null || aggregateAway === null ? null : { home: aggregateHome, away: aggregateAway },
+    aggregateLeader: leader,
+    ninetyMinuteAdjustment,
+    objectives: {
+      home: leader === "AWAY" ? "TRAILING_MUST_CHASE" : leader === "HOME" ? "LEADING_CAN_CONTROL" : "LEVEL_TIE",
+      away: leader === "HOME" ? "TRAILING_MUST_CHASE" : leader === "AWAY" ? "LEADING_CAN_CONTROL" : "LEVEL_TIE",
+    },
+  };
+}
+
+function advancementDistribution(scoreRows, tieAudit) {
+  if (!tieAudit.isTwoLeg || !tieAudit.aggregateBeforeMatch) return null;
+  const totals = { HOME_ADVANCES: 0, EXTRA_TIME: 0, AWAY_ADVANCES: 0 };
+  for (const row of scoreRows) {
+    const home = tieAudit.aggregateBeforeMatch.home + row.home;
+    const away = tieAudit.aggregateBeforeMatch.away + row.away;
+    const key = home > away ? "HOME_ADVANCES" : home < away ? "AWAY_ADVANCES" : "EXTRA_TIME";
+    totals[key] += Number(row.probability || 0);
+  }
+  const normalized = normalizeProbabilities(Object.values(totals));
+  return Object.fromEntries(Object.keys(totals).map((key, index) => [key, round(normalized[index])]));
+}
+
 function researchAudit(research = {}, asOf = new Date().toISOString()) {
   const weights = { teamState: 0.2, injuries: 0.18, expectedLineups: 0.17, motivation: 0.12, weatherVenue: 0.05, styleMatchup: 0.18, marketNews: 0.1 };
   const freshnessHours = { teamState: 168, injuries: 24, expectedLineups: 24, motivation: 72, weatherVenue: 48, styleMatchup: 168, marketNews: 6 };
@@ -448,6 +485,7 @@ function matchType(rows) {
 export function researchTemplate(match = {}) {
   return {
     match: { matchId: match.matchId || "", league: match.league || "", home: match.home || "", away: match.away || "", kickoffTime: match.kickoffTime || "" },
+    tieContext: { isTwoLeg: false, legNumber: null, aggregateHomeBeforeMatch: null, aggregateAwayBeforeMatch: null },
     generatedAt: new Date().toISOString(),
     ...Object.fromEntries(RESEARCH_KEYS.map((key) => [key, { status: "MISSING", evidenceGrade: "", summary: "", capturedAt: "", observedAt: "", sources: [], impact: { home: 0, draw: 0, away: 0, xgHome: 0, xgAway: 0 } }])),
   };
@@ -462,6 +500,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const marketBaseline = noVig([market.normal?.win, market.normal?.draw, market.normal?.lose]);
   const asOf = context.asOf || new Date().toISOString();
   const research = researchAudit(context.research, asOf);
+  const motivationSummary = context.research?.motivation?.summary || "";
+  const tieAudit = twoLegContextAudit(context, motivationSummary);
   const leagueLearning = leagueLearningProfile(match.league);
   const verifiedRecentMatches = Array.isArray(context.research?.teamState?.recentMatches)
     ? context.research.teamState.recentMatches
@@ -487,11 +527,19 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   ].filter(Boolean);
   const weightTotal = baselineParts.reduce((sum, part) => sum + part.weight, 0);
   const baselineProbabilities = normalizeProbabilities(resultLabels.map((_, index) => baselineParts.reduce((sum, part) => sum + part.values[index] * part.weight, 0) / weightTotal));
-  const probabilities = normalizeProbabilities(baselineProbabilities.map((value, index) => value + [research.adjustment.home, research.adjustment.draw, research.adjustment.away][index] * 0.25));
-  const rankedResults = resultLabels.map((label, index) => ({ label, text: resultText[label], probability: probabilities[index] })).sort((a, b) => b.probability - a.probability);
-  let mainScore = scores[0];
-  let counterScore = scores.find((row) => scoreResult(row) !== scoreResult(mainScore)) || scores[1];
+  const preScenarioProbabilities = normalizeProbabilities(baselineProbabilities.map((value, index) => value + [research.adjustment.home, research.adjustment.draw, research.adjustment.away][index] * 0.25 + tieAudit.ninetyMinuteAdjustment[index]));
+  const preliminaryLeader = resultLabels[preScenarioProbabilities.indexOf(Math.max(...preScenarioProbabilities))];
+  let mainScore = scores.find((row) => scoreResult(row) === preliminaryLeader) || scores[0];
+  const oppositeDirection = preliminaryLeader === "HOME" ? "AWAY" : preliminaryLeader === "AWAY" ? "HOME" : null;
+  const oppositeDirectionProbability = oppositeDirection ? preScenarioProbabilities[resultLabels.indexOf(oppositeDirection)] : 0;
+  const oppositeScore = oppositeDirection ? scores.find((row) => scoreResult(row) === oppositeDirection) : null;
+  let counterScore = oppositeScore && oppositeDirectionProbability >= 0.12
+    ? oppositeScore
+    : scores.find((row) => scoreResult(row) !== scoreResult(mainScore)) || scores[1];
   let topScores = [mainScore, counterScore].filter(Boolean);
+  const scenarioDirectionProbabilities = resultFromScores(topScores);
+  const probabilities = normalizeProbabilities(preScenarioProbabilities.map((value, index) => value * 0.8 + scenarioDirectionProbabilities[index] * 0.2));
+  const rankedResults = resultLabels.map((label, index) => ({ label, text: resultText[label], probability: probabilities[index] })).sort((a, b) => b.probability - a.probability);
   const totalModel = totalGoalModel(scores, market.totalGoalsOdds || []);
   const movement = oddsMovementAudit(context.oddsHistory);
   const sampleGate = samples.length >= 10;
@@ -550,6 +598,9 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const drawOverrideNeeded = rankedResults[0].label === "DRAW" && marketRanked[0]?.label !== "DRAW" && marketRanked[0]?.probability - (marketBaseline?.probabilities[1] || 0) >= 0.12;
   const drawOverrideJustified = !drawOverrideNeeded || drawEvidenceCount >= 2;
   const counterScriptDiverges = topScores.length === 2 && scoreResult(topScores[0]) !== scoreResult(topScores[1]);
+  const oppositeWinPathChecked = !["HOME", "AWAY"].includes(selectedDirection)
+    || Boolean(scores.find((row) => scoreResult(row) === (selectedDirection === "HOME" ? "AWAY" : "HOME")));
+  const secondScenarioInProbability = scenarioDirectionProbabilities[resultLabels.indexOf(scoreResult(counterScore))] > 0;
   const selectedDirectionProbability = probabilities[resultLabels.indexOf(selectedDirection)] || 0;
   const counterDirection = scoreResult(topScores[1]);
   const counterDirectionProbability = probabilities[resultLabels.indexOf(counterDirection)] || 0;
@@ -586,7 +637,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const totalsIndependent = totalModel.components.length >= 2;
   const stepScores = [
     { id: 1, key: "spReview", title: "当前胜平负 SP 复核", score: normalOddsComplete ? 100 : 0, passed: normalOddsComplete },
-    { id: 2, key: "rulesMotivation", title: "赛事规则/动机", score: research.items.find((item) => item.key === "motivation")?.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "motivation")?.complete) },
+    { id: 2, key: "rulesMotivation", title: "赛事规则/动机", score: research.items.find((item) => item.key === "motivation")?.complete && tieAudit.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "motivation")?.complete) && tieAudit.complete },
     { id: 3, key: "teamState", title: "球队状态", score: fundamentalDataComplete ? 100 : Math.round(Math.min(90, (xg.homeRows.length + xg.awayRows.length) * 9)), passed: fundamentalDataComplete && ["teamState", "injuries", "expectedLineups"].every((key) => research.items.find((item) => item.key === key)?.complete) },
     { id: 4, key: "styleMatchup", title: "风格对位", score: research.items.find((item) => item.key === "styleMatchup")?.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "styleMatchup")?.complete) },
     { id: 5, key: "marketSamples", title: "盘口和样本", score: Math.round((normalOddsComplete ? 40 : 0) + Math.min(40, samples.length / 2) + (recentFormFresh ? 20 : 0)), passed: normalOddsComplete && samples.length >= 30 && recentFormFresh },
@@ -613,6 +664,9 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     scenarioTotalsCovered,
     scenarioHandicapCovered,
     counterScriptDiverges,
+    oppositeWinPathChecked,
+    secondScenarioInProbability,
+    twoLegContextComplete: tieAudit.complete,
     drawOverrideJustified,
     recentFormFresh,
     tenStepMechanism: tenStepPassed,
@@ -649,6 +703,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       sampleCount: samples.length,
       oddsMovement: movement,
       research,
+      tieContext: { ...tieAudit, advancementProbabilities: advancementDistribution(scores, tieAudit), resultScopes: ["NINETY_MINUTE_WDL", "MATCH_GOAL_DIFFERENCE", "TIE_ADVANCEMENT"] },
       handicap: {
         line: number(String(match.handicap ?? "0").replace("+", "")) ?? 0,
         probabilities: Object.fromEntries(handicapLabels.map((label, index) => [label, round(handicapProbabilities[index])])),
@@ -661,6 +716,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       score: { components: scoreModel.parts, historicalSampleCount: scoreModel.historicalSampleCount, marketComplete: scoreModel.marketComplete },
       totals: { probabilities: Object.fromEntries(totalModel.probabilities), components: totalModel.components, marketComplete: totalModel.marketComplete },
       jointDecision: { selected: resolvedPair, candidateCount: jointDecision.candidates.length, independentDirectionLeader, independentHandicapLeader, independentPairCompatible: independentPair.scoreProbability > 0, resolutionApplied: jointResolutionApplied, directionPreserved: selectedDirection === independentDirectionLeader, role: "CONDITIONAL_HANDICAP_EVIDENCE_AFTER_INDEPENDENT_CONFLICT" },
+      scenarioDirectionCalibration: { weight: 0.2, preScenario: Object.fromEntries(resultLabels.map((label, index) => [label, round(preScenarioProbabilities[index])])), scenarioOnly: Object.fromEntries(resultLabels.map((label, index) => [label, round(scenarioDirectionProbabilities[index])])), applied: true },
     },
     scenarioSet: topScores.map((row, index) => ({ rank: index + 1, score: row.score, probability: round(row.probability), direction: scoreResult(row), directionProbability: round(probabilities[resultLabels.indexOf(scoreResult(row))] || 0), handicapResult: handicapMapped[index]?.result, role: index === 0 ? "MAIN_PATH" : "COUNTER_PATH" })),
     tenStepResult: { passed: tenStepPassed, steps: stepScores, averageScore: round(stepScores.reduce((sum, step) => sum + step.score, 0) / stepScores.length, 1) },
@@ -668,7 +724,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", immutablePreMatchSnapshot: true },
     lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "shadow-only until out-of-sample calibration and loss metrics improve with sufficient samples" },
     modelLessons: {
-      version: "LESSONS_2026-07-14_LEAGUE_R2",
+      version: "LESSONS_2026-07-15_SCENARIO_TIE_R3",
       rules: [
         "让球不穿不得自动推翻胜平负方向",
         "最终方向按全部场景概率汇总，不按单一主比分决定",
@@ -688,6 +744,9 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "主队和客队的预期进球、零封和方差必须分别建模",
         "置信等级必须按联赛和市场回测校准，不得仅按通过闸门数量决定",
         "第二比分必须是第二概率路径并进入方向和置信计算，不得固定为1-1",
+        "主选主胜或客胜时必须显式检查相反胜负的可验证路径，不能永远只用平局充当反向比分",
+        "第二比分按20%场景权重回灌胜平负概率并同步影响最终方向与置信等级",
+        "两回合赛事必须结构化计算90分钟胜平负、本场净胜球差和总比分晋级状态，缺失时不得进入FINAL_LOCK",
       ],
       leagueSpecific: { league: match.league || "通用", version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, rules: leagueLearning.rules },
       drawOverrideNeeded,

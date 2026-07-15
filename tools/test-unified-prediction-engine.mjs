@@ -53,7 +53,12 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
-assert.equal(final.modelLessons.version, "LESSONS_2026-07-14_LEAGUE_R2");
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-15_SCENARIO_TIE_R3");
+assert.equal(final.gateResult.gates.oppositeWinPathChecked, true);
+assert.equal(final.gateResult.gates.secondScenarioInProbability, true);
+assert.equal(final.gateResult.gates.twoLegContextComplete, true);
+assert.equal(final.featureSet.scenarioDirectionCalibration.weight, 0.2);
+assert.equal(final.featureSet.scenarioDirectionCalibration.applied, true);
 assert.equal(final.modelLessons.leagueSpecific.league, "韩职");
 assert.equal(final.featureSet.leagueLearning.version, "KLEAGUE_2026-07-12_R1");
 assert.equal(final.gateResult.gates.scenarioTotalsCovered, true);
@@ -133,5 +138,33 @@ const uclAliases = runUnifiedPrediction({
 }, { lockType: "PRE_LOCK" });
 assert.equal(uclAliases.featureSet.recentForm.home.length, 3);
 assert.equal(uclAliases.featureSet.recentForm.away.length, 3);
+
+const twoLegResearch = {
+  ...research,
+  motivation: {
+    ...research.motivation,
+    summary: "欧冠资格赛次回合，主队总比分落后，必须追赶；客队领先并可以控制比赛。",
+  },
+};
+const missingTwoLegContext = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "欧冠" },
+  samples: samples.map((sample) => ({ ...sample, league: "欧冠" })),
+  research: twoLegResearch,
+}, { lockType: "FINAL_LOCK" });
+assert.equal(missingTwoLegContext.lockType, "PRE_LOCK");
+assert.ok(missingTwoLegContext.gateResult.blockers.includes("twoLegContextComplete"));
+
+const completeTwoLegContext = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "欧冠" },
+  samples: samples.map((sample) => ({ ...sample, league: "欧冠" })),
+  research: twoLegResearch,
+  tieContext: { isTwoLeg: true, legNumber: 2, aggregateHomeBeforeMatch: 0, aggregateAwayBeforeMatch: 1 },
+}, { lockType: "FINAL_LOCK" });
+assert.equal(completeTwoLegContext.lockType, "FINAL_LOCK");
+assert.equal(completeTwoLegContext.featureSet.tieContext.objectives.home, "TRAILING_MUST_CHASE");
+assert.deepEqual(completeTwoLegContext.featureSet.tieContext.resultScopes, ["NINETY_MINUTE_WDL", "MATCH_GOAL_DIFFERENCE", "TIE_ADVANCEMENT"]);
+assert.ok(completeTwoLegContext.featureSet.tieContext.advancementProbabilities.AWAY_ADVANCES > 0);
 
 console.log("Unified prediction engine gates verified.");
