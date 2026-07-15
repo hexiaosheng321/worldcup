@@ -18,6 +18,7 @@ const unifiedEngine = fs.readFileSync("tools/lib/unified-prediction-engine.mjs",
 const unifiedRunner = fs.readFileSync("tools/run-unified-prediction.mjs", "utf8");
 const i18n = fs.readFileSync("web/app/app-i18n.js", "utf8");
 const baseStyles = fs.readFileSync("web/styles-base.css", "utf8");
+const reviewEngine = fs.readFileSync("web/lib/reviewEngine.js", "utf8");
 
 const retiredMarkers = [
   'data-tab="path"',
@@ -187,7 +188,7 @@ const unifiedPredictionMarkers = [
   "model-runs",
   "tenStepResult",
   "backtestContract",
-  "LESSONS_2026-07-15_SCENARIO_TIE_R3",
+  "LESSONS_2026-07-15_SELF_LEARNING_R4",
   "LEAGUE_LEARNING_PROFILES",
   "scenarioTotalsCovered",
   "scenarioHandicapCovered",
@@ -197,6 +198,12 @@ const unifiedPredictionMarkers = [
   "oppositeWinPathChecked",
   "secondScenarioInProbability",
   "twoLegContextComplete",
+  "seasonLearning",
+  "CHALLENGER_SHADOW",
+  "handicapDecisionConflictResolved",
+  "winDrawLoseSingleHit",
+  "totalGoalsDoubleHit",
+  "scoreDoubleHit",
   "venueProfile",
   "leagueProfile",
   "drawOverrideJustified",
@@ -208,6 +215,9 @@ const unifiedPredictionMarkers = [
 const missingUnifiedPredictionMarkers = unifiedPredictionMarkers.filter((marker) => !unifiedEngine.includes(marker) && !unifiedRunner.includes(marker) && !api.includes(marker));
 if (missingUnifiedPredictionMarkers.length) {
   throw new Error(`Production baseline missing unified prediction contract: ${missingUnifiedPredictionMarkers.join(", ")}`);
+}
+for (const marker of ["betOutcome", "modelAudit", "SHADOW_AUDIT", "SHADOW_OBSERVATION", "四组件全部命中"]) {
+  if (!api.includes(marker) && !reviewEngine.includes(marker)) throw new Error(`Production baseline missing self-learning review marker: ${marker}`);
 }
 for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "independent handicap probabilities", "independent handicap probability leader", "independent score probabilities", "independent total-goals probabilities", "jointly compatible direction and handicap pair", "complete non-market fundamentals"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing mandatory FINAL_LOCK gate: ${marker}`);

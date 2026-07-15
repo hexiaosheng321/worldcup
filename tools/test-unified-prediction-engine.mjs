@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { RESEARCH_KEYS, runUnifiedPrediction } from "./lib/unified-prediction-engine.mjs";
+import { RESEARCH_KEYS, handicapDecisionAudit, runUnifiedPrediction } from "./lib/unified-prediction-engine.mjs";
 
 const capturedAt = new Date().toISOString();
 const research = Object.fromEntries(RESEARCH_KEYS.map((key) => [key, {
@@ -53,12 +53,20 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
-assert.equal(final.modelLessons.version, "LESSONS_2026-07-15_SCENARIO_TIE_R3");
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-15_SELF_LEARNING_R4");
 assert.equal(final.gateResult.gates.oppositeWinPathChecked, true);
 assert.equal(final.gateResult.gates.secondScenarioInProbability, true);
 assert.equal(final.gateResult.gates.twoLegContextComplete, true);
 assert.equal(final.featureSet.scenarioDirectionCalibration.weight, 0.2);
 assert.equal(final.featureSet.scenarioDirectionCalibration.applied, true);
+assert.equal(final.featureSet.seasonLearning.mode, "CHALLENGER_SHADOW");
+assert.equal(final.featureSet.seasonLearning.appliedToChampion, false);
+assert.equal(final.featureSet.seasonLearning.season, "2026");
+assert.equal(final.modelLessons.seasonSpecific.season, "2026");
+assert.ok(final.backtestContract.metrics.includes("winDrawLoseSingleHit"));
+assert.ok(final.backtestContract.metrics.includes("handicapSingleHit"));
+assert.ok(final.backtestContract.metrics.includes("totalGoalsDoubleHit"));
+assert.ok(final.backtestContract.metrics.includes("scoreDoubleHit"));
 assert.equal(final.modelLessons.leagueSpecific.league, "韩职");
 assert.equal(final.featureSet.leagueLearning.version, "KLEAGUE_2026-07-12_R1");
 assert.equal(final.gateResult.gates.scenarioTotalsCovered, true);
@@ -71,6 +79,14 @@ assert.equal(final.scenarioSet[0].handicapResult, final.finalDecision.handicapPi
 assert.equal(Object.keys(final.featureSet.handicap.probabilities).length, 3);
 assert.equal(Object.keys(final.featureSet.totals.probabilities).length >= 2, true);
 assert.notEqual(final.scenarioSet[0].score.split("-")[0] > final.scenarioSet[0].score.split("-")[1], final.scenarioSet[1].score.split("-")[0] > final.scenarioSet[1].score.split("-")[1]);
+
+const materialHandicapConflict = handicapDecisionAudit([
+  { label: "让胜", probability: 0.552 },
+  { label: "让负", probability: 0.242 },
+  { label: "让平", probability: 0.206 },
+], "让负");
+assert.equal(materialHandicapConflict.materialConflict, true);
+assert.ok(materialHandicapConflict.probabilityGap > 0.1);
 
 const blocked = runUnifiedPrediction({ ...context, research: { ...research, injuries: { status: "MISSING" } } }, { lockType: "FINAL_LOCK" });
 assert.equal(blocked.lockType, "PRE_LOCK");

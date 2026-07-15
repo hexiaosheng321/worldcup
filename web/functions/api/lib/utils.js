@@ -87,10 +87,8 @@ export function sideFromResult(home, away) {
 }
 
 export function evaluateLock(lock, result) {
-  if (!lock || !result) return { hitStatus: "VOID", reviewText: "缺少锁版或赛果。" };
-  if (lock.final_action === "跳过") return { hitStatus: "VOID", reviewText: "跳过场次，不计胜负。" };
-  let hitStatus = "LOSE";
-  if (lock.recommendation_side === result.result_1x2) hitStatus = "WIN";
+  if (!lock || !result) return { hitStatus: "VOID", betOutcome: "VOID", reviewText: "缺少锁版或赛果。", probabilityMetrics: null, modelAudit: null };
+  let directionHit = lock.recommendation_side === result.result_1x2;
   if (lock.recommendation_side === "DOUBLE") {
     const text = String(lock.recommendation || "");
     const coversHome = /主|胜|HOME/.test(text);
@@ -101,10 +99,12 @@ export function evaluateLock(lock, result) {
       (result.result_1x2 === "DRAW" && coversDraw) ||
       (result.result_1x2 === "AWAY" && coversAway)
     ) {
-      hitStatus = "WIN";
+      directionHit = true;
     }
   }
-  if (lock.recommendation_side === "OVER" || lock.recommendation_side === "UNDER") hitStatus = "VOID";
+  const officialDirectionPick = ["HOME", "DRAW", "AWAY", "DOUBLE"].includes(lock.recommendation_side);
+  const isSkipped = lock.final_action === "跳过";
+  const betOutcome = !isSkipped && officialDirectionPick ? (directionHit ? "WIN" : "LOSE") : "VOID";
   const probabilities = [Number(lock.model_home_prob), Number(lock.model_draw_prob), Number(lock.model_away_prob)];
   const outcomeIndex = result.result_1x2 === "HOME" ? 0 : result.result_1x2 === "DRAW" ? 1 : result.result_1x2 === "AWAY" ? 2 : -1;
   const probabilityMetrics = outcomeIndex >= 0 && probabilities.every((value) => Number.isFinite(value) && value >= 0 && value <= 1)
@@ -115,9 +115,17 @@ export function evaluateLock(lock, result) {
       }
     : null;
   return {
-    hitStatus,
-    reviewText: hitStatus === "WIN" ? "赛前推荐命中。" : hitStatus === "LOSE" ? "赛前推荐未命中。" : "该推荐不计胜负。",
+    hitStatus: betOutcome,
+    betOutcome,
+    reviewText: betOutcome === "WIN"
+      ? "赛前推荐命中。"
+      : betOutcome === "LOSE"
+        ? "赛前推荐未命中。"
+        : isSkipped
+          ? "跳过场次不计正式投注胜负；模型方向继续验票。"
+          : "该推荐不计正式投注胜负；模型方向继续验票。",
     probabilityMetrics,
+    modelAudit: { directionHit: officialDirectionPick ? directionHit : null },
   };
 }
 
@@ -128,6 +136,7 @@ export function caseTags(lock, result, review) {
   if (review.hitStatus === "LOSE" && Number(lock.risk_score) >= 65) failureTags.push("高风险推荐失败");
   if (review.hitStatus === "LOSE" && result.result_1x2 === "DRAW" && lock.recommendation_side !== "DRAW") failureTags.push("平局漏防");
   if (review.hitStatus === "LOSE" && lock.data_quality === "LOW") failureTags.push("数据质量低导致失败");
+  if (review.hitStatus === "VOID" && review.modelAudit?.directionHit === false) failureTags.push("跳过场方向影子验票失败");
   if (review.hitStatus === "WIN" && Number(lock.consistency_score) >= 4) successTags.push("欧亚一致命中");
   if (review.hitStatus === "WIN" && Number(lock.risk_score) <= 30) successTags.push("低风险命中");
   if (review.hitStatus === "WIN" && lock.final_grade === "A") successTags.push("A级推荐命中");

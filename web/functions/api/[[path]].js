@@ -598,7 +598,7 @@ function actualHandicapResult(lock, result) {
   return "让负";
 }
 
-function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = []) {
+export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = []) {
   const lockPayload = parseObject(lock.payload_json);
   const predictionPayload = parseObject(lockPayload.sportteryPrediction);
   const diagnosticSource = { ...lockPayload, ...predictionPayload };
@@ -611,6 +611,22 @@ function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = []) {
   const totalGoalsHit = totalGoalPick.picks.length ? totalGoalPick.picks.includes(Number(result.total_goals)) : null;
   const scoreCovered = scorePicks.length ? scorePicks.includes(actualScore) : null;
   const handicapHit = handicapPick && actualHandicap ? handicapPick === actualHandicap : null;
+  const componentAudit = {
+    winDrawLoseSingleHit: review.modelAudit?.directionHit ?? null,
+    handicapSingleHit: handicapHit,
+    totalGoalsDoubleHit: totalGoalsHit,
+    scoreDoubleHit: scoreCovered,
+  };
+  const failedComponents = Object.entries(componentAudit).filter(([, hit]) => hit === false).map(([key]) => key);
+  const auditedComponents = Object.values(componentAudit).filter((hit) => typeof hit === "boolean").length;
+  const modelAuditStatus = failedComponents.length ? "FAIL" : auditedComponents === 4 ? "PASS" : "PARTIAL";
+  const failureLabels = {
+    winDrawLoseSingleHit: "胜平负单选失败",
+    handicapSingleHit: "让球单选失败",
+    totalGoalsDoubleHit: "总进球双选失败",
+    scoreDoubleHit: "比分双选失败",
+  };
+  const seasonLearning = parseObject(parseObject(diagnosticSource.unifiedRunEvidence).seasonLearning);
   const oddsMovement = oddsHistory.map((snapshot) => ({
     capturedAt: snapshot.captured_at,
     source: snapshot.source,
@@ -619,12 +635,17 @@ function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = []) {
     awaySp: snapshot.sporttery_away_sp,
     handicap: snapshot.handicap,
   }));
-  const failureMode = review.hitStatus === "WIN"
-    ? "命中样本"
-    : tags.failureTags[0] || (handicapHit === false ? "让球判断偏差" : totalGoalsHit === false ? "总进球判断偏差" : scoreCovered === false ? "比分路径未覆盖" : "方向判断偏差");
+  const failureMode = failedComponents.length
+    ? failedComponents.map((key) => failureLabels[key]).join(" + ")
+    : modelAuditStatus === "PASS"
+      ? "四组件全部命中"
+      : "组件数据不完整";
   return {
     reviewText: review.reviewText,
+    betOutcome: review.betOutcome || review.hitStatus,
+    learningEligibility: review.hitStatus === "VOID" ? "SHADOW_AUDIT" : "OFFICIAL_RECOMMENDATION",
     probabilityMetrics: review.probabilityMetrics || null,
+    modelAudit: { status: modelAuditStatus, auditedComponents, failedComponents, ...componentAudit },
     failureMode,
     actualHomeGoals: result.full_time_home_goals,
     actualAwayGoals: result.full_time_away_goals,
@@ -639,6 +660,8 @@ function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = []) {
       kickoffTime: lock.kickoff_time,
     },
     leagueType: lock.league,
+    season: String(seasonLearning.season || lock.kickoff_time || "").match(/(?:20\d{2}|\d{4})/)?.[0] || "unknown",
+    seasonLearning,
     lockedOdds: {
       homeSp: lock.sporttery_home_sp,
       drawSp: lock.sporttery_draw_sp,
@@ -661,26 +684,38 @@ function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = []) {
     scoreCovered,
     matchType: firstText(diagnosticSource.matchType, diagnosticSource.gameType, diagnosticSource.predictedMatchType),
     matchTypeHit: null,
-    diagnosisSummary: review.hitStatus === "WIN"
-      ? "赛前方向命中，保留为正样本。"
-      : `${failureMode}；后续复盘需检查盘口、进球区间和比分路径是否提前暴露。`,
+    diagnosisSummary: modelAuditStatus === "PASS"
+      ? review.hitStatus === "VOID"
+        ? "跳过场四组件影子验票通过，只进入校准统计，不计正式命中率。"
+        : "四个预测组件全部命中，保留为正式正样本。"
+      : `${failureMode}；无论是否跳过，都必须进入联赛与赛季校准复盘。`,
   };
 }
 
-function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayload) {
-  const isLose = review.hitStatus === "LOSE";
-  const isHighGradeLose = isLose && ["A", "B"].includes(String(lock.final_grade || "").toUpperCase());
-  const triggerType = isLose ? "MODEL_FAILURE" : "CASE_OBSERVATION";
-  const severity = isHighGradeLose ? "HIGH" : isLose ? "MEDIUM" : "LOW";
-  const title = isLose
+export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayload) {
+  const auditFailed = diagnosticPayload.modelAudit?.status === "FAIL";
+  const auditIncomplete = diagnosticPayload.modelAudit?.status === "PARTIAL";
+  const auditPassed = diagnosticPayload.modelAudit?.status === "PASS";
+  const isOfficialLose = review.hitStatus === "LOSE";
+  const isHighGradeLose = isOfficialLose && ["A", "B"].includes(String(lock.final_grade || "").toUpperCase());
+  const triggerType = auditFailed ? "MODEL_FAILURE" : auditIncomplete ? "DATA_QUALITY_OBSERVATION" : review.hitStatus === "VOID" ? "SHADOW_OBSERVATION" : "CASE_OBSERVATION";
+  const severity = isHighGradeLose ? "HIGH" : auditFailed ? "MEDIUM" : "LOW";
+  const title = auditFailed
     ? `${lock.model_version || "V4"} ${diagnosticPayload.failureMode}`
-    : `${lock.model_version || "V4"} 命中样本沉淀`;
+    : auditIncomplete
+      ? `${lock.model_version || "V4"} 组件验票不完整`
+    : review.hitStatus === "VOID"
+      ? `${lock.model_version || "V4"} 跳过场影子验票`
+      : `${lock.model_version || "V4"} 四组件命中样本沉淀`;
   const recommendations = [];
+  if (diagnosticPayload.modelAudit?.winDrawLoseSingleHit === false) recommendations.push("复查最终胜平负方向、反向脚本投票权和球队xG分配。");
   if (diagnosticPayload.handicapHit === false) recommendations.push("复查让球独立闸门，避免胜平负方向覆盖让球风险。");
   if (diagnosticPayload.totalGoalsHit === false) recommendations.push("复查总进球区间和半场触发脚本。");
   if (diagnosticPayload.scoreCovered === false) recommendations.push("补充反向比分路径，避免两个比分落在同一比赛脚本。");
-  if (isLose && !recommendations.length) recommendations.push("复查相似案例、盘口偏差和风险排除层，确认是否需要降级规则。");
-  if (!isLose) recommendations.push("保留为同模型版本正样本，用于相似案例分布校验。");
+  if (auditFailed && !recommendations.length) recommendations.push("复查相似案例、盘口偏差和风险排除层，确认是否需要降级规则。");
+  if (auditIncomplete) recommendations.push("补齐缺失的玩法输出或赛果字段后重新验票，不得沉淀为正样本。");
+  if (auditPassed && review.hitStatus === "VOID") recommendations.push("保留为联赛与赛季影子校准样本，不计正式推荐命中率。");
+  if (auditPassed && review.hitStatus !== "VOID") recommendations.push("保留为同模型版本四组件正样本，用于相似案例分布校验。");
   return {
     noteId: `upgrade-${caseId}`,
     sourceCaseId: caseId,
@@ -690,7 +725,7 @@ function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayload) {
     league: lock.league,
     triggerType,
     severity,
-    status: isLose ? "OPEN" : "OBSERVED",
+    status: auditFailed || auditIncomplete ? "OPEN" : "OBSERVED",
     title,
     diagnosis: {
       homeTeam: lock.home_team,
@@ -702,7 +737,7 @@ function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayload) {
     },
     recommendation: {
       nextActions: recommendations,
-      shouldUpgradeModel: isHighGradeLose || recommendations.length >= 2,
+      shouldUpgradeModel: auditFailed && (isHighGradeLose || recommendations.length >= 2),
     },
   };
 }
@@ -3930,7 +3965,7 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
     finalDecisionAction: prediction.finalDecisionAction || finalText,
     scriptSet: prediction.scriptSet || scenarios.map((item, index) => ({ label: index ? "情况二" : "情况一", probability: item.probability, score: item.score, text: index ? "反向风险分支" : "主发展分支" })),
     dataQuality: prediction.dataQuality || `HIGH：十步平均分 ${runOutput.tenStepResult?.averageScore ?? 100}，全部硬门槛通过。`,
-    unifiedRunEvidence: { contractVersion: runOutput.contractVersion, tenStepResult: runOutput.tenStepResult, gateResult: runOutput.gateResult, researchItems: items },
+    unifiedRunEvidence: { contractVersion: runOutput.contractVersion, tenStepResult: runOutput.tenStepResult, gateResult: runOutput.gateResult, researchItems: items, seasonLearning: featureSet.seasonLearning || null },
   };
 }
 

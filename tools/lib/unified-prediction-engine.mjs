@@ -60,6 +60,84 @@ function leagueLearningProfile(league = "") {
   };
 }
 
+function seasonLabel(sample = {}) {
+  return String(sample.season || sample.sourceSeason || "").trim();
+}
+
+function rate(rows, predicate) {
+  return rows.length ? rows.filter(predicate).length / rows.length : 0;
+}
+
+function average(rows, getter) {
+  return rows.length ? rows.reduce((sum, row) => sum + getter(row), 0) / rows.length : 0;
+}
+
+function seasonLearningContext(samples = [], match = {}, beforeDate = "") {
+  const completed = samples
+    .map((sample) => ({ sample, score: sampleScore(sample), date: dateKey(sample.kickoffTime || sample.matchDate) }))
+    .filter((row) => row.score && (!beforeDate || !row.date || row.date < beforeDate))
+    .sort((left, right) => String(right.date).localeCompare(String(left.date)));
+  const recentSeasonLabels = completed.slice(0, 30).map((row) => seasonLabel(row.sample)).filter(Boolean);
+  const inferredSeason = recentSeasonLabels.length
+    ? [...new Set(recentSeasonLabels)].sort((left, right) => recentSeasonLabels.filter((value) => value === right).length - recentSeasonLabels.filter((value) => value === left).length)[0]
+    : String(beforeDate || match.kickoffTime || match.matchDate || "").slice(0, 4);
+  const season = String(match.season || inferredSeason || "unknown");
+  let seasonRows = completed.filter((row) => seasonLabel(row.sample) === season);
+  if (!seasonRows.length && /^20\d{2}$/.test(season)) {
+    seasonRows = completed.filter((row) => String(row.date).startsWith(season));
+  }
+  const recentRows = seasonRows.slice(0, 30);
+  const stats = (rows) => ({
+    sampleCount: rows.length,
+    homeWinRate: round(rate(rows, (row) => row.score.home > row.score.away)),
+    drawRate: round(rate(rows, (row) => row.score.home === row.score.away)),
+    awayWinRate: round(rate(rows, (row) => row.score.home < row.score.away)),
+    averageGoals: round(average(rows, (row) => row.score.home + row.score.away), 3),
+    bttsRate: round(rate(rows, (row) => row.score.home > 0 && row.score.away > 0)),
+  });
+  const seasonStats = stats(seasonRows);
+  const recentStats = stats(recentRows);
+  const deltas = {
+    homeWinRate: round(recentStats.homeWinRate - seasonStats.homeWinRate),
+    drawRate: round(recentStats.drawRate - seasonStats.drawRate),
+    averageGoals: round(recentStats.averageGoals - seasonStats.averageGoals, 3),
+    bttsRate: round(recentStats.bttsRate - seasonStats.bttsRate),
+  };
+  const narrative = [];
+  if (seasonRows.length < 10) narrative.push("当前赛季样本不足，只记录不校准");
+  if (deltas.drawRate >= 0.08) narrative.push("近期平局率高于赛季基线");
+  if (deltas.drawRate <= -0.08) narrative.push("近期平局率低于赛季基线");
+  if (deltas.averageGoals >= 0.25) narrative.push("近期进球环境升温");
+  if (deltas.averageGoals <= -0.25) narrative.push("近期进球环境收紧");
+  if (deltas.homeWinRate >= 0.08) narrative.push("近期主场优势增强");
+  if (deltas.homeWinRate <= -0.08) narrative.push("近期主场优势减弱");
+  if (!narrative.length) narrative.push("近期联赛分布与赛季基线接近");
+  return {
+    league: match.league || "通用",
+    season,
+    mode: "CHALLENGER_SHADOW",
+    appliedToChampion: false,
+    seasonStats,
+    recentWindow: { size: 30, ...recentStats },
+    deltas,
+    narrative,
+    eligibleForCalibrationReview: seasonRows.length >= 30 && recentRows.length >= 15,
+    promotionPolicy: "仅当胜平负单选、让球单选、总进球双选、比分双选和概率损失在样本外同时不退化时升级Champion",
+  };
+}
+
+export function handicapDecisionAudit(rankedHandicap = [], selectedHandicap = "") {
+  const leader = rankedHandicap[0] || { label: "", probability: 0 };
+  const selected = rankedHandicap.find((item) => item.label === selectedHandicap) || { probability: 0 };
+  const probabilityGap = round(Number(leader.probability || 0) - Number(selected.probability || 0));
+  return {
+    independentLeader: leader.label || "",
+    selected: selectedHandicap,
+    probabilityGap,
+    materialConflict: Boolean(selectedHandicap && leader.label && selectedHandicap !== leader.label && probabilityGap > 0.1),
+  };
+}
+
 function number(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
@@ -497,6 +575,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const allSamples = Array.isArray(context.samples) ? context.samples : [];
   const samples = allSamples.filter((sample) => sample.league === match.league);
   const beforeDate = dateKey(match.matchDate || match.ticaiDate || match.kickoffTime);
+  const seasonLearning = seasonLearningContext(samples, match, beforeDate);
   const marketBaseline = noVig([market.normal?.win, market.normal?.draw, market.normal?.lose]);
   const asOf = context.asOf || new Date().toISOString();
   const research = researchAudit(context.research, asOf);
@@ -570,6 +649,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const resolvedPair = independentPair.scoreProbability > 0 ? independentPair : conditionalDirectionCandidates[0];
   const selectedDirection = resolvedPair?.direction || independentDirectionLeader;
   const handicapPick = resolvedPair?.handicapPick || independentHandicapLeader;
+  const handicapDecision = handicapDecisionAudit(rankedHandicap, handicapPick);
   const jointCompatibility = Boolean(resolvedPair && resolvedPair.scoreProbability > 0);
   const jointResolutionApplied = selectedDirection !== independentDirectionLeader || handicapPick !== independentHandicapLeader;
   const selectedTotalKeys = String(totalModel.pick || "").match(/(?:[0-6]|7\+)/g) || [];
@@ -660,6 +740,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     totalsIndependent,
     decisionConflictResolved: !conflict || research.complete,
     handicapIndependent,
+    handicapDecisionConflictResolved: !handicapDecision.materialConflict,
     jointCompatibility,
     scenarioTotalsCovered,
     scenarioHandicapCovered,
@@ -696,6 +777,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       venueProfile: xg.venueProfile,
       leagueProfile: xg.leagueProfile,
       leagueLearning: { version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, xgAdjustment: leagueLearning.xg, confidencePenalty: leagueLearning.confidencePenalty, appliedSignals: learningSignals, rules: leagueLearning.rules },
+      seasonLearning,
       recentForm: { home: xg.homeRows, away: xg.awayRows, verifiedEvidenceRows: verifiedRecentMatches.length, lookupMode: "SAME_LEAGUE_MARKET_PLUS_CROSS_LEAGUE_TEAM_FORM" },
       recentFormFresh,
       fundamentalDataComplete,
@@ -715,16 +797,16 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       },
       score: { components: scoreModel.parts, historicalSampleCount: scoreModel.historicalSampleCount, marketComplete: scoreModel.marketComplete },
       totals: { probabilities: Object.fromEntries(totalModel.probabilities), components: totalModel.components, marketComplete: totalModel.marketComplete },
-      jointDecision: { selected: resolvedPair, candidateCount: jointDecision.candidates.length, independentDirectionLeader, independentHandicapLeader, independentPairCompatible: independentPair.scoreProbability > 0, resolutionApplied: jointResolutionApplied, directionPreserved: selectedDirection === independentDirectionLeader, role: "CONDITIONAL_HANDICAP_EVIDENCE_AFTER_INDEPENDENT_CONFLICT" },
+      jointDecision: { selected: resolvedPair, candidateCount: jointDecision.candidates.length, independentDirectionLeader, independentHandicapLeader, independentPairCompatible: independentPair.scoreProbability > 0, resolutionApplied: jointResolutionApplied, directionPreserved: selectedDirection === independentDirectionLeader, handicapDecisionAudit: handicapDecision, role: "CONDITIONAL_HANDICAP_EVIDENCE_AFTER_INDEPENDENT_CONFLICT" },
       scenarioDirectionCalibration: { weight: 0.2, preScenario: Object.fromEntries(resultLabels.map((label, index) => [label, round(preScenarioProbabilities[index])])), scenarioOnly: Object.fromEntries(resultLabels.map((label, index) => [label, round(scenarioDirectionProbabilities[index])])), applied: true },
     },
     scenarioSet: topScores.map((row, index) => ({ rank: index + 1, score: row.score, probability: round(row.probability), direction: scoreResult(row), directionProbability: round(probabilities[resultLabels.indexOf(scoreResult(row))] || 0), handicapResult: handicapMapped[index]?.result, role: index === 0 ? "MAIN_PATH" : "COUNTER_PATH" })),
     tenStepResult: { passed: tenStepPassed, steps: stepScores, averageScore: round(stepScores.reduce((sum, step) => sum + step.score, 0) / stepScores.length, 1) },
     gateResult: { passed: allGatesPass, gates, blockers: Object.entries(gates).filter(([, passed]) => !passed).map(([name]) => name) },
-    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", immutablePreMatchSnapshot: true },
-    lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "shadow-only until out-of-sample calibration and loss metrics improve with sufficient samples" },
+    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["winDrawLoseSingleHit", "handicapSingleHit", "totalGoalsDoubleHit", "scoreDoubleHit", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", immutablePreMatchSnapshot: true },
+    lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "league-and-season shadow learning only; promote when four hit-rate components and out-of-sample probability losses do not regress" },
     modelLessons: {
-      version: "LESSONS_2026-07-15_SCENARIO_TIE_R3",
+      version: "LESSONS_2026-07-15_SELF_LEARNING_R4",
       rules: [
         "让球不穿不得自动推翻胜平负方向",
         "最终方向按全部场景概率汇总，不按单一主比分决定",
@@ -747,8 +829,12 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "主选主胜或客胜时必须显式检查相反胜负的可验证路径，不能永远只用平局充当反向比分",
         "第二比分按20%场景权重回灌胜平负概率并同步影响最终方向与置信等级",
         "两回合赛事必须结构化计算90分钟胜平负、本场净胜球差和总比分晋级状态，缺失时不得进入FINAL_LOCK",
+        "跳过场不计正式投注命中率，但必须继续验票胜平负、让球、总进球和比分组件，禁止VOID被记为命中正样本",
+        "联赛与当前赛季叙事先进入Challenger影子学习，只有四项命中率和样本外概率损失不退化才允许升级Champion",
+        "最终让球若偏离独立概率第一项超过10个百分点，必须阻断FINAL_LOCK而不是由联合兼容强行覆盖",
       ],
       leagueSpecific: { league: match.league || "通用", version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, rules: leagueLearning.rules },
+      seasonSpecific: seasonLearning,
       drawOverrideNeeded,
       drawEvidenceCount,
       counterScriptDiverges,
