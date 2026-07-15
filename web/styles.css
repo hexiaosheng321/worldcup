@@ -2973,16 +2973,14 @@ body::before {
 }
 
 .universal-model-grid,
-.v4-step-grid,
-.script-set-grid {
+.v4-step-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
 .universal-model-grid article,
-.v4-step-grid article,
-.script-set-grid article {
+.v4-step-grid article {
   min-width: 0;
   padding: 13px;
   border: 1px solid rgba(7, 60, 135, 0.18);
@@ -2990,8 +2988,7 @@ body::before {
   background: rgba(255, 255, 255, 0.94);
 }
 
-.universal-model-grid small,
-.script-set-grid strong {
+.universal-model-grid small {
   display: block;
   margin-bottom: 6px;
   color: var(--blue);
@@ -3049,43 +3046,13 @@ body::before {
   line-height: 1.35;
 }
 
-.script-set-grid em {
-  display: block;
-  min-height: 16px;
-  margin-bottom: 6px;
-  color: var(--gold);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 900;
-}
-
 .universal-model-grid p,
-.v4-step-grid p,
-.script-set-grid p {
+.v4-step-grid p {
   margin: 0;
   font-size: 13px;
   font-weight: 800;
   line-height: 1.55;
   overflow-wrap: anywhere;
-}
-
-.script-set-block {
-  display: grid;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid rgba(217, 154, 22, 0.22);
-  border-radius: 8px;
-  background: rgba(255, 248, 230, 0.72);
-}
-
-.script-set-block > span {
-  color: var(--gold);
-  font-size: 12px;
-  font-weight: 950;
-}
-
-.script-set-block .script-set-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .filter-board-grid {
@@ -3142,7 +3109,6 @@ body::before {
   .final-decision-grid,
   .universal-model-grid,
   .v4-step-grid,
-  .script-set-grid,
   .quick-risk-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3169,7 +3135,6 @@ body::before {
   .final-decision-grid,
   .universal-model-grid,
   .v4-step-grid,
-  .script-set-grid,
   .quick-decision-board,
   .sporttery-research-grid,
   .quick-risk-grid,
@@ -3703,9 +3668,6 @@ body::before {
     white-space: normal;
   }
 
-  .script-set-block .script-set-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .path-head {

@@ -1722,8 +1722,6 @@ function renderHomeResearchLab() {
   const oddsRows = oddsMapRows();
   const conflictCount = oddsRows.filter((row) => row.riskFlags.length).length;
   const highCount = oddsRows.filter((row) => row.pressureLevel === "强异动").length;
-  const teams = buildTeamTable();
-  const topPath = teams.slice().sort((a, b) => b.title - a.title)[0];
   const locked = data.predictions.length;
   const verified = matches.filter((match) => parseScore(officialScoreForMatch(match)) && latestPredictionFor(match.no)).length;
   const services = [
@@ -1744,12 +1742,6 @@ function renderHomeResearchLab() {
       value: `${locked} 条`,
       note: `${verified} 条已有赛果可回测`,
       tone: "model",
-    },
-    {
-      label: "世界杯路径",
-      value: topPath?.name || "待计算",
-      note: topPath ? `冠军模拟 ${pct(topPath.title)}` : "积分榜待更新",
-      tone: "path",
     },
     {
       label: "证据输入清单",
@@ -6289,52 +6281,6 @@ function finalDecisionActionText(pred) {
   return pred?.finalDecisionAction || pred?.decisionAction || pred?.valueFilterAction || "";
 }
 
-function normalizeScriptSet(scriptSet, fallbackText) {
-  if (!scriptSet) {
-    if (fallbackText) {
-      const parts = fallbackText.split(/[。；；]/).filter(Boolean);
-      if (parts.length >= 2) {
-        return [
-          { label: "主剧本", text: parts[0].trim() },
-          { label: "变化分支", text: parts.slice(1).join("；").trim() },
-        ];
-      }
-      return [{ label: "剧本", text: fallbackText }];
-    }
-    return [];
-  }
-  if (Array.isArray(scriptSet)) {
-    return scriptSet
-      .map((item) => {
-        if (typeof item === "string") return { label: "剧本", text: item };
-        return {
-          label: item.label || item.name || item.type || "剧本",
-          probability: item.probability || item.weight || item.chance || "",
-          score: item.score || item.scores || "",
-          text: item.text || item.script || item.trigger || item.detail || "",
-        };
-      })
-      .filter((item) => item.text || item.score || item.probability);
-  }
-  return Object.entries(scriptSet)
-    .map(([key, value]) => {
-      const labels = {
-        dominance: "强势压制",
-        open: "开放对攻",
-        upset: "冷门反转",
-        stalemate: "僵局消耗",
-      };
-      if (typeof value === "string") return { label: labels[key] || key, text: value };
-      return {
-        label: value.label || labels[key] || key,
-        probability: value.probability || value.weight || value.chance || "",
-        score: value.score || value.scores || "",
-        text: value.text || value.script || value.trigger || value.detail || "",
-      };
-    })
-    .filter((item) => item.text || item.score || item.probability);
-}
-
 function firstModelText(...values) {
   return values.find((value) => {
     if (Array.isArray(value)) return value.length;
@@ -6446,8 +6392,7 @@ function renderUniversalModelPanel(pred) {
   const modelName = modelDisplayName(pred, {}, modelTemplate);
   const processText = pred.decisionProcess || pred.modelDecisionProcess || "V4按固定顺序执行：概率底盘、赛事规则、球队状态、风格对位、机构线、状态转移、比分总进球、让球独立闸门、失败方式、价值过滤。";
   const stepRows = v4StepRows(pred);
-  const scripts = normalizeScriptSet(pred.scriptSet || pred.scenarioSet || pred.fourScripts, pred.script);
-  if (!modelTemplate && !stepRows.some((item) => item.text) && !scripts.length) return "";
+  if (!modelTemplate && !stepRows.some((item) => item.text)) return "";
   return `
     <section class="match-page-section universal-model-panel">
       <div class="universal-model-head">
@@ -6469,24 +6414,6 @@ function renderUniversalModelPanel(pred) {
           `;
         })
         .join("")}</div>
-      ${
-        scripts.length
-          ? `<div class="script-set-block">
-              <span>比赛脚本分支</span>
-              <div class="script-set-grid">${scripts
-              .map(
-                (item) => `
-                  <article>
-                    <strong>${item.label}</strong>
-                    <em>${[item.probability, item.score].filter(Boolean).join(" · ")}</em>
-                    <p>${displayModelText(item.text)}</p>
-                  </article>
-                `
-              )
-              .join("")}</div>
-            </div>`
-          : ""
-      }
     </section>
   `;
 }

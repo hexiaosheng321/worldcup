@@ -579,8 +579,6 @@ function renderHomeResearchLab() {
   const oddsRows = oddsMapRows();
   const conflictCount = oddsRows.filter((row) => row.riskFlags.length).length;
   const highCount = oddsRows.filter((row) => row.pressureLevel === "强异动").length;
-  const teams = buildTeamTable();
-  const topPath = teams.slice().sort((a, b) => b.title - a.title)[0];
   const auditRows = modelAuditRows();
   const locked = auditRows.length;
   const currentPreferred = uniquePredictionCount();
@@ -603,12 +601,6 @@ function renderHomeResearchLab() {
       value: `${locked} 条`,
       note: `${currentPreferred} 条当前首选 · ${verified} 条已有赛果`,
       tone: "model",
-    },
-    {
-      label: "世界杯路径",
-      value: topPath?.name || "待计算",
-      note: topPath ? `冠军模拟 ${pct(topPath.title)}` : "积分榜待更新",
-      tone: "path",
     },
     {
       label: "证据输入清单",
