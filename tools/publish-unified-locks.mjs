@@ -85,5 +85,16 @@ for (const id of ids) {
 
 const snapshotDate = String(live.find((item) => ids.includes(String(item.matchId)))?.ticaiDate || new Date().toISOString().slice(0, 10)).replaceAll("-", "");
 const output = `web/data/manual-locks-${snapshotDate}-v4-r2.json`;
-await fs.writeFile(output, `${JSON.stringify(locks, null, 2)}\n`, "utf8");
-console.log(JSON.stringify({ ok: true, output, count: locks.length }, null, 2));
+let mergedLocks = locks;
+try {
+  const existingLocks = JSON.parse(await fs.readFile(output, "utf8"));
+  const replacedMatchIds = new Set(locks.map((lock) => String(lock.matchId || "")));
+  mergedLocks = [
+    ...existingLocks.filter((lock) => !replacedMatchIds.has(String(lock.matchId || ""))),
+    ...locks,
+  ];
+} catch (error) {
+  if (error?.code !== "ENOENT") throw error;
+}
+await fs.writeFile(output, `${JSON.stringify(mergedLocks, null, 2)}\n`, "utf8");
+console.log(JSON.stringify({ ok: true, output, publishedCount: locks.length, totalCount: mergedLocks.length }, null, 2));
