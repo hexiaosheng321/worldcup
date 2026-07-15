@@ -219,6 +219,9 @@ if (missingUnifiedPredictionMarkers.length) {
 for (const marker of ["betOutcome", "modelAudit", "SHADOW_AUDIT", "SHADOW_OBSERVATION", "四组件全部命中"]) {
   if (!api.includes(marker) && !reviewEngine.includes(marker)) throw new Error(`Production baseline missing self-learning review marker: ${marker}`);
 }
+if (!api.includes("trigger_type=excluded.trigger_type")) {
+  throw new Error("Production baseline requires refreshed upgrade notes to replace stale trigger types.");
+}
 for (const marker of ["learningEligibility", "probabilityMetrics", "failureMode", "seasonLearning", "diagnosisSummary"]) {
   if (!fs.readFileSync("web/functions/api/lib/utils.js", "utf8").includes(marker)) throw new Error(`Production baseline missing Case API self-learning field: ${marker}`);
 }

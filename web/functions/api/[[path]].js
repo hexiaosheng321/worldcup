@@ -753,6 +753,7 @@ async function createModelUpgradeNoteForCase(db, lock, result, review, caseId, d
     ON CONFLICT(note_id) DO UPDATE SET
       diagnosis_json=excluded.diagnosis_json,
       recommendation_json=excluded.recommendation_json,
+      trigger_type=excluded.trigger_type,
       severity=excluded.severity,
       status=excluded.status,
       title=excluded.title
