@@ -81,6 +81,59 @@ function hasOdds(row) {
   return [row.sportteryHomeSp, row.sportteryDrawSp, row.sportteryAwaySp, row.euroHomeOdds, row.euroDrawOdds, row.euroAwayOdds].some((value) => number(value) !== null);
 }
 
+function profileFixtureKey(row) {
+  return [
+    row.league || row.competition,
+    String(row.kickoffTime || row.matchDate || "").slice(0, 10),
+    row.homeTeam || row.home,
+    row.awayTeam || row.away,
+  ].map((value) => String(value || "").trim().toLowerCase().replace(/\s+/g, "")).join("|");
+}
+
+function dedupeProfileRows(rows) {
+  const groups = new Map();
+  rows.forEach((row) => {
+    const key = profileFixtureKey(row);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  });
+  const qualityRank = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+  const completeness = (row) => [
+    row.euroHomeOdds, row.euroDrawOdds, row.euroAwayOdds,
+    row.over25Odds, row.under25Odds,
+    row.asianHandicap, row.asianHomeWater, row.asianAwayWater,
+  ].filter((value) => number(value) !== null).length;
+  return [...groups.values()].map((group) => {
+    const ranked = [...group].sort((a, b) =>
+      (qualityRank[String(b.dataQuality || "MEDIUM").toUpperCase()] || 2) - (qualityRank[String(a.dataQuality || "MEDIUM").toUpperCase()] || 2) ||
+      completeness(b) - completeness(a)
+    );
+    const merged = { ...ranked[0] };
+    ranked.slice(1).forEach((row) => Object.entries(row).forEach(([key, value]) => {
+      if ((merged[key] === null || merged[key] === undefined || merged[key] === "") && value !== null && value !== undefined && value !== "") merged[key] = value;
+    }));
+    merged.duplicateSources = [...new Set(group.map((row) => row.source).filter(Boolean))];
+    return merged;
+  });
+}
+
+function preferProjectPrimarySources(rows) {
+  const targetLeagues = new Set(["美职", "巴西甲"]);
+  const primaryPattern = /^(500\.com|okooo)/i;
+  const primaryCountByLeague = new Map();
+  rows.forEach((row) => {
+    const league = String(row.league || row.competition || "").trim();
+    if (targetLeagues.has(league) && primaryPattern.test(String(row.source || row.dataSource || ""))) {
+      primaryCountByLeague.set(league, (primaryCountByLeague.get(league) || 0) + 1);
+    }
+  });
+  return rows.filter((row) => {
+    const league = String(row.league || row.competition || "").trim();
+    if (!targetLeagues.has(league) || (primaryCountByLeague.get(league) || 0) < 100) return true;
+    return primaryPattern.test(String(row.source || row.dataSource || ""));
+  });
+}
+
 function sampleQuality(count) {
   if (count >= 100) return "FULL";
   if (count >= 30) return "CALIBRATION";
@@ -162,7 +215,7 @@ function buildProfile(league, rows) {
   return profile;
 }
 
-const samples = readSamples(inputPaths);
+const samples = dedupeProfileRows(preferProjectPrimarySources(readSamples(inputPaths)));
 const grouped = new Map();
 samples.forEach((row) => {
   const league = String(row.league || row.competition || "未分类赛事").trim();

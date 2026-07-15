@@ -13,6 +13,7 @@ for (let i = 2; i < process.argv.length; i += 1) {
 const dataDir = path.resolve(args.get("data-dir") || "web/data");
 const output = path.resolve(args.get("output") || "/tmp/external-historical-samples.sql");
 const replace = args.get("replace") === "true";
+const requestedLeagues = new Set(String(args.get("leagues") || args.get("league") || "").split(",").map((item) => item.trim()).filter(Boolean));
 const files = fs.readdirSync(dataDir)
   .filter((name) => /^externalHistoricalSamples.*\.js$/.test(name))
   .sort();
@@ -23,9 +24,25 @@ for (const file of files) {
   vm.runInContext(fs.readFileSync(path.join(dataDir, file), "utf8"), sandbox, { filename: file });
 }
 
-const rows = Array.isArray(sandbox.window.WC_EXTERNAL_HISTORICAL_SAMPLES)
+const allRows = Array.isArray(sandbox.window.WC_EXTERNAL_HISTORICAL_SAMPLES)
   ? sandbox.window.WC_EXTERNAL_HISTORICAL_SAMPLES
   : [];
+
+const targetPrimaryLeagues = new Set(["美职", "巴西甲"]);
+const primarySourcePattern = /^(500\.com|okooo)/i;
+const primaryCountByLeague = new Map();
+allRows.forEach((row) => {
+  const league = String(row.league || "").trim();
+  if (targetPrimaryLeagues.has(league) && primarySourcePattern.test(String(row.source || row.dataSource || ""))) {
+    primaryCountByLeague.set(league, (primaryCountByLeague.get(league) || 0) + 1);
+  }
+});
+const rows = allRows.filter((row) => {
+  const league = String(row.league || "").trim();
+  if (requestedLeagues.size && !requestedLeagues.has(league)) return false;
+  if (!targetPrimaryLeagues.has(league) || (primaryCountByLeague.get(league) || 0) < 100) return true;
+  return primarySourcePattern.test(String(row.source || row.dataSource || ""));
+});
 
 const text = (value) => String(value ?? "").trim();
 const number = (value) => {

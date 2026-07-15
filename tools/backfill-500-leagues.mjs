@@ -7,7 +7,11 @@ const requested = new Set(String(process.argv[3] || "挪超,瑞超").split(",").
 const configs = [
   { league: "挪超", sourceLeague: "挪威超级联赛", seasons: [{ id: 19507, season: "2026", rounds: 30 }, { id: 9059, season: "2025", rounds: 30 }] },
   { league: "瑞超", sourceLeague: "瑞典超级联赛", seasons: [{ id: 19501, season: "2026", rounds: 30 }, { id: 7376, season: "2025", rounds: 30 }] },
+  { league: "美职", sourceLeague: "美国职业大联盟", seasons: [{ id: 19471, season: "2026", rounds: 34 }] },
+  { league: "巴西甲", sourceLeague: "巴西甲级联赛", seasons: [{ id: 19498, season: "2026", rounds: 38 }] },
 ].filter((item) => requested.has(item.league));
+
+if (!configs.length) throw new Error(`No supported leagues requested: ${[...requested].join(",")}`);
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -36,8 +40,9 @@ const samples = context.window.WC_EXTERNAL_HISTORICAL_SAMPLES || [];
 const report = [];
 
 for (const config of configs) {
-  const known = new Set(samples.filter((sample) => sample.league === config.league).map((sample) => `${String(sample.kickoffTime).slice(0, 10)}|${sample.homeTeam}|${sample.awayTeam}`));
-  const completeExisting = samples.filter((sample) => sample.league === config.league && [sample.euroHomeOdds, sample.euroDrawOdds, sample.euroAwayOdds, sample.asianHandicap, sample.actualHomeGoals, sample.actualAwayGoals].every(Number.isFinite));
+  const sourceSamples = samples.filter((sample) => sample.league === config.league && sample.source === "500.com");
+  const known = new Set(sourceSamples.map((sample) => `${String(sample.kickoffTime).slice(0, 10)}|${sample.homeTeam}|${sample.awayTeam}`));
+  const completeExisting = sourceSamples.filter((sample) => [sample.euroHomeOdds, sample.euroDrawOdds, sample.euroAwayOdds, sample.asianHandicap, sample.actualHomeGoals, sample.actualAwayGoals].every(Number.isFinite));
   const needed = Math.max(0, target - completeExisting.length);
   const rows = [];
   for (const season of config.seasons) {
