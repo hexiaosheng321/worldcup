@@ -5437,6 +5437,12 @@ body::before {
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 26px 90px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(18px);
+  cursor: pointer;
+}
+
+.home-countdown-card:focus-visible {
+  outline: 3px solid rgba(217, 154, 22, 0.8);
+  outline-offset: 4px;
 }
 
 .home-countdown-card::before {

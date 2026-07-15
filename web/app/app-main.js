@@ -168,6 +168,12 @@ document.querySelector(".home-screen")?.addEventListener("click", (event) => {
   openMatchPage(card.dataset.homeMatchNo);
 });
 
+document.querySelector(".home-countdown-card")?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  event.currentTarget.click();
+});
+
 document.querySelector("#sporttery-pool")?.addEventListener("click", (event) => {
   const viewButton = event.target.closest("[data-pool-view]");
   if (viewButton) {

@@ -1379,6 +1379,19 @@ function homeUpcomingMatches() {
     .sort((a, b) => a.date.localeCompare(b.date) || Number(a.no) - Number(b.no));
 }
 
+function homeSportteryItem(match = {}) {
+  const hasSportteryIdentity = Boolean(
+    match.sportteryOnly ||
+    match.sportteryKey ||
+    match.matchId ||
+    match.cloudMatchId ||
+    /^sporttery/i.test(match.source || "")
+  );
+  if (!hasSportteryIdentity) return null;
+  const lookupKey = match.sportteryKey || match.matchId || match.cloudMatchId || sportteryItemKey(match);
+  return findSportteryItemByKey(lookupKey) || match;
+}
+
 function sportteryWorldCupFlowMatches(dateSet = new Set()) {
   return (oddsData.matches || [])
     .filter((item) => /世界杯|world\s*cup/i.test(item.league || item.competition || ""))
@@ -1503,16 +1516,31 @@ function flagForTeam(team) {
 
 function renderHomeCountdown() {
   const next = homeCountdownCandidates()[0];
+  const countdownCard = document.querySelector(".home-countdown-card");
   const nextMatch = document.querySelector("#home-next-match");
   const nextHour = document.querySelector("#home-countdown-hour");
   const nextMinute = document.querySelector("#home-countdown-minute");
   const nextSecond = document.querySelector("#home-countdown-second");
   if (!next) {
+    countdownCard?.removeAttribute("data-home-sporttery-key");
+    countdownCard?.removeAttribute("data-home-match-no");
     if (nextMatch) nextMatch.textContent = "- vs -";
     if (nextHour) nextHour.textContent = "00";
     if (nextMinute) nextMinute.textContent = "00";
     if (nextSecond) nextSecond.textContent = "00";
     return;
+  }
+
+  const sportteryItem = homeSportteryItem(next);
+  if (countdownCard) {
+    countdownCard.removeAttribute("data-home-sporttery-key");
+    countdownCard.removeAttribute("data-home-match-no");
+    if (sportteryItem) {
+      countdownCard.dataset.homeSportteryKey = encodeURIComponent(sportteryItem.sportteryKey || sportteryItemKey(sportteryItem));
+    } else if (next.no) {
+      countdownCard.dataset.homeMatchNo = next.no;
+    }
+    countdownCard.setAttribute("aria-label", `查看${next.home}对${next.away}锁版详情`);
   }
 
   const diff = formatCountdownDuration(next.kickoffAt - Date.now());
@@ -1772,13 +1800,14 @@ function renderHome() {
   grid.innerHTML = upcoming
     .slice(0, 6)
     .map((match) => {
+      const sportteryItem = homeSportteryItem(match);
       const kickoffAt = matchKickoffAt(match);
-      const liveStatus = match.sportteryOnly ? homeSportteryStatus(match) : liveStatusForMatch(match);
+      const liveStatus = sportteryItem ? homeSportteryStatus(sportteryItem) : liveStatusForMatch(match);
       const effectiveKickoffAt = liveStatus.kickoffAt || kickoffAt;
       const groupLabel = match.sportteryOnly ? match.group || "竞彩" : `${match.group} 组`;
-      const hasPrediction = match.sportteryOnly ? sportteryPredictionForItem(match) : latestPredictionFor(match.no);
-      const cardTarget = match.sportteryOnly
-        ? `data-home-sporttery-key="${encodeURIComponent(match.sportteryKey || sportteryItemKey(match))}"`
+      const hasPrediction = sportteryItem ? sportteryPredictionForItem(sportteryItem) : latestPredictionFor(match.no);
+      const cardTarget = sportteryItem
+        ? `data-home-sporttery-key="${encodeURIComponent(sportteryItem.sportteryKey || sportteryItemKey(sportteryItem))}"`
         : `data-home-match-no="${match.no}"`;
       const kickoffLabel = effectiveKickoffAt
         ? new Date(effectiveKickoffAt).toLocaleTimeString("zh-CN", {
@@ -7165,6 +7194,12 @@ document.querySelector(".home-screen")?.addEventListener("click", (event) => {
     return;
   }
   openMatchPage(card.dataset.homeMatchNo);
+});
+
+document.querySelector(".home-countdown-card")?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  event.currentTarget.click();
 });
 
 document.querySelector("#sporttery-pool")?.addEventListener("click", (event) => {
