@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { evaluateLock } from "../web/functions/api/lib/utils.js";
+import { evaluateLock, rowToCase } from "../web/functions/api/lib/utils.js";
 import { caseDiagnosticPayload, upgradeNoteFromCase } from "../web/functions/api/[[path]].js";
 
 const lock = {
@@ -88,5 +88,20 @@ const incompleteNote = upgradeNoteFromCase(lock, result, review, "case-partial",
 assert.equal(incompleteNote.triggerType, "DATA_QUALITY_OBSERVATION");
 assert.equal(incompleteNote.status, "OPEN");
 assert.ok(!incompleteNote.title.includes("命中样本沉淀"));
+
+const exposedCase = rowToCase({
+  case_id: "case-test",
+  source_lock_id: "test-lock",
+  match_id: "test-match",
+  hit_status: "VOID",
+  payload_json: JSON.stringify(failedShadowPayload),
+  failure_tags_json: "[]",
+  success_tags_json: "[]",
+});
+assert.equal(exposedCase.betOutcome, "VOID");
+assert.equal(exposedCase.learningEligibility, "SHADOW_AUDIT");
+assert.equal(exposedCase.modelAudit.status, "FAIL");
+assert.equal(exposedCase.failureMode, failedShadowPayload.failureMode);
+assert.equal(exposedCase.seasonLearning.mode, "CHALLENGER_SHADOW");
 
 console.log("Review learning tests passed.");

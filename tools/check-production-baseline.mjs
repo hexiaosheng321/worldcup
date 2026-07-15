@@ -219,6 +219,9 @@ if (missingUnifiedPredictionMarkers.length) {
 for (const marker of ["betOutcome", "modelAudit", "SHADOW_AUDIT", "SHADOW_OBSERVATION", "四组件全部命中"]) {
   if (!api.includes(marker) && !reviewEngine.includes(marker)) throw new Error(`Production baseline missing self-learning review marker: ${marker}`);
 }
+for (const marker of ["learningEligibility", "probabilityMetrics", "failureMode", "seasonLearning", "diagnosisSummary"]) {
+  if (!fs.readFileSync("web/functions/api/lib/utils.js", "utf8").includes(marker)) throw new Error(`Production baseline missing Case API self-learning field: ${marker}`);
+}
 for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "independent handicap probabilities", "independent handicap probability leader", "independent score probabilities", "independent total-goals probabilities", "jointly compatible direction and handicap pair", "complete non-market fundamentals"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing mandatory FINAL_LOCK gate: ${marker}`);
 }
