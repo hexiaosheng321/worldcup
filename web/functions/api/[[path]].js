@@ -4423,7 +4423,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const pool = cases
         .filter((item) => String(item.matchId) !== String(current.matchId))
         .filter((item) => normalizeCompetition(item.league) === normalizeCompetition(current.league))
-        .filter((item) => ["HIGH", "MEDIUM"].includes(item.dataQuality || "MEDIUM"))
+        .filter((item) => ["A", "B", "HIGH", "MEDIUM"].includes(String(item.dataQuality || "MEDIUM").toUpperCase()))
         .map((item) => ({ ...item, similarityScore: similarity(current, item) }))
         .filter((item) => item.similarityScore >= (current.threshold ?? 65))
         .sort((a, b) => b.similarityScore - a.similarityScore)

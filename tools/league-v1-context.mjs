@@ -80,9 +80,40 @@ function dedupeSamples(samples = []) {
   samples.forEach((sample) => {
     const key = sampleKey(sample);
     const existing = byKey.get(key);
-    if (!existing || String(sample.source || "").includes("api-football")) byKey.set(key, sample);
+    const source = String(sample.source || "");
+    const preferred = source.includes("d1-base-case") || source.includes("api-football");
+    if (!existing || preferred) byKey.set(key, sample);
   });
   return [...byKey.values()];
+}
+
+function baseCaseToSample(item = {}) {
+  const actualHomeGoals = numberValue(item.actualHomeGoals);
+  const actualAwayGoals = numberValue(item.actualAwayGoals);
+  const odds = [item.sportteryHomeSp, item.sportteryDrawSp, item.sportteryAwaySp].map(numberValue);
+  const quality = String(item.dataQuality || "").toUpperCase();
+  if (!item.league || !item.homeTeam || !item.awayTeam || !item.kickoffTime) return null;
+  if (actualHomeGoals === null || actualAwayGoals === null || odds.some((value) => value === null || value <= 1)) return null;
+  if (!["A", "B", "HIGH", "MEDIUM"].includes(quality)) return null;
+  return {
+    league: item.league,
+    kickoffTime: item.kickoffTime,
+    homeTeam: item.homeTeam,
+    awayTeam: item.awayTeam,
+    actualHomeGoals,
+    actualAwayGoals,
+    score: `${actualHomeGoals}-${actualAwayGoals}`,
+    sportteryHomeSp: odds[0],
+    sportteryDrawSp: odds[1],
+    sportteryAwaySp: odds[2],
+    asianHandicap: numberValue(item.asianHandicap),
+    source: "d1-base-case",
+    caseId: item.caseId || "",
+    sourceLockId: item.sourceLockId || "",
+    modelVersion: item.modelVersion || "",
+    recommendation: item.recommendation || "",
+    dataQuality: quality,
+  };
 }
 
 function resultForTeam(sample = {}, team = "") {
@@ -142,17 +173,17 @@ export async function loadExternalSamples(filePath) {
   const content = await fs.readFile(filePath, "utf8");
   const localSamples = extractWindowJson(content, "window\\.WC_EXTERNAL_HISTORICAL_SAMPLES") || [];
   const apiBase = String(process.env.PUBLIC_API_BASE || "https://ticai-model.com").replace(/\/$/, "");
-  try {
-    const response = await fetch(`${apiBase}/api/historical-samples/rolling?limit=1000`, {
-      headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!response.ok) return localSamples;
-    const payload = await response.json();
-    return dedupeSamples([...localSamples, ...(Array.isArray(payload?.samples) ? payload.samples : [])]);
-  } catch {
-    return localSamples;
-  }
+  const request = (endpoint) => fetch(`${apiBase}${endpoint}`, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(12000),
+  }).then(async (response) => response.ok ? response.json() : null).catch(() => null);
+  const [rollingPayload, casesPayload] = await Promise.all([
+    request("/api/historical-samples/rolling?limit=1000"),
+    request("/api/cases"),
+  ]);
+  const rollingSamples = Array.isArray(rollingPayload?.samples) ? rollingPayload.samples : [];
+  const baseCaseSamples = (Array.isArray(casesPayload?.cases) ? casesPayload.cases : []).map(baseCaseToSample).filter(Boolean);
+  return dedupeSamples([...localSamples, ...rollingSamples, ...baseCaseSamples]);
 }
 
 export async function loadSportterySpHistory(filePath) {

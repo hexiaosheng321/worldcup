@@ -661,7 +661,14 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     || scores.find((row) => scoreResult(row) === selectedDirection && coversSelectedTotal(row))
     || scores.find((row) => scoreResult(row) === selectedDirection)
     || scores[0];
-  counterScore = counterCandidates.find(coversSelectedTotal)
+  const selectedOppositeDirection = selectedDirection === "HOME" ? "AWAY" : selectedDirection === "AWAY" ? "HOME" : null;
+  const selectedOppositeProbability = selectedOppositeDirection ? probabilities[resultLabels.indexOf(selectedOppositeDirection)] : 0;
+  const selectedOppositeScore = selectedOppositeDirection && selectedOppositeProbability >= 0.12
+    ? scores.find((row) => scoreResult(row) === selectedOppositeDirection && coversSelectedTotal(row))
+      || scores.find((row) => scoreResult(row) === selectedOppositeDirection)
+    : null;
+  counterScore = selectedOppositeScore
+    || counterCandidates.find(coversSelectedTotal)
     || counterCandidates[0]
     || scores.find((row) => row.score !== mainScore.score && coversSelectedTotal(row))
     || scores.find((row) => row.score !== mainScore.score);

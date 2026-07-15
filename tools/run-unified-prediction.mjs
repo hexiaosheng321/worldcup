@@ -138,6 +138,7 @@ const result = runUnifiedPrediction({
 result.sourceContext = {
   sportteryCapturedAt: oddsData.updatedAt || "",
   rollingSamplesIncluded: samples.filter((sample) => sample.source === "completed-match-auto").length,
+  baseCasesIncluded: samples.filter((sample) => sample.source === "d1-base-case").length,
   researchEvidencePath: evidencePath,
   researchTemplatePath: evidencePath ? "" : templatePath,
 };

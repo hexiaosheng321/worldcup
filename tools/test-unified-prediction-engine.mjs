@@ -42,6 +42,8 @@ assert.equal(final.modelLessons.counterScriptDiverges, true);
 assert.ok(final.modelLessons.counterPathRisk > 0);
 assert.equal(final.scenarioSet[1].role, "COUNTER_PATH");
 assert.ok(final.scenarioSet[1].directionProbability > 0);
+if (final.finalDecision.recommendationSide === "HOME") assert.equal(final.scenarioSet[1].direction, "AWAY");
+if (final.finalDecision.recommendationSide === "AWAY") assert.equal(final.scenarioSet[1].direction, "HOME");
 assert.equal(final.finalDecision.confidenceAdjustments.counterPathRisk, -final.modelLessons.counterPathRisk);
 assert.ok(final.featureSet.leagueProfile.opennessFactor > 0);
 assert.ok(Number.isFinite(final.featureSet.venueProfile.homeAttackVariance));

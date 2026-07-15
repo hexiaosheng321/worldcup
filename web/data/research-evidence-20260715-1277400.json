@@ -1,0 +1,194 @@
+{
+  "match": {
+    "matchId": "1277400",
+    "league": "世界杯",
+    "home": "英格兰",
+    "away": "阿根廷",
+    "kickoffTime": "2026-07-16 03:00"
+  },
+  "tieContext": {
+    "isTwoLeg": false,
+    "legNumber": null,
+    "aggregateHomeBeforeMatch": null,
+    "aggregateAwayBeforeMatch": null
+  },
+  "generatedAt": "2026-07-15T01:48:15Z",
+  "teamState": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "按体彩90分钟口径，英格兰本届六场4胜2平、进12失6，阿根廷六场4胜2平、进14失6；两队90分钟均未输球。英格兰淘汰赛连续三场被先进球或被追近，阿根廷近三场淘汰赛均失球且两次需要加时，双方都展示了逆境恢复能力，但常规时间控制力并不稳定。",
+    "capturedAt": "2026-07-15T01:48:15Z",
+    "observedAt": "2026-07-15T01:48:15Z",
+    "sources": [
+      {
+        "title": "FIFA World Cup 2026 fixtures and 90-minute results",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums"
+      },
+      {
+        "title": "FIFA Argentina road to the semi-finals",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/argentina-road-so-far"
+      },
+      {
+        "title": "FIFA England quarter-final report",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/articles/england-world-cup-quarter-final-wins"
+      }
+    ],
+    "impact": {
+      "home": -0.005,
+      "draw": 0.01,
+      "away": -0.005,
+      "xgHome": 0,
+      "xgAway": 0.02
+    },
+    "recentMatches": [
+      { "league": "世界杯", "kickoffTime": "2026-07-11", "homeTeam": "挪威", "awayTeam": "英格兰", "actualHomeGoals": 1, "actualAwayGoals": 1, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-05", "homeTeam": "墨西哥", "awayTeam": "英格兰", "actualHomeGoals": 2, "actualAwayGoals": 3, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-01", "homeTeam": "英格兰", "awayTeam": "刚果金", "actualHomeGoals": 2, "actualAwayGoals": 1, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-27", "homeTeam": "巴拿马", "awayTeam": "英格兰", "actualHomeGoals": 0, "actualAwayGoals": 2, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-23", "homeTeam": "英格兰", "awayTeam": "加纳", "actualHomeGoals": 0, "actualAwayGoals": 0, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-17", "homeTeam": "英格兰", "awayTeam": "克罗地亚", "actualHomeGoals": 4, "actualAwayGoals": 2, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-11", "homeTeam": "阿根廷", "awayTeam": "瑞士", "actualHomeGoals": 1, "actualAwayGoals": 1, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-07", "homeTeam": "阿根廷", "awayTeam": "埃及", "actualHomeGoals": 3, "actualAwayGoals": 2, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-03", "homeTeam": "阿根廷", "awayTeam": "佛得角", "actualHomeGoals": 2, "actualAwayGoals": 2, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-27", "homeTeam": "约旦", "awayTeam": "阿根廷", "actualHomeGoals": 1, "actualAwayGoals": 3, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-22", "homeTeam": "阿根廷", "awayTeam": "奥地利", "actualHomeGoals": 2, "actualAwayGoals": 0, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-16", "homeTeam": "阿根廷", "awayTeam": "阿尔及利亚", "actualHomeGoals": 3, "actualAwayGoals": 0, "source": "fifa-verified-90min" }
+    ]
+  },
+  "injuries": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "英格兰赖斯已从胃部不适中恢复并可首发，奥赖利也已恢复；夸安萨停赛，亨德森因手腕伤势缺阵。阿根廷赛前未列出确定缺阵或存疑球员。对英格兰轮换深度做小幅负向修正，不把已恢复的赖斯继续当作缺阵。",
+    "capturedAt": "2026-07-15T01:48:15Z",
+    "observedAt": "2026-07-15T01:48:15Z",
+    "sources": [
+      {
+        "title": "Sky Sports England squad update before Argentina",
+        "url": "https://www.skysports.com/football/news/12040/13563231/england-vs-argentina-declan-rice-fit-for-world-cup-semi-final-as-thomas-tuchels-squad-issues-begin-to-ease"
+      },
+      {
+        "title": "England vs Argentina injury and suspension list",
+        "url": "https://www.sportsmole.co.uk/football/england/world-cup-2026/team-news/england-vs-argentina-injury-suspension-list-predicted-xis--world-cup-2026_601148.html"
+      }
+    ],
+    "impact": {
+      "home": -0.01,
+      "draw": 0,
+      "away": 0.01,
+      "xgHome": -0.03,
+      "xgAway": 0
+    }
+  },
+  "expectedLineups": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "官方首发尚未公布。最新预测显示英格兰以皮克福德、斯通斯、格伊、赖斯、贝林厄姆、萨卡和凯恩为主框架；阿根廷延续马丁内斯、罗梅罗、利桑德罗、帕雷德斯、德保罗、恩佐、麦卡利斯特、梅西与阿尔瓦雷斯的结构。本层只验证可用性和结构，不把预测名单当成官方首发。",
+    "capturedAt": "2026-07-15T01:48:15Z",
+    "observedAt": "2026-07-15T01:48:15Z",
+    "sources": [
+      {
+        "title": "England vs Argentina predicted XIs",
+        "url": "https://www.sportsmole.co.uk/football/england/world-cup-2026/team-news/england-vs-argentina-injury-suspension-list-predicted-xis--world-cup-2026_601148.html"
+      },
+      {
+        "title": "England official final training and travel update",
+        "url": "https://www.englandfootball.com/articles/2026/Jul/14/england-men-world-cup-2026-daily-briefing"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  },
+  "motivation": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "世界杯单场半决赛，体彩只按90分钟赛果结算。英格兰争取队史第二次进入决赛，阿根廷争取连续第二届进入决赛并卫冕；平局可以把比赛带入加时，因此晋级目标不能直接等同于90分钟必须取胜。",
+    "capturedAt": "2026-07-15T01:48:15Z",
+    "observedAt": "2026-07-15T01:48:15Z",
+    "sources": [
+      {
+        "title": "FIFA England v Argentina semi-final preview",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/england-v-argentina-live-stream-team-news-tickets-and-more"
+      }
+    ],
+    "impact": {
+      "home": -0.0075,
+      "draw": 0.015,
+      "away": -0.0075,
+      "xgHome": -0.04,
+      "xgAway": -0.04
+    }
+  },
+  "weatherVenue": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "比赛在亚特兰大体育场进行，场馆配有可伸缩屋顶。锁版检索未发现延期、场地迁移或极端天气公告；天气风险由场馆条件缓冲，本层不对方向和进球作额外修正。",
+    "capturedAt": "2026-07-15T01:48:15Z",
+    "observedAt": "2026-07-15T01:48:15Z",
+    "sources": [
+      {
+        "title": "FIFA England v Argentina match venue",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/england-v-argentina-live-stream-team-news-tickets-and-more"
+      },
+      {
+        "title": "FIFA 2026 stadium weather-risk and roof reference",
+        "url": "https://d1wt9ys8kr8als.cloudfront.net/media/documents/2026_0605_1_Hour_EWP4WCC.pdf"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  },
+  "styleMatchup": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "英格兰依靠中场身体强度、贝林厄姆后插上、萨卡边路和凯恩支点推进，优势在转换与二点球；阿根廷由梅西在肋部组织，阿尔瓦雷斯拉开纵深，德保罗和恩佐维持中场连接。两队淘汰赛都多次先遇逆境再恢复，且近三场均有失球，主路径不能只写保守闷局；同时半决赛与高平局权重要求保留90分钟平局分支。",
+    "capturedAt": "2026-07-15T01:48:15Z",
+    "observedAt": "2026-07-15T01:48:15Z",
+    "sources": [
+      {
+        "title": "FIFA Bellingham and England tactical quarter-final review",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/jude-bellingham-england-norway-reaction"
+      },
+      {
+        "title": "FIFA Argentina resilience and tactical profile",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/resilience-argentina-greatest-weapon-switzerland"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0.005,
+      "away": -0.005,
+      "xgHome": 0.02,
+      "xgAway": 0.02
+    }
+  },
+  "marketNews": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "体彩409个有效快照显示胜平负由2.35/2.75/2.94变为2.38/2.70/2.95，主胜和客胜基本稳定、平局持续压低；-1让球由5.65/3.75/1.46变为5.75/3.83/1.44，总进球2球从2.90到2.95、3球从3.90到3.80。市场只作为校准层，不直接决定最终方向。",
+    "capturedAt": "2026-07-15T01:48:15Z",
+    "observedAt": "2026-07-15T01:48:15Z",
+    "sources": [
+      {
+        "title": "体彩模型当前比赛与D1 SP时间序列",
+        "url": "https://ticai-model.com/#sporttery-match-id-1277400"
+      }
+    ],
+    "impact": {
+      "home": -0.005,
+      "draw": 0.01,
+      "away": -0.005,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  }
+}
