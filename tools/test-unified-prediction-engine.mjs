@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { RESEARCH_KEYS, handicapDecisionAudit, runUnifiedPrediction } from "./lib/unified-prediction-engine.mjs";
+import { RESEARCH_KEYS, handicapDecisionAudit, runUnifiedPrediction, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
+
+const sameDirectionCoverage = selectOfficialScores([
+  { score: "2-0", probability: 0.16 },
+  { score: "3-0", probability: 0.13 },
+  { score: "1-1", probability: 0.11 },
+]);
+assert.deepEqual(sameDirectionCoverage.map((row) => row.score), ["2-0", "3-0"]);
 
 const capturedAt = new Date().toISOString();
 const research = Object.fromEntries(RESEARCH_KEYS.map((key) => [key, {
@@ -38,13 +45,17 @@ assert.equal(final.lockType, "FINAL_LOCK");
 assert.deepEqual(final.gateResult.blockers, []);
 assert.equal(final.tenStepResult.steps.length, 10);
 assert.equal(final.tenStepResult.passed, true);
-assert.equal(final.modelLessons.counterScriptDiverges, true);
+assert.equal(final.modelLessons.scoreCoverageOptimized, true);
 assert.ok(final.modelLessons.counterPathRisk > 0);
-assert.equal(final.scenarioSet[1].role, "COUNTER_PATH");
+assert.equal(final.scenarioSet[1].role, "SECONDARY_COVERAGE_PATH");
 assert.ok(final.scenarioSet[1].directionProbability > 0);
-if (final.finalDecision.recommendationSide === "HOME") assert.equal(final.scenarioSet[1].direction, "AWAY");
-if (final.finalDecision.recommendationSide === "AWAY") assert.equal(final.scenarioSet[1].direction, "HOME");
+if (final.finalDecision.recommendationSide === "HOME") assert.equal(final.riskScenario.direction, "AWAY");
+if (final.finalDecision.recommendationSide === "AWAY") assert.equal(final.riskScenario.direction, "HOME");
 assert.equal(final.finalDecision.confidenceAdjustments.counterPathRisk, -final.modelLessons.counterPathRisk);
+assert.equal(final.finalDecision.confidenceAdjustments.riskPathRisk, -final.modelLessons.riskPathRisk);
+assert.equal(final.riskScenario.role, "INDEPENDENT_RISK_PATH");
+assert.equal(final.riskScenario.occupiesOfficialScoreSlot, false);
+assert.equal(final.finalDecision.riskScenario, final.riskScenario.score);
 assert.ok(final.featureSet.leagueProfile.opennessFactor > 0);
 assert.ok(Number.isFinite(final.featureSet.venueProfile.homeAttackVariance));
 assert.equal(final.featureSet.handicap.components.length >= 2, true);
@@ -55,15 +66,19 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
-assert.equal(final.modelLessons.version, "LESSONS_2026-07-15_SELF_LEARNING_R4");
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-15_SCORE_COVERAGE_R5");
 assert.equal(final.gateResult.gates.oppositeWinPathChecked, true);
 assert.equal(final.gateResult.gates.secondScenarioInProbability, true);
 assert.equal(final.gateResult.gates.twoLegContextComplete, true);
 assert.equal(final.featureSet.scenarioDirectionCalibration.weight, 0.2);
 assert.equal(final.featureSet.scenarioDirectionCalibration.applied, true);
-assert.equal(final.featureSet.seasonLearning.mode, "CHALLENGER_SHADOW");
-assert.equal(final.featureSet.seasonLearning.appliedToChampion, false);
+assert.equal(final.featureSet.seasonLearning.mode, "BOUNDED_SCORE_CALIBRATION");
+assert.equal(final.featureSet.seasonLearning.appliedToChampion, true);
+assert.equal(final.featureSet.seasonLearning.appliedScope, "SCORE_DISTRIBUTION_ONLY");
 assert.equal(final.featureSet.seasonLearning.season, "2026");
+assert.ok(final.featureSet.score.components.some((part) => part.label === "league-season-score-calibration"));
+assert.equal(final.featureSet.score.selectionPolicy, "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY");
+assert.deepEqual(final.finalDecision.scores, final.featureSet.score.topCandidates.slice(0, 2).map((row) => row.score));
 assert.equal(final.modelLessons.seasonSpecific.season, "2026");
 assert.ok(final.backtestContract.metrics.includes("winDrawLoseSingleHit"));
 assert.ok(final.backtestContract.metrics.includes("handicapSingleHit"));
@@ -73,6 +88,8 @@ assert.equal(final.modelLessons.leagueSpecific.league, "韩职");
 assert.equal(final.featureSet.leagueLearning.version, "KLEAGUE_2026-07-12_R1");
 assert.equal(final.gateResult.gates.scenarioTotalsCovered, true);
 assert.equal(final.gateResult.gates.scenarioHandicapCovered, true);
+assert.equal(final.gateResult.gates.scoreCoverageOptimized, true);
+assert.equal(final.gateResult.gates.riskScenarioAvailable, true);
 assert.equal(final.finalDecision.confidenceAdjustments.leagueLearning, -2);
 assert.equal(Object.keys(final.finalDecision.confidenceComponents).length, 4);
 assert.ok(final.finalDecision.confidenceComponents.handicap > 0);
@@ -80,7 +97,7 @@ assert.equal(final.lifecycleContract.champion, "UNIFIED_PREDICTION_V4");
 assert.equal(final.scenarioSet[0].handicapResult, final.finalDecision.handicapPick);
 assert.equal(Object.keys(final.featureSet.handicap.probabilities).length, 3);
 assert.equal(Object.keys(final.featureSet.totals.probabilities).length >= 2, true);
-assert.notEqual(final.scenarioSet[0].score.split("-")[0] > final.scenarioSet[0].score.split("-")[1], final.scenarioSet[1].score.split("-")[0] > final.scenarioSet[1].score.split("-")[1]);
+assert.equal(new Set(final.finalDecision.scores).size, 2);
 
 const materialHandicapConflict = handicapDecisionAudit([
   { label: "让胜", probability: 0.552 },
@@ -97,6 +114,8 @@ assert.ok(blocked.gateResult.blockers.includes("preMatchResearch"));
 const thinFundamentals = runUnifiedPrediction({ ...context, samples: samples.filter((_, index) => index < 4) }, { lockType: "FINAL_LOCK" });
 assert.equal(thinFundamentals.lockType, "PRE_LOCK");
 assert.ok(thinFundamentals.gateResult.blockers.includes("fundamentalData"));
+assert.equal(thinFundamentals.featureSet.seasonLearning.appliedToChampion, false);
+assert.ok(!thinFundamentals.featureSet.score.components.some((part) => part.label === "league-season-score-calibration"));
 
 for (const [league, version, penalty] of [
   ["韩职", "KLEAGUE_2026-07-12_R1", 2],

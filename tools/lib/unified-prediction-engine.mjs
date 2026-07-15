@@ -97,6 +97,14 @@ function seasonLearningContext(samples = [], match = {}, beforeDate = "") {
   });
   const seasonStats = stats(seasonRows);
   const recentStats = stats(recentRows);
+  const recentScoreWeights = new Map();
+  recentRows.forEach((row, index) => {
+    const key = `${row.score.home}-${row.score.away}`;
+    const recencyWeight = 1 + (recentRows.length - index - 1) / Math.max(1, recentRows.length) * 0.25;
+    recentScoreWeights.set(key, (recentScoreWeights.get(key) || 0) + recencyWeight);
+  });
+  const recentScoreWeightTotal = [...recentScoreWeights.values()].reduce((sum, value) => sum + value, 0) || 1;
+  const scoreCalibrationEligible = seasonRows.length >= 30 && recentRows.length >= 15;
   const deltas = {
     homeWinRate: round(recentStats.homeWinRate - seasonStats.homeWinRate),
     drawRate: round(recentStats.drawRate - seasonStats.drawRate),
@@ -115,14 +123,21 @@ function seasonLearningContext(samples = [], match = {}, beforeDate = "") {
   return {
     league: match.league || "通用",
     season,
-    mode: "CHALLENGER_SHADOW",
-    appliedToChampion: false,
+    mode: scoreCalibrationEligible ? "BOUNDED_SCORE_CALIBRATION" : "CHALLENGER_SHADOW",
+    appliedToChampion: scoreCalibrationEligible,
+    appliedScope: scoreCalibrationEligible ? "SCORE_DISTRIBUTION_ONLY" : "NONE",
     seasonStats,
     recentWindow: { size: 30, ...recentStats },
     deltas,
     narrative,
-    eligibleForCalibrationReview: seasonRows.length >= 30 && recentRows.length >= 15,
-    promotionPolicy: "仅当胜平负单选、让球单选、总进球双选、比分双选和概率损失在样本外同时不退化时升级Champion",
+    scoreCalibration: {
+      eligible: scoreCalibrationEligible,
+      weight: scoreCalibrationEligible ? 0.12 : 0,
+      sampleCount: recentRows.length,
+      probabilities: Object.fromEntries([...recentScoreWeights.entries()].map(([score, value]) => [score, round(value / recentScoreWeightTotal)])),
+    },
+    eligibleForCalibrationReview: scoreCalibrationEligible,
+    promotionPolicy: "当前赛季至少30场后仅以12%上限校准比分分布；胜平负、让球和总进球仍须通过样本外不退化验证后才能扩大权重",
   };
 }
 
@@ -351,13 +366,17 @@ function historicalScoreDistribution(samples, currentMarket) {
   return { sampleCount, probabilities: normalizedMap([...weighted.entries()]) };
 }
 
-function blendScoreDistribution(scoreRows, marketRows, historical) {
+function blendScoreDistribution(scoreRows, marketRows, historical, seasonLearning = {}) {
   const base = normalizedMap(scoreRows.map((row) => [row.score, row.probability]));
   const market = scoreMarketDistribution(marketRows);
+  const season = normalizedMap(Object.entries(seasonLearning.scoreCalibration?.probabilities || {}));
   const parts = [
     { label: "fundamental-score-grid", weight: 0.7, probabilities: base },
     historical.sampleCount >= 10 ? { label: "historical-similar", weight: 0.2, probabilities: historical.probabilities } : null,
     market.size ? { label: "sporttery-score-calibration", weight: 0.1, probabilities: market } : null,
+    seasonLearning.scoreCalibration?.eligible && season.size
+      ? { label: "league-season-score-calibration", weight: seasonLearning.scoreCalibration.weight, probabilities: season }
+      : null,
   ].filter(Boolean);
   const keys = new Set(parts.flatMap((part) => [...part.probabilities.keys()]));
   const weightTotal = parts.reduce((sum, part) => sum + part.weight, 0);
@@ -392,6 +411,19 @@ function resultFromScores(rows) {
     rows.filter((row) => row.home === row.away).reduce((sum, row) => sum + row.probability, 0),
     rows.filter((row) => row.home < row.away).reduce((sum, row) => sum + row.probability, 0),
   ]);
+}
+
+export function selectOfficialScores(rows = []) {
+  const seen = new Set();
+  return [...rows]
+    .filter((row) => row && Number(row.probability) > 0 && row.score)
+    .sort((left, right) => Number(right.probability) - Number(left.probability))
+    .filter((row) => {
+      if (seen.has(row.score)) return false;
+      seen.add(row.score);
+      return true;
+    })
+    .slice(0, 2);
 }
 
 function twoLegContextAudit(context = {}, motivationSummary = "") {
@@ -595,7 +627,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const poissonScores = applyLeagueScoreLearning(scoreGrid(xg), leagueLearning, learningSignals);
   const formBaseline = formProbabilities(xg.homeRows, xg.awayRows);
   const historicalScores = historicalScoreDistribution(samples, market);
-  const scoreModel = blendScoreDistribution(poissonScores, market.scoreOdds || [], historicalScores);
+  const scoreModel = blendScoreDistribution(poissonScores, market.scoreOdds || [], historicalScores, seasonLearning);
   const scores = scoreModel.rows;
   // V4 stable contract: all four markets share one joint score distribution.
   // Sporttery prices calibrate at a bounded weight and never replace missing fundamentals.
@@ -607,15 +639,9 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const weightTotal = baselineParts.reduce((sum, part) => sum + part.weight, 0);
   const baselineProbabilities = normalizeProbabilities(resultLabels.map((_, index) => baselineParts.reduce((sum, part) => sum + part.values[index] * part.weight, 0) / weightTotal));
   const preScenarioProbabilities = normalizeProbabilities(baselineProbabilities.map((value, index) => value + [research.adjustment.home, research.adjustment.draw, research.adjustment.away][index] * 0.25 + tieAudit.ninetyMinuteAdjustment[index]));
-  const preliminaryLeader = resultLabels[preScenarioProbabilities.indexOf(Math.max(...preScenarioProbabilities))];
-  let mainScore = scores.find((row) => scoreResult(row) === preliminaryLeader) || scores[0];
-  const oppositeDirection = preliminaryLeader === "HOME" ? "AWAY" : preliminaryLeader === "AWAY" ? "HOME" : null;
-  const oppositeDirectionProbability = oppositeDirection ? preScenarioProbabilities[resultLabels.indexOf(oppositeDirection)] : 0;
-  const oppositeScore = oppositeDirection ? scores.find((row) => scoreResult(row) === oppositeDirection) : null;
-  let counterScore = oppositeScore && oppositeDirectionProbability >= 0.12
-    ? oppositeScore
-    : scores.find((row) => scoreResult(row) !== scoreResult(mainScore)) || scores[1];
-  let topScores = [mainScore, counterScore].filter(Boolean);
+  // The two official exact-score picks maximize cumulative coverage from the
+  // calibrated joint distribution. They may share the same W/D/L direction.
+  const topScores = selectOfficialScores(scores);
   const scenarioDirectionProbabilities = resultFromScores(topScores);
   const probabilities = normalizeProbabilities(preScenarioProbabilities.map((value, index) => value * 0.8 + scenarioDirectionProbabilities[index] * 0.2));
   const rankedResults = resultLabels.map((label, index) => ({ label, text: resultText[label], probability: probabilities[index] })).sort((a, b) => b.probability - a.probability);
@@ -654,28 +680,12 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const jointResolutionApplied = selectedDirection !== independentDirectionLeader || handicapPick !== independentHandicapLeader;
   const selectedTotalKeys = String(totalModel.pick || "").match(/(?:[0-6]|7\+)/g) || [];
   const coversSelectedTotal = (row) => selectedTotalKeys.includes(row.home + row.away >= 7 ? "7+" : String(row.home + row.away));
-  const mainCandidates = scores.filter((row) => scoreResult(row) === selectedDirection && handicapResult(row, match.handicap) === handicapPick);
-  const counterCandidates = scores.filter((row) => scoreResult(row) !== selectedDirection);
-  mainScore = mainCandidates.find(coversSelectedTotal)
-    || mainCandidates[0]
-    || scores.find((row) => scoreResult(row) === selectedDirection && coversSelectedTotal(row))
-    || scores.find((row) => scoreResult(row) === selectedDirection)
-    || scores[0];
-  const selectedOppositeDirection = selectedDirection === "HOME" ? "AWAY" : selectedDirection === "AWAY" ? "HOME" : null;
-  const selectedOppositeProbability = selectedOppositeDirection ? probabilities[resultLabels.indexOf(selectedOppositeDirection)] : 0;
-  const selectedOppositeScore = selectedOppositeDirection && selectedOppositeProbability >= 0.12
-    ? scores.find((row) => scoreResult(row) === selectedOppositeDirection && coversSelectedTotal(row))
-      || scores.find((row) => scoreResult(row) === selectedOppositeDirection)
-    : null;
-  counterScore = selectedOppositeScore
-    || counterCandidates.find(coversSelectedTotal)
-    || counterCandidates[0]
-    || scores.find((row) => row.score !== mainScore.score && coversSelectedTotal(row))
-    || scores.find((row) => row.score !== mainScore.score);
-  topScores = [mainScore, counterScore].filter(Boolean);
   handicapMapped = topScores.map((row) => ({ score: row.score, result: handicapResult(row, match.handicap) }));
   const scenarioTotalsCovered = topScores.some(coversSelectedTotal);
   const scenarioHandicapCovered = handicapMapped.some((row) => row.result === handicapPick);
+  const scoreCoverageOptimized = topScores.length === 2
+    && topScores.every((row, index) => row.score === scores[index]?.score)
+    && topScores[0].score !== topScores[1].score;
   const handicapIndependent = Boolean(handicapMarket && handicapParts.length >= 2 && rankedHandicap[0]?.probability > 0);
   const conflict = rankedResults[0].probability - rankedResults[1].probability < 0.06;
   const marketRanked = marketBaseline
@@ -687,14 +697,29 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const counterScriptDiverges = topScores.length === 2 && scoreResult(topScores[0]) !== scoreResult(topScores[1]);
   const oppositeWinPathChecked = !["HOME", "AWAY"].includes(selectedDirection)
     || Boolean(scores.find((row) => scoreResult(row) === (selectedDirection === "HOME" ? "AWAY" : "HOME")));
-  const secondScenarioInProbability = scenarioDirectionProbabilities[resultLabels.indexOf(scoreResult(counterScore))] > 0;
+  const secondScenarioInProbability = Boolean(topScores[1])
+    && scenarioDirectionProbabilities[resultLabels.indexOf(scoreResult(topScores[1]))] > 0;
   const selectedDirectionProbability = probabilities[resultLabels.indexOf(selectedDirection)] || 0;
-  const counterDirection = scoreResult(topScores[1]);
-  const counterDirectionProbability = probabilities[resultLabels.indexOf(counterDirection)] || 0;
-  const counterScoreProbability = Number(topScores[1]?.probability || 0);
-  const counterPathRisk = counterScriptDiverges
-    ? Math.min(12, Math.round(counterDirectionProbability * 12 + counterScoreProbability * 35))
+  const selectedOppositeDirection = selectedDirection === "HOME" ? "AWAY" : selectedDirection === "AWAY" ? "HOME" : null;
+  const selectedOppositeProbability = selectedOppositeDirection ? probabilities[resultLabels.indexOf(selectedOppositeDirection)] : 0;
+  const selectedOppositeScore = selectedOppositeDirection && selectedOppositeProbability >= 0.12
+    ? scores.find((row) => scoreResult(row) === selectedOppositeDirection && !topScores.some((official) => official.score === row.score))
+    : null;
+  const riskScore = selectedOppositeScore
+    || scores.find((row) => scoreResult(row) !== selectedDirection && !topScores.some((official) => official.score === row.score))
+    || scores.find((row) => !topScores.some((official) => official.score === row.score));
+  const riskDirection = scoreResult(riskScore);
+  const riskDirectionProbability = probabilities[resultLabels.indexOf(riskDirection)] || 0;
+  const riskScoreProbability = Number(riskScore?.probability || 0);
+  const riskScenarioAvailable = Boolean(riskScore && riskScoreProbability > 0);
+  const riskPathRisk = riskScenarioAvailable && riskDirection !== selectedDirection
+    ? Math.min(12, Math.round(riskDirectionProbability * 12 + riskScoreProbability * 35))
     : 0;
+  // Legacy names remain in the contract for old consumers, but now describe
+  // the independent risk scenario rather than the second official score.
+  const counterDirectionProbability = riskDirectionProbability;
+  const counterScoreProbability = riskScoreProbability;
+  const counterPathRisk = riskPathRisk;
   const newestHomeForm = xg.homeRows[0]?.date || "";
   const newestAwayForm = xg.awayRows[0]?.date || "";
   // The 2026 Eliteserien pauses across the World Cup window. Keep the normal
@@ -729,7 +754,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     { id: 4, key: "styleMatchup", title: "风格对位", score: research.items.find((item) => item.key === "styleMatchup")?.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "styleMatchup")?.complete) },
     { id: 5, key: "marketSamples", title: "盘口和样本", score: Math.round((normalOddsComplete ? 40 : 0) + Math.min(40, samples.length / 2) + (recentFormFresh ? 20 : 0)), passed: normalOddsComplete && samples.length >= 30 && recentFormFresh },
     { id: 6, key: "stateTransfer", title: "状态转移", score: movement.complete && research.items.find((item) => item.key === "marketNews")?.complete ? 100 : 0, passed: movement.complete && Boolean(research.items.find((item) => item.key === "marketNews")?.complete) },
-    { id: 7, key: "scoreTotals", title: "比分/总进球独立闸门", score: [scoreGate, scoreIndependent, totalsIndependent, counterScriptDiverges, scenarioTotalsCovered].filter(Boolean).length * 20, passed: scoreGate && scoreMarketComplete && totalsMarketComplete && scoreIndependent && totalsIndependent && counterScriptDiverges && scenarioTotalsCovered },
+    { id: 7, key: "scoreTotals", title: "比分/总进球独立闸门", score: [scoreGate, scoreIndependent, totalsIndependent, scoreCoverageOptimized, scenarioTotalsCovered].filter(Boolean).length * 20, passed: scoreGate && scoreMarketComplete && totalsMarketComplete && scoreIndependent && totalsIndependent && scoreCoverageOptimized && scenarioTotalsCovered },
     { id: 8, key: "handicapGate", title: "让球独立闸门", score: handicapIndependent ? 100 : 0, passed: handicapIndependent },
     { id: 9, key: "failureValue", title: "失败方式和值过滤", score: research.complete && drawOverrideJustified ? 100 : 0, passed: research.complete && drawOverrideJustified },
   ].map((step) => ({ ...step, score: round(step.score, 0) }));
@@ -751,7 +776,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     jointCompatibility,
     scenarioTotalsCovered,
     scenarioHandicapCovered,
-    counterScriptDiverges,
+    scoreCoverageOptimized,
+    riskScenarioAvailable,
     oppositeWinPathChecked,
     secondScenarioInProbability,
     twoLegContextComplete: tieAudit.complete,
@@ -766,7 +792,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const selectedTotalProbability = Math.max(...selectedTotalKeys.map((key) => Number(totalModel.probabilities.get(key) || 0)), 0);
   const selectedScenarioProbability = topScores.reduce((sum, row) => sum + Number(row.probability || 0), 0);
   const marketConfidenceBase = selectedDirectionProbability * 65 + selectedHandicapProbability * 20 + selectedTotalProbability * 10 + selectedScenarioProbability * 5;
-  const confidence = Math.round(Math.max(0, Math.min(100, marketConfidenceBase - counterPathRisk - leagueLearning.confidencePenalty - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
+  const confidence = Math.round(Math.max(0, Math.min(100, marketConfidenceBase - riskPathRisk - leagueLearning.confidencePenalty - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
   const advice = !allGatesPass ? "观察" : confidence >= 62 ? "主打" : confidence >= 55 ? "可选" : confidence >= 48 ? "谨慎" : "跳过";
   return {
     contractVersion: "UNIFIED_PREDICTION_V4",
@@ -802,22 +828,41 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         historicalSampleCount: handicapHistory.sampleCount,
         components: handicapParts.map((part) => ({ label: part.label, weight: part.weight })),
       },
-      score: { components: scoreModel.parts, historicalSampleCount: scoreModel.historicalSampleCount, marketComplete: scoreModel.marketComplete },
+      score: {
+        components: scoreModel.parts,
+        historicalSampleCount: scoreModel.historicalSampleCount,
+        marketComplete: scoreModel.marketComplete,
+        selectionVersion: "SCORE_COVERAGE_2026_R1",
+        selectionPolicy: "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+        officialCoverageProbability: round(selectedScenarioProbability),
+        topCandidates: scores.slice(0, 8).map((row) => ({ score: row.score, probability: round(row.probability), direction: scoreResult(row) })),
+      },
       totals: { probabilities: Object.fromEntries(totalModel.probabilities), components: totalModel.components, marketComplete: totalModel.marketComplete },
       jointDecision: { selected: resolvedPair, candidateCount: jointDecision.candidates.length, independentDirectionLeader, independentHandicapLeader, independentPairCompatible: independentPair.scoreProbability > 0, resolutionApplied: jointResolutionApplied, directionPreserved: selectedDirection === independentDirectionLeader, handicapDecisionAudit: handicapDecision, role: "CONDITIONAL_HANDICAP_EVIDENCE_AFTER_INDEPENDENT_CONFLICT" },
       scenarioDirectionCalibration: { weight: 0.2, preScenario: Object.fromEntries(resultLabels.map((label, index) => [label, round(preScenarioProbabilities[index])])), scenarioOnly: Object.fromEntries(resultLabels.map((label, index) => [label, round(scenarioDirectionProbabilities[index])])), applied: true },
     },
-    scenarioSet: topScores.map((row, index) => ({ rank: index + 1, score: row.score, probability: round(row.probability), direction: scoreResult(row), directionProbability: round(probabilities[resultLabels.indexOf(scoreResult(row))] || 0), handicapResult: handicapMapped[index]?.result, role: index === 0 ? "MAIN_PATH" : "COUNTER_PATH" })),
+    scenarioSet: topScores.map((row, index) => ({ rank: index + 1, score: row.score, probability: round(row.probability), direction: scoreResult(row), directionProbability: round(probabilities[resultLabels.indexOf(scoreResult(row))] || 0), handicapResult: handicapMapped[index]?.result, role: index === 0 ? "PRIMARY_COVERAGE_PATH" : "SECONDARY_COVERAGE_PATH" })),
+    riskScenario: riskScore ? {
+      score: riskScore.score,
+      probability: round(riskScoreProbability),
+      direction: riskDirection,
+      directionProbability: round(riskDirectionProbability),
+      handicapResult: handicapResult(riskScore, match.handicap),
+      role: "INDEPENDENT_RISK_PATH",
+      occupiesOfficialScoreSlot: false,
+    } : null,
     tenStepResult: { passed: tenStepPassed, steps: stepScores, averageScore: round(stepScores.reduce((sum, step) => sum + step.score, 0) / stepScores.length, 1) },
     gateResult: { passed: allGatesPass, gates, blockers: Object.entries(gates).filter(([, passed]) => !passed).map(([name]) => name) },
-    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["winDrawLoseSingleHit", "handicapSingleHit", "totalGoalsDoubleHit", "scoreDoubleHit", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", immutablePreMatchSnapshot: true },
-    lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "league-and-season shadow learning only; promote when four hit-rate components and out-of-sample probability losses do not regress" },
+    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["winDrawLoseSingleHit", "handicapSingleHit", "totalGoalsDoubleHit", "scoreDoubleHit", "officialScoreCoverageProbability", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", immutablePreMatchSnapshot: true, scorePolicies: ["LEGACY_MAIN_PLUS_COUNTER", "TOP_TWO_GLOBAL", "TOP_TWO_LEAGUE_SEASON_CALIBRATED"] },
+    lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "league score priors plus bounded current-season score calibration; expand weight only when four hit-rate components and out-of-sample probability losses do not regress" },
     modelLessons: {
-      version: "LESSONS_2026-07-15_SELF_LEARNING_R4",
+      version: "LESSONS_2026-07-15_SCORE_COVERAGE_R5",
       rules: [
         "让球不穿不得自动推翻胜平负方向",
         "最终方向按全部场景概率汇总，不按单一主比分决定",
-        "第二比分必须覆盖不同赛果方向",
+        "两个正式比分必须选择联赛与赛季校准后联合概率最高的两个落点，允许同一赛果方向",
+        "风险剧本必须独立记录，不得强占第二个正式比分名额",
+        "当前赛季至少30场后才允许以有上限权重校准比分分布，小样本只记录不校准",
         "明显市场热门改选平局至少需要两项独立量化证据",
         "状态、阵容和市场消息必须按各自新鲜度验收",
         "PRE_LOCK不计正式模型命中率",
@@ -826,18 +871,18 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "每队至少五场新鲜赛前比赛数据，缺失时进入DATA_REPAIR",
         "伤停和预计首发必须先搜索；未发布时只允许记录NOT_PUBLISHED、中性0并降低数据质量，不得虚构",
         "只有preferred FINAL_LOCK赛后结算才能生成并复用Base Case",
-        "第二路径必须进入最终方向概率和置信扣分，不得只作文字保险",
+        "两个正式比分共同进入方向概率；独立风险剧本只进入风险诊断和置信扣分",
         "联赛强弱差必须结合主队主场、客队客场的攻防均值与方差，并用联赛开放度校正xG",
         "四个市场必须共享联合比分分布并在锁版前交叉验证",
         "方向概率与净胜球概率必须分层，胜平负不得直接映射让球",
         "主队和客队的预期进球、零封和方差必须分别建模",
         "置信等级必须按联赛和市场回测校准，不得仅按通过闸门数量决定",
-        "第二比分必须是第二概率路径并进入方向和置信计算，不得固定为1-1",
-        "主选主胜或客胜时必须显式检查相反胜负的可验证路径，不能永远只用平局充当反向比分",
+        "第二正式比分必须是第二概率落点，不得固定为1-1或固定反向赛果",
+        "主选主胜或客胜时必须在独立风险剧本中显式检查相反胜负的可验证路径，不能永远只用平局充当风险",
         "第二比分按20%场景权重回灌胜平负概率并同步影响最终方向与置信等级",
         "两回合赛事必须结构化计算90分钟胜平负、本场净胜球差和总比分晋级状态，缺失时不得进入FINAL_LOCK",
         "跳过场不计正式投注命中率，但必须继续验票胜平负、让球、总进球和比分组件，禁止VOID被记为命中正样本",
-        "联赛与当前赛季叙事先进入Challenger影子学习，只有四项命中率和样本外概率损失不退化才允许升级Champion",
+        "联赛先验进入比分分布；当前赛季满30场后只允许12%有上限比分校准，扩大权重仍须四项命中率和样本外概率损失不退化",
         "最终让球若偏离独立概率第一项超过10个百分点，必须阻断FINAL_LOCK而不是由联合兼容强行覆盖",
       ],
       leagueSpecific: { league: match.league || "通用", version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, rules: leagueLearning.rules },
@@ -848,6 +893,11 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       counterPathRisk,
       counterDirectionProbability: round(counterDirectionProbability),
       counterScoreProbability: round(counterScoreProbability),
+      scoreCoverageOptimized,
+      officialScoreDirectionsDiverge: counterScriptDiverges,
+      riskPathRisk,
+      riskDirectionProbability: round(riskDirectionProbability),
+      riskScoreProbability: round(riskScoreProbability),
     },
     finalDecision: {
       winDrawLose: resultText[selectedDirection],
@@ -855,10 +905,12 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       handicapPick,
       totalGoalsPick: totalModel.pick,
       scores: topScores.map((row) => row.score),
+      scoreSelectionPolicy: "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+      riskScenario: riskScore?.score || "",
       matchType: matchType(topScores),
       confidence,
       confidenceComponents: { direction: round(selectedDirectionProbability), handicap: round(selectedHandicapProbability), totalGoals: round(selectedTotalProbability), scorePaths: round(selectedScenarioProbability) },
-      confidenceAdjustments: { counterPathRisk: -counterPathRisk, leagueLearning: -leagueLearning.confidencePenalty },
+      confidenceAdjustments: { riskPathRisk: -riskPathRisk, counterPathRisk: -counterPathRisk, leagueLearning: -leagueLearning.confidencePenalty },
       advice,
       conflict,
     },

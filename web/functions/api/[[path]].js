@@ -557,20 +557,27 @@ function scoreText(home, away) {
 }
 
 function scorePicksFromPayload(payload = {}) {
-  const text = [
-    payload.score,
-    payload.scorePick,
-    payload.scorePrediction,
-    payload.predictedScore,
+  const normalize = (items) => [...new Set((items.flatMap((item) => Array.isArray(item) ? item : [item])
+    .map((item) => String(item || ""))
+    .join(" / ")
+    .match(/\b\d+\s*[-:]\s*\d+\b/g) || [])
+    .map((item) => item.replace(/\s+/g, "").replace(":", "-")))];
+  const explicit = normalize([
     payload.predictedScores,
     payload.twoScores,
+    payload.scorePick,
     payload.mainScore,
     payload.counterScore,
+  ]);
+  if (explicit.length) return explicit.slice(0, 2);
+  return normalize([
+    payload.score,
+    payload.scorePrediction,
+    payload.predictedScore,
     payload.finalScore,
     payload.finalDecisionAction,
     payload.reasoningSummary,
-  ].map((item) => Array.isArray(item) ? item.join(" / ") : String(item || "")).join(" / ");
-  return [...new Set((text.match(/\b\d+\s*[-:]\s*\d+\b/g) || []).map((item) => item.replace(/\s+/g, "").replace(":", "-")))];
+  ]).slice(0, 2);
 }
 
 function totalGoalPickFromPayload(payload = {}) {
@@ -626,7 +633,11 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
     totalGoalsDoubleHit: "总进球双选失败",
     scoreDoubleHit: "比分双选失败",
   };
-  const seasonLearning = parseObject(parseObject(diagnosticSource.unifiedRunEvidence).seasonLearning);
+  const unifiedRunEvidence = parseObject(diagnosticSource.unifiedRunEvidence);
+  const seasonLearning = parseObject(unifiedRunEvidence.seasonLearning);
+  const independentRiskScenario = parseObject(diagnosticSource.independentRiskScenario || unifiedRunEvidence.riskScenario);
+  const scoreSelectionPolicy = firstText(diagnosticSource.scoreSelectionPolicy, diagnosticSource.finalDecision?.scoreSelectionPolicy);
+  const officialScoreCoverageProbability = Number(diagnosticSource.officialScoreCoverageProbability);
   const oddsMovement = oddsHistory.map((snapshot) => ({
     capturedAt: snapshot.captured_at,
     source: snapshot.source,
@@ -682,6 +693,9 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
     totalGoalsHit,
     predictedScores: scorePicks,
     scoreCovered,
+    scoreSelectionPolicy,
+    officialScoreCoverageProbability: Number.isFinite(officialScoreCoverageProbability) ? officialScoreCoverageProbability : null,
+    independentRiskScenario: independentRiskScenario.score ? independentRiskScenario : null,
     matchType: firstText(diagnosticSource.matchType, diagnosticSource.gameType, diagnosticSource.predictedMatchType),
     matchTypeHit: null,
     diagnosisSummary: modelAuditStatus === "PASS"
@@ -711,7 +725,7 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
   if (diagnosticPayload.modelAudit?.winDrawLoseSingleHit === false) recommendations.push("复查最终胜平负方向、反向脚本投票权和球队xG分配。");
   if (diagnosticPayload.handicapHit === false) recommendations.push("复查让球独立闸门，避免胜平负方向覆盖让球风险。");
   if (diagnosticPayload.totalGoalsHit === false) recommendations.push("复查总进球区间和半场触发脚本。");
-  if (diagnosticPayload.scoreCovered === false) recommendations.push("补充反向比分路径，避免两个比分落在同一比赛脚本。");
+  if (diagnosticPayload.scoreCovered === false) recommendations.push("复核两个正式比分的联合概率排序、双方进球分配和联赛赛季校准；独立风险剧本单独验票，不强占正式比分名额。");
   if (auditFailed && !recommendations.length) recommendations.push("复查相似案例、盘口偏差和风险排除层，确认是否需要降级规则。");
   if (auditIncomplete) recommendations.push("补齐缺失的玩法输出或赛果字段后重新验票，不得沉淀为正样本。");
   if (auditPassed && review.hitStatus === "VOID") recommendations.push("保留为联赛与赛季影子校准样本，不计正式推荐命中率。");
@@ -3920,11 +3934,13 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
   const researchText = (key) => String(items.find((item) => item.key === key)?.summary || "").trim();
   const decision = parseObject(runOutput.finalDecision);
   const scenarios = Array.isArray(runOutput.scenarioSet) ? runOutput.scenarioSet : [];
+  const riskScenario = parseObject(runOutput.riskScenario);
   const movement = parseObject(featureSet.oddsMovement);
   const handicapEvidence = parseObject(featureSet.handicap);
   const probabilities = parseObject(featureSet.probabilities);
   const scoreA = decision.scores?.[0] || scenarios[0]?.score || prediction.mainScore || "-";
   const scoreB = decision.scores?.[1] || scenarios[1]?.score || prediction.counterScore || "-";
+  const riskScore = riskScenario.score || decision.riskScenario || "-";
   const odds = Array.isArray(featureSet.market?.odds) ? featureSet.market.odds : [];
   const movementText = movement.complete
     ? `SP历史共${movement.snapshots || 0}个快照；开盘 ${movement.first?.h || "-"} / ${movement.first?.d || "-"} / ${movement.first?.a || "-"}，最新 ${movement.latest?.h || "-"} / ${movement.latest?.d || "-"} / ${movement.latest?.a || "-"}，变化幅度 ${movement.movementMagnitude ?? "-"}。${researchText("marketNews")}`
@@ -3936,7 +3952,7 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
   const marketText = odds.length === 3
     ? `当前胜平负SP ${odds.join(" / ")}；去水模型概率主胜 ${((Number(probabilities.HOME) || 0) * 100).toFixed(1)}%、平 ${((Number(probabilities.DRAW) || 0) * 100).toFixed(1)}%、客胜 ${((Number(probabilities.AWAY) || 0) * 100).toFixed(1)}%。`
     : "当前胜平负SP已由统一模型复核。";
-  const scenarioText = `情况一落点 ${scoreA}；情况二落点 ${scoreB}。结合球队状态、风格对位、盘口低位和赛事动机，第一球与半场前后的节奏决定比赛是否打开。`;
+  const scenarioText = `正式比分按校准后联合概率覆盖选择 ${scoreA} / ${scoreB}；独立风险剧本为 ${riskScore}。结合球队状态、风格对位、盘口低位和赛事动机，第一球与半场前后的节奏决定比赛是否打开。`;
   const handicapProbabilities = parseObject(handicapEvidence.probabilities);
   const handicapText = `让球独立模型：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；融合全比分矩阵、让球SP去水和${handicapEvidence.historicalSampleCount || 0}场相似历史分布。主比分${scoreA}只作校验，不生成让球结论。`;
   const finalText = `胜平负 ${decision.winDrawLose || prediction.pick || "-"}；让球 ${decision.handicapPick || prediction.handicapPick || "-"}；总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}；比分 ${scoreA} / ${scoreB}；类型 ${decision.matchType || prediction.matchType || "-"}；建议 ${decision.confidence ?? prediction.confidenceScore ?? "-"}% / ${decision.advice || prediction.advice || "-"}。`;
@@ -3952,21 +3968,24 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
     lineMovement: prediction.lineMovement || movementText,
     oddsMovement: prediction.oddsMovement || movementText,
     script: prediction.script || scenarioText,
-    halftimeDecision: prediction.halftimeDecision || `半场或60分钟仍未出现预期第一球时，提高${scoreB}分支权重；出现早球则继续校验${scoreA}路径。`,
+    halftimeDecision: prediction.halftimeDecision || `半场或60分钟仍未出现预期第一球时，重新检查独立风险剧本${riskScore}；正式比分${scoreA} / ${scoreB}不承担固定主反方向。`,
     stateTransfer: prediction.stateTransfer || scenarioText,
     decisionConflict: prediction.decisionConflict || `胜平负与让球分别独立判定：主方向${decision.winDrawLose || prediction.pick || "-"}，让球方向${decision.handicapPick || prediction.handicapPick || "-"}，不互相复制。`,
     crossMarketConsistency: prediction.crossMarketConsistency || handicapText,
-    scoreElimination: prediction.scoreElimination || `保留 ${scoreA} / ${scoreB} 两条不同赛果分支；总进球校验 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}。`,
+    scoreElimination: prediction.scoreElimination || `保留联合概率最高的 ${scoreA} / ${scoreB} 两个正式比分，允许同方向；独立风险剧本 ${riskScore} 不占正式名额；总进球校验 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}。`,
     totalGoalsValidation: prediction.totalGoalsValidation || `比分分支与总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}交叉校验。`,
     handicapGate: prediction.handicapGate || handicapText,
-    keyFailureRisk: prediction.keyFailureRisk || `最大失败方式是比赛未按${scoreA}主路径发展，而转入${scoreB}反向分支。`,
+    keyFailureRisk: prediction.keyFailureRisk || `最大失败方式是比赛偏离正式高概率覆盖 ${scoreA} / ${scoreB}，转入独立风险剧本 ${riskScore} 或分布尾部。`,
     eventRisk: prediction.eventRisk || weatherText || "早球、定位球、红牌或临场阵容变化可能改变比赛节奏。",
     valueFilter: prediction.valueFilter || `置信 ${decision.confidence ?? prediction.confidenceScore ?? "-"}%：${decision.advice || prediction.advice || "谨慎"}；不因单一低赔自动放大结论。`,
     noiseFilter: prediction.noiseFilter || "排除名气、单一低赔和单一比分噪声，只保留通过十步证据链的方向。",
     finalDecisionAction: prediction.finalDecisionAction || finalText,
-    scriptSet: prediction.scriptSet || scenarios.map((item, index) => ({ label: index ? "情况二" : "情况一", probability: item.probability, score: item.score, text: index ? "反向风险分支" : "主发展分支" })),
+    scriptSet: prediction.scriptSet || [
+      ...scenarios.map((item, index) => ({ label: index ? "正式比分二" : "正式比分一", probability: item.probability, score: item.score, text: "联合概率覆盖路径" })),
+      ...(riskScenario.score ? [{ label: "独立风险", probability: riskScenario.probability, score: riskScenario.score, text: "不占正式比分名额" }] : []),
+    ],
     dataQuality: prediction.dataQuality || `HIGH：十步平均分 ${runOutput.tenStepResult?.averageScore ?? 100}，全部硬门槛通过。`,
-    unifiedRunEvidence: { contractVersion: runOutput.contractVersion, tenStepResult: runOutput.tenStepResult, gateResult: runOutput.gateResult, researchItems: items, seasonLearning: featureSet.seasonLearning || null },
+    unifiedRunEvidence: { contractVersion: runOutput.contractVersion, tenStepResult: runOutput.tenStepResult, gateResult: runOutput.gateResult, researchItems: items, seasonLearning: featureSet.seasonLearning || null, riskScenario: riskScenario.score ? riskScenario : null },
   };
 }
 

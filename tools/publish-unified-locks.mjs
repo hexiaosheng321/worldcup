@@ -18,6 +18,7 @@ for (const id of ids) {
   const item = live.find((row) => String(row.matchId || row.cloudMatchId || "").replace(/^sporttery-/, "") === String(id));
   if (!item) throw new Error(`${id} missing from live pool`);
   const decision = run.finalDecision;
+  const independentRisk = run.riskScenario || {};
   const probabilities = run.featureSet.probabilities;
   const modelRunId = run.sourceContext?.modelRunId;
   const handicap = Number(String(item.handicap || "0").replace("+", ""));
@@ -32,13 +33,21 @@ for (const id of ids) {
     riskScore: 100 - decision.confidence, consistencyScore: 100,
     sportteryHomeSp: Number(item.normal?.win), sportteryDrawSp: Number(item.normal?.draw), sportteryAwaySp: Number(item.normal?.lose),
     asianHandicap: handicap, dataQuality: run.featureSet?.dataQuality?.grade || "D",
-    reasoningSummary: `统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立映射、失败方式和价值过滤。主脚本${decision.scores[0]}，风险脚本${decision.scores[1]}。`,
+    reasoningSummary: `统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立映射、失败方式和价值过滤。正式比分按联合概率覆盖选择${decision.scores.join(" / ")}，独立风险剧本${independentRisk.score || "-"}不占正式名额。`,
     sportteryPrediction: {
       type: `${run.match.league} 稳定 V4 模型锁版`, matchId: id, no: item.no || "", issue: item.issue || "",
       matchDate: item.matchDate || item.ticaiDate, kickoffTime: item.kickoffTime, competition: run.match.league,
       home: item.home, away: item.away, modelVersion: run.modelVersion, pick: decision.winDrawLose,
       handicap: item.handicap, handicapPick: decision.handicapPick, totalGoalsPick: decision.totalGoalsPick,
       mainScore: decision.scores[0], counterScore: decision.scores[1], matchType: decision.matchType,
+      independentRiskScenario: independentRisk,
+      scoreSelectionPolicy: decision.scoreSelectionPolicy,
+      officialScoreCoverageProbability: run.featureSet?.score?.officialCoverageProbability ?? null,
+      unifiedRunEvidence: {
+        seasonLearning: run.featureSet?.seasonLearning || null,
+        riskScenario: independentRisk,
+        scoreSelection: run.featureSet?.score || null,
+      },
       confidence: grade(decision.confidence), confidenceScore: decision.confidence, advice: decision.advice,
       modelRunId, lockType: "FINAL_LOCK",
     },
@@ -72,7 +81,7 @@ for (const id of ids) {
       `06 赔率动态：${first.updateDate} ${first.updateTime} ${first.h}/${first.d}/${first.a} -> ${latest.updateDate} ${latest.updateTime} ${latest.h}/${latest.d}/${latest.a}，状态${movement.marketState}。`,
       `07 比分/总进球独立闸门：比分${decision.scores.join(" / ")}，总进球${decision.totalGoalsPick}，两个比分脚本至少覆盖一个总进球选择。`,
       `08 让球独立闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%，结论${decision.handicapPick}。`,
-      `09 冲突与失败方式：主脚本${decision.scores[0]}，反向风险${decision.scores[1]}，已通过共同比分、反路径和价值过滤。`,
+      `09 冲突与失败方式：正式比分${decision.scores.join(" / ")}服务最大概率覆盖；独立风险${independentRisk.score || "-"}只进入风险诊断和置信扣分。`,
       `10 最终锁版：${decision.winDrawLose}；${decision.handicapPick}；${decision.totalGoalsPick}；${decision.scores.join(" / ")}；${decision.advice}。`,
     ],
   };

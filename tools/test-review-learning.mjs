@@ -52,6 +52,21 @@ assert.equal(failedShadowPayload.modelAudit.handicapSingleHit, false);
 assert.equal(failedShadowPayload.modelAudit.totalGoalsDoubleHit, true);
 assert.equal(failedShadowPayload.modelAudit.scoreDoubleHit, true);
 assert.equal(failedShadowPayload.seasonLearning.mode, "CHALLENGER_SHADOW");
+const riskOnlyPayload = caseDiagnosticPayload({
+  ...lock,
+  payload_json: JSON.stringify({
+    sportteryPrediction: {
+      handicapPick: "让胜",
+      totalGoalsPick: "2球/3球",
+      predictedScores: ["0-1", "0-2"],
+      independentRiskScenario: { score: "1-2", probability: 0.08 },
+      reasoningSummary: "正式比分0-1/0-2，独立风险1-2。",
+    },
+  }),
+}, result, review, { failureTags: [], successTags: [] });
+assert.deepEqual(riskOnlyPayload.predictedScores, ["0-1", "0-2"]);
+assert.equal(riskOnlyPayload.scoreCovered, false);
+assert.equal(riskOnlyPayload.independentRiskScenario.score, "1-2");
 const failedShadowNote = upgradeNoteFromCase(lock, result, review, "case-test", failedShadowPayload);
 assert.equal(failedShadowNote.triggerType, "MODEL_FAILURE");
 assert.equal(failedShadowNote.status, "OPEN");
