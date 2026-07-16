@@ -66,7 +66,7 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
-assert.equal(final.modelLessons.version, "LESSONS_2026-07-16_UNIFIED_COMPATIBLE_PACKAGE_R9");
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10");
 assert.equal(final.gateResult.gates.crossLeagueStrengthNormalized, true);
 assert.equal(final.gateResult.gates.evidenceDirectionConflictResolved, true);
 assert.equal(final.gateResult.gates.competitionStageConsistent, true);
@@ -129,9 +129,14 @@ const formalScoreCompatible = selectFormalHandicapDecision([
   { score: "2-1", home: 2, away: 1, probability: 0.12 },
   { score: "1-1", home: 1, away: 1, probability: 0.11 },
 ], "-1");
-assert.equal(formalScoreCompatible.handicapPick, "让平");
-assert.equal(formalScoreCompatible.officialScoreSupported, true);
-assert.deepEqual(formalScoreCompatible.officialScoreSupport, ["2-1"]);
+assert.equal(formalScoreCompatible.handicapPick, "让胜");
+assert.equal(formalScoreCompatible.officialScoreSupported, false);
+assert.deepEqual(formalScoreCompatible.officialScoreSupport, []);
+const runnerUpConditional = selectConditionalHandicapDecision([
+  { direction: "HOME", handicapPick: "让胜", conditionalProbability: 0.58, scoreProbability: 0.29 },
+  { direction: "HOME", handicapPick: "让平", conditionalProbability: 0.42, scoreProbability: 0.21 },
+], "HOME", "让胜");
+assert.equal(runnerUpConditional.handicapPick, "让平");
 const resolvedHandicapConflict = handicapDecisionAudit([
   { label: "让负", probability: 0.497 },
   { label: "让胜", probability: 0.261 },
@@ -158,12 +163,10 @@ const independentChampionConflict = runUnifiedPrediction({
   },
 }, { lockType: "FINAL_LOCK" });
 assert.equal(independentChampionConflict.finalDecision.recommendationSide, "HOME");
-assert.equal(independentChampionConflict.finalDecision.handicapPick, "让平");
+assert.notEqual(independentChampionConflict.finalDecision.handicapPick, independentChampionConflict.featureSet.conditionalHandicapChallenger.pick);
 assert.equal(independentChampionConflict.featureSet.jointDecision.independentHandicapLeader, "让负");
 assert.equal(independentChampionConflict.featureSet.jointDecision.selected.direction, "HOME");
-assert.equal(independentChampionConflict.featureSet.jointDecision.selected.handicapPick, "让平");
-assert.equal(independentChampionConflict.featureSet.jointDecision.formalPairOfficialScoreSupported, true);
-assert.ok(independentChampionConflict.featureSet.jointDecision.selected.officialScoreSupport.length > 0);
+assert.equal(independentChampionConflict.featureSet.jointDecision.selected.handicapPick, independentChampionConflict.finalDecision.handicapPick);
 assert.equal(independentChampionConflict.featureSet.conditionalHandicapChallenger.mode, "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW");
 assert.equal(independentChampionConflict.featureSet.conditionalHandicapChallenger.promotedToChampion, false);
 assert.equal(independentChampionConflict.featureSet.conditionalHandicapChallenger.learningEligibility, "SHADOW_AUDIT_ONLY");

@@ -195,7 +195,7 @@ const unifiedPredictionMarkers = [
   "model-runs",
   "tenStepResult",
   "backtestContract",
-  "LESSONS_2026-07-16_UNIFIED_COMPATIBLE_PACKAGE_R9",
+  "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10",
   "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
   "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
   "LEAGUE_LEARNING_PROFILES",
@@ -239,13 +239,19 @@ if (missingUnifiedPredictionMarkers.length) {
 for (const marker of ["PRE_LOCK", "conditionalHandicapChallenger", "complete unified prediction package", "must publish its"]) {
   if (!unifiedPublisher.includes(marker)) throw new Error(`Production baseline missing PRE_LOCK shadow publishing contract: ${marker}`);
 }
-for (const marker of ["betOutcome", "modelAudit", "SHADOW_AUDIT", "SHADOW_OBSERVATION", "四组件全部命中"]) {
+for (const marker of ["replaySamples", "replaySampleCount", "input: { ...modelInput, samples: replaySamples }"]) {
+  if (!unifiedRunner.includes(marker)) throw new Error(`Production baseline missing replayable model-run input contract: ${marker}`);
+}
+for (const marker of ["betOutcome", "modelAudit", "SHADOW_AUDIT", "SHADOW_OBSERVATION", "SHADOW_PENDING", "challengerPromotion", "四组件全部命中"]) {
   if (!api.includes(marker) && !reviewEngine.includes(marker)) throw new Error(`Production baseline missing self-learning review marker: ${marker}`);
+}
+for (const marker of ["shadow_model_audits", "createShadowAuditForLock", "only the latest preferred PRE_LOCK can enter Shadow Audit", "SHADOW_"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing PRE_LOCK shadow settlement marker: ${marker}`);
 }
 if (!api.includes("trigger_type=excluded.trigger_type")) {
   throw new Error("Production baseline requires refreshed upgrade notes to replace stale trigger types.");
 }
-for (const marker of ["learningEligibility", "probabilityMetrics", "failureMode", "seasonLearning", "diagnosisSummary"]) {
+for (const marker of ["learningEligibility", "probabilityMetrics", "failureMode", "seasonLearning", "modelRevision", "formalHandicapSingleHit", "independentHandicapLeaderSingleHit", "conditionalHandicapChallengerSingleHit", "formalWinDrawLoseHandicapJointHit", "handicapTrackAudit", "diagnosisSummary"]) {
   if (!fs.readFileSync("web/functions/api/lib/utils.js", "utf8").includes(marker)) throw new Error(`Production baseline missing Case API self-learning field: ${marker}`);
 }
 for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "independent handicap probabilities", "independent handicap probability leader", "independent score probabilities", "independent total-goals probabilities", "jointly compatible direction and handicap pair", "complete non-market fundamentals"]) {

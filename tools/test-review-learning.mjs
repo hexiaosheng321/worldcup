@@ -26,8 +26,17 @@ const lock = {
       handicapPick: "让胜",
       totalGoalsPick: "2球/3球",
       predictedScores: ["1-2", "0-2"],
+      scoreSelectionPolicy: "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+      officialScoreCoverageProbability: 0.22,
+      modelRevision: "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10",
       unifiedRunEvidence: {
+        modelRevision: "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10",
+        modelLessons: { version: "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10" },
         seasonLearning: { league: "欧冠", season: "2026", mode: "CHALLENGER_SHADOW" },
+        scoreSelection: { selectionPolicy: "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY", officialCoverageProbability: 0.22 },
+        jointDecision: { independentHandicapLeader: "让负", independentHandicapRisk: { pick: "让负" } },
+        conditionalHandicapChallenger: { pick: "让平" },
+        backtestContract: { metrics: ["formalHandicapSingleHit", "independentHandicapLeaderSingleHit", "conditionalHandicapChallengerSingleHit", "formalWinDrawLoseHandicapJointHit"] },
         crossLeagueNormalization: { complete: true, policy: "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY" },
         evidenceDirectionConflict: { materialConflict: true, resolved: false },
         evidenceDrivenRiskChallenger: { mode: "CHALLENGER_SHADOW_35", challengerWeight: 0.35 },
@@ -57,8 +66,22 @@ assert.equal(failedShadowPayload.learningEligibility, "SHADOW_AUDIT");
 assert.equal(failedShadowPayload.modelAudit.status, "FAIL");
 assert.equal(failedShadowPayload.modelAudit.winDrawLoseSingleHit, false);
 assert.equal(failedShadowPayload.modelAudit.handicapSingleHit, false);
+assert.equal(failedShadowPayload.modelAudit.formalHandicapSingleHit, false);
+assert.equal(failedShadowPayload.modelAudit.independentHandicapLeaderSingleHit, true);
+assert.equal(failedShadowPayload.modelAudit.conditionalHandicapChallengerSingleHit, false);
+assert.equal(failedShadowPayload.modelAudit.formalWinDrawLoseHandicapJointHit, false);
 assert.equal(failedShadowPayload.modelAudit.totalGoalsDoubleHit, true);
 assert.equal(failedShadowPayload.modelAudit.scoreDoubleHit, true);
+assert.equal(failedShadowPayload.modelRevision, "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10");
+assert.equal(failedShadowPayload.scoreSelectionPolicy, "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY");
+assert.equal(failedShadowPayload.officialScoreCoverageProbability, 0.22);
+assert.equal(failedShadowPayload.independentHandicapLeader, "让负");
+assert.equal(failedShadowPayload.independentHandicapLeaderSingleHit, true);
+assert.equal(failedShadowPayload.conditionalHandicapChallenger, "让平");
+assert.equal(failedShadowPayload.conditionalHandicapChallengerSingleHit, false);
+assert.equal(failedShadowPayload.formalWinDrawLoseHandicapJointHit, false);
+assert.equal(failedShadowPayload.handicapTrackAudit.actual, "让负");
+assert.ok(failedShadowPayload.backtestContract.metrics.includes("formalWinDrawLoseHandicapJointHit"));
 assert.equal(failedShadowPayload.seasonLearning.mode, "CHALLENGER_SHADOW");
 assert.equal(failedShadowPayload.crossLeagueNormalization.complete, true);
 assert.equal(failedShadowPayload.evidenceDirectionConflict.materialConflict, true);
@@ -82,8 +105,13 @@ assert.equal(riskOnlyPayload.scoreCovered, false);
 assert.equal(riskOnlyPayload.independentRiskScenario.score, "1-2");
 const failedShadowNote = upgradeNoteFromCase(lock, result, review, "case-test", failedShadowPayload);
 assert.equal(failedShadowNote.triggerType, "MODEL_FAILURE");
-assert.equal(failedShadowNote.status, "OPEN");
+assert.equal(failedShadowNote.status, "SHADOW_PENDING");
 assert.equal(failedShadowNote.recommendation.shouldUpgradeModel, true);
+assert.equal(failedShadowNote.recommendation.challengerPromotion.status, "SHADOW_PENDING");
+assert.ok(failedShadowNote.recommendation.challengerPromotion.modules.includes("HANDICAP"));
+assert.equal(failedShadowNote.recommendation.challengerPromotion.minimumSettledSamples, 30);
+assert.equal(failedShadowNote.recommendation.challengerPromotion.targetSettledSamples, 50);
+assert.ok(failedShadowNote.recommendation.challengerPromotion.guardrailMetrics.includes("formalWinDrawLoseHandicapJointHit"));
 assert.ok(!failedShadowNote.title.includes("命中样本沉淀"));
 
 const passedShadowNote = upgradeNoteFromCase(lock, result, {
@@ -129,6 +157,12 @@ const exposedCase = rowToCase({
 assert.equal(exposedCase.betOutcome, "VOID");
 assert.equal(exposedCase.learningEligibility, "SHADOW_AUDIT");
 assert.equal(exposedCase.modelAudit.status, "FAIL");
+assert.equal(exposedCase.modelRevision, "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10");
+assert.equal(exposedCase.formalHandicapSingleHit, false);
+assert.equal(exposedCase.independentHandicapLeaderSingleHit, true);
+assert.equal(exposedCase.conditionalHandicapChallengerSingleHit, false);
+assert.equal(exposedCase.formalWinDrawLoseHandicapJointHit, false);
+assert.equal(exposedCase.handicapTrackAudit.independent.pick, "让负");
 assert.equal(exposedCase.failureMode, failedShadowPayload.failureMode);
 assert.equal(exposedCase.seasonLearning.mode, "CHALLENGER_SHADOW");
 assert.equal(exposedCase.crossLeagueNormalization.complete, true);

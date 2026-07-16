@@ -120,26 +120,37 @@ const [samples, spHistory] = await Promise.all([
   loadLiveSpHistory(),
 ]);
 const historyRow = findSpHistory(spHistory, item) || { history: {} };
-const result = runUnifiedPrediction({
+const market = {
+  normal: item.normal || {},
+  handicapOdds: item.handicapOdds || {},
+  scoreOdds: item.scoreOdds || [],
+  totalGoalsOdds: item.totalGoalsOdds || [],
+};
+const modelInput = {
   match,
-  market: {
-    normal: item.normal || {},
-    handicapOdds: item.handicapOdds || {},
-    scoreOdds: item.scoreOdds || [],
-    totalGoalsOdds: item.totalGoalsOdds || [],
-  },
+  market,
   oddsHistory: historyRow.history || {},
   samples,
   research,
   tieContext: research.tieContext || null,
   asOf: new Date().toISOString(),
   sourceCapturedAt: oddsData.updatedAt || "",
-}, { lockType: requestedLockType });
+};
+const result = runUnifiedPrediction(modelInput, { lockType: requestedLockType });
+
+const compactTeam = (value = "") => String(value).toLowerCase().replace(/football club|futbol club|soccer club|\bfc\b|\bsc\b|足球俱乐部|俱乐部|[^\p{L}\p{N}]/gu, "");
+const matchTeamKeys = [compactTeam(match.home), compactTeam(match.away)].filter(Boolean);
+const replaySamples = samples.filter((sample) => {
+  if (sample.league === match.league) return true;
+  const sampleTeams = [compactTeam(sample.homeTeam), compactTeam(sample.awayTeam)].filter(Boolean);
+  return matchTeamKeys.some((team) => sampleTeams.some((candidate) => candidate === team || (Math.min(candidate.length, team.length) >= 3 && (candidate.includes(team) || team.includes(candidate)))));
+});
 
 result.sourceContext = {
   sportteryCapturedAt: oddsData.updatedAt || "",
   rollingSamplesIncluded: samples.filter((sample) => sample.source === "completed-match-auto").length,
   baseCasesIncluded: samples.filter((sample) => sample.source === "d1-base-case").length,
+  replaySampleCount: replaySamples.length,
   researchEvidencePath: evidencePath,
   researchTemplatePath: evidencePath ? "" : templatePath,
 };
@@ -151,7 +162,7 @@ if (publishRun) {
       matchId: match.matchId,
       modelVersion: result.modelVersion,
       runType: result.lockType,
-      input: { match, market: result.featureSet.market, research },
+      input: { ...modelInput, samples: replaySamples },
       output: result,
     }),
     signal: AbortSignal.timeout(12000),

@@ -553,6 +553,25 @@ async function ensureModelUpgradeSchema(db) {
   await db.prepare("CREATE INDEX IF NOT EXISTS idx_model_upgrade_notes_match ON model_upgrade_notes(match_id, created_at)").run();
 }
 
+async function ensureShadowAuditSchema(db) {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS shadow_model_audits (
+      audit_id TEXT PRIMARY KEY,
+      source_lock_id TEXT NOT NULL UNIQUE,
+      match_id TEXT NOT NULL,
+      league TEXT,
+      model_version TEXT,
+      model_revision TEXT,
+      audit_status TEXT NOT NULL,
+      payload_json TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_shadow_model_audits_match ON shadow_model_audits(match_id, updated_at)").run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_shadow_model_audits_revision ON shadow_model_audits(model_revision, audit_status, updated_at)").run();
+}
+
 function firstText(...values) {
   return values.find((value) => String(value || "").trim()) || "";
 }
@@ -621,12 +640,28 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
   const totalGoalPick = totalGoalPickFromPayload(diagnosticSource);
   const handicapPick = handicapPickFromPayload(diagnosticSource);
   const actualHandicap = actualHandicapResult(lock, result);
+  const unifiedRunEvidence = parseObject(diagnosticSource.unifiedRunEvidence);
+  const jointDecision = parseObject(unifiedRunEvidence.jointDecision);
+  const independentHandicapRisk = parseObject(jointDecision.independentHandicapRisk);
+  const conditionalHandicapChallenger = parseObject(unifiedRunEvidence.conditionalHandicapChallenger);
+  const scoreSelection = parseObject(unifiedRunEvidence.scoreSelection);
+  const modelLessons = parseObject(unifiedRunEvidence.modelLessons);
+  const backtestContract = parseObject(unifiedRunEvidence.backtestContract);
+  const independentHandicapPick = firstText(jointDecision.independentHandicapLeader, independentHandicapRisk.pick);
+  const conditionalHandicapPick = firstText(conditionalHandicapChallenger.pick);
+  const handicapTrackHit = (pick) => pick && actualHandicap ? pick === actualHandicap : null;
   const totalGoalsHit = totalGoalPick.picks.length ? totalGoalPick.picks.includes(Number(result.total_goals)) : null;
   const scoreCovered = scorePicks.length ? scorePicks.includes(actualScore) : null;
-  const handicapHit = handicapPick && actualHandicap ? handicapPick === actualHandicap : null;
+  const handicapHit = handicapTrackHit(handicapPick);
+  const independentHandicapLeaderSingleHit = handicapTrackHit(independentHandicapPick);
+  const conditionalHandicapChallengerSingleHit = handicapTrackHit(conditionalHandicapPick);
+  const directionHit = review.modelAudit?.directionHit ?? null;
+  const formalWinDrawLoseHandicapJointHit = typeof directionHit === "boolean" && typeof handicapHit === "boolean"
+    ? directionHit && handicapHit
+    : null;
   const componentAudit = {
-    winDrawLoseSingleHit: review.modelAudit?.directionHit ?? null,
-    handicapSingleHit: handicapHit,
+    winDrawLoseSingleHit: directionHit,
+    formalHandicapSingleHit: handicapHit,
     totalGoalsDoubleHit: totalGoalsHit,
     scoreDoubleHit: scoreCovered,
   };
@@ -635,11 +670,10 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
   const modelAuditStatus = failedComponents.length ? "FAIL" : auditedComponents === 4 ? "PASS" : "PARTIAL";
   const failureLabels = {
     winDrawLoseSingleHit: "胜平负单选失败",
-    handicapSingleHit: "让球单选失败",
+    formalHandicapSingleHit: "正式让球单选失败",
     totalGoalsDoubleHit: "总进球双选失败",
     scoreDoubleHit: "比分双选失败",
   };
-  const unifiedRunEvidence = parseObject(diagnosticSource.unifiedRunEvidence);
   const seasonLearning = parseObject(unifiedRunEvidence.seasonLearning);
   const crossLeagueNormalization = parseObject(unifiedRunEvidence.crossLeagueNormalization);
   const evidenceDirectionConflict = parseObject(unifiedRunEvidence.evidenceDirectionConflict);
@@ -647,8 +681,10 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
   const competitionStage = parseObject(unifiedRunEvidence.competitionStage);
   const twoLegLeadControl = parseObject(unifiedRunEvidence.twoLegLeadControl);
   const independentRiskScenario = parseObject(diagnosticSource.independentRiskScenario || unifiedRunEvidence.riskScenario);
-  const scoreSelectionPolicy = firstText(diagnosticSource.scoreSelectionPolicy, diagnosticSource.finalDecision?.scoreSelectionPolicy);
-  const officialScoreCoverageProbability = Number(diagnosticSource.officialScoreCoverageProbability);
+  const finalDecision = parseObject(diagnosticSource.finalDecision);
+  const scoreSelectionPolicy = firstText(diagnosticSource.scoreSelectionPolicy, finalDecision.scoreSelectionPolicy, scoreSelection.selectionPolicy);
+  const officialScoreCoverageProbability = Number(diagnosticSource.officialScoreCoverageProbability ?? scoreSelection.officialCoverageProbability);
+  const modelRevision = firstText(diagnosticSource.modelRevision, unifiedRunEvidence.modelRevision, modelLessons.version, lock.model_version);
   const oddsMovement = oddsHistory.map((snapshot) => ({
     capturedAt: snapshot.captured_at,
     source: snapshot.source,
@@ -667,7 +703,16 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
     betOutcome: review.betOutcome || review.hitStatus,
     learningEligibility: review.hitStatus === "VOID" ? "SHADOW_AUDIT" : "OFFICIAL_RECOMMENDATION",
     probabilityMetrics: review.probabilityMetrics || null,
-    modelAudit: { status: modelAuditStatus, auditedComponents, failedComponents, ...componentAudit },
+    modelAudit: {
+      status: modelAuditStatus,
+      auditedComponents,
+      failedComponents,
+      ...componentAudit,
+      handicapSingleHit: handicapHit,
+      independentHandicapLeaderSingleHit,
+      conditionalHandicapChallengerSingleHit,
+      formalWinDrawLoseHandicapJointHit,
+    },
     failureMode,
     actualHomeGoals: result.full_time_home_goals,
     actualAwayGoals: result.full_time_away_goals,
@@ -683,6 +728,8 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
     },
     leagueType: lock.league,
     season: String(seasonLearning.season || lock.kickoff_time || "").match(/(?:20\d{2}|\d{4})/)?.[0] || "unknown",
+    modelRevision,
+    backtestContract: Object.keys(backtestContract).length ? backtestContract : null,
     seasonLearning,
     crossLeagueNormalization: Object.keys(crossLeagueNormalization).length ? crossLeagueNormalization : null,
     evidenceDirectionConflict: Object.keys(evidenceDirectionConflict).length ? evidenceDirectionConflict : null,
@@ -705,6 +752,19 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
     actualHandicapResult: actualHandicap,
     predictedHandicapResult: handicapPick,
     handicapHit,
+    formalHandicapSingleHit: handicapHit,
+    independentHandicapLeader: independentHandicapPick,
+    independentHandicapLeaderSingleHit,
+    conditionalHandicapChallenger: conditionalHandicapPick,
+    conditionalHandicapChallengerSingleHit,
+    formalWinDrawLoseHandicapJointHit,
+    handicapTrackAudit: {
+      actual: actualHandicap,
+      formal: { pick: handicapPick, hit: handicapHit },
+      independent: { pick: independentHandicapPick, hit: independentHandicapLeaderSingleHit },
+      conditionalChallenger: { pick: conditionalHandicapPick, hit: conditionalHandicapChallengerSingleHit },
+      formalWinDrawLoseHandicapJointHit,
+    },
     predictedTotalGoals: totalGoalPick.text,
     totalGoalsHit,
     predictedScores: scorePicks,
@@ -738,17 +798,45 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
       ? `${lock.model_version || "V4"} 跳过场影子验票`
       : `${lock.model_version || "V4"} 四组件命中样本沉淀`;
   const recommendations = [];
+  const formalHandicapFailed = (diagnosticPayload.modelAudit?.formalHandicapSingleHit ?? diagnosticPayload.modelAudit?.handicapSingleHit) === false;
   if (diagnosticPayload.modelAudit?.winDrawLoseSingleHit === false) recommendations.push("复查最终胜平负方向、反向脚本投票权和球队xG分配。");
   if (diagnosticPayload.evidenceDirectionConflict?.materialConflict) recommendations.push("复查市场、首球方和两回合追分暴露的二对一冲突，确认是否存在两项独立量化反证。");
   if (diagnosticPayload.crossLeagueNormalization?.complete === false) recommendations.push("补齐跨联赛强度、对手质量、比赛类型与时效因子后再计算xG。");
   if (diagnosticPayload.twoLegLeadControl?.applied && diagnosticPayload.totalGoalsHit === false) recommendations.push("复查两回合领先方后续进球衰减，分开校准胜负方向与三球以上幅度。");
-  if (diagnosticPayload.handicapHit === false) recommendations.push("复查让球独立闸门，避免胜平负方向覆盖让球风险。");
+  if (formalHandicapFailed) recommendations.push("复查正式让球的完整净胜球分布，不得由单个正式比分决定让球单选。");
+  if (formalHandicapFailed && diagnosticPayload.independentHandicapLeaderSingleHit === true) recommendations.push("独立让球边际命中而正式让球失败，将该差异纳入让球Challenger影子验票。");
+  if (formalHandicapFailed && diagnosticPayload.conditionalHandicapChallengerSingleHit === true) recommendations.push("主方向条件让球命中而正式让球失败，复查联合净胜球质量排序。");
   if (diagnosticPayload.totalGoalsHit === false) recommendations.push("复查总进球区间和半场触发脚本。");
   if (diagnosticPayload.scoreCovered === false) recommendations.push("复核两个正式比分的联合概率排序、双方进球分配和联赛赛季校准；独立风险剧本单独验票，不强占正式比分名额。");
   if (auditFailed && !recommendations.length) recommendations.push("复查相似案例、盘口偏差和风险排除层，确认是否需要降级规则。");
   if (auditIncomplete) recommendations.push("补齐缺失的玩法输出或赛果字段后重新验票，不得沉淀为正样本。");
   if (auditPassed && review.hitStatus === "VOID") recommendations.push("保留为联赛与赛季影子校准样本，不计正式推荐命中率。");
   if (auditPassed && review.hitStatus !== "VOID") recommendations.push("保留为同模型版本四组件正样本，用于相似案例分布校验。");
+  const shouldUpgradeModel = auditFailed && (isHighGradeLose || recommendations.length >= 2);
+  const failedModules = [...new Set((diagnosticPayload.modelAudit?.failedComponents || []).map((key) => ({
+    winDrawLoseSingleHit: "WIN_DRAW_LOSE",
+    formalHandicapSingleHit: "HANDICAP",
+    handicapSingleHit: "HANDICAP",
+    totalGoalsDoubleHit: "TOTAL_GOALS",
+    scoreDoubleHit: "EXACT_SCORE",
+  }[key])).filter(Boolean))];
+  const primaryMetricsByModule = {
+    WIN_DRAW_LOSE: "winDrawLoseSingleHit",
+    HANDICAP: "formalHandicapSingleHit",
+    TOTAL_GOALS: "totalGoalsDoubleHit",
+    EXACT_SCORE: "scoreDoubleHit",
+  };
+  const challengerPromotion = {
+    status: shouldUpgradeModel ? "SHADOW_PENDING" : "OBSERVATION_ONLY",
+    sourceModelRevision: diagnosticPayload.modelRevision || lock.model_version || "V4",
+    modules: failedModules,
+    minimumSettledSamples: 30,
+    targetSettledSamples: 50,
+    primaryMetrics: failedModules.map((module) => primaryMetricsByModule[module]).filter(Boolean),
+    guardrailMetrics: ["formalWinDrawLoseHandicapJointHit", "brierScore", "logLoss", "calibrationBin"],
+    automaticPromotion: false,
+    promotionPolicy: "同联赛、同赛季、同模型版本累计30至50场影子样本；目标命中率提高，胜平负+让球联合命中不降，Brier Score与Log Loss不退化后才可人工采纳。",
+  };
   return {
     noteId: `upgrade-${caseId}`,
     sourceCaseId: caseId,
@@ -758,7 +846,7 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
     league: lock.league,
     triggerType,
     severity,
-    status: auditFailed || auditIncomplete ? "OPEN" : "OBSERVED",
+    status: shouldUpgradeModel ? "SHADOW_PENDING" : auditFailed || auditIncomplete ? "OPEN" : "OBSERVED",
     title,
     diagnosis: {
       homeTeam: lock.home_team,
@@ -770,7 +858,8 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
     },
     recommendation: {
       nextActions: recommendations,
-      shouldUpgradeModel: auditFailed && (isHighGradeLose || recommendations.length >= 2),
+      shouldUpgradeModel,
+      challengerPromotion,
     },
   };
 }
@@ -806,6 +895,82 @@ async function createModelUpgradeNoteForCase(db, lock, result, review, caseId, d
     new Date().toISOString()
   ).run();
   return note;
+}
+
+function rowToShadowAudit(row) {
+  const payload = parseObject(row.payload_json);
+  return {
+    auditId: row.audit_id,
+    sourceLockId: row.source_lock_id,
+    matchId: row.match_id,
+    league: row.league,
+    modelVersion: row.model_version,
+    modelRevision: row.model_revision,
+    auditStatus: row.audit_status,
+    ...payload,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function createShadowAuditForLock(db, lockId) {
+  const lock = await db.prepare("SELECT * FROM locked_predictions WHERE lock_id = ?").bind(lockId).first();
+  if (!lock) return { ok: false, status: 404, error: "lock not found" };
+  if (lock.lock_type !== "PRE_LOCK") return { ok: false, status: 400, error: "only PRE_LOCK can enter Shadow Audit" };
+  const preferred = await db.prepare(`
+    SELECT lock_id FROM locked_predictions
+    WHERE match_id = ?
+    ORDER BY ${PREFERRED_LOCK_ORDER_SQL}
+    LIMIT 1
+  `).bind(lock.match_id).first();
+  if (preferred?.lock_id !== lock.lock_id) {
+    return { ok: false, status: 409, error: "only the latest preferred PRE_LOCK can enter Shadow Audit" };
+  }
+  const result = await db.prepare("SELECT * FROM match_results WHERE match_id = ?").bind(lock.match_id).first();
+  if (!result) return { ok: false, status: 400, error: "result not found" };
+  const evaluated = evaluateLock(lock, result);
+  const review = {
+    ...evaluated,
+    hitStatus: "VOID",
+    betOutcome: "VOID",
+    reviewText: "PRE_LOCK不计正式投注胜负；四组件与Challenger分轨继续影子验票。",
+  };
+  const tags = caseTags(lock, result, review);
+  const { results: oddsHistory } = await db.prepare(`
+    SELECT captured_at, source, sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp, handicap
+    FROM odds_snapshots
+    WHERE match_id = ?
+      AND sporttery_home_sp > 1 AND sporttery_draw_sp > 1 AND sporttery_away_sp > 1
+    ORDER BY captured_at ASC
+    LIMIT 200
+  `).bind(lock.match_id).all();
+  const diagnosticPayload = caseDiagnosticPayload(lock, result, review, tags, oddsHistory || []);
+  const auditId = `shadow-${lock.lock_id}`;
+  await ensureShadowAuditSchema(db);
+  await db.prepare(`
+    INSERT INTO shadow_model_audits (
+      audit_id, source_lock_id, match_id, league, model_version, model_revision,
+      audit_status, payload_json, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ON CONFLICT(source_lock_id) DO UPDATE SET
+      model_revision=excluded.model_revision,
+      audit_status=excluded.audit_status,
+      payload_json=excluded.payload_json,
+      updated_at=CURRENT_TIMESTAMP
+  `).bind(
+    auditId,
+    lock.lock_id,
+    lock.match_id,
+    lock.league,
+    lock.model_version,
+    diagnosticPayload.modelRevision || lock.model_version,
+    diagnosticPayload.modelAudit?.status || "PARTIAL",
+    JSON.stringify(diagnosticPayload)
+  ).run();
+  const resultStatus = `SHADOW_${diagnosticPayload.modelAudit?.status || "PARTIAL"}`;
+  await db.prepare("UPDATE locked_predictions SET result_status = ? WHERE lock_id = ?").bind(resultStatus, lock.lock_id).run();
+  const upgradeNote = await createModelUpgradeNoteForCase(db, lock, result, review, auditId, diagnosticPayload);
+  return { ok: true, auditId, review, diagnosticPayload, upgradeNote };
 }
 
 function rowToUpgradeNote(row) {
@@ -2297,12 +2462,21 @@ async function autoReviewMatch(db, matchId) {
   const locks = await db.prepare("SELECT lock_id, lock_type FROM locked_predictions WHERE match_id = ?").bind(matchId).all();
   let reviewed = 0;
   let cases = 0;
+  let shadowAudits = 0;
   for (const lock of locks.results || []) {
+    if (lock.lock_type === "PRE_LOCK") {
+      const shadow = await createShadowAuditForLock(db, lock.lock_id);
+      if (shadow.ok) {
+        reviewed += 1;
+        shadowAudits += 1;
+      }
+      continue;
+    }
     const created = await createCaseForLock(db, lock.lock_id);
-    if (created.ok || created.error === "only FINAL_LOCK can enter Case Base") reviewed += 1;
+    if (created.ok) reviewed += 1;
     if (created.caseId && !created.duplicated) cases += 1;
   }
-  return { reviewed, cases, historicalSample, matchRecord };
+  return { reviewed, cases, shadowAudits, historicalSample, matchRecord };
 }
 
 async function reconcileCompletedSamples(db, limit = 4) {
@@ -3954,6 +4128,8 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
   const items = Array.isArray(research.items) ? research.items : [];
   const researchText = (key) => String(items.find((item) => item.key === key)?.summary || "").trim();
   const decision = parseObject(runOutput.finalDecision);
+  const modelLessons = parseObject(runOutput.modelLessons);
+  const existingUnifiedEvidence = parseObject(prediction.unifiedRunEvidence);
   const scenarios = Array.isArray(runOutput.scenarioSet) ? runOutput.scenarioSet : [];
   const riskScenario = parseObject(runOutput.riskScenario);
   const movement = parseObject(featureSet.oddsMovement);
@@ -3981,6 +4157,7 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
   const finalText = `胜平负 ${decision.winDrawLose || prediction.pick || "-"}；让球 ${decision.handicapPick || prediction.handicapPick || "-"}；总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}；比分 ${scoreA} / ${scoreB}；类型 ${decision.matchType || prediction.matchType || "-"}；建议 ${decision.confidence ?? prediction.confidenceScore ?? "-"}% / ${decision.advice || prediction.advice || "-"}。`;
   return {
     ...prediction,
+    modelRevision: firstText(prediction.modelRevision, modelLessons.version, runOutput.modelVersion),
     decisionProcess: "统一赛前机制：SP复核、赛事规则与动机、球队状态、风格对位、体彩开盘偏差、赔率动态、比赛发展、半场/60分钟触发、冲突闸门、比分总进球、让球闸门、失败方式、价值过滤、最终锁版。",
     competitionRules: prediction.competitionRules || motivationText,
     teamState: prediction.teamState || teamText,
@@ -4008,7 +4185,26 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
       ...(riskScenario.score ? [{ label: "独立风险", probability: riskScenario.probability, score: riskScenario.score, text: "不占正式比分名额" }] : []),
     ],
     dataQuality: prediction.dataQuality || `HIGH：十步平均分 ${runOutput.tenStepResult?.averageScore ?? 100}，全部硬门槛通过。`,
-    unifiedRunEvidence: { contractVersion: runOutput.contractVersion, tenStepResult: runOutput.tenStepResult, gateResult: runOutput.gateResult, researchItems: items, seasonLearning: featureSet.seasonLearning || null, jointDecision: featureSet.jointDecision || null, riskScenario: riskScenario.score ? riskScenario : null },
+    unifiedRunEvidence: {
+      ...existingUnifiedEvidence,
+      contractVersion: runOutput.contractVersion,
+      modelRevision: firstText(prediction.modelRevision, modelLessons.version, runOutput.modelVersion),
+      modelLessons: Object.keys(modelLessons).length ? modelLessons : null,
+      tenStepResult: runOutput.tenStepResult,
+      gateResult: runOutput.gateResult,
+      researchItems: items,
+      seasonLearning: featureSet.seasonLearning || null,
+      scoreSelection: featureSet.score || null,
+      crossLeagueNormalization: featureSet.crossLeagueNormalization || null,
+      evidenceDirectionConflict: featureSet.evidenceDirectionConflict || null,
+      evidenceDrivenRiskChallenger: featureSet.evidenceDrivenRiskChallenger || null,
+      conditionalHandicapChallenger: featureSet.conditionalHandicapChallenger || null,
+      jointDecision: featureSet.jointDecision || null,
+      backtestContract: runOutput.backtestContract || null,
+      competitionStage: featureSet.competitionStage || null,
+      twoLegLeadControl: featureSet.tieContext?.leadControl || null,
+      riskScenario: riskScenario.score ? riskScenario : null,
+    },
   };
 }
 
@@ -4400,6 +4596,24 @@ if (path === "sync/okooo-live" && request.method === "POST") {
 
     if (path === "cases" && request.method === "GET") {
       return json({ ok: true, cases: await listCases(db) });
+    }
+
+    if (path === "shadow-audits" && request.method === "GET") {
+      await ensureShadowAuditSchema(db);
+      const matchId = url.searchParams.get("matchId") || "";
+      const stmt = matchId
+        ? db.prepare("SELECT * FROM shadow_model_audits WHERE match_id = ? ORDER BY updated_at DESC LIMIT 100").bind(matchId)
+        : db.prepare("SELECT * FROM shadow_model_audits ORDER BY updated_at DESC LIMIT 300");
+      const { results } = await stmt.all();
+      return json({ ok: true, audits: (results || []).map(rowToShadowAudit) });
+    }
+
+    if (path === "shadow-audits/generate" && request.method === "POST") {
+      const body = await readJson(request);
+      const lockId = body.lockId || body.lock_id;
+      if (!lockId) return json({ ok: false, error: "lockId required" }, 400);
+      const created = await createShadowAuditForLock(db, lockId);
+      return json(created, created.status || (created.ok ? 200 : 400));
     }
 
     if (path === "cases/generate" && request.method === "POST") {
