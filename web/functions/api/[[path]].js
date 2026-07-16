@@ -449,6 +449,10 @@ async function historicalSimilarSamples(db, current) {
   const threshold = Number(current.threshold ?? 65);
   const bindings = [league];
   const filters = ["league = ?", "data_quality IN ('HIGH', 'MEDIUM')"];
+  const preferProjectPrimarySources = new Set(["美职", "巴西甲", "欧联"]).has(league);
+  if (preferProjectPrimarySources) {
+    filters.push("(source = '500.com' OR LOWER(source) LIKE 'okooo%' OR source = 'completed-match-auto')");
+  }
   if (has(current.euroHomeOdds, current.euroDrawOdds, current.euroAwayOdds)) {
     filters.push("euro_home_odds BETWEEN ? AND ?", "euro_draw_odds BETWEEN ? AND ?", "euro_away_odds BETWEEN ? AND ?");
     bindings.push(
@@ -477,6 +481,7 @@ async function historicalSimilarSamples(db, current) {
     const broad = await db.prepare(`
       SELECT * FROM external_historical_samples
       WHERE league = ? AND data_quality IN ('HIGH', 'MEDIUM')
+      ${preferProjectPrimarySources ? "AND (source = '500.com' OR LOWER(source) LIKE 'okooo%' OR source = 'completed-match-auto')" : ""}
       ORDER BY kickoff_time DESC LIMIT ?
     `).bind(league, candidateLimit).all();
     const strictKeys = new Set(strictPool.map(historicalFixtureKey));
