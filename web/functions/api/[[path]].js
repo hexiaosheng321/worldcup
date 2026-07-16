@@ -838,18 +838,20 @@ async function listModelUpgradeNotes(db, params) {
   return (results || []).map(rowToUpgradeNote);
 }
 
+export const PREFERRED_LOCK_ORDER_SQL = "locked_at DESC, lock_id DESC";
+
 async function createCaseForLock(db, lockId) {
   const lock = await db.prepare("SELECT * FROM locked_predictions WHERE lock_id = ?").bind(lockId).first();
   if (!lock) return { ok: false, status: 404, error: "lock not found" };
   if (lock.lock_type !== "FINAL_LOCK") return { ok: false, status: 400, error: "only FINAL_LOCK can enter Case Base" };
   const preferred = await db.prepare(`
     SELECT lock_id FROM locked_predictions
-    WHERE match_id = ? AND lock_type = 'FINAL_LOCK'
-    ORDER BY locked_at DESC
+    WHERE match_id = ?
+    ORDER BY ${PREFERRED_LOCK_ORDER_SQL}
     LIMIT 1
   `).bind(lock.match_id).first();
   if (preferred?.lock_id !== lock.lock_id) {
-    return { ok: false, status: 409, error: "only the preferred FINAL_LOCK can enter Case Base" };
+    return { ok: false, status: 409, error: "only a latest preferred FINAL_LOCK can enter Case Base" };
   }
   const result = await db.prepare("SELECT * FROM match_results WHERE match_id = ?").bind(lock.match_id).first();
   if (!result) return { ok: false, status: 400, error: "result not found" };
@@ -4164,7 +4166,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
                 lock_id,
                 ROW_NUMBER() OVER (
                   PARTITION BY match_id
-                  ORDER BY CASE WHEN lock_type = 'FINAL_LOCK' THEN 0 ELSE 1 END, locked_at DESC
+                  ORDER BY ${PREFERRED_LOCK_ORDER_SQL}
                 ) AS row_no
               FROM locked_predictions
             )
@@ -4229,7 +4231,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       const lock = await db.prepare(`
         SELECT * FROM locked_predictions
         WHERE match_id = ?
-        ORDER BY CASE WHEN lock_type = 'FINAL_LOCK' THEN 0 ELSE 1 END, locked_at DESC
+        ORDER BY ${PREFERRED_LOCK_ORDER_SQL}
         LIMIT 1
       `).bind(matchId).first();
       return json({ ok: true, lock: lock ? enrichLockRow(lock) : null });

@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { evaluateLock, rowToCase } from "../web/functions/api/lib/utils.js";
-import { caseDiagnosticPayload, upgradeNoteFromCase } from "../web/functions/api/[[path]].js";
+import { PREFERRED_LOCK_ORDER_SQL, caseDiagnosticPayload, upgradeNoteFromCase } from "../web/functions/api/[[path]].js";
+
+assert.equal(PREFERRED_LOCK_ORDER_SQL, "locked_at DESC, lock_id DESC");
+assert.ok(!PREFERRED_LOCK_ORDER_SQL.includes("lock_type"));
 
 const lock = {
   lock_id: "test-lock",
