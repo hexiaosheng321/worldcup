@@ -40,6 +40,7 @@ const requiredMarkers = [
   'id="schedule"',
   'hash === "#worldcup" || hash === "#worldcup-knockout"',
   'activateTab("schedule")',
+  '<base href="/" />',
 ];
 const missingRequired = requiredMarkers.filter((marker) => !index.includes(marker) && !main.includes(marker));
 if (missingRequired.length) {
