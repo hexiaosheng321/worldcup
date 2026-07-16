@@ -1,0 +1,2753 @@
+[
+  {
+    "lockId": "manual-sporttery-1317630-20260716-v4-pre-r4",
+    "matchId": "sporttery-1317630",
+    "modelRunId": "model-run-bc71ef52-4860-43ff-a381-7ad054c2bc21",
+    "matchCode": "四201",
+    "homeTeam": "瓦勒伦",
+    "awayTeam": "奥勒松",
+    "league": "挪超",
+    "kickoffTime": "2026-07-17 01:00",
+    "lockedAt": "2026-07-16T03:38:46.581Z",
+    "lockType": "PRE_LOCK",
+    "modelVersion": "V1-UNIFIED",
+    "modelHomeProb": 0.6807,
+    "modelDrawProb": 0.1542,
+    "modelAwayProb": 0.1651,
+    "recommendation": "胜",
+    "recommendationSide": "HOME",
+    "finalGrade": "C",
+    "finalAction": "跳过",
+    "confidenceScore": 50,
+    "riskScore": 50,
+    "consistencyScore": 96,
+    "sportteryHomeSp": 1.53,
+    "sportteryDrawSp": 4.15,
+    "sportteryAwaySp": 4.25,
+    "asianHandicap": -1,
+    "dataQuality": "A",
+    "reasoningSummary": "统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。正式让球必须与胜平负主方向及至少一个正式比分同时成立；独立边际第一项和条件让球分别作风险审计与Challenger影子验票。正式比分按联合概率覆盖选择2-1 / 2-0，独立风险剧本1-2不占正式名额。",
+    "sportteryPrediction": {
+      "type": "挪超 稳定 V4 模型待锁版",
+      "matchId": "1317630",
+      "no": "201",
+      "issue": "四201",
+      "matchDate": "2026-07-17",
+      "kickoffTime": "01:00",
+      "competition": "挪超",
+      "home": "瓦勒伦",
+      "away": "奥勒松",
+      "modelVersion": "V1-UNIFIED",
+      "pick": "胜",
+      "handicap": "-1",
+      "handicapPick": "让平",
+      "totalGoalsPick": "3球/4球",
+      "mainScore": "2-1",
+      "counterScore": "2-0",
+      "matchType": "常规局",
+      "independentRiskScenario": {
+        "score": "1-2",
+        "probability": 0.0579,
+        "direction": "AWAY",
+        "directionProbability": 0.1651,
+        "handicapResult": "让负",
+        "role": "INDEPENDENT_RISK_PATH",
+        "occupiesOfficialScoreSlot": false
+      },
+      "scoreSelectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+      "officialScoreCoverageProbability": 0.1973,
+      "unifiedRunEvidence": {
+        "seasonLearning": {
+          "league": "挪超",
+          "season": "2026",
+          "mode": "BOUNDED_SCORE_CALIBRATION",
+          "appliedToChampion": true,
+          "appliedScope": "SCORE_DISTRIBUTION_ONLY",
+          "seasonStats": {
+            "sampleCount": 89,
+            "homeWinRate": 0.5393,
+            "drawRate": 0.2022,
+            "awayWinRate": 0.2584,
+            "averageGoals": 2.944,
+            "bttsRate": 0.5618
+          },
+          "recentWindow": {
+            "size": 30,
+            "sampleCount": 30,
+            "homeWinRate": 0.6333,
+            "drawRate": 0.1667,
+            "awayWinRate": 0.2,
+            "averageGoals": 3.167,
+            "bttsRate": 0.6667
+          },
+          "deltas": {
+            "homeWinRate": 0.094,
+            "drawRate": -0.0355,
+            "averageGoals": 0.223,
+            "bttsRate": 0.1049
+          },
+          "narrative": [
+            "近期主场优势增强"
+          ],
+          "scoreCalibration": {
+            "eligible": true,
+            "weight": 0.12,
+            "sampleCount": 30,
+            "probabilities": {
+              "2-1": 0.2025,
+              "2-2": 0.0731,
+              "3-1": 0.1016,
+              "1-2": 0.1026,
+              "0-0": 0.0354,
+              "1-1": 0.0696,
+              "2-0": 0.1928,
+              "1-4": 0.0327,
+              "3-2": 0.0325,
+              "5-0": 0.0322,
+              "1-0": 0.0317,
+              "6-3": 0.0315,
+              "2-3": 0.0312,
+              "0-2": 0.0305
+            }
+          },
+          "eligibleForCalibrationReview": true,
+          "promotionPolicy": "当前赛季至少30场后仅以12%上限校准比分分布；胜平负、让球和总进球仍须通过样本外不退化验证后才能扩大权重"
+        },
+        "riskScenario": {
+          "score": "1-2",
+          "probability": 0.0579,
+          "direction": "AWAY",
+          "directionProbability": 0.1651,
+          "handicapResult": "让负",
+          "role": "INDEPENDENT_RISK_PATH",
+          "occupiesOfficialScoreSlot": false
+        },
+        "scoreSelection": {
+          "components": [
+            {
+              "label": "fundamental-score-grid",
+              "weight": 0.7
+            },
+            {
+              "label": "historical-similar",
+              "weight": 0.2
+            },
+            {
+              "label": "sporttery-score-calibration",
+              "weight": 0.1
+            },
+            {
+              "label": "league-season-score-calibration",
+              "weight": 0.12
+            }
+          ],
+          "historicalSampleCount": 82,
+          "marketComplete": true,
+          "selectionVersion": "SCORE_COVERAGE_2026_R1",
+          "selectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+          "officialCoverageProbability": 0.1973,
+          "topCandidates": [
+            {
+              "score": "2-1",
+              "probability": 0.1117,
+              "direction": "HOME"
+            },
+            {
+              "score": "2-0",
+              "probability": 0.0856,
+              "direction": "HOME"
+            },
+            {
+              "score": "3-1",
+              "probability": 0.0804,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-1",
+              "probability": 0.0743,
+              "direction": "DRAW"
+            },
+            {
+              "score": "2-2",
+              "probability": 0.0651,
+              "direction": "DRAW"
+            },
+            {
+              "score": "1-2",
+              "probability": 0.0579,
+              "direction": "AWAY"
+            },
+            {
+              "score": "3-2",
+              "probability": 0.0535,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-0",
+              "probability": 0.05,
+              "direction": "HOME"
+            }
+          ]
+        },
+        "crossLeagueNormalization": {
+          "home": {
+            "targetLeague": "挪超",
+            "candidateCount": 14,
+            "sameLeagueCandidates": 14,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "away": {
+            "targetLeague": "挪超",
+            "candidateCount": 12,
+            "sameLeagueCandidates": 12,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "complete": true
+        },
+        "evidenceDirectionConflict": {
+          "votes": [
+            {
+              "source": "LOCK_MARKET",
+              "direction": "HOME"
+            },
+            {
+              "source": "STYLE_FIRST_GOAL",
+              "direction": "AWAY"
+            }
+          ],
+          "counts": {
+            "HOME": 1,
+            "DRAW": 0,
+            "AWAY": 1
+          },
+          "consensusDirection": "",
+          "consensusCount": 1,
+          "selectedDirection": "HOME",
+          "materialConflict": false,
+          "quantitativeSupportForSelected": [],
+          "quantitativeSupportCount": 0,
+          "resolved": true,
+          "championAction": "ALLOW",
+          "challengerRiskWeight": 0.2,
+          "policy": "TWO_OF_MARKET_FIRST_GOAL_TIE_EXPOSURE_REQUIRE_TWO_QUANTITATIVE_OVERRIDES"
+        },
+        "evidenceDrivenRiskChallenger": {
+          "mode": "CHAMPION_BASELINE_20",
+          "championWeight": 0.2,
+          "challengerWeight": 0.2,
+          "promotedToChampion": false,
+          "promotionPolicy": "至少30至50场影子样本且四项命中率与样本外概率损失不退化"
+        },
+        "conditionalHandicapChallenger": {
+          "mode": "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
+          "direction": "HOME",
+          "pick": "让胜",
+          "conditionalProbability": 0.6221,
+          "scoreProbability": 0.379,
+          "marginalProbability": 0.3786,
+          "differsFromChampion": true,
+          "differsFromIndependentLeader": true,
+          "promotedToChampion": false,
+          "learningEligibility": "SHADOW_AUDIT_ONLY",
+          "minimumSettledSamples": 30,
+          "targetSettledSamples": 50,
+          "promotionPolicy": "30至50场独立验票；让球单选命中率提升且胜平负+让球联合命中与概率损失不退化后才可申请晋级"
+        },
+        "jointDecision": {
+          "selected": {
+            "direction": "HOME",
+            "handicapPick": "让平",
+            "scoreProbability": 0.23025908968637987,
+            "conditionalProbability": 0.3779127876010867,
+            "marginalProduct": 0.15843941739307862,
+            "score": 0.20512220438372442,
+            "officialScoreProbability": 0.1116579948352981,
+            "officialScoreSupport": [
+              "2-1"
+            ],
+            "officialScoreSupported": true
+          },
+          "candidateCount": 4,
+          "independentDirectionLeader": "HOME",
+          "independentHandicapLeader": "让负",
+          "independentPairCompatible": false,
+          "formalPairCompatible": true,
+          "formalPairOfficialScoreSupported": true,
+          "independentHandicapRisk": {
+            "pick": "让负",
+            "probability": 0.3886,
+            "differsFromFormalPick": true,
+            "role": "INDEPENDENT_MARGIN_RISK_AUDIT"
+          },
+          "resolutionApplied": true,
+          "directionPreserved": true,
+          "handicapDecisionAudit": {
+            "independentLeader": "让负",
+            "selected": "让平",
+            "probabilityGap": 0.1559,
+            "materialConflict": true,
+            "resolutionMode": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+            "conditionalProbability": 0.3779,
+            "conditionalResolution": false,
+            "resolved": false,
+            "confidencePenalty": 3
+          },
+          "role": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
+        },
+        "backtestContract": {
+          "probabilityFields": [
+            "HOME",
+            "DRAW",
+            "AWAY"
+          ],
+          "metrics": [
+            "winDrawLoseSingleHit",
+            "formalHandicapSingleHit",
+            "independentHandicapLeaderSingleHit",
+            "conditionalHandicapChallengerSingleHit",
+            "formalWinDrawLoseHandicapJointHit",
+            "totalGoalsDoubleHit",
+            "scoreDoubleHit",
+            "officialScoreCoverageProbability",
+            "brierScore",
+            "logLoss",
+            "calibrationBin"
+          ],
+          "resultScope": "90_MINUTES",
+          "sampleVersion": "rolling-current",
+          "caseReuse": "PREFERRED_FINAL_LOCK_ONLY",
+          "shadowReuse": "PRE_LOCK_CHALLENGER_AUDIT_ONLY",
+          "immutablePreMatchSnapshot": true,
+          "scorePolicies": [
+            "LEGACY_MAIN_PLUS_COUNTER",
+            "TOP_TWO_GLOBAL",
+            "TOP_TWO_LEAGUE_SEASON_CALIBRATED"
+          ]
+        },
+        "competitionStage": {
+          "required": false,
+          "complete": true,
+          "matchStage": "",
+          "researchStage": "REGULAR_LEAGUE",
+          "matchCanonical": "",
+          "researchCanonical": "REGULAR_LEAGUE",
+          "consistent": true,
+          "policy": "SPORTTERY_STAGE_X_RESEARCH_STAGE_X_TIE_CONTEXT"
+        },
+        "twoLegLeadControl": {
+          "applied": false,
+          "aggregateLeader": "LEVEL",
+          "factor": 1,
+          "expansionEvidenceCount": 0,
+          "before": {
+            "home": 2.59,
+            "away": 1.57
+          },
+          "after": {
+            "home": 2.59,
+            "away": 1.57
+          },
+          "policy": "DECAY_AGGREGATE_LEADER_FOLLOW_UP_GOALS_UNLESS_EXPANSION_EVIDENCE"
+        }
+      },
+      "confidence": "C",
+      "confidenceScore": 50,
+      "advice": "跳过",
+      "modelRunId": "model-run-bc71ef52-4860-43ff-a381-7ad054c2bc21",
+      "lockType": "PRE_LOCK"
+    },
+    "teamState": "主队瓦勒伦近5场2胜0平3负，进6失13；客队奥勒松近5场2胜3平0负，进10失8。瓦勒伦官方7月11日确认Odin Thiago Holm、Filip Thorvaldsen和Magnus Sjøeng因小伤缺阵；Promise Meliga自本场起具备参赛资格。赛前未见奥勒松新增可交叉核验的核心缺阵。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布瓦勒伦 vs 奥勒松可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+    "scorePick": "2-1 / 2-0",
+    "totalGoalsPick": "3球/4球",
+    "analysis": {
+      "teamState": "主队瓦勒伦近5场2胜0平3负，进6失13；客队奥勒松近5场2胜3平0负，进10失8。瓦勒伦官方7月11日确认Odin Thiago Holm、Filip Thorvaldsen和Magnus Sjøeng因小伤缺阵；Promise Meliga自本场起具备参赛资格。赛前未见奥勒松新增可交叉核验的核心缺阵。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布瓦勒伦 vs 奥勒松可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+      "finalPick": {
+        "winDrawLose": "胜",
+        "scores": [
+          "2-1",
+          "2-0"
+        ],
+        "totalGoals": "3球/4球"
+      },
+      "unifiedSteps": [
+        "01 当前胜平负SP复核：1.53 / 4.15 / 4.25。",
+        "02 赛事规则与动机：挪超常规联赛保级区附近直接对话，按90分钟结算。瓦勒伦仅高出保级附加区2分，奥勒松排名更低且客场近6场仅1胜。",
+        "03 球队状态：主队瓦勒伦近5场2胜0平3负，进6失13；客队奥勒松近5场2胜3平0负，进10失8。瓦勒伦官方7月11日确认Odin Thiago Holm、Filip Thorvaldsen和Magnus Sjøeng因小伤缺阵；Promise Meliga自本场起具备参赛资格。赛前未见奥勒松新增可交叉核验的核心缺阵。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布瓦勒伦 vs 奥勒松可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+        "04 风格对位：瓦勒伦近5轮3场未进球且防线近期暴露；奥勒松连续5轮不败但连续3场战平、客场稳定性有限，首球路径略偏客队，平局尾部风险保留。",
+        "05 盘口与样本：完整盘口样本108场，两队近期赛果已读取并去重。",
+        "06 赔率动态：2026-07-15 16:15:04 1.53/4.15/4.25 -> 2026-07-16 03:35:04 1.53/4.15/4.25，状态STABLE。",
+        "07 比分/总进球独立闸门：比分2-1 / 2-0，总进球3球/4球，两个比分脚本至少覆盖一个总进球选择。",
+        "08 让球统一闸门：让球-1，让胜37.9%、让平23.3%、让负38.9%；独立边际第一项让负，条件Challenger为让胜，兼容正式单选让平。",
+        "09 冲突与失败方式：正式比分2-1 / 2-0服务最大概率覆盖；独立风险1-2只进入风险诊断和置信扣分。",
+        "10 最终待锁版：胜；让平；3球/4球；2-1 / 2-0；跳过。"
+      ]
+    }
+  },
+  {
+    "lockId": "manual-sporttery-1316880-20260716-v4-pre-r4",
+    "matchId": "sporttery-1316880",
+    "modelRunId": "model-run-25f3c1ae-d741-4a5c-905f-21e40c4a538a",
+    "matchCode": "四205",
+    "homeTeam": "博塔弗",
+    "awayTeam": "桑托斯",
+    "league": "巴西甲",
+    "kickoffTime": "2026-07-17 06:30",
+    "lockedAt": "2026-07-16T03:38:46.799Z",
+    "lockType": "PRE_LOCK",
+    "modelVersion": "V1-UNIFIED",
+    "modelHomeProb": 0.4967,
+    "modelDrawProb": 0.2828,
+    "modelAwayProb": 0.2204,
+    "recommendation": "胜",
+    "recommendationSide": "HOME",
+    "finalGrade": "D",
+    "finalAction": "跳过",
+    "confidenceScore": 38,
+    "riskScore": 62,
+    "consistencyScore": 96,
+    "sportteryHomeSp": 1.82,
+    "sportteryDrawSp": 3.45,
+    "sportteryAwaySp": 3.45,
+    "asianHandicap": -1,
+    "dataQuality": "A",
+    "reasoningSummary": "统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。正式让球必须与胜平负主方向及至少一个正式比分同时成立；独立边际第一项和条件让球分别作风险审计与Challenger影子验票。正式比分按联合概率覆盖选择1-1 / 2-1，独立风险剧本1-2不占正式名额。",
+    "sportteryPrediction": {
+      "type": "巴西甲 稳定 V4 模型待锁版",
+      "matchId": "1316880",
+      "no": "205",
+      "issue": "四205",
+      "matchDate": "2026-07-17",
+      "kickoffTime": "06:30",
+      "competition": "巴西甲",
+      "home": "博塔弗",
+      "away": "桑托斯",
+      "modelVersion": "V1-UNIFIED",
+      "pick": "胜",
+      "handicap": "-1",
+      "handicapPick": "让平",
+      "totalGoalsPick": "3球/2球",
+      "mainScore": "1-1",
+      "counterScore": "2-1",
+      "matchType": "常规局",
+      "independentRiskScenario": {
+        "score": "1-2",
+        "probability": 0.0715,
+        "direction": "AWAY",
+        "directionProbability": 0.2204,
+        "handicapResult": "让负",
+        "role": "INDEPENDENT_RISK_PATH",
+        "occupiesOfficialScoreSlot": false
+      },
+      "scoreSelectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+      "officialScoreCoverageProbability": 0.1941,
+      "unifiedRunEvidence": {
+        "seasonLearning": {
+          "league": "巴西甲",
+          "season": "2026",
+          "mode": "BOUNDED_SCORE_CALIBRATION",
+          "appliedToChampion": true,
+          "appliedScope": "SCORE_DISTRIBUTION_ONLY",
+          "seasonStats": {
+            "sampleCount": 100,
+            "homeWinRate": 0.49,
+            "drawRate": 0.26,
+            "awayWinRate": 0.25,
+            "averageGoals": 2.68,
+            "bttsRate": 0.59
+          },
+          "recentWindow": {
+            "size": 30,
+            "sampleCount": 30,
+            "homeWinRate": 0.6,
+            "drawRate": 0.1667,
+            "awayWinRate": 0.2333,
+            "averageGoals": 2.8,
+            "bttsRate": 0.6
+          },
+          "deltas": {
+            "homeWinRate": 0.11,
+            "drawRate": -0.0933,
+            "averageGoals": 0.12,
+            "bttsRate": 0.01
+          },
+          "narrative": [
+            "近期平局率低于赛季基线",
+            "近期主场优势增强"
+          ],
+          "scoreCalibration": {
+            "eligible": true,
+            "weight": 0.12,
+            "sampleCount": 30,
+            "probabilities": {
+              "1-0": 0.1747,
+              "1-1": 0.1623,
+              "0-1": 0.0362,
+              "3-1": 0.1328,
+              "2-1": 0.0991,
+              "1-3": 0.0352,
+              "3-0": 0.0349,
+              "3-2": 0.0674,
+              "0-3": 0.0981,
+              "1-2": 0.0337,
+              "2-0": 0.0642,
+              "2-3": 0.0315,
+              "4-1": 0.0297
+            }
+          },
+          "eligibleForCalibrationReview": true,
+          "promotionPolicy": "当前赛季至少30场后仅以12%上限校准比分分布；胜平负、让球和总进球仍须通过样本外不退化验证后才能扩大权重"
+        },
+        "riskScenario": {
+          "score": "1-2",
+          "probability": 0.0715,
+          "direction": "AWAY",
+          "directionProbability": 0.2204,
+          "handicapResult": "让负",
+          "role": "INDEPENDENT_RISK_PATH",
+          "occupiesOfficialScoreSlot": false
+        },
+        "scoreSelection": {
+          "components": [
+            {
+              "label": "fundamental-score-grid",
+              "weight": 0.7
+            },
+            {
+              "label": "historical-similar",
+              "weight": 0.2
+            },
+            {
+              "label": "sporttery-score-calibration",
+              "weight": 0.1
+            },
+            {
+              "label": "league-season-score-calibration",
+              "weight": 0.12
+            }
+          ],
+          "historicalSampleCount": 94,
+          "marketComplete": true,
+          "selectionVersion": "SCORE_COVERAGE_2026_R1",
+          "selectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+          "officialCoverageProbability": 0.1941,
+          "topCandidates": [
+            {
+              "score": "1-1",
+              "probability": 0.1022,
+              "direction": "DRAW"
+            },
+            {
+              "score": "2-1",
+              "probability": 0.0919,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-0",
+              "probability": 0.0789,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-2",
+              "probability": 0.0715,
+              "direction": "AWAY"
+            },
+            {
+              "score": "3-1",
+              "probability": 0.0708,
+              "direction": "HOME"
+            },
+            {
+              "score": "2-0",
+              "probability": 0.0631,
+              "direction": "HOME"
+            },
+            {
+              "score": "2-2",
+              "probability": 0.0624,
+              "direction": "DRAW"
+            },
+            {
+              "score": "3-2",
+              "probability": 0.0517,
+              "direction": "HOME"
+            }
+          ]
+        },
+        "crossLeagueNormalization": {
+          "home": {
+            "targetLeague": "巴西甲",
+            "candidateCount": 10,
+            "sameLeagueCandidates": 10,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "away": {
+            "targetLeague": "巴西甲",
+            "candidateCount": 10,
+            "sameLeagueCandidates": 10,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "complete": true
+        },
+        "evidenceDirectionConflict": {
+          "votes": [
+            {
+              "source": "LOCK_MARKET",
+              "direction": "HOME"
+            },
+            {
+              "source": "STYLE_FIRST_GOAL",
+              "direction": "HOME"
+            }
+          ],
+          "counts": {
+            "HOME": 2,
+            "DRAW": 0,
+            "AWAY": 0
+          },
+          "consensusDirection": "HOME",
+          "consensusCount": 2,
+          "selectedDirection": "HOME",
+          "materialConflict": false,
+          "quantitativeSupportForSelected": [],
+          "quantitativeSupportCount": 0,
+          "resolved": true,
+          "championAction": "ALLOW",
+          "challengerRiskWeight": 0.35,
+          "policy": "TWO_OF_MARKET_FIRST_GOAL_TIE_EXPOSURE_REQUIRE_TWO_QUANTITATIVE_OVERRIDES"
+        },
+        "evidenceDrivenRiskChallenger": {
+          "mode": "CHALLENGER_SHADOW_35",
+          "championWeight": 0.2,
+          "challengerWeight": 0.35,
+          "promotedToChampion": false,
+          "promotionPolicy": "至少30至50场影子样本且四项命中率与样本外概率损失不退化"
+        },
+        "conditionalHandicapChallenger": {
+          "mode": "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
+          "direction": "HOME",
+          "pick": "让胜",
+          "conditionalProbability": 0.531,
+          "scoreProbability": 0.265,
+          "marginalProbability": 0.2611,
+          "differsFromChampion": true,
+          "differsFromIndependentLeader": true,
+          "promotedToChampion": false,
+          "learningEligibility": "SHADOW_AUDIT_ONLY",
+          "minimumSettledSamples": 30,
+          "targetSettledSamples": 50,
+          "promotionPolicy": "30至50场独立验票；让球单选命中率提升且胜平负+让球联合命中与概率损失不退化后才可申请晋级"
+        },
+        "jointDecision": {
+          "selected": {
+            "direction": "HOME",
+            "handicapPick": "让平",
+            "scoreProbability": 0.23406601061812718,
+            "conditionalProbability": 0.4690065571489023,
+            "marginalProduct": 0.12016528200183141,
+            "score": 0.19420075560242367,
+            "officialScoreProbability": 0.09186705315787654,
+            "officialScoreSupport": [
+              "2-1"
+            ],
+            "officialScoreSupported": true
+          },
+          "candidateCount": 4,
+          "independentDirectionLeader": "HOME",
+          "independentHandicapLeader": "让负",
+          "independentPairCompatible": false,
+          "formalPairCompatible": true,
+          "formalPairOfficialScoreSupported": true,
+          "independentHandicapRisk": {
+            "pick": "让负",
+            "probability": 0.497,
+            "differsFromFormalPick": true,
+            "role": "INDEPENDENT_MARGIN_RISK_AUDIT"
+          },
+          "resolutionApplied": true,
+          "directionPreserved": true,
+          "handicapDecisionAudit": {
+            "independentLeader": "让负",
+            "selected": "让平",
+            "probabilityGap": 0.2551,
+            "materialConflict": true,
+            "resolutionMode": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+            "conditionalProbability": 0.469,
+            "conditionalResolution": false,
+            "resolved": false,
+            "confidencePenalty": 5
+          },
+          "role": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
+        },
+        "backtestContract": {
+          "probabilityFields": [
+            "HOME",
+            "DRAW",
+            "AWAY"
+          ],
+          "metrics": [
+            "winDrawLoseSingleHit",
+            "formalHandicapSingleHit",
+            "independentHandicapLeaderSingleHit",
+            "conditionalHandicapChallengerSingleHit",
+            "formalWinDrawLoseHandicapJointHit",
+            "totalGoalsDoubleHit",
+            "scoreDoubleHit",
+            "officialScoreCoverageProbability",
+            "brierScore",
+            "logLoss",
+            "calibrationBin"
+          ],
+          "resultScope": "90_MINUTES",
+          "sampleVersion": "rolling-current",
+          "caseReuse": "PREFERRED_FINAL_LOCK_ONLY",
+          "shadowReuse": "PRE_LOCK_CHALLENGER_AUDIT_ONLY",
+          "immutablePreMatchSnapshot": true,
+          "scorePolicies": [
+            "LEGACY_MAIN_PLUS_COUNTER",
+            "TOP_TWO_GLOBAL",
+            "TOP_TWO_LEAGUE_SEASON_CALIBRATED"
+          ]
+        },
+        "competitionStage": {
+          "required": false,
+          "complete": true,
+          "matchStage": "",
+          "researchStage": "REGULAR_LEAGUE",
+          "matchCanonical": "",
+          "researchCanonical": "REGULAR_LEAGUE",
+          "consistent": true,
+          "policy": "SPORTTERY_STAGE_X_RESEARCH_STAGE_X_TIE_CONTEXT"
+        },
+        "twoLegLeadControl": {
+          "applied": false,
+          "aggregateLeader": "LEVEL",
+          "factor": 1,
+          "expansionEvidenceCount": 0,
+          "before": {
+            "home": 2.14,
+            "away": 1.69
+          },
+          "after": {
+            "home": 2.14,
+            "away": 1.69
+          },
+          "policy": "DECAY_AGGREGATE_LEADER_FOLLOW_UP_GOALS_UNLESS_EXPANSION_EVIDENCE"
+        }
+      },
+      "confidence": "D",
+      "confidenceScore": 38,
+      "advice": "跳过",
+      "modelRunId": "model-run-25f3c1ae-d741-4a5c-905f-21e40c4a538a",
+      "lockType": "PRE_LOCK"
+    },
+    "teamState": "主队博塔弗近5场1胜2平2负，进7失7；客队桑托斯近5场2胜1平2负，进8失8。博塔弗戈中场Danilo Santos世界杯后获额外休假确认缺阵；桑托斯Neymar尚未归队、Gabigol停赛、Bontempo继续因伤缺阵，另有Moises脚踝伤缺席。桑托斯本季同时缺少Neymar和Gabigol的6场为3平3负。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布博塔弗 vs 桑托斯可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+    "scorePick": "1-1 / 2-1",
+    "totalGoalsPick": "3球/2球",
+    "analysis": {
+      "teamState": "主队博塔弗近5场1胜2平2负，进7失7；客队桑托斯近5场2胜1平2负，进8失8。博塔弗戈中场Danilo Santos世界杯后获额外休假确认缺阵；桑托斯Neymar尚未归队、Gabigol停赛、Bontempo继续因伤缺阵，另有Moises脚踝伤缺席。桑托斯本季同时缺少Neymar和Gabigol的6场为3平3负。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布博塔弗 vs 桑托斯可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+      "finalPick": {
+        "winDrawLose": "胜",
+        "scores": [
+          "1-1",
+          "2-1"
+        ],
+        "totalGoals": "3球/2球"
+      },
+      "unifiedSteps": [
+        "01 当前胜平负SP复核：1.82 / 3.45 / 3.45。",
+        "02 赛事规则与动机：巴西甲第19轮、世界杯间歇后复赛，按90分钟结算。两队积分接近，但桑托斯仅领先降级区1分，博塔弗戈要争南美赛事席位。",
+        "03 球队状态：主队博塔弗近5场1胜2平2负，进7失7；客队桑托斯近5场2胜1平2负，进8失8。博塔弗戈中场Danilo Santos世界杯后获额外休假确认缺阵；桑托斯Neymar尚未归队、Gabigol停赛、Bontempo继续因伤缺阵，另有Moises脚踝伤缺席。桑托斯本季同时缺少Neymar和Gabigol的6场为3平3负。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布博塔弗 vs 桑托斯可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+        "04 风格对位：博塔弗戈主场高压与边路转换在人工草皮上更熟悉，近5次联赛交锋对桑托斯不败；桑托斯客场防守失误和关键攻击手缺阵叠加，首球路径偏主队。",
+        "05 盘口与样本：完整盘口样本100场，两队近期赛果已读取并去重。",
+        "06 赔率动态：2026-07-15 16:10:04 1.82/3.45/3.45 -> 2026-07-16 03:35:04 1.82/3.45/3.45，状态STABLE。",
+        "07 比分/总进球独立闸门：比分1-1 / 2-1，总进球3球/2球，两个比分脚本至少覆盖一个总进球选择。",
+        "08 让球统一闸门：让球-1，让胜26.1%、让平24.2%、让负49.7%；独立边际第一项让负，条件Challenger为让胜，兼容正式单选让平。",
+        "09 冲突与失败方式：正式比分1-1 / 2-1服务最大概率覆盖；独立风险1-2只进入风险诊断和置信扣分。",
+        "10 最终待锁版：胜；让平；3球/2球；1-1 / 2-1；跳过。"
+      ]
+    }
+  },
+  {
+    "lockId": "manual-sporttery-1316887-20260716-v4-pre-r4",
+    "matchId": "sporttery-1316887",
+    "modelRunId": "model-run-a54c4782-5771-47f8-ac2a-54560d5554e9",
+    "matchCode": "四206",
+    "homeTeam": "维多利",
+    "awayTeam": "瓦斯科",
+    "league": "巴西甲",
+    "kickoffTime": "2026-07-17 06:30",
+    "lockedAt": "2026-07-16T03:38:47.003Z",
+    "lockType": "PRE_LOCK",
+    "modelVersion": "V1-UNIFIED",
+    "modelHomeProb": 0.6817,
+    "modelDrawProb": 0.1726,
+    "modelAwayProb": 0.1458,
+    "recommendation": "胜",
+    "recommendationSide": "HOME",
+    "finalGrade": "C",
+    "finalAction": "跳过",
+    "confidenceScore": 54,
+    "riskScore": 46,
+    "consistencyScore": 96,
+    "sportteryHomeSp": 2.3,
+    "sportteryDrawSp": 3.03,
+    "sportteryAwaySp": 2.74,
+    "asianHandicap": -1,
+    "dataQuality": "A",
+    "reasoningSummary": "统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。正式让球必须与胜平负主方向及至少一个正式比分同时成立；独立边际第一项和条件让球分别作风险审计与Challenger影子验票。正式比分按联合概率覆盖选择1-0 / 2-0，独立风险剧本0-1不占正式名额。",
+    "sportteryPrediction": {
+      "type": "巴西甲 稳定 V4 模型待锁版",
+      "matchId": "1316887",
+      "no": "206",
+      "issue": "四206",
+      "matchDate": "2026-07-17",
+      "kickoffTime": "06:30",
+      "competition": "巴西甲",
+      "home": "维多利",
+      "away": "瓦斯科",
+      "modelVersion": "V1-UNIFIED",
+      "pick": "胜",
+      "handicap": "-1",
+      "handicapPick": "让平",
+      "totalGoalsPick": "2球/3球",
+      "mainScore": "1-0",
+      "counterScore": "2-0",
+      "matchType": "闷局",
+      "independentRiskScenario": {
+        "score": "0-1",
+        "probability": 0.0505,
+        "direction": "AWAY",
+        "directionProbability": 0.1458,
+        "handicapResult": "让负",
+        "role": "INDEPENDENT_RISK_PATH",
+        "occupiesOfficialScoreSlot": false
+      },
+      "scoreSelectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+      "officialScoreCoverageProbability": 0.2557,
+      "unifiedRunEvidence": {
+        "seasonLearning": {
+          "league": "巴西甲",
+          "season": "2026",
+          "mode": "BOUNDED_SCORE_CALIBRATION",
+          "appliedToChampion": true,
+          "appliedScope": "SCORE_DISTRIBUTION_ONLY",
+          "seasonStats": {
+            "sampleCount": 100,
+            "homeWinRate": 0.49,
+            "drawRate": 0.26,
+            "awayWinRate": 0.25,
+            "averageGoals": 2.68,
+            "bttsRate": 0.59
+          },
+          "recentWindow": {
+            "size": 30,
+            "sampleCount": 30,
+            "homeWinRate": 0.6,
+            "drawRate": 0.1667,
+            "awayWinRate": 0.2333,
+            "averageGoals": 2.8,
+            "bttsRate": 0.6
+          },
+          "deltas": {
+            "homeWinRate": 0.11,
+            "drawRate": -0.0933,
+            "averageGoals": 0.12,
+            "bttsRate": 0.01
+          },
+          "narrative": [
+            "近期平局率低于赛季基线",
+            "近期主场优势增强"
+          ],
+          "scoreCalibration": {
+            "eligible": true,
+            "weight": 0.12,
+            "sampleCount": 30,
+            "probabilities": {
+              "1-0": 0.1747,
+              "1-1": 0.1623,
+              "0-1": 0.0362,
+              "3-1": 0.1328,
+              "2-1": 0.0991,
+              "1-3": 0.0352,
+              "3-0": 0.0349,
+              "3-2": 0.0674,
+              "0-3": 0.0981,
+              "1-2": 0.0337,
+              "2-0": 0.0642,
+              "2-3": 0.0315,
+              "4-1": 0.0297
+            }
+          },
+          "eligibleForCalibrationReview": true,
+          "promotionPolicy": "当前赛季至少30场后仅以12%上限校准比分分布；胜平负、让球和总进球仍须通过样本外不退化验证后才能扩大权重"
+        },
+        "riskScenario": {
+          "score": "0-1",
+          "probability": 0.0505,
+          "direction": "AWAY",
+          "directionProbability": 0.1458,
+          "handicapResult": "让负",
+          "role": "INDEPENDENT_RISK_PATH",
+          "occupiesOfficialScoreSlot": false
+        },
+        "scoreSelection": {
+          "components": [
+            {
+              "label": "fundamental-score-grid",
+              "weight": 0.7
+            },
+            {
+              "label": "historical-similar",
+              "weight": 0.2
+            },
+            {
+              "label": "sporttery-score-calibration",
+              "weight": 0.1
+            },
+            {
+              "label": "league-season-score-calibration",
+              "weight": 0.12
+            }
+          ],
+          "historicalSampleCount": 84,
+          "marketComplete": true,
+          "selectionVersion": "SCORE_COVERAGE_2026_R1",
+          "selectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+          "officialCoverageProbability": 0.2557,
+          "topCandidates": [
+            {
+              "score": "1-0",
+              "probability": 0.1332,
+              "direction": "HOME"
+            },
+            {
+              "score": "2-0",
+              "probability": 0.1224,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-1",
+              "probability": 0.1073,
+              "direction": "DRAW"
+            },
+            {
+              "score": "2-1",
+              "probability": 0.0895,
+              "direction": "HOME"
+            },
+            {
+              "score": "3-0",
+              "probability": 0.0764,
+              "direction": "HOME"
+            },
+            {
+              "score": "3-1",
+              "probability": 0.0692,
+              "direction": "HOME"
+            },
+            {
+              "score": "0-0",
+              "probability": 0.0574,
+              "direction": "DRAW"
+            },
+            {
+              "score": "0-1",
+              "probability": 0.0505,
+              "direction": "AWAY"
+            }
+          ]
+        },
+        "crossLeagueNormalization": {
+          "home": {
+            "targetLeague": "巴西甲",
+            "candidateCount": 10,
+            "sameLeagueCandidates": 10,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "away": {
+            "targetLeague": "巴西甲",
+            "candidateCount": 10,
+            "sameLeagueCandidates": 10,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "complete": true
+        },
+        "evidenceDirectionConflict": {
+          "votes": [
+            {
+              "source": "LOCK_MARKET",
+              "direction": "HOME"
+            },
+            {
+              "source": "STYLE_FIRST_GOAL",
+              "direction": "HOME"
+            }
+          ],
+          "counts": {
+            "HOME": 2,
+            "DRAW": 0,
+            "AWAY": 0
+          },
+          "consensusDirection": "HOME",
+          "consensusCount": 2,
+          "selectedDirection": "HOME",
+          "materialConflict": false,
+          "quantitativeSupportForSelected": [],
+          "quantitativeSupportCount": 0,
+          "resolved": true,
+          "championAction": "ALLOW",
+          "challengerRiskWeight": 0.35,
+          "policy": "TWO_OF_MARKET_FIRST_GOAL_TIE_EXPOSURE_REQUIRE_TWO_QUANTITATIVE_OVERRIDES"
+        },
+        "evidenceDrivenRiskChallenger": {
+          "mode": "CHALLENGER_SHADOW_35",
+          "championWeight": 0.2,
+          "challengerWeight": 0.35,
+          "promotedToChampion": false,
+          "promotionPolicy": "至少30至50场影子样本且四项命中率与样本外概率损失不退化"
+        },
+        "conditionalHandicapChallenger": {
+          "mode": "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
+          "direction": "HOME",
+          "pick": "让胜",
+          "conditionalProbability": 0.5991,
+          "scoreProbability": 0.3812,
+          "marginalProbability": 0.3374,
+          "differsFromChampion": true,
+          "differsFromIndependentLeader": true,
+          "promotedToChampion": false,
+          "learningEligibility": "SHADOW_AUDIT_ONLY",
+          "minimumSettledSamples": 30,
+          "targetSettledSamples": 50,
+          "promotionPolicy": "30至50场独立验票；让球单选命中率提升且胜平负+让球联合命中与概率损失不退化后才可申请晋级"
+        },
+        "jointDecision": {
+          "selected": {
+            "direction": "HOME",
+            "handicapPick": "让平",
+            "scoreProbability": 0.2551295063136635,
+            "conditionalProbability": 0.4009428249417981,
+            "marginalProduct": 0.17357025872241602,
+            "score": 0.22658376965672686,
+            "officialScoreProbability": 0.1332284947330719,
+            "officialScoreSupport": [
+              "1-0"
+            ],
+            "officialScoreSupported": true
+          },
+          "candidateCount": 4,
+          "independentDirectionLeader": "HOME",
+          "independentHandicapLeader": "让负",
+          "independentPairCompatible": false,
+          "formalPairCompatible": true,
+          "formalPairOfficialScoreSupported": true,
+          "independentHandicapRisk": {
+            "pick": "让负",
+            "probability": 0.408,
+            "differsFromFormalPick": true,
+            "role": "INDEPENDENT_MARGIN_RISK_AUDIT"
+          },
+          "resolutionApplied": true,
+          "directionPreserved": true,
+          "handicapDecisionAudit": {
+            "independentLeader": "让负",
+            "selected": "让平",
+            "probabilityGap": 0.1533,
+            "materialConflict": true,
+            "resolutionMode": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+            "conditionalProbability": 0.4009,
+            "conditionalResolution": false,
+            "resolved": false,
+            "confidencePenalty": 3
+          },
+          "role": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
+        },
+        "backtestContract": {
+          "probabilityFields": [
+            "HOME",
+            "DRAW",
+            "AWAY"
+          ],
+          "metrics": [
+            "winDrawLoseSingleHit",
+            "formalHandicapSingleHit",
+            "independentHandicapLeaderSingleHit",
+            "conditionalHandicapChallengerSingleHit",
+            "formalWinDrawLoseHandicapJointHit",
+            "totalGoalsDoubleHit",
+            "scoreDoubleHit",
+            "officialScoreCoverageProbability",
+            "brierScore",
+            "logLoss",
+            "calibrationBin"
+          ],
+          "resultScope": "90_MINUTES",
+          "sampleVersion": "rolling-current",
+          "caseReuse": "PREFERRED_FINAL_LOCK_ONLY",
+          "shadowReuse": "PRE_LOCK_CHALLENGER_AUDIT_ONLY",
+          "immutablePreMatchSnapshot": true,
+          "scorePolicies": [
+            "LEGACY_MAIN_PLUS_COUNTER",
+            "TOP_TWO_GLOBAL",
+            "TOP_TWO_LEAGUE_SEASON_CALIBRATED"
+          ]
+        },
+        "competitionStage": {
+          "required": false,
+          "complete": true,
+          "matchStage": "",
+          "researchStage": "REGULAR_LEAGUE",
+          "matchCanonical": "",
+          "researchCanonical": "REGULAR_LEAGUE",
+          "consistent": true,
+          "policy": "SPORTTERY_STAGE_X_RESEARCH_STAGE_X_TIE_CONTEXT"
+        },
+        "twoLegLeadControl": {
+          "applied": false,
+          "aggregateLeader": "LEVEL",
+          "factor": 1,
+          "expansionEvidenceCount": 0,
+          "before": {
+            "home": 2.16,
+            "away": 0.61
+          },
+          "after": {
+            "home": 2.16,
+            "away": 0.61
+          },
+          "policy": "DECAY_AGGREGATE_LEADER_FOLLOW_UP_GOALS_UNLESS_EXPANSION_EVIDENCE"
+        }
+      },
+      "confidence": "C",
+      "confidenceScore": 54,
+      "advice": "跳过",
+      "modelRunId": "model-run-a54c4782-5771-47f8-ac2a-54560d5554e9",
+      "lockType": "PRE_LOCK"
+    },
+    "teamState": "主队维多利近5场2胜1平2负，进9失8；客队瓦斯科近5场1胜1平3负，进4失10。维多利亚仍监测Camutanga、Dudu、Yuri Sena、Edu的恢复情况，新援Fabiano Souza要到7月20日才有资格；瓦斯科Hugo Moura已经离队，Andres Gomez世界杯归队后体能待评估。赛前页给出的可能首发：维多利亚Arcanjo；Mendes、Britez、Riccieli、Candido；Walace、Ismael；Rato、Pochettino、Erick；Kayzer。瓦斯科Jardim；Rodriguez、Cuesta、Renan、Piton；Barros、Mendes、Tche Tche；Moreira、Spinelli、David。最终首发尚未官方确认，模型不追加阵容量化修正。",
+    "scorePick": "1-0 / 2-0",
+    "totalGoalsPick": "2球/3球",
+    "analysis": {
+      "teamState": "主队维多利近5场2胜1平2负，进9失8；客队瓦斯科近5场1胜1平3负，进4失10。维多利亚仍监测Camutanga、Dudu、Yuri Sena、Edu的恢复情况，新援Fabiano Souza要到7月20日才有资格；瓦斯科Hugo Moura已经离队，Andres Gomez世界杯归队后体能待评估。赛前页给出的可能首发：维多利亚Arcanjo；Mendes、Britez、Riccieli、Candido；Walace、Ismael；Rato、Pochettino、Erick；Kayzer。瓦斯科Jardim；Rodriguez、Cuesta、Renan、Piton；Barros、Mendes、Tche Tche；Moreira、Spinelli、David。最终首发尚未官方确认，模型不追加阵容量化修正。",
+      "finalPick": {
+        "winDrawLose": "胜",
+        "scores": [
+          "1-0",
+          "2-0"
+        ],
+        "totalGoals": "2球/3球"
+      },
+      "unifiedSteps": [
+        "01 当前胜平负SP复核：2.3 / 3.03 / 2.74。",
+        "02 赛事规则与动机：巴西甲第19轮保级区附近直接对话，按90分钟结算。维多利亚可把与降级区的差距拉大；瓦斯科新帅首秀但合练时间有限。",
+        "03 球队状态：主队维多利近5场2胜1平2负，进9失8；客队瓦斯科近5场1胜1平3负，进4失10。维多利亚仍监测Camutanga、Dudu、Yuri Sena、Edu的恢复情况，新援Fabiano Souza要到7月20日才有资格；瓦斯科Hugo Moura已经离队，Andres Gomez世界杯归队后体能待评估。赛前页给出的可能首发：维多利亚Arcanjo；Mendes、Britez、Riccieli、Candido；Walace、Ismael；Rato、Pochettino、Erick；Kayzer。瓦斯科Jardim；Rodriguez、Cuesta、Renan、Piton；Barros、Mendes、Tche Tche；Moreira、Spinelli、David。最终首发尚未官方确认，模型不追加阵容量化修正。",
+        "04 风格对位：维多利亚近5场进球与主场推动力优于瓦斯科；瓦斯科最近3轮全负且失8球，新帅短期更可能先求防守稳定，首球路径偏主队。",
+        "05 盘口与样本：完整盘口样本100场，两队近期赛果已读取并去重。",
+        "06 赔率动态：2026-07-15 16:10:04 2.30/3.03/2.74 -> 2026-07-16 03:35:04 2.30/3.03/2.74，状态STABLE。",
+        "07 比分/总进球独立闸门：比分1-0 / 2-0，总进球2球/3球，两个比分脚本至少覆盖一个总进球选择。",
+        "08 让球统一闸门：让球-1，让胜33.7%、让平25.5%、让负40.8%；独立边际第一项让负，条件Challenger为让胜，兼容正式单选让平。",
+        "09 冲突与失败方式：正式比分1-0 / 2-0服务最大概率覆盖；独立风险0-1只进入风险诊断和置信扣分。",
+        "10 最终待锁版：胜；让平；2球/3球；1-0 / 2-0；跳过。"
+      ]
+    }
+  },
+  {
+    "lockId": "manual-sporttery-1324064-20260716-v4-pre-r4",
+    "matchId": "sporttery-1324064",
+    "modelRunId": "model-run-da844a55-8a6e-4202-8fc2-430dac76d32b",
+    "matchCode": "四207",
+    "homeTeam": "蒙特利",
+    "awayTeam": "多伦多",
+    "league": "美职",
+    "kickoffTime": "2026-07-17 07:30",
+    "lockedAt": "2026-07-16T03:38:47.185Z",
+    "lockType": "PRE_LOCK",
+    "modelVersion": "V1-UNIFIED",
+    "modelHomeProb": 0.5176,
+    "modelDrawProb": 0.2777,
+    "modelAwayProb": 0.2047,
+    "recommendation": "胜",
+    "recommendationSide": "HOME",
+    "finalGrade": "D",
+    "finalAction": "跳过",
+    "confidenceScore": 40,
+    "riskScore": 60,
+    "consistencyScore": 96,
+    "sportteryHomeSp": 1.82,
+    "sportteryDrawSp": 3.55,
+    "sportteryAwaySp": 3.35,
+    "asianHandicap": -1,
+    "dataQuality": "A",
+    "reasoningSummary": "统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。正式让球必须与胜平负主方向及至少一个正式比分同时成立；独立边际第一项和条件让球分别作风险审计与Challenger影子验票。正式比分按联合概率覆盖选择2-1 / 1-1，独立风险剧本1-2不占正式名额。",
+    "sportteryPrediction": {
+      "type": "美职 稳定 V4 模型待锁版",
+      "matchId": "1324064",
+      "no": "207",
+      "issue": "四207",
+      "matchDate": "2026-07-17",
+      "kickoffTime": "07:30",
+      "competition": "美职",
+      "home": "蒙特利",
+      "away": "多伦多",
+      "modelVersion": "V1-UNIFIED",
+      "pick": "胜",
+      "handicap": "-1",
+      "handicapPick": "让平",
+      "totalGoalsPick": "3球/2球",
+      "mainScore": "2-1",
+      "counterScore": "1-1",
+      "matchType": "常规局",
+      "independentRiskScenario": {
+        "score": "1-2",
+        "probability": 0.0733,
+        "direction": "AWAY",
+        "directionProbability": 0.2047,
+        "handicapResult": "让负",
+        "role": "INDEPENDENT_RISK_PATH",
+        "occupiesOfficialScoreSlot": false
+      },
+      "scoreSelectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+      "officialScoreCoverageProbability": 0.1929,
+      "unifiedRunEvidence": {
+        "seasonLearning": {
+          "league": "美职",
+          "season": "2026",
+          "mode": "BOUNDED_SCORE_CALIBRATION",
+          "appliedToChampion": true,
+          "appliedScope": "SCORE_DISTRIBUTION_ONLY",
+          "seasonStats": {
+            "sampleCount": 200,
+            "homeWinRate": 0.45,
+            "drawRate": 0.24,
+            "awayWinRate": 0.31,
+            "averageGoals": 3.45,
+            "bttsRate": 0.66
+          },
+          "recentWindow": {
+            "size": 30,
+            "sampleCount": 30,
+            "homeWinRate": 0.5333,
+            "drawRate": 0.2,
+            "awayWinRate": 0.2667,
+            "averageGoals": 3.933,
+            "bttsRate": 0.7333
+          },
+          "deltas": {
+            "homeWinRate": 0.0833,
+            "drawRate": -0.04,
+            "averageGoals": 0.483,
+            "bttsRate": 0.0733
+          },
+          "narrative": [
+            "近期进球环境升温",
+            "近期主场优势增强"
+          ],
+          "scoreCalibration": {
+            "eligible": true,
+            "weight": 0.12,
+            "sampleCount": 30,
+            "probabilities": {
+              "1-0": 0.1383,
+              "6-4": 0.0729,
+              "2-0": 0.0716,
+              "1-1": 0.1289,
+              "1-2": 0.1338,
+              "1-3": 0.0672,
+              "2-4": 0.0672,
+              "2-1": 0.1318,
+              "4-4": 0.0642,
+              "6-2": 0.0642,
+              "3-0": 0.06
+            }
+          },
+          "eligibleForCalibrationReview": true,
+          "promotionPolicy": "当前赛季至少30场后仅以12%上限校准比分分布；胜平负、让球和总进球仍须通过样本外不退化验证后才能扩大权重"
+        },
+        "riskScenario": {
+          "score": "1-2",
+          "probability": 0.0733,
+          "direction": "AWAY",
+          "directionProbability": 0.2047,
+          "handicapResult": "让负",
+          "role": "INDEPENDENT_RISK_PATH",
+          "occupiesOfficialScoreSlot": false
+        },
+        "scoreSelection": {
+          "components": [
+            {
+              "label": "fundamental-score-grid",
+              "weight": 0.7
+            },
+            {
+              "label": "historical-similar",
+              "weight": 0.2
+            },
+            {
+              "label": "sporttery-score-calibration",
+              "weight": 0.1
+            },
+            {
+              "label": "league-season-score-calibration",
+              "weight": 0.12
+            }
+          ],
+          "historicalSampleCount": 178,
+          "marketComplete": true,
+          "selectionVersion": "SCORE_COVERAGE_2026_R1",
+          "selectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+          "officialCoverageProbability": 0.1929,
+          "topCandidates": [
+            {
+              "score": "2-1",
+              "probability": 0.0973,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-1",
+              "probability": 0.0956,
+              "direction": "DRAW"
+            },
+            {
+              "score": "1-2",
+              "probability": 0.0733,
+              "direction": "AWAY"
+            },
+            {
+              "score": "1-0",
+              "probability": 0.073,
+              "direction": "HOME"
+            },
+            {
+              "score": "2-0",
+              "probability": 0.0656,
+              "direction": "HOME"
+            },
+            {
+              "score": "2-2",
+              "probability": 0.0604,
+              "direction": "DRAW"
+            },
+            {
+              "score": "3-1",
+              "probability": 0.0572,
+              "direction": "HOME"
+            },
+            {
+              "score": "3-0",
+              "probability": 0.0456,
+              "direction": "HOME"
+            }
+          ]
+        },
+        "crossLeagueNormalization": {
+          "home": {
+            "targetLeague": "美职",
+            "candidateCount": 6,
+            "sameLeagueCandidates": 6,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "away": {
+            "targetLeague": "美职",
+            "candidateCount": 6,
+            "sameLeagueCandidates": 6,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "complete": true
+        },
+        "evidenceDirectionConflict": {
+          "votes": [
+            {
+              "source": "LOCK_MARKET",
+              "direction": "HOME"
+            },
+            {
+              "source": "STYLE_FIRST_GOAL",
+              "direction": "HOME"
+            }
+          ],
+          "counts": {
+            "HOME": 2,
+            "DRAW": 0,
+            "AWAY": 0
+          },
+          "consensusDirection": "HOME",
+          "consensusCount": 2,
+          "selectedDirection": "HOME",
+          "materialConflict": false,
+          "quantitativeSupportForSelected": [],
+          "quantitativeSupportCount": 0,
+          "resolved": true,
+          "championAction": "ALLOW",
+          "challengerRiskWeight": 0.35,
+          "policy": "TWO_OF_MARKET_FIRST_GOAL_TIE_EXPOSURE_REQUIRE_TWO_QUANTITATIVE_OVERRIDES"
+        },
+        "evidenceDrivenRiskChallenger": {
+          "mode": "CHALLENGER_SHADOW_35",
+          "championWeight": 0.2,
+          "challengerWeight": 0.35,
+          "promotedToChampion": false,
+          "promotionPolicy": "至少30至50场影子样本且四项命中率与样本外概率损失不退化"
+        },
+        "conditionalHandicapChallenger": {
+          "mode": "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
+          "direction": "HOME",
+          "pick": "让胜",
+          "conditionalProbability": 0.565,
+          "scoreProbability": 0.2962,
+          "marginalProbability": 0.2734,
+          "differsFromChampion": true,
+          "differsFromIndependentLeader": true,
+          "promotedToChampion": false,
+          "learningEligibility": "SHADOW_AUDIT_ONLY",
+          "minimumSettledSamples": 30,
+          "targetSettledSamples": 50,
+          "promotionPolicy": "30至50场独立验票；让球单选命中率提升且胜平负+让球联合命中与概率损失不退化后才可申请晋级"
+        },
+        "jointDecision": {
+          "selected": {
+            "direction": "HOME",
+            "handicapPick": "让平",
+            "scoreProbability": 0.22807844038710207,
+            "conditionalProbability": 0.4350362883435583,
+            "marginalProduct": 0.11986489966366938,
+            "score": 0.19020370113390062,
+            "officialScoreProbability": 0.09727248014862253,
+            "officialScoreSupport": [
+              "2-1"
+            ],
+            "officialScoreSupported": true
+          },
+          "candidateCount": 4,
+          "independentDirectionLeader": "HOME",
+          "independentHandicapLeader": "让负",
+          "independentPairCompatible": false,
+          "formalPairCompatible": true,
+          "formalPairOfficialScoreSupported": true,
+          "independentHandicapRisk": {
+            "pick": "让负",
+            "probability": 0.495,
+            "differsFromFormalPick": true,
+            "role": "INDEPENDENT_MARGIN_RISK_AUDIT"
+          },
+          "resolutionApplied": true,
+          "directionPreserved": true,
+          "handicapDecisionAudit": {
+            "independentLeader": "让负",
+            "selected": "让平",
+            "probabilityGap": 0.2635,
+            "materialConflict": true,
+            "resolutionMode": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+            "conditionalProbability": 0.435,
+            "conditionalResolution": false,
+            "resolved": false,
+            "confidencePenalty": 5
+          },
+          "role": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
+        },
+        "backtestContract": {
+          "probabilityFields": [
+            "HOME",
+            "DRAW",
+            "AWAY"
+          ],
+          "metrics": [
+            "winDrawLoseSingleHit",
+            "formalHandicapSingleHit",
+            "independentHandicapLeaderSingleHit",
+            "conditionalHandicapChallengerSingleHit",
+            "formalWinDrawLoseHandicapJointHit",
+            "totalGoalsDoubleHit",
+            "scoreDoubleHit",
+            "officialScoreCoverageProbability",
+            "brierScore",
+            "logLoss",
+            "calibrationBin"
+          ],
+          "resultScope": "90_MINUTES",
+          "sampleVersion": "rolling-current",
+          "caseReuse": "PREFERRED_FINAL_LOCK_ONLY",
+          "shadowReuse": "PRE_LOCK_CHALLENGER_AUDIT_ONLY",
+          "immutablePreMatchSnapshot": true,
+          "scorePolicies": [
+            "LEGACY_MAIN_PLUS_COUNTER",
+            "TOP_TWO_GLOBAL",
+            "TOP_TWO_LEAGUE_SEASON_CALIBRATED"
+          ]
+        },
+        "competitionStage": {
+          "required": false,
+          "complete": true,
+          "matchStage": "",
+          "researchStage": "REGULAR_LEAGUE",
+          "matchCanonical": "",
+          "researchCanonical": "REGULAR_LEAGUE",
+          "consistent": true,
+          "policy": "SPORTTERY_STAGE_X_RESEARCH_STAGE_X_TIE_CONTEXT"
+        },
+        "twoLegLeadControl": {
+          "applied": false,
+          "aggregateLeader": "LEVEL",
+          "factor": 1,
+          "expansionEvidenceCount": 0,
+          "before": {
+            "home": 2.31,
+            "away": 1.51
+          },
+          "after": {
+            "home": 2.31,
+            "away": 1.51
+          },
+          "policy": "DECAY_AGGREGATE_LEADER_FOLLOW_UP_GOALS_UNLESS_EXPANSION_EVIDENCE"
+        }
+      },
+      "confidence": "D",
+      "confidenceScore": 40,
+      "advice": "跳过",
+      "modelRunId": "model-run-da844a55-8a6e-4202-8fc2-430dac76d32b",
+      "lockType": "PRE_LOCK"
+    },
+    "teamState": "主队蒙特利近5场1胜2平2负，进9失11；客队多伦多近5场0胜1平4负，进6失12。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布蒙特利 vs 多伦多可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布蒙特利 vs 多伦多可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+    "scorePick": "2-1 / 1-1",
+    "totalGoalsPick": "3球/2球",
+    "analysis": {
+      "teamState": "主队蒙特利近5场1胜2平2负，进9失11；客队多伦多近5场0胜1平4负，进6失12。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布蒙特利 vs 多伦多可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布蒙特利 vs 多伦多可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+      "finalPick": {
+        "winDrawLose": "胜",
+        "scores": [
+          "2-1",
+          "1-1"
+        ],
+        "totalGoals": "3球/2球"
+      },
+      "unifiedSteps": [
+        "01 当前胜平负SP复核：1.82 / 3.55 / 3.35。",
+        "02 赛事规则与动机：MLS常规赛复赛暨加拿大德比，官方赛程确认按90分钟结算；两队同积14分，都需要追赶季后赛线。",
+        "03 球队状态：主队蒙特利近5场1胜2平2负，进9失11；客队多伦多近5场0胜1平4负，进6失12。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布蒙特利 vs 多伦多可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布蒙特利 vs 多伦多可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+        "04 风格对位：蒙特利尔换帅后主场防守稳定度上升，多伦多近5场失12球；双方均处长间歇后的再启动期，首球路径偏主队但保留平局波动。",
+        "05 盘口与样本：完整盘口样本200场，两队近期赛果已读取并去重。",
+        "06 赔率动态：2026-07-15 16:15:04 1.79/3.60/3.42 -> 2026-07-16 03:35:04 1.82/3.55/3.35，状态MOVED。",
+        "07 比分/总进球独立闸门：比分2-1 / 1-1，总进球3球/2球，两个比分脚本至少覆盖一个总进球选择。",
+        "08 让球统一闸门：让球-1，让胜27.3%、让平23.2%、让负49.5%；独立边际第一项让负，条件Challenger为让胜，兼容正式单选让平。",
+        "09 冲突与失败方式：正式比分2-1 / 1-1服务最大概率覆盖；独立风险1-2只进入风险诊断和置信扣分。",
+        "10 最终待锁版：胜；让平；3球/2球；2-1 / 1-1；跳过。"
+      ]
+    }
+  },
+  {
+    "lockId": "manual-sporttery-1324065-20260716-v4-final-r4",
+    "matchId": "sporttery-1324065",
+    "modelRunId": "model-run-b133ed9a-6831-46fc-b119-11f7575f37ce",
+    "matchCode": "四208",
+    "homeTeam": "芝加哥",
+    "awayTeam": "温哥华",
+    "league": "美职",
+    "kickoffTime": "2026-07-17 08:30",
+    "lockedAt": "2026-07-16T03:38:47.376Z",
+    "lockType": "FINAL_LOCK",
+    "modelVersion": "V1-UNIFIED",
+    "finalApproval": true,
+    "modelHomeProb": 0.4374,
+    "modelDrawProb": 0.2716,
+    "modelAwayProb": 0.291,
+    "recommendation": "胜",
+    "recommendationSide": "HOME",
+    "finalGrade": "C",
+    "finalAction": "跳过",
+    "confidenceScore": 46,
+    "riskScore": 54,
+    "consistencyScore": 100,
+    "sportteryHomeSp": 2.57,
+    "sportteryDrawSp": 3.55,
+    "sportteryAwaySp": 2.18,
+    "asianHandicap": 1,
+    "dataQuality": "A",
+    "reasoningSummary": "统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。正式让球必须与胜平负主方向及至少一个正式比分同时成立；独立边际第一项和条件让球分别作风险审计与Challenger影子验票。正式比分按联合概率覆盖选择2-1 / 1-1，独立风险剧本1-2不占正式名额。",
+    "sportteryPrediction": {
+      "type": "美职 稳定 V4 模型锁版",
+      "matchId": "1324065",
+      "no": "208",
+      "issue": "四208",
+      "matchDate": "2026-07-17",
+      "kickoffTime": "08:30",
+      "competition": "美职",
+      "home": "芝加哥",
+      "away": "温哥华",
+      "modelVersion": "V1-UNIFIED",
+      "pick": "胜",
+      "handicap": "+1",
+      "handicapPick": "让胜",
+      "totalGoalsPick": "3球/4球",
+      "mainScore": "2-1",
+      "counterScore": "1-1",
+      "matchType": "常规局",
+      "independentRiskScenario": {
+        "score": "1-2",
+        "probability": 0.0778,
+        "direction": "AWAY",
+        "directionProbability": 0.291,
+        "handicapResult": "让平",
+        "role": "INDEPENDENT_RISK_PATH",
+        "occupiesOfficialScoreSlot": false
+      },
+      "scoreSelectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+      "officialScoreCoverageProbability": 0.1645,
+      "unifiedRunEvidence": {
+        "seasonLearning": {
+          "league": "美职",
+          "season": "2026",
+          "mode": "BOUNDED_SCORE_CALIBRATION",
+          "appliedToChampion": true,
+          "appliedScope": "SCORE_DISTRIBUTION_ONLY",
+          "seasonStats": {
+            "sampleCount": 200,
+            "homeWinRate": 0.45,
+            "drawRate": 0.24,
+            "awayWinRate": 0.31,
+            "averageGoals": 3.45,
+            "bttsRate": 0.66
+          },
+          "recentWindow": {
+            "size": 30,
+            "sampleCount": 30,
+            "homeWinRate": 0.5333,
+            "drawRate": 0.2,
+            "awayWinRate": 0.2667,
+            "averageGoals": 3.933,
+            "bttsRate": 0.7333
+          },
+          "deltas": {
+            "homeWinRate": 0.0833,
+            "drawRate": -0.04,
+            "averageGoals": 0.483,
+            "bttsRate": 0.0733
+          },
+          "narrative": [
+            "近期进球环境升温",
+            "近期主场优势增强"
+          ],
+          "scoreCalibration": {
+            "eligible": true,
+            "weight": 0.12,
+            "sampleCount": 30,
+            "probabilities": {
+              "1-0": 0.1383,
+              "6-4": 0.0729,
+              "2-0": 0.0716,
+              "1-1": 0.1289,
+              "1-2": 0.1338,
+              "1-3": 0.0672,
+              "2-4": 0.0672,
+              "2-1": 0.1318,
+              "4-4": 0.0642,
+              "6-2": 0.0642,
+              "3-0": 0.06
+            }
+          },
+          "eligibleForCalibrationReview": true,
+          "promotionPolicy": "当前赛季至少30场后仅以12%上限校准比分分布；胜平负、让球和总进球仍须通过样本外不退化验证后才能扩大权重"
+        },
+        "riskScenario": {
+          "score": "1-2",
+          "probability": 0.0778,
+          "direction": "AWAY",
+          "directionProbability": 0.291,
+          "handicapResult": "让平",
+          "role": "INDEPENDENT_RISK_PATH",
+          "occupiesOfficialScoreSlot": false
+        },
+        "scoreSelection": {
+          "components": [
+            {
+              "label": "fundamental-score-grid",
+              "weight": 0.7
+            },
+            {
+              "label": "historical-similar",
+              "weight": 0.2
+            },
+            {
+              "label": "sporttery-score-calibration",
+              "weight": 0.1
+            },
+            {
+              "label": "league-season-score-calibration",
+              "weight": 0.12
+            }
+          ],
+          "historicalSampleCount": 163,
+          "marketComplete": true,
+          "selectionVersion": "SCORE_COVERAGE_2026_R1",
+          "selectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+          "officialCoverageProbability": 0.1645,
+          "topCandidates": [
+            {
+              "score": "2-1",
+              "probability": 0.0824,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-1",
+              "probability": 0.0821,
+              "direction": "DRAW"
+            },
+            {
+              "score": "1-2",
+              "probability": 0.0778,
+              "direction": "AWAY"
+            },
+            {
+              "score": "2-2",
+              "probability": 0.0647,
+              "direction": "DRAW"
+            },
+            {
+              "score": "1-0",
+              "probability": 0.0515,
+              "direction": "HOME"
+            },
+            {
+              "score": "3-2",
+              "probability": 0.0486,
+              "direction": "HOME"
+            },
+            {
+              "score": "2-3",
+              "probability": 0.0479,
+              "direction": "AWAY"
+            },
+            {
+              "score": "1-3",
+              "probability": 0.0473,
+              "direction": "AWAY"
+            }
+          ]
+        },
+        "crossLeagueNormalization": {
+          "home": {
+            "targetLeague": "美职",
+            "candidateCount": 6,
+            "sameLeagueCandidates": 6,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "away": {
+            "targetLeague": "美职",
+            "candidateCount": 6,
+            "sameLeagueCandidates": 6,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "complete": true
+        },
+        "evidenceDirectionConflict": {
+          "votes": [
+            {
+              "source": "LOCK_MARKET",
+              "direction": "AWAY"
+            },
+            {
+              "source": "STYLE_FIRST_GOAL",
+              "direction": "HOME"
+            }
+          ],
+          "counts": {
+            "HOME": 1,
+            "DRAW": 0,
+            "AWAY": 1
+          },
+          "consensusDirection": "",
+          "consensusCount": 1,
+          "selectedDirection": "HOME",
+          "materialConflict": false,
+          "quantitativeSupportForSelected": [],
+          "quantitativeSupportCount": 0,
+          "resolved": true,
+          "championAction": "ALLOW",
+          "challengerRiskWeight": 0.2,
+          "policy": "TWO_OF_MARKET_FIRST_GOAL_TIE_EXPOSURE_REQUIRE_TWO_QUANTITATIVE_OVERRIDES"
+        },
+        "evidenceDrivenRiskChallenger": {
+          "mode": "CHAMPION_BASELINE_20",
+          "championWeight": 0.2,
+          "challengerWeight": 0.2,
+          "promotedToChampion": false,
+          "promotionPolicy": "至少30至50场影子样本且四项命中率与样本外概率损失不退化"
+        },
+        "conditionalHandicapChallenger": {
+          "mode": "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
+          "direction": "HOME",
+          "pick": "让胜",
+          "conditionalProbability": 1,
+          "scoreProbability": 0.4339,
+          "marginalProbability": 0.6302,
+          "differsFromChampion": false,
+          "differsFromIndependentLeader": false,
+          "promotedToChampion": false,
+          "learningEligibility": "SHADOW_AUDIT_ONLY",
+          "minimumSettledSamples": 30,
+          "targetSettledSamples": 50,
+          "promotionPolicy": "30至50场独立验票；让球单选命中率提升且胜平负+让球联合命中与概率损失不退化后才可申请晋级"
+        },
+        "jointDecision": {
+          "selected": {
+            "direction": "HOME",
+            "handicapPick": "让胜",
+            "scoreProbability": 0.433884238073847,
+            "conditionalProbability": 1,
+            "marginalProduct": 0.27564919103705776,
+            "score": 0.3785019716109708,
+            "officialScoreProbability": 0.0824114322413972,
+            "officialScoreSupport": [
+              "2-1"
+            ],
+            "officialScoreSupported": true
+          },
+          "candidateCount": 4,
+          "independentDirectionLeader": "HOME",
+          "independentHandicapLeader": "让胜",
+          "independentPairCompatible": true,
+          "formalPairCompatible": true,
+          "formalPairOfficialScoreSupported": true,
+          "independentHandicapRisk": {
+            "pick": "让胜",
+            "probability": 0.6302,
+            "differsFromFormalPick": false,
+            "role": "INDEPENDENT_MARGIN_RISK_AUDIT"
+          },
+          "resolutionApplied": false,
+          "directionPreserved": true,
+          "handicapDecisionAudit": {
+            "independentLeader": "让胜",
+            "selected": "让胜",
+            "probabilityGap": 0,
+            "materialConflict": false,
+            "resolutionMode": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+            "conditionalProbability": 1,
+            "conditionalResolution": false,
+            "resolved": true,
+            "confidencePenalty": 0
+          },
+          "role": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
+        },
+        "backtestContract": {
+          "probabilityFields": [
+            "HOME",
+            "DRAW",
+            "AWAY"
+          ],
+          "metrics": [
+            "winDrawLoseSingleHit",
+            "formalHandicapSingleHit",
+            "independentHandicapLeaderSingleHit",
+            "conditionalHandicapChallengerSingleHit",
+            "formalWinDrawLoseHandicapJointHit",
+            "totalGoalsDoubleHit",
+            "scoreDoubleHit",
+            "officialScoreCoverageProbability",
+            "brierScore",
+            "logLoss",
+            "calibrationBin"
+          ],
+          "resultScope": "90_MINUTES",
+          "sampleVersion": "rolling-current",
+          "caseReuse": "PREFERRED_FINAL_LOCK_ONLY",
+          "shadowReuse": "PRE_LOCK_CHALLENGER_AUDIT_ONLY",
+          "immutablePreMatchSnapshot": true,
+          "scorePolicies": [
+            "LEGACY_MAIN_PLUS_COUNTER",
+            "TOP_TWO_GLOBAL",
+            "TOP_TWO_LEAGUE_SEASON_CALIBRATED"
+          ]
+        },
+        "competitionStage": {
+          "required": false,
+          "complete": true,
+          "matchStage": "",
+          "researchStage": "REGULAR_LEAGUE",
+          "matchCanonical": "",
+          "researchCanonical": "REGULAR_LEAGUE",
+          "consistent": true,
+          "policy": "SPORTTERY_STAGE_X_RESEARCH_STAGE_X_TIE_CONTEXT"
+        },
+        "twoLegLeadControl": {
+          "applied": false,
+          "aggregateLeader": "LEVEL",
+          "factor": 1,
+          "expansionEvidenceCount": 0,
+          "before": {
+            "home": 2.37,
+            "away": 2.18
+          },
+          "after": {
+            "home": 2.37,
+            "away": 2.18
+          },
+          "policy": "DECAY_AGGREGATE_LEADER_FOLLOW_UP_GOALS_UNLESS_EXPANSION_EVIDENCE"
+        }
+      },
+      "confidence": "C",
+      "confidenceScore": 46,
+      "advice": "跳过",
+      "modelRunId": "model-run-b133ed9a-6831-46fc-b119-11f7575f37ce",
+      "lockType": "FINAL_LOCK"
+    },
+    "teamState": "主队芝加哥近5场3胜0平2负，进10失8；客队温哥华近5场2胜2平1负，进9失7。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布芝加哥 vs 温哥华可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布芝加哥 vs 温哥华可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+    "scorePick": "2-1 / 1-1",
+    "totalGoalsPick": "3球/4球",
+    "analysis": {
+      "teamState": "主队芝加哥近5场3胜0平2负，进10失8；客队温哥华近5场2胜2平1负，进9失7。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布芝加哥 vs 温哥华可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布芝加哥 vs 温哥华可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+      "finalPick": {
+        "winDrawLose": "胜",
+        "scores": [
+          "2-1",
+          "1-1"
+        ],
+        "totalGoals": "3球/4球"
+      },
+      "unifiedSteps": [
+        "01 当前胜平负SP复核：2.57 / 3.55 / 2.18。",
+        "02 赛事规则与动机：MLS常规赛复赛，按90分钟结算。芝加哥争东区前列，温哥华守西区榜首；温哥华存在杯赛后短恢复与客场转换负荷。",
+        "03 球队状态：主队芝加哥近5场3胜0平2负，进10失8；客队温哥华近5场2胜2平1负，进9失7。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布芝加哥 vs 温哥华可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布芝加哥 vs 温哥华可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+        "04 风格对位：芝加哥已有Cuypers火力且Lewandowski可能融入，温哥华整体xG质量更高但两天内连续客场；主队首球路径获得短休息修正，客队整体胜率优势仍由Base Case和盘口层保留。",
+        "05 盘口与样本：完整盘口样本200场，两队近期赛果已读取并去重。",
+        "06 赔率动态：2026-07-15 16:15:04 2.52/3.65/2.18 -> 2026-07-16 03:35:04 2.57/3.55/2.18，状态MOVED。",
+        "07 比分/总进球独立闸门：比分2-1 / 1-1，总进球3球/4球，两个比分脚本至少覆盖一个总进球选择。",
+        "08 让球统一闸门：让球1，让胜63.0%、让平18.1%、让负18.9%；独立边际第一项让胜，条件Challenger为让胜，兼容正式单选让胜。",
+        "09 冲突与失败方式：正式比分2-1 / 1-1服务最大概率覆盖；独立风险1-2只进入风险诊断和置信扣分。",
+        "10 最终锁版：胜；让胜；3球/4球；2-1 / 1-1；跳过。"
+      ]
+    }
+  },
+  {
+    "lockId": "manual-sporttery-1324066-20260716-v4-pre-r4",
+    "matchId": "sporttery-1324066",
+    "modelRunId": "model-run-86bb987b-0b42-47d2-8441-31599b3ad17c",
+    "matchCode": "四209",
+    "homeTeam": "圣路易",
+    "awayTeam": "堪萨斯",
+    "league": "美职",
+    "kickoffTime": "2026-07-17 08:30",
+    "lockedAt": "2026-07-16T03:38:47.583Z",
+    "lockType": "PRE_LOCK",
+    "modelVersion": "V1-UNIFIED",
+    "modelHomeProb": 0.7879,
+    "modelDrawProb": 0.1136,
+    "modelAwayProb": 0.0985,
+    "recommendation": "胜",
+    "recommendationSide": "HOME",
+    "finalGrade": "C",
+    "finalAction": "跳过",
+    "confidenceScore": 57,
+    "riskScore": 43,
+    "consistencyScore": 96,
+    "sportteryHomeSp": 1.32,
+    "sportteryDrawSp": 4.8,
+    "sportteryAwaySp": 6.1,
+    "asianHandicap": -1,
+    "dataQuality": "A",
+    "reasoningSummary": "统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。正式让球必须与胜平负主方向及至少一个正式比分同时成立；独立边际第一项和条件让球分别作风险审计与Challenger影子验票。正式比分按联合概率覆盖选择2-1 / 2-0，独立风险剧本1-1不占正式名额。",
+    "sportteryPrediction": {
+      "type": "美职 稳定 V4 模型待锁版",
+      "matchId": "1324066",
+      "no": "209",
+      "issue": "四209",
+      "matchDate": "2026-07-17",
+      "kickoffTime": "08:30",
+      "competition": "美职",
+      "home": "圣路易",
+      "away": "堪萨斯",
+      "modelVersion": "V1-UNIFIED",
+      "pick": "胜",
+      "handicap": "-1",
+      "handicapPick": "让平",
+      "totalGoalsPick": "3球/4球",
+      "mainScore": "2-1",
+      "counterScore": "2-0",
+      "matchType": "常规局",
+      "independentRiskScenario": {
+        "score": "1-1",
+        "probability": 0.0557,
+        "direction": "DRAW",
+        "directionProbability": 0.1136,
+        "handicapResult": "让负",
+        "role": "INDEPENDENT_RISK_PATH",
+        "occupiesOfficialScoreSlot": false
+      },
+      "scoreSelectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+      "officialScoreCoverageProbability": 0.1609,
+      "unifiedRunEvidence": {
+        "seasonLearning": {
+          "league": "美职",
+          "season": "2026",
+          "mode": "BOUNDED_SCORE_CALIBRATION",
+          "appliedToChampion": true,
+          "appliedScope": "SCORE_DISTRIBUTION_ONLY",
+          "seasonStats": {
+            "sampleCount": 200,
+            "homeWinRate": 0.45,
+            "drawRate": 0.24,
+            "awayWinRate": 0.31,
+            "averageGoals": 3.45,
+            "bttsRate": 0.66
+          },
+          "recentWindow": {
+            "size": 30,
+            "sampleCount": 30,
+            "homeWinRate": 0.5333,
+            "drawRate": 0.2,
+            "awayWinRate": 0.2667,
+            "averageGoals": 3.933,
+            "bttsRate": 0.7333
+          },
+          "deltas": {
+            "homeWinRate": 0.0833,
+            "drawRate": -0.04,
+            "averageGoals": 0.483,
+            "bttsRate": 0.0733
+          },
+          "narrative": [
+            "近期进球环境升温",
+            "近期主场优势增强"
+          ],
+          "scoreCalibration": {
+            "eligible": true,
+            "weight": 0.12,
+            "sampleCount": 30,
+            "probabilities": {
+              "1-0": 0.1383,
+              "6-4": 0.0729,
+              "2-0": 0.0716,
+              "1-1": 0.1289,
+              "1-2": 0.1338,
+              "1-3": 0.0672,
+              "2-4": 0.0672,
+              "2-1": 0.1318,
+              "4-4": 0.0642,
+              "6-2": 0.0642,
+              "3-0": 0.06
+            }
+          },
+          "eligibleForCalibrationReview": true,
+          "promotionPolicy": "当前赛季至少30场后仅以12%上限校准比分分布；胜平负、让球和总进球仍须通过样本外不退化验证后才能扩大权重"
+        },
+        "riskScenario": {
+          "score": "1-1",
+          "probability": 0.0557,
+          "direction": "DRAW",
+          "directionProbability": 0.1136,
+          "handicapResult": "让负",
+          "role": "INDEPENDENT_RISK_PATH",
+          "occupiesOfficialScoreSlot": false
+        },
+        "scoreSelection": {
+          "components": [
+            {
+              "label": "fundamental-score-grid",
+              "weight": 0.7
+            },
+            {
+              "label": "historical-similar",
+              "weight": 0.2
+            },
+            {
+              "label": "sporttery-score-calibration",
+              "weight": 0.1
+            },
+            {
+              "label": "league-season-score-calibration",
+              "weight": 0.12
+            }
+          ],
+          "historicalSampleCount": 99,
+          "marketComplete": true,
+          "selectionVersion": "SCORE_COVERAGE_2026_R1",
+          "selectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+          "officialCoverageProbability": 0.1609,
+          "topCandidates": [
+            {
+              "score": "2-1",
+              "probability": 0.0875,
+              "direction": "HOME"
+            },
+            {
+              "score": "2-0",
+              "probability": 0.0734,
+              "direction": "HOME"
+            },
+            {
+              "score": "3-1",
+              "probability": 0.0674,
+              "direction": "HOME"
+            },
+            {
+              "score": "3-0",
+              "probability": 0.064,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-1",
+              "probability": 0.0557,
+              "direction": "DRAW"
+            },
+            {
+              "score": "4-1",
+              "probability": 0.0548,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-0",
+              "probability": 0.049,
+              "direction": "HOME"
+            },
+            {
+              "score": "4-0",
+              "probability": 0.047,
+              "direction": "HOME"
+            }
+          ]
+        },
+        "crossLeagueNormalization": {
+          "home": {
+            "targetLeague": "美职",
+            "candidateCount": 6,
+            "sameLeagueCandidates": 6,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "away": {
+            "targetLeague": "美职",
+            "candidateCount": 6,
+            "sameLeagueCandidates": 6,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "complete": true
+        },
+        "evidenceDirectionConflict": {
+          "votes": [
+            {
+              "source": "LOCK_MARKET",
+              "direction": "HOME"
+            },
+            {
+              "source": "STYLE_FIRST_GOAL",
+              "direction": "HOME"
+            }
+          ],
+          "counts": {
+            "HOME": 2,
+            "DRAW": 0,
+            "AWAY": 0
+          },
+          "consensusDirection": "HOME",
+          "consensusCount": 2,
+          "selectedDirection": "HOME",
+          "materialConflict": false,
+          "quantitativeSupportForSelected": [],
+          "quantitativeSupportCount": 0,
+          "resolved": true,
+          "championAction": "ALLOW",
+          "challengerRiskWeight": 0.35,
+          "policy": "TWO_OF_MARKET_FIRST_GOAL_TIE_EXPOSURE_REQUIRE_TWO_QUANTITATIVE_OVERRIDES"
+        },
+        "evidenceDrivenRiskChallenger": {
+          "mode": "CHALLENGER_SHADOW_35",
+          "championWeight": 0.2,
+          "challengerWeight": 0.35,
+          "promotedToChampion": false,
+          "promotionPolicy": "至少30至50场影子样本且四项命中率与样本外概率损失不退化"
+        },
+        "conditionalHandicapChallenger": {
+          "mode": "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
+          "direction": "HOME",
+          "pick": "让胜",
+          "conditionalProbability": 0.7357,
+          "scoreProbability": 0.5462,
+          "marginalProbability": 0.5147,
+          "differsFromChampion": true,
+          "differsFromIndependentLeader": false,
+          "promotedToChampion": false,
+          "learningEligibility": "SHADOW_AUDIT_ONLY",
+          "minimumSettledSamples": 30,
+          "targetSettledSamples": 50,
+          "promotionPolicy": "30至50场独立验票；让球单选命中率提升且胜平负+让球联合命中与概率损失不退化后才可申请晋级"
+        },
+        "jointDecision": {
+          "selected": {
+            "direction": "HOME",
+            "handicapPick": "让平",
+            "scoreProbability": 0.19617399240601993,
+            "conditionalProbability": 0.2642564818924532,
+            "marginalProduct": 0.15514232576162837,
+            "score": 0.18181290908048287,
+            "officialScoreProbability": 0.08750751728154987,
+            "officialScoreSupport": [
+              "2-1"
+            ],
+            "officialScoreSupported": true
+          },
+          "candidateCount": 4,
+          "independentDirectionLeader": "HOME",
+          "independentHandicapLeader": "让胜",
+          "independentPairCompatible": true,
+          "formalPairCompatible": true,
+          "formalPairOfficialScoreSupported": true,
+          "independentHandicapRisk": {
+            "pick": "让胜",
+            "probability": 0.5147,
+            "differsFromFormalPick": true,
+            "role": "INDEPENDENT_MARGIN_RISK_AUDIT"
+          },
+          "resolutionApplied": true,
+          "directionPreserved": true,
+          "handicapDecisionAudit": {
+            "independentLeader": "让胜",
+            "selected": "让平",
+            "probabilityGap": 0.3178,
+            "materialConflict": true,
+            "resolutionMode": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+            "conditionalProbability": 0.2643,
+            "conditionalResolution": false,
+            "resolved": false,
+            "confidencePenalty": 6
+          },
+          "role": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
+        },
+        "backtestContract": {
+          "probabilityFields": [
+            "HOME",
+            "DRAW",
+            "AWAY"
+          ],
+          "metrics": [
+            "winDrawLoseSingleHit",
+            "formalHandicapSingleHit",
+            "independentHandicapLeaderSingleHit",
+            "conditionalHandicapChallengerSingleHit",
+            "formalWinDrawLoseHandicapJointHit",
+            "totalGoalsDoubleHit",
+            "scoreDoubleHit",
+            "officialScoreCoverageProbability",
+            "brierScore",
+            "logLoss",
+            "calibrationBin"
+          ],
+          "resultScope": "90_MINUTES",
+          "sampleVersion": "rolling-current",
+          "caseReuse": "PREFERRED_FINAL_LOCK_ONLY",
+          "shadowReuse": "PRE_LOCK_CHALLENGER_AUDIT_ONLY",
+          "immutablePreMatchSnapshot": true,
+          "scorePolicies": [
+            "LEGACY_MAIN_PLUS_COUNTER",
+            "TOP_TWO_GLOBAL",
+            "TOP_TWO_LEAGUE_SEASON_CALIBRATED"
+          ]
+        },
+        "competitionStage": {
+          "required": false,
+          "complete": true,
+          "matchStage": "",
+          "researchStage": "REGULAR_LEAGUE",
+          "matchCanonical": "",
+          "researchCanonical": "REGULAR_LEAGUE",
+          "consistent": true,
+          "policy": "SPORTTERY_STAGE_X_RESEARCH_STAGE_X_TIE_CONTEXT"
+        },
+        "twoLegLeadControl": {
+          "applied": false,
+          "aggregateLeader": "LEVEL",
+          "factor": 1,
+          "expansionEvidenceCount": 0,
+          "before": {
+            "home": 3.83,
+            "away": 1.17
+          },
+          "after": {
+            "home": 3.83,
+            "away": 1.17
+          },
+          "policy": "DECAY_AGGREGATE_LEADER_FOLLOW_UP_GOALS_UNLESS_EXPANSION_EVIDENCE"
+        }
+      },
+      "confidence": "C",
+      "confidenceScore": 57,
+      "advice": "跳过",
+      "modelRunId": "model-run-86bb987b-0b42-47d2-8441-31599b3ad17c",
+      "lockType": "PRE_LOCK"
+    },
+    "teamState": "主队圣路易近5场3胜1平1负，进7失4；客队堪萨斯近5场2胜1平2负，进7失11。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布圣路易 vs 堪萨斯可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布圣路易 vs 堪萨斯可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+    "scorePick": "2-1 / 2-0",
+    "totalGoalsPick": "3球/4球",
+    "analysis": {
+      "teamState": "主队圣路易近5场3胜1平1负，进7失4；客队堪萨斯近5场2胜1平2负，进7失11。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布圣路易 vs 堪萨斯可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布圣路易 vs 堪萨斯可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+      "finalPick": {
+        "winDrawLose": "胜",
+        "scores": [
+          "2-1",
+          "2-0"
+        ],
+        "totalGoals": "3球/4球"
+      },
+      "unifiedSteps": [
+        "01 当前胜平负SP复核：1.32 / 4.8 / 6.1。",
+        "02 赛事规则与动机：MLS常规赛复赛暨中西部德比，按90分钟结算；两队都要在下半赛季扭转排名。圣路易已完成阵容重置的一部分，Cedric Teuchert确认离队。",
+        "03 球队状态：主队圣路易近5场3胜1平1负，进7失4；客队堪萨斯近5场2胜1平2负，进7失11。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布圣路易 vs 堪萨斯可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布圣路易 vs 堪萨斯可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+        "04 风格对位：圣路易近期防守更稳且主场强度占优；堪萨斯近5场防线方差大，德比攻击点Joveljić仍有威胁，首球路径偏主队但风险剧本保留客队反击。",
+        "05 盘口与样本：完整盘口样本200场，两队近期赛果已读取并去重。",
+        "06 赔率动态：2026-07-15 16:15:04 1.32/4.80/6.10 -> 2026-07-16 03:35:04 1.32/4.80/6.10，状态STABLE。",
+        "07 比分/总进球独立闸门：比分2-1 / 2-0，总进球3球/4球，两个比分脚本至少覆盖一个总进球选择。",
+        "08 让球统一闸门：让球-1，让胜51.5%、让平19.7%、让负28.8%；独立边际第一项让胜，条件Challenger为让胜，兼容正式单选让平。",
+        "09 冲突与失败方式：正式比分2-1 / 2-0服务最大概率覆盖；独立风险1-1只进入风险诊断和置信扣分。",
+        "10 最终待锁版：胜；让平；3球/4球；2-1 / 2-0；跳过。"
+      ]
+    }
+  },
+  {
+    "lockId": "manual-sporttery-1324067-20260716-v4-pre-r4",
+    "matchId": "sporttery-1324067",
+    "modelRunId": "model-run-56973f33-ccf5-4323-85de-92a66ffd32ca",
+    "matchCode": "四210",
+    "homeTeam": "西雅图",
+    "awayTeam": "波特兰",
+    "league": "美职",
+    "kickoffTime": "2026-07-17 10:30",
+    "lockedAt": "2026-07-16T03:38:47.763Z",
+    "lockType": "PRE_LOCK",
+    "modelVersion": "V1-UNIFIED",
+    "modelHomeProb": 0.5371,
+    "modelDrawProb": 0.2661,
+    "modelAwayProb": 0.1969,
+    "recommendation": "胜",
+    "recommendationSide": "HOME",
+    "finalGrade": "D",
+    "finalAction": "跳过",
+    "confidenceScore": 41,
+    "riskScore": 59,
+    "consistencyScore": 96,
+    "sportteryHomeSp": 1.4,
+    "sportteryDrawSp": 4.45,
+    "sportteryAwaySp": 5.25,
+    "asianHandicap": -1,
+    "dataQuality": "A",
+    "reasoningSummary": "统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。正式让球必须与胜平负主方向及至少一个正式比分同时成立；独立边际第一项和条件让球分别作风险审计与Challenger影子验票。正式比分按联合概率覆盖选择2-1 / 1-1，独立风险剧本1-2不占正式名额。",
+    "sportteryPrediction": {
+      "type": "美职 稳定 V4 模型待锁版",
+      "matchId": "1324067",
+      "no": "210",
+      "issue": "四210",
+      "matchDate": "2026-07-17",
+      "kickoffTime": "10:30",
+      "competition": "美职",
+      "home": "西雅图",
+      "away": "波特兰",
+      "modelVersion": "V1-UNIFIED",
+      "pick": "胜",
+      "handicap": "-1",
+      "handicapPick": "让平",
+      "totalGoalsPick": "3球/2球",
+      "mainScore": "2-1",
+      "counterScore": "1-1",
+      "matchType": "常规局",
+      "independentRiskScenario": {
+        "score": "1-2",
+        "probability": 0.0775,
+        "direction": "AWAY",
+        "directionProbability": 0.1969,
+        "handicapResult": "让负",
+        "role": "INDEPENDENT_RISK_PATH",
+        "occupiesOfficialScoreSlot": false
+      },
+      "scoreSelectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+      "officialScoreCoverageProbability": 0.1988,
+      "unifiedRunEvidence": {
+        "seasonLearning": {
+          "league": "美职",
+          "season": "2026",
+          "mode": "BOUNDED_SCORE_CALIBRATION",
+          "appliedToChampion": true,
+          "appliedScope": "SCORE_DISTRIBUTION_ONLY",
+          "seasonStats": {
+            "sampleCount": 200,
+            "homeWinRate": 0.45,
+            "drawRate": 0.24,
+            "awayWinRate": 0.31,
+            "averageGoals": 3.45,
+            "bttsRate": 0.66
+          },
+          "recentWindow": {
+            "size": 30,
+            "sampleCount": 30,
+            "homeWinRate": 0.5333,
+            "drawRate": 0.2,
+            "awayWinRate": 0.2667,
+            "averageGoals": 3.933,
+            "bttsRate": 0.7333
+          },
+          "deltas": {
+            "homeWinRate": 0.0833,
+            "drawRate": -0.04,
+            "averageGoals": 0.483,
+            "bttsRate": 0.0733
+          },
+          "narrative": [
+            "近期进球环境升温",
+            "近期主场优势增强"
+          ],
+          "scoreCalibration": {
+            "eligible": true,
+            "weight": 0.12,
+            "sampleCount": 30,
+            "probabilities": {
+              "1-0": 0.1383,
+              "6-4": 0.0729,
+              "2-0": 0.0716,
+              "1-1": 0.1289,
+              "1-2": 0.1338,
+              "1-3": 0.0672,
+              "2-4": 0.0672,
+              "2-1": 0.1318,
+              "4-4": 0.0642,
+              "6-2": 0.0642,
+              "3-0": 0.06
+            }
+          },
+          "eligibleForCalibrationReview": true,
+          "promotionPolicy": "当前赛季至少30场后仅以12%上限校准比分分布；胜平负、让球和总进球仍须通过样本外不退化验证后才能扩大权重"
+        },
+        "riskScenario": {
+          "score": "1-2",
+          "probability": 0.0775,
+          "direction": "AWAY",
+          "directionProbability": 0.1969,
+          "handicapResult": "让负",
+          "role": "INDEPENDENT_RISK_PATH",
+          "occupiesOfficialScoreSlot": false
+        },
+        "scoreSelection": {
+          "components": [
+            {
+              "label": "fundamental-score-grid",
+              "weight": 0.7
+            },
+            {
+              "label": "historical-similar",
+              "weight": 0.2
+            },
+            {
+              "label": "sporttery-score-calibration",
+              "weight": 0.1
+            },
+            {
+              "label": "league-season-score-calibration",
+              "weight": 0.12
+            }
+          ],
+          "historicalSampleCount": 144,
+          "marketComplete": true,
+          "selectionVersion": "SCORE_COVERAGE_2026_R1",
+          "selectionPolicy": "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+          "officialCoverageProbability": 0.1988,
+          "topCandidates": [
+            {
+              "score": "2-1",
+              "probability": 0.1023,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-1",
+              "probability": 0.0965,
+              "direction": "DRAW"
+            },
+            {
+              "score": "1-2",
+              "probability": 0.0775,
+              "direction": "AWAY"
+            },
+            {
+              "score": "2-0",
+              "probability": 0.0715,
+              "direction": "HOME"
+            },
+            {
+              "score": "1-0",
+              "probability": 0.07,
+              "direction": "HOME"
+            },
+            {
+              "score": "2-2",
+              "probability": 0.0603,
+              "direction": "DRAW"
+            },
+            {
+              "score": "3-1",
+              "probability": 0.0562,
+              "direction": "HOME"
+            },
+            {
+              "score": "3-0",
+              "probability": 0.046,
+              "direction": "HOME"
+            }
+          ]
+        },
+        "crossLeagueNormalization": {
+          "home": {
+            "targetLeague": "美职",
+            "candidateCount": 6,
+            "sameLeagueCandidates": 6,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "away": {
+            "targetLeague": "美职",
+            "candidateCount": 6,
+            "sameLeagueCandidates": 6,
+            "crossLeagueCandidates": 0,
+            "normalizedCrossLeague": 0,
+            "excludedCrossLeague": 0,
+            "required": false,
+            "complete": true,
+            "policy": "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY"
+          },
+          "complete": true
+        },
+        "evidenceDirectionConflict": {
+          "votes": [
+            {
+              "source": "LOCK_MARKET",
+              "direction": "HOME"
+            },
+            {
+              "source": "STYLE_FIRST_GOAL",
+              "direction": "HOME"
+            }
+          ],
+          "counts": {
+            "HOME": 2,
+            "DRAW": 0,
+            "AWAY": 0
+          },
+          "consensusDirection": "HOME",
+          "consensusCount": 2,
+          "selectedDirection": "HOME",
+          "materialConflict": false,
+          "quantitativeSupportForSelected": [],
+          "quantitativeSupportCount": 0,
+          "resolved": true,
+          "championAction": "ALLOW",
+          "challengerRiskWeight": 0.35,
+          "policy": "TWO_OF_MARKET_FIRST_GOAL_TIE_EXPOSURE_REQUIRE_TWO_QUANTITATIVE_OVERRIDES"
+        },
+        "evidenceDrivenRiskChallenger": {
+          "mode": "CHALLENGER_SHADOW_35",
+          "championWeight": 0.2,
+          "challengerWeight": 0.35,
+          "promotedToChampion": false,
+          "promotionPolicy": "至少30至50场影子样本且四项命中率与样本外概率损失不退化"
+        },
+        "conditionalHandicapChallenger": {
+          "mode": "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
+          "direction": "HOME",
+          "pick": "让胜",
+          "conditionalProbability": 0.5665,
+          "scoreProbability": 0.2963,
+          "marginalProbability": 0.315,
+          "differsFromChampion": true,
+          "differsFromIndependentLeader": true,
+          "promotedToChampion": false,
+          "learningEligibility": "SHADOW_AUDIT_ONLY",
+          "minimumSettledSamples": 30,
+          "targetSettledSamples": 50,
+          "promotionPolicy": "30至50场独立验票；让球单选命中率提升且胜平负+让球联合命中与概率损失不退化后才可申请晋级"
+        },
+        "jointDecision": {
+          "selected": {
+            "direction": "HOME",
+            "handicapPick": "让平",
+            "scoreProbability": 0.2266583625922256,
+            "conditionalProbability": 0.4334556090140758,
+            "marginalProduct": 0.12008207703415871,
+            "score": 0.1893566626469022,
+            "officialScoreProbability": 0.10230803513854275,
+            "officialScoreSupport": [
+              "2-1"
+            ],
+            "officialScoreSupported": true
+          },
+          "candidateCount": 4,
+          "independentDirectionLeader": "HOME",
+          "independentHandicapLeader": "让负",
+          "independentPairCompatible": false,
+          "formalPairCompatible": true,
+          "formalPairOfficialScoreSupported": true,
+          "independentHandicapRisk": {
+            "pick": "让负",
+            "probability": 0.4614,
+            "differsFromFormalPick": true,
+            "role": "INDEPENDENT_MARGIN_RISK_AUDIT"
+          },
+          "resolutionApplied": true,
+          "directionPreserved": true,
+          "handicapDecisionAudit": {
+            "independentLeader": "让负",
+            "selected": "让平",
+            "probabilityGap": 0.2378,
+            "materialConflict": true,
+            "resolutionMode": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+            "conditionalProbability": 0.4335,
+            "conditionalResolution": false,
+            "resolved": false,
+            "confidencePenalty": 5
+          },
+          "role": "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
+        },
+        "backtestContract": {
+          "probabilityFields": [
+            "HOME",
+            "DRAW",
+            "AWAY"
+          ],
+          "metrics": [
+            "winDrawLoseSingleHit",
+            "formalHandicapSingleHit",
+            "independentHandicapLeaderSingleHit",
+            "conditionalHandicapChallengerSingleHit",
+            "formalWinDrawLoseHandicapJointHit",
+            "totalGoalsDoubleHit",
+            "scoreDoubleHit",
+            "officialScoreCoverageProbability",
+            "brierScore",
+            "logLoss",
+            "calibrationBin"
+          ],
+          "resultScope": "90_MINUTES",
+          "sampleVersion": "rolling-current",
+          "caseReuse": "PREFERRED_FINAL_LOCK_ONLY",
+          "shadowReuse": "PRE_LOCK_CHALLENGER_AUDIT_ONLY",
+          "immutablePreMatchSnapshot": true,
+          "scorePolicies": [
+            "LEGACY_MAIN_PLUS_COUNTER",
+            "TOP_TWO_GLOBAL",
+            "TOP_TWO_LEAGUE_SEASON_CALIBRATED"
+          ]
+        },
+        "competitionStage": {
+          "required": false,
+          "complete": true,
+          "matchStage": "",
+          "researchStage": "REGULAR_LEAGUE",
+          "matchCanonical": "",
+          "researchCanonical": "REGULAR_LEAGUE",
+          "consistent": true,
+          "policy": "SPORTTERY_STAGE_X_RESEARCH_STAGE_X_TIE_CONTEXT"
+        },
+        "twoLegLeadControl": {
+          "applied": false,
+          "aggregateLeader": "LEVEL",
+          "factor": 1,
+          "expansionEvidenceCount": 0,
+          "before": {
+            "home": 2.02,
+            "away": 1.5
+          },
+          "after": {
+            "home": 2.02,
+            "away": 1.5
+          },
+          "policy": "DECAY_AGGREGATE_LEADER_FOLLOW_UP_GOALS_UNLESS_EXPANSION_EVIDENCE"
+        }
+      },
+      "confidence": "D",
+      "confidenceScore": 41,
+      "advice": "跳过",
+      "modelRunId": "model-run-56973f33-ccf5-4323-85de-92a66ffd32ca",
+      "lockType": "PRE_LOCK"
+    },
+    "teamState": "主队西雅图近5场1胜2平2负，进5失7；客队波特兰近5场1胜1平3负，进9失9。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布西雅图 vs 波特兰可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布西雅图 vs 波特兰可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+    "scorePick": "2-1 / 1-1",
+    "totalGoalsPick": "3球/2球",
+    "analysis": {
+      "teamState": "主队西雅图近5场1胜2平2负，进5失7；客队波特兰近5场1胜1平3负，进9失9。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布西雅图 vs 波特兰可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布西雅图 vs 波特兰可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+      "finalPick": {
+        "winDrawLose": "胜",
+        "scores": [
+          "2-1",
+          "1-1"
+        ],
+        "totalGoals": "3球/2球"
+      },
+      "unifiedSteps": [
+        "01 当前胜平负SP复核：1.4 / 4.45 / 5.25。",
+        "02 赛事规则与动机：MLS常规赛复赛暨Cascadia Cup德比，按90分钟结算。西雅图守季后赛区，波特兰换帅后需要止跌，德比强度提高但不改变结算规则。",
+        "03 球队状态：主队西雅图近5场1胜2平2负，进5失7；客队波特兰近5场1胜1平3负，进9失9。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布西雅图 vs 波特兰可核验的最终伤停清单；本层不猜测，量化影响强制为0。锁版检索时，官方赛程、俱乐部渠道和当前赛前资料尚未发布西雅图 vs 波特兰可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+        "04 风格对位：西雅图赛季整体防守和积分明显占优，但复赛前连续两场被零封；波特兰近5场仅1胜且换帅，首球路径偏主队，同时把西雅图进攻停滞保留为独立风险。",
+        "05 盘口与样本：完整盘口样本200场，两队近期赛果已读取并去重。",
+        "06 赔率动态：2026-07-15 16:15:04 1.40/4.45/5.25 -> 2026-07-16 03:35:04 1.40/4.45/5.25，状态STABLE。",
+        "07 比分/总进球独立闸门：比分2-1 / 1-1，总进球3球/2球，两个比分脚本至少覆盖一个总进球选择。",
+        "08 让球统一闸门：让球-1，让胜31.5%、让平22.4%、让负46.1%；独立边际第一项让负，条件Challenger为让胜，兼容正式单选让平。",
+        "09 冲突与失败方式：正式比分2-1 / 1-1服务最大概率覆盖；独立风险1-2只进入风险诊断和置信扣分。",
+        "10 最终待锁版：胜；让平；3球/2球；2-1 / 1-1；跳过。"
+      ]
+    }
+  }
+]
