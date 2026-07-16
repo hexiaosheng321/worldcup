@@ -3303,14 +3303,18 @@ async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
 
   for (const match of matches) {
     const matchId = sportteryDbMatchId(match);
+    const existing = await db.prepare("SELECT kickoff_time, payload_json FROM matches WHERE match_id = ?").bind(matchId).first();
+    const existingPayload = parseObject(existing?.payload_json);
     if (!match.kickoffTime) {
-      const existing = await db.prepare("SELECT kickoff_time, payload_json FROM matches WHERE match_id = ?").bind(matchId).first();
-      const existingPayload = parseObject(existing?.payload_json);
       if (existingPayload.kickoffTime) {
         match.matchDate = existingPayload.matchDate || String(existing.kickoff_time || "").slice(0, 10) || match.ticaiDate;
         match.kickoffTime = existingPayload.kickoffTime;
         match.kickoffSource = existingPayload.kickoffSource || "existing-reliable-schedule";
       }
+    }
+    if (!match.competitionStage && existingPayload.competitionStage) {
+      match.competitionStage = existingPayload.competitionStage;
+      match.competitionStageSource = existingPayload.competitionStageSource || "existing-verified-stage";
     }
 
     await db.prepare(`
