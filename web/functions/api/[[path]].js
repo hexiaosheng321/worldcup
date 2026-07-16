@@ -3968,7 +3968,9 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
     : "当前胜平负SP已由统一模型复核。";
   const scenarioText = `正式比分按校准后联合概率覆盖选择 ${scoreA} / ${scoreB}；独立风险剧本为 ${riskScore}。结合球队状态、风格对位、盘口低位和赛事动机，第一球与半场前后的节奏决定比赛是否打开。`;
   const handicapProbabilities = parseObject(handicapEvidence.probabilities);
-  const handicapText = `让球独立模型：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；融合全比分矩阵、让球SP去水和${handicapEvidence.historicalSampleCount || 0}场相似历史分布。主比分${scoreA}只作校验，不生成让球结论。`;
+  const jointDecision = parseObject(featureSet.jointDecision);
+  const independentHandicapRisk = parseObject(jointDecision.independentHandicapRisk);
+  const handicapText = `让球独立概率：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；独立边际第一项 ${independentHandicapRisk.pick || "-"} 作风险审计。正式让球 ${decision.handicapPick || prediction.handicapPick || "-"} 必须与胜平负 ${decision.winDrawLose || prediction.pick || "-"} 及至少一个正式比分 ${scoreA} / ${scoreB} 同时成立。`;
   const finalText = `胜平负 ${decision.winDrawLose || prediction.pick || "-"}；让球 ${decision.handicapPick || prediction.handicapPick || "-"}；总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}；比分 ${scoreA} / ${scoreB}；类型 ${decision.matchType || prediction.matchType || "-"}；建议 ${decision.confidence ?? prediction.confidenceScore ?? "-"}% / ${decision.advice || prediction.advice || "-"}。`;
   return {
     ...prediction,
@@ -3984,7 +3986,7 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
     script: prediction.script || scenarioText,
     halftimeDecision: prediction.halftimeDecision || `半场或60分钟仍未出现预期第一球时，重新检查独立风险剧本${riskScore}；正式比分${scoreA} / ${scoreB}不承担固定主反方向。`,
     stateTransfer: prediction.stateTransfer || scenarioText,
-    decisionConflict: prediction.decisionConflict || `胜平负与让球分别独立判定：主方向${decision.winDrawLose || prediction.pick || "-"}，让球方向${decision.handicapPick || prediction.handicapPick || "-"}，不互相复制。`,
+    decisionConflict: prediction.decisionConflict || `正式组合已执行逻辑兼容门禁：主方向${decision.winDrawLose || prediction.pick || "-"}，让球${decision.handicapPick || prediction.handicapPick || "-"}；独立边际第一项${independentHandicapRisk.pick || "-"}只作冲突审计。`,
     crossMarketConsistency: prediction.crossMarketConsistency || handicapText,
     scoreElimination: prediction.scoreElimination || `保留联合概率最高的 ${scoreA} / ${scoreB} 两个正式比分，允许同方向；独立风险剧本 ${riskScore} 不占正式名额；总进球校验 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}。`,
     totalGoalsValidation: prediction.totalGoalsValidation || `比分分支与总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}交叉校验。`,
@@ -3999,7 +4001,7 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
       ...(riskScenario.score ? [{ label: "独立风险", probability: riskScenario.probability, score: riskScenario.score, text: "不占正式比分名额" }] : []),
     ],
     dataQuality: prediction.dataQuality || `HIGH：十步平均分 ${runOutput.tenStepResult?.averageScore ?? 100}，全部硬门槛通过。`,
-    unifiedRunEvidence: { contractVersion: runOutput.contractVersion, tenStepResult: runOutput.tenStepResult, gateResult: runOutput.gateResult, researchItems: items, seasonLearning: featureSet.seasonLearning || null, riskScenario: riskScenario.score ? riskScenario : null },
+    unifiedRunEvidence: { contractVersion: runOutput.contractVersion, tenStepResult: runOutput.tenStepResult, gateResult: runOutput.gateResult, researchItems: items, seasonLearning: featureSet.seasonLearning || null, jointDecision: featureSet.jointDecision || null, riskScenario: riskScenario.score ? riskScenario : null },
   };
 }
 
@@ -4300,13 +4302,18 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         const totalsEvidence = parseObject(runOutput.featureSet?.totals);
         const jointEvidence = parseObject(runOutput.featureSet?.jointDecision);
         const dataQualityEvidence = parseObject(runOutput.featureSet?.dataQuality);
+        const handicapDecisionAudit = parseObject(jointEvidence.handicapDecisionAudit);
         const handicapProbabilities = parseObject(handicapEvidence.probabilities);
         const rankedHandicap = ["让胜", "让平", "让负"].map((label) => [label, Number(handicapProbabilities[label])]).filter(([, value]) => Number.isFinite(value)).sort((a, b) => b[1] - a[1]);
         if (!handicapPick || rankedHandicap.length !== 3 || !Array.isArray(handicapEvidence.components) || handicapEvidence.components.length < 2) {
           return json({ ok: false, error: "FINAL_LOCK requires independent handicap probabilities from score grid and handicap market" }, 400);
         }
-        if (rankedHandicap[0][0] !== handicapPick) {
-          return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with independent handicap probability leader ${rankedHandicap[0][0]}; conditional handicap evidence is Challenger-only` }, 400);
+        const compatibleFormalResolution = jointEvidence.role === "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
+          && jointEvidence.formalPairOfficialScoreSupported === true
+          && handicapDecisionAudit.resolved === true
+          && Number(handicapDecisionAudit.probabilityGap || 0) <= 0.1;
+        if (rankedHandicap[0][0] !== handicapPick && !compatibleFormalResolution) {
+          return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with independent handicap probability leader ${rankedHandicap[0][0]} without a score-supported compatible formal resolution` }, 400);
         }
         if (!Array.isArray(scoreEvidence.components) || scoreEvidence.components.length < 2 || scoreEvidence.marketComplete !== true) {
           return json({ ok: false, error: "FINAL_LOCK requires independent score probabilities from score model and score market" }, 400);
@@ -4314,8 +4321,8 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         if (!Array.isArray(totalsEvidence.components) || totalsEvidence.components.length < 2 || totalsEvidence.marketComplete !== true) {
           return json({ ok: false, error: "FINAL_LOCK requires independent total-goals probabilities from score distribution and total-goals market" }, 400);
         }
-        if (!jointEvidence.selected || jointEvidence.selected.direction !== runOutput.finalDecision?.recommendationSide || jointEvidence.selected.handicapPick !== handicapPick || !(Number(jointEvidence.selected.scoreProbability) > 0)) {
-          return json({ ok: false, error: "FINAL_LOCK requires a jointly compatible direction and handicap pair supported by at least one score branch" }, 400);
+        if (!jointEvidence.selected || jointEvidence.selected.direction !== runOutput.finalDecision?.recommendationSide || jointEvidence.selected.handicapPick !== handicapPick || !(Number(jointEvidence.selected.scoreProbability) > 0) || jointEvidence.formalPairOfficialScoreSupported !== true) {
+          return json({ ok: false, error: "FINAL_LOCK requires a jointly compatible direction and handicap pair supported by at least one official score branch" }, 400);
         }
         if (runOutput.gateResult?.gates?.fundamentalData !== true || dataQualityEvidence.minimumRecentMatchesPerTeam !== 5 || dataQualityEvidence.temporalIntegrity !== true) {
           return json({ ok: false, error: "FINAL_LOCK requires complete non-market fundamentals, five recent matches per team, and pre-lock temporal integrity" }, 400);

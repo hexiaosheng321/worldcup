@@ -171,6 +171,35 @@ export function selectConditionalHandicapDecision(candidates = [], direction = "
       || Number(right.marginalProduct || 0) - Number(left.marginalProduct || 0))[0] || null;
 }
 
+export function selectFormalHandicapDecision(candidates = [], direction = "", officialScores = [], handicap = "0") {
+  const supportByHandicap = new Map();
+  officialScores
+    .filter((row) => scoreResult(row) === direction)
+    .forEach((row) => {
+      const label = handicapResult(row, handicap);
+      const current = supportByHandicap.get(label) || { probability: 0, scores: [] };
+      current.probability += Number(row.probability || 0);
+      current.scores.push(row.score);
+      supportByHandicap.set(label, current);
+    });
+  const compatible = candidates
+    .filter((item) => item.direction === direction && Number(item.scoreProbability || 0) > 0)
+    .map((item) => {
+      const support = supportByHandicap.get(item.handicapPick) || { probability: 0, scores: [] };
+      return {
+        ...item,
+        officialScoreProbability: support.probability,
+        officialScoreSupport: support.scores,
+        officialScoreSupported: support.scores.length > 0,
+      };
+    });
+  const supported = compatible.filter((item) => item.officialScoreSupported);
+  const pool = supported.length ? supported : compatible;
+  return pool.sort((left, right) => Number(right.officialScoreProbability || 0) - Number(left.officialScoreProbability || 0)
+    || Number(right.scoreProbability || 0) - Number(left.scoreProbability || 0)
+    || Number(right.marginalProduct || 0) - Number(left.marginalProduct || 0))[0] || null;
+}
+
 function number(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
@@ -903,12 +932,15 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const independentDirectionLeader = rankedResults[0].label;
   const independentHandicapLeader = rankedHandicap[0]?.label || "待判";
   const independentPair = jointDecision.candidates.find((item) => item.direction === independentDirectionLeader && item.handicapPick === independentHandicapLeader) || { direction: independentDirectionLeader, handicapPick: independentHandicapLeader, scoreProbability: 0, marginalProduct: 0, score: 0 };
-  // Official W/D/L and handicap are separate single-market Champions. The
-  // direction-conditional handicap remains a shadow Challenger until 30-50
-  // settled samples prove that it improves without degrading other markets.
   const conditionalPair = selectConditionalHandicapDecision(jointDecision.candidates, independentDirectionLeader);
+  // The W/D/L leader remains the primary direction. The formal handicap must
+  // be compatible with that direction and, whenever possible, be supported by
+  // at least one of the two maximum-coverage official scores.
+  const formalPair = selectFormalHandicapDecision(jointDecision.candidates, independentDirectionLeader, topScores, match.handicap)
+    || conditionalPair
+    || independentPair;
   const selectedDirection = independentDirectionLeader;
-  const handicapPick = independentHandicapLeader;
+  const handicapPick = formalPair?.handicapPick || independentHandicapLeader;
   const evidenceDirectionConflict = evidenceDirectionConflictAudit({
     marketBaseline,
     tieAudit,
@@ -917,14 +949,15 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     auditedResearch: research,
   });
   const handicapDecision = handicapDecisionAudit(rankedHandicap, handicapPick, {
-    mode: "INDEPENDENT_MARGIN_CHAMPION",
+    mode: "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+    conditionalProbability: formalPair?.conditionalProbability,
   });
-  const jointCompatibility = Boolean(independentPair.scoreProbability > 0);
+  const jointCompatibility = Boolean(formalPair && formalPair.direction === selectedDirection && formalPair.scoreProbability > 0);
   const selectedTotalKeys = String(totalModel.pick || "").match(/(?:[0-6]|7\+)/g) || [];
   const coversSelectedTotal = (row) => selectedTotalKeys.includes(row.home + row.away >= 7 ? "7+" : String(row.home + row.away));
   handicapMapped = topScores.map((row) => ({ score: row.score, result: handicapResult(row, match.handicap) }));
   const scenarioTotalsCovered = topScores.some(coversSelectedTotal);
-  const scenarioHandicapCovered = handicapMapped.some((row) => row.result === handicapPick);
+  const scenarioHandicapCovered = topScores.some((row) => scoreResult(row) === selectedDirection && handicapResult(row, match.handicap) === handicapPick);
   const scoreCoverageOptimized = topScores.length === 2
     && topScores.every((row, index) => row.score === scores[index]?.score)
     && topScores[0].score !== topScores[1].score;
@@ -1045,7 +1078,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const marketConfidenceBase = selectedDirectionProbability * 65 + selectedHandicapProbability * 20 + selectedTotalProbability * 10 + selectedScenarioProbability * 5;
   const confidence = Math.round(Math.max(0, Math.min(100, marketConfidenceBase - riskPathRisk - leagueLearning.confidencePenalty - handicapDecision.confidencePenalty - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
   const completeDecisionConflict = blockers.length > 0
-    && blockers.every((name) => ["jointCompatibility", "scenarioHandicapCovered"].includes(name));
+    && blockers.every((name) => ["handicapDecisionConflictResolved", "jointCompatibility", "scenarioHandicapCovered"].includes(name));
   const advice = !allGatesPass ? completeDecisionConflict ? "跳过" : "观察" : confidence >= 62 ? "主打" : confidence >= 55 ? "可选" : confidence >= 48 ? "谨慎" : "跳过";
   return {
     contractVersion: "UNIFIED_PREDICTION_V4",
@@ -1093,7 +1126,25 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         topCandidates: scores.slice(0, 8).map((row) => ({ score: row.score, probability: round(row.probability), direction: scoreResult(row) })),
       },
       totals: { probabilities: Object.fromEntries(totalModel.probabilities), components: totalModel.components, marketComplete: totalModel.marketComplete },
-      jointDecision: { selected: independentPair, candidateCount: jointDecision.candidates.length, independentDirectionLeader, independentHandicapLeader, independentPairCompatible: independentPair.scoreProbability > 0, resolutionApplied: false, directionPreserved: true, handicapDecisionAudit: handicapDecision, role: "INDEPENDENT_SINGLE_MARKET_CHAMPIONS" },
+      jointDecision: {
+        selected: formalPair,
+        candidateCount: jointDecision.candidates.length,
+        independentDirectionLeader,
+        independentHandicapLeader,
+        independentPairCompatible: independentPair.scoreProbability > 0,
+        formalPairCompatible: jointCompatibility,
+        formalPairOfficialScoreSupported: Boolean(formalPair?.officialScoreSupported),
+        independentHandicapRisk: {
+          pick: independentHandicapLeader,
+          probability: round(handicapProbabilities[handicapLabels.indexOf(independentHandicapLeader)] || 0),
+          differsFromFormalPick: independentHandicapLeader !== handicapPick,
+          role: "INDEPENDENT_MARGIN_RISK_AUDIT",
+        },
+        resolutionApplied: handicapPick !== independentHandicapLeader,
+        directionPreserved: true,
+        handicapDecisionAudit: handicapDecision,
+        role: "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+      },
       conditionalHandicapChallenger: {
         mode: "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
         direction: independentDirectionLeader,
@@ -1101,7 +1152,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         conditionalProbability: round(conditionalPair?.conditionalProbability || 0),
         scoreProbability: round(conditionalPair?.scoreProbability || 0),
         marginalProbability: round(handicapProbabilities[handicapLabels.indexOf(conditionalPair?.handicapPick)] || 0),
-        differsFromChampion: Boolean(conditionalPair?.handicapPick && conditionalPair.handicapPick !== independentHandicapLeader),
+        differsFromChampion: Boolean(conditionalPair?.handicapPick && conditionalPair.handicapPick !== handicapPick),
+        differsFromIndependentLeader: Boolean(conditionalPair?.handicapPick && conditionalPair.handicapPick !== independentHandicapLeader),
         promotedToChampion: false,
         learningEligibility: "SHADOW_AUDIT_ONLY",
         minimumSettledSamples: 30,
@@ -1130,10 +1182,10 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     } : null,
     tenStepResult: { passed: tenStepPassed, steps: stepScores, averageScore: round(stepScores.reduce((sum, step) => sum + step.score, 0) / stepScores.length, 1) },
     gateResult: { passed: allGatesPass, gates, blockers },
-    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["winDrawLoseSingleHit", "handicapChampionSingleHit", "conditionalHandicapChallengerSingleHit", "winDrawLoseHandicapJointHit", "totalGoalsDoubleHit", "scoreDoubleHit", "officialScoreCoverageProbability", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", shadowReuse: "PRE_LOCK_CHALLENGER_AUDIT_ONLY", immutablePreMatchSnapshot: true, scorePolicies: ["LEGACY_MAIN_PLUS_COUNTER", "TOP_TWO_GLOBAL", "TOP_TWO_LEAGUE_SEASON_CALIBRATED"] },
-    lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "conditional handicap and evidence-driven risk paths remain shadow-only for 30-50 settled samples; promote only when component hit rates and out-of-sample probability losses do not regress" },
+    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["winDrawLoseSingleHit", "formalHandicapSingleHit", "independentHandicapLeaderSingleHit", "conditionalHandicapChallengerSingleHit", "formalWinDrawLoseHandicapJointHit", "totalGoalsDoubleHit", "scoreDoubleHit", "officialScoreCoverageProbability", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", shadowReuse: "PRE_LOCK_CHALLENGER_AUDIT_ONLY", immutablePreMatchSnapshot: true, scorePolicies: ["LEGACY_MAIN_PLUS_COUNTER", "TOP_TWO_GLOBAL", "TOP_TWO_LEAGUE_SEASON_CALIBRATED"] },
+    lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "formal handicap must be compatible with the WDL Champion and an official score; independent handicap and conditional alternatives remain separately audited until 30-50 settled samples" },
     modelLessons: {
-      version: "LESSONS_2026-07-16_INDEPENDENT_HANDICAP_R8",
+      version: "LESSONS_2026-07-16_UNIFIED_COMPATIBLE_PACKAGE_R9",
       rules: [
         "让球不穿不得自动推翻胜平负方向",
         "最终方向按全部场景概率汇总，不按单一主比分决定",
@@ -1160,9 +1212,11 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "两回合赛事必须结构化计算90分钟胜平负、本场净胜球差和总比分晋级状态，缺失时不得进入FINAL_LOCK",
         "跳过场不计正式投注命中率，但必须继续验票胜平负、让球、总进球和比分组件，禁止VOID被记为命中正样本",
         "联赛先验进入比分分布；当前赛季满30场后只允许12%有上限比分校准，扩大权重仍须四项命中率和样本外概率损失不退化",
-        "正式让球单选必须使用独立边际概率第一项；主方向条件让球只作Challenger影子证据，不得解除冲突门禁",
-        "胜平负Champion与让球Champion不兼容时，仍输出完整PRE_LOCK和跳过结论，但不得冒充FINAL_LOCK",
-        "让球Champion、条件让球Challenger和胜平负+让球联合命中必须分轨验票，30至50场前不得晋级Challenger",
+        "正式胜平负、让球和至少一个正式比分必须在同一赛果分支同时成立，逻辑兼容是硬门禁",
+        "胜平负概率第一项作为主方向Champion；正式让球在该方向中优先选择两个最大覆盖比分实际支持的结果",
+        "让球独立边际第一项保留为风险审计，不得与互斥的胜平负结论直接拼成正式输出",
+        "正式让球若与独立边际第一项相差超过10个百分点，仍输出逻辑兼容的完整PRE_LOCK和跳过结论，不得升级FINAL_LOCK",
+        "正式让球、独立让球边际、条件让球Challenger和正式联合命中必须分轨验票，30至50场前不得晋级Challenger",
         "跨联赛近期状态进入xG前必须按联赛强度、对手质量、正式或友谊赛和样本时效归一化，缺失结构化因子时不得使用",
         "市场方向、风格层首球方和两回合追分暴露至少两项支持反向路径时，必须由两项独立量化证据解释，否则阻断FINAL_LOCK",
         "两回合领先方缺少继续扩大比分证据时，对其后续进球xG执行12%衰减，胜负方向与三球以上幅度分开判断",
@@ -1191,6 +1245,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       winDrawLose: resultText[selectedDirection],
       recommendationSide: selectedDirection,
       handicapPick,
+      independentHandicapLeader,
       conditionalHandicapChallenger: conditionalPair?.handicapPick || "",
       decisionStatus: lockType === "FINAL_LOCK" ? "FINAL_LOCK_ELIGIBLE" : completeDecisionConflict ? "COMPLETE_PRE_LOCK_CONFLICT" : allGatesPass ? "PRE_LOCK_READY" : "PRE_LOCK_REPAIR_REQUIRED",
       totalGoalsPick: totalModel.pick,

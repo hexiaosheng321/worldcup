@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { RESEARCH_KEYS, handicapDecisionAudit, runUnifiedPrediction, selectConditionalHandicapDecision, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
+import { RESEARCH_KEYS, handicapDecisionAudit, runUnifiedPrediction, selectConditionalHandicapDecision, selectFormalHandicapDecision, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
 
 const sameDirectionCoverage = selectOfficialScores([
   { score: "2-0", probability: 0.16 },
@@ -66,7 +66,7 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
-assert.equal(final.modelLessons.version, "LESSONS_2026-07-16_INDEPENDENT_HANDICAP_R8");
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-16_UNIFIED_COMPATIBLE_PACKAGE_R9");
 assert.equal(final.gateResult.gates.crossLeagueStrengthNormalized, true);
 assert.equal(final.gateResult.gates.evidenceDirectionConflictResolved, true);
 assert.equal(final.gateResult.gates.competitionStageConsistent, true);
@@ -85,9 +85,10 @@ assert.equal(final.featureSet.score.selectionPolicy, "TOP_TWO_LEAGUE_SEASON_CALI
 assert.deepEqual(final.finalDecision.scores, final.featureSet.score.topCandidates.slice(0, 2).map((row) => row.score));
 assert.equal(final.modelLessons.seasonSpecific.season, "2026");
 assert.ok(final.backtestContract.metrics.includes("winDrawLoseSingleHit"));
-assert.ok(final.backtestContract.metrics.includes("handicapChampionSingleHit"));
+assert.ok(final.backtestContract.metrics.includes("formalHandicapSingleHit"));
+assert.ok(final.backtestContract.metrics.includes("independentHandicapLeaderSingleHit"));
 assert.ok(final.backtestContract.metrics.includes("conditionalHandicapChallengerSingleHit"));
-assert.ok(final.backtestContract.metrics.includes("winDrawLoseHandicapJointHit"));
+assert.ok(final.backtestContract.metrics.includes("formalWinDrawLoseHandicapJointHit"));
 assert.ok(final.backtestContract.metrics.includes("totalGoalsDoubleHit"));
 assert.ok(final.backtestContract.metrics.includes("scoreDoubleHit"));
 assert.equal(final.modelLessons.leagueSpecific.league, "韩职");
@@ -100,7 +101,7 @@ assert.equal(final.finalDecision.confidenceAdjustments.leagueLearning, -2);
 assert.equal(Object.keys(final.finalDecision.confidenceComponents).length, 4);
 assert.ok(final.finalDecision.confidenceComponents.handicap > 0);
 assert.equal(final.lifecycleContract.champion, "UNIFIED_PREDICTION_V4");
-assert.equal(final.scenarioSet[0].handicapResult, final.finalDecision.handicapPick);
+assert.ok(final.scenarioSet.some((row) => row.direction === final.finalDecision.recommendationSide && row.handicapResult === final.finalDecision.handicapPick));
 assert.equal(Object.keys(final.featureSet.handicap.probabilities).length, 3);
 assert.equal(Object.keys(final.featureSet.totals.probabilities).length >= 2, true);
 assert.equal(new Set(final.finalDecision.scores).size, 2);
@@ -120,6 +121,17 @@ const conditionalLeader = selectConditionalHandicapDecision([
   { direction: "DRAW", handicapPick: "让负", scoreProbability: 0.27, conditionalProbability: 1, marginalProduct: 0.14 },
 ], "HOME");
 assert.equal(conditionalLeader.handicapPick, "让胜");
+const formalScoreCompatible = selectFormalHandicapDecision([
+  { direction: "HOME", handicapPick: "让平", scoreProbability: 0.21, conditionalProbability: 0.42, marginalProduct: 0.13 },
+  { direction: "HOME", handicapPick: "让胜", scoreProbability: 0.29, conditionalProbability: 0.58, marginalProduct: 0.11 },
+  { direction: "DRAW", handicapPick: "让负", scoreProbability: 0.27, conditionalProbability: 1, marginalProduct: 0.14 },
+], "HOME", [
+  { score: "2-1", home: 2, away: 1, probability: 0.12 },
+  { score: "1-1", home: 1, away: 1, probability: 0.11 },
+], "-1");
+assert.equal(formalScoreCompatible.handicapPick, "让平");
+assert.equal(formalScoreCompatible.officialScoreSupported, true);
+assert.deepEqual(formalScoreCompatible.officialScoreSupport, ["2-1"]);
 const resolvedHandicapConflict = handicapDecisionAudit([
   { label: "让负", probability: 0.497 },
   { label: "让胜", probability: 0.261 },
@@ -145,15 +157,24 @@ const independentChampionConflict = runUnifiedPrediction({
     handicapOdds: { win: "3.60", draw: "3.35", lose: "1.78" },
   },
 }, { lockType: "FINAL_LOCK" });
-assert.equal(independentChampionConflict.finalDecision.handicapPick, independentChampionConflict.featureSet.jointDecision.independentHandicapLeader);
+assert.equal(independentChampionConflict.finalDecision.recommendationSide, "HOME");
+assert.equal(independentChampionConflict.finalDecision.handicapPick, "让平");
+assert.equal(independentChampionConflict.featureSet.jointDecision.independentHandicapLeader, "让负");
+assert.equal(independentChampionConflict.featureSet.jointDecision.selected.direction, "HOME");
+assert.equal(independentChampionConflict.featureSet.jointDecision.selected.handicapPick, "让平");
+assert.equal(independentChampionConflict.featureSet.jointDecision.formalPairOfficialScoreSupported, true);
+assert.ok(independentChampionConflict.featureSet.jointDecision.selected.officialScoreSupport.length > 0);
 assert.equal(independentChampionConflict.featureSet.conditionalHandicapChallenger.mode, "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW");
 assert.equal(independentChampionConflict.featureSet.conditionalHandicapChallenger.promotedToChampion, false);
 assert.equal(independentChampionConflict.featureSet.conditionalHandicapChallenger.learningEligibility, "SHADOW_AUDIT_ONLY");
-assert.equal(independentChampionConflict.featureSet.conditionalHandicapChallenger.differsFromChampion, true);
+assert.equal(typeof independentChampionConflict.featureSet.conditionalHandicapChallenger.differsFromChampion, "boolean");
+assert.equal(independentChampionConflict.featureSet.conditionalHandicapChallenger.differsFromIndependentLeader, true);
 assert.equal(independentChampionConflict.lockType, "PRE_LOCK");
 assert.equal(independentChampionConflict.finalDecision.decisionStatus, "COMPLETE_PRE_LOCK_CONFLICT");
 assert.equal(independentChampionConflict.finalDecision.advice, "跳过");
-assert.equal(independentChampionConflict.gateResult.gates.jointCompatibility, false);
+assert.equal(independentChampionConflict.gateResult.gates.jointCompatibility, true);
+assert.equal(independentChampionConflict.gateResult.gates.scenarioHandicapCovered, true);
+assert.equal(independentChampionConflict.gateResult.gates.handicapDecisionConflictResolved, false);
 assert.equal(independentChampionConflict.finalDecision.scores.length, 2);
 
 const blocked = runUnifiedPrediction({ ...context, research: { ...research, injuries: { status: "MISSING" } } }, { lockType: "FINAL_LOCK" });
