@@ -635,6 +635,11 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
   };
   const unifiedRunEvidence = parseObject(diagnosticSource.unifiedRunEvidence);
   const seasonLearning = parseObject(unifiedRunEvidence.seasonLearning);
+  const crossLeagueNormalization = parseObject(unifiedRunEvidence.crossLeagueNormalization);
+  const evidenceDirectionConflict = parseObject(unifiedRunEvidence.evidenceDirectionConflict);
+  const evidenceDrivenRiskChallenger = parseObject(unifiedRunEvidence.evidenceDrivenRiskChallenger);
+  const competitionStage = parseObject(unifiedRunEvidence.competitionStage);
+  const twoLegLeadControl = parseObject(unifiedRunEvidence.twoLegLeadControl);
   const independentRiskScenario = parseObject(diagnosticSource.independentRiskScenario || unifiedRunEvidence.riskScenario);
   const scoreSelectionPolicy = firstText(diagnosticSource.scoreSelectionPolicy, diagnosticSource.finalDecision?.scoreSelectionPolicy);
   const officialScoreCoverageProbability = Number(diagnosticSource.officialScoreCoverageProbability);
@@ -673,6 +678,11 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
     leagueType: lock.league,
     season: String(seasonLearning.season || lock.kickoff_time || "").match(/(?:20\d{2}|\d{4})/)?.[0] || "unknown",
     seasonLearning,
+    crossLeagueNormalization: Object.keys(crossLeagueNormalization).length ? crossLeagueNormalization : null,
+    evidenceDirectionConflict: Object.keys(evidenceDirectionConflict).length ? evidenceDirectionConflict : null,
+    evidenceDrivenRiskChallenger: Object.keys(evidenceDrivenRiskChallenger).length ? evidenceDrivenRiskChallenger : null,
+    competitionStageAudit: Object.keys(competitionStage).length ? competitionStage : null,
+    twoLegLeadControl: Object.keys(twoLegLeadControl).length ? twoLegLeadControl : null,
     lockedOdds: {
       homeSp: lock.sporttery_home_sp,
       drawSp: lock.sporttery_draw_sp,
@@ -723,6 +733,9 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
       : `${lock.model_version || "V4"} 四组件命中样本沉淀`;
   const recommendations = [];
   if (diagnosticPayload.modelAudit?.winDrawLoseSingleHit === false) recommendations.push("复查最终胜平负方向、反向脚本投票权和球队xG分配。");
+  if (diagnosticPayload.evidenceDirectionConflict?.materialConflict) recommendations.push("复查市场、首球方和两回合追分暴露的二对一冲突，确认是否存在两项独立量化反证。");
+  if (diagnosticPayload.crossLeagueNormalization?.complete === false) recommendations.push("补齐跨联赛强度、对手质量、比赛类型与时效因子后再计算xG。");
+  if (diagnosticPayload.twoLegLeadControl?.applied && diagnosticPayload.totalGoalsHit === false) recommendations.push("复查两回合领先方后续进球衰减，分开校准胜负方向与三球以上幅度。");
   if (diagnosticPayload.handicapHit === false) recommendations.push("复查让球独立闸门，避免胜平负方向覆盖让球风险。");
   if (diagnosticPayload.totalGoalsHit === false) recommendations.push("复查总进球区间和半场触发脚本。");
   if (diagnosticPayload.scoreCovered === false) recommendations.push("复核两个正式比分的联合概率排序、双方进球分配和联赛赛季校准；独立风险剧本单独验票，不强占正式比分名额。");

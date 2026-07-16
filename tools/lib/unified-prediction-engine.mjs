@@ -167,6 +167,10 @@ function round(value, digits = 4) {
   return Number(Number(value || 0).toFixed(digits));
 }
 
+function clamp(value, minimum, maximum) {
+  return Math.max(minimum, Math.min(maximum, Number(value) || 0));
+}
+
 function normalizeProbabilities(values) {
   const safe = values.map((value) => Math.max(0, Number(value) || 0));
   const total = safe.reduce((sum, value) => sum + value, 0);
@@ -226,32 +230,99 @@ function sampleScore(sample) {
   return matched ? { home: Number(matched[1]), away: Number(matched[2]) } : null;
 }
 
-function recentTeamForm(samples, team, beforeDate, limit = 8) {
+function formNormalization(sample = {}, targetLeague = "", beforeDate = "") {
+  const sourceLeague = String(sample.league || sample.competition || "").trim();
+  const crossLeague = Boolean(sourceLeague && targetLeague && sourceLeague !== targetLeague);
+  const leagueStrength = number(sample.leagueStrengthFactor ?? sample.leagueStrength);
+  const opponentQuality = number(sample.opponentQualityFactor ?? sample.opponentStrengthFactor ?? sample.opponentQuality);
+  const matchType = String(sample.matchType || sample.competitionType || "").toUpperCase();
+  const friendly = sample.isFriendly === true || /FRIENDLY|友谊/.test(matchType);
+  const complete = !crossLeague || (
+    leagueStrength !== null
+    && opponentQuality !== null
+    && Boolean(matchType)
+  );
+  const ageDays = daysBetween(dateKey(sample.kickoffTime || sample.matchDate), beforeDate);
+  const recencyWeight = Number.isFinite(ageDays) ? clamp(1 - ageDays / 240, 0.55, 1) : 0.7;
+  const matchTypeWeight = friendly ? 0.45 : 1;
+  const strengthFactor = complete && crossLeague
+    ? clamp(leagueStrength, 0.65, 1.35) * clamp(opponentQuality, 0.75, 1.25)
+    : 1;
+  return {
+    sourceLeague,
+    crossLeague,
+    complete,
+    friendly,
+    matchType: matchType || (crossLeague ? "" : "SAME_LEAGUE"),
+    leagueStrengthFactor: complete ? round(crossLeague ? clamp(leagueStrength, 0.65, 1.35) : 1) : null,
+    opponentQualityFactor: complete ? round(crossLeague ? clamp(opponentQuality, 0.75, 1.25) : 1) : null,
+    strengthFactor: round(strengthFactor),
+    recencyWeight: round(recencyWeight),
+    sampleWeight: round(recencyWeight * matchTypeWeight),
+  };
+}
+
+function recentTeamForm(samples, team, beforeDate, targetLeague, limit = 8) {
   const seen = new Set();
-  return samples
-    .filter((sample) => !beforeDate || dateKey(sample.kickoffTime) < beforeDate)
+  const candidates = samples
+    .filter((sample) => !beforeDate || dateKey(sample.kickoffTime || sample.matchDate) < beforeDate)
     .filter((sample) => sameTeam(team, sample.homeTeam) || sameTeam(team, sample.awayTeam))
-    .map((sample) => ({ sample, score: sampleScore(sample) }))
+    .map((sample) => ({ sample, score: sampleScore(sample), normalization: formNormalization(sample, targetLeague, beforeDate) }))
     .filter((item) => item.score)
-    .sort((a, b) => String(b.sample.kickoffTime || "").localeCompare(String(a.sample.kickoffTime || "")))
+    .sort((a, b) => String(b.sample.kickoffTime || b.sample.matchDate || "").localeCompare(String(a.sample.kickoffTime || a.sample.matchDate || "")))
     .filter(({ sample, score }) => {
-      const key = [dateKey(sample.kickoffTime), teamKey(sample.homeTeam), teamKey(sample.awayTeam), score.home, score.away].join("|");
+      const key = [dateKey(sample.kickoffTime || sample.matchDate), teamKey(sample.homeTeam), teamKey(sample.awayTeam), score.home, score.away].join("|");
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    })
-    .slice(0, limit)
-    .map(({ sample, score }) => {
-      const isHome = sameTeam(team, sample.homeTeam);
-      const gf = isHome ? score.home : score.away;
-      const ga = isHome ? score.away : score.home;
-      return { date: dateKey(sample.kickoffTime), gf, ga, result: gf > ga ? "W" : gf < ga ? "L" : "D", venue: isHome ? "HOME" : "AWAY" };
     });
+  const rows = candidates
+    .filter(({ normalization }) => normalization.complete)
+    .slice(0, limit)
+    .map(({ sample, score, normalization }) => {
+      const isHome = sameTeam(team, sample.homeTeam);
+      const rawGf = isHome ? score.home : score.away;
+      const rawGa = isHome ? score.away : score.home;
+      const gf = rawGf * normalization.strengthFactor;
+      const ga = rawGa / normalization.strengthFactor;
+      return {
+        date: dateKey(sample.kickoffTime || sample.matchDate),
+        gf: round(gf, 3),
+        ga: round(ga, 3),
+        rawGf,
+        rawGa,
+        result: rawGf > rawGa ? "W" : rawGf < rawGa ? "L" : "D",
+        venue: isHome ? "HOME" : "AWAY",
+        weight: normalization.sampleWeight,
+        normalization,
+      };
+    });
+  const crossLeagueCandidates = candidates.filter(({ normalization }) => normalization.crossLeague).length;
+  const excludedCrossLeague = candidates.filter(({ normalization }) => normalization.crossLeague && !normalization.complete).length;
+  const sameLeagueCandidates = candidates.length - crossLeagueCandidates;
+  const crossLeagueNormalizationRequired = sameLeagueCandidates < 5 && crossLeagueCandidates > 0;
+  return {
+    rows,
+    audit: {
+      targetLeague,
+      candidateCount: candidates.length,
+      sameLeagueCandidates,
+      crossLeagueCandidates,
+      normalizedCrossLeague: crossLeagueCandidates - excludedCrossLeague,
+      excludedCrossLeague,
+      required: crossLeagueNormalizationRequired,
+      complete: !crossLeagueNormalizationRequired || excludedCrossLeague === 0,
+      policy: "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY",
+    },
+  };
 }
 
 function formProbabilities(homeRows, awayRows) {
   if (homeRows.length < 3 || awayRows.length < 3) return null;
-  const points = (rows) => rows.reduce((sum, row) => sum + (row.result === "W" ? 3 : row.result === "D" ? 1 : 0), 0) / (rows.length * 3);
+  const points = (rows) => {
+    const totalWeight = rows.reduce((sum, row) => sum + Number(row.weight || 1), 0) || 1;
+    return rows.reduce((sum, row) => sum + (row.result === "W" ? 3 : row.result === "D" ? 1 : 0) * Number(row.weight || 1), 0) / (totalWeight * 3);
+  };
   const homeStrength = points(homeRows);
   const awayStrength = points(awayRows);
   const draw = Math.max(0.2, 0.31 - Math.abs(homeStrength - awayStrength) * 0.15);
@@ -270,10 +341,16 @@ function poisson(lambda, goals) {
   return Math.exp(-lambda) * (lambda ** goals) / factorial(goals);
 }
 
-function expectedGoals(samples, homeTeam, awayTeam, beforeDate, teamFormSamples = samples) {
-  const homeRows = recentTeamForm(teamFormSamples, homeTeam, beforeDate, 8);
-  const awayRows = recentTeamForm(teamFormSamples, awayTeam, beforeDate, 8);
-  const average = (rows, key, fallback) => rows.length ? rows.reduce((sum, row) => sum + row[key], 0) / rows.length : fallback;
+function expectedGoals(samples, homeTeam, awayTeam, beforeDate, teamFormSamples = samples, targetLeague = "") {
+  const homeForm = recentTeamForm(teamFormSamples, homeTeam, beforeDate, targetLeague, 8);
+  const awayForm = recentTeamForm(teamFormSamples, awayTeam, beforeDate, targetLeague, 8);
+  const homeRows = homeForm.rows;
+  const awayRows = awayForm.rows;
+  const average = (rows, key, fallback) => {
+    if (!rows.length) return fallback;
+    const totalWeight = rows.reduce((sum, row) => sum + Number(row.weight || 1), 0) || 1;
+    return rows.reduce((sum, row) => sum + row[key] * Number(row.weight || 1), 0) / totalWeight;
+  };
   const homeVenueRows = homeRows.filter((row) => row.venue === "HOME");
   const awayVenueRows = awayRows.filter((row) => row.venue === "AWAY");
   const homeBasis = homeVenueRows.length >= 3 ? homeVenueRows : homeRows;
@@ -309,6 +386,11 @@ function expectedGoals(samples, homeTeam, awayTeam, beforeDate, teamFormSamples 
       sampleCount: leagueScores.length,
       averageGoals: round(leagueAverageGoals, 3),
       opennessFactor: round(leagueOpennessFactor, 3),
+    },
+    crossLeagueNormalization: {
+      home: homeForm.audit,
+      away: awayForm.audit,
+      complete: homeForm.audit.complete && awayForm.audit.complete,
     },
   };
 }
@@ -447,6 +529,127 @@ function twoLegContextAudit(context = {}, motivationSummary = "") {
       home: leader === "AWAY" ? "TRAILING_MUST_CHASE" : leader === "HOME" ? "LEADING_CAN_CONTROL" : "LEVEL_TIE",
       away: leader === "HOME" ? "TRAILING_MUST_CHASE" : leader === "AWAY" ? "LEADING_CAN_CONTROL" : "LEVEL_TIE",
     },
+  };
+}
+
+function canonicalCompetitionStage(value = "") {
+  const raw = String(value || "").trim().toUpperCase();
+  if (!raw) return "";
+  if (/FINAL|决赛/.test(raw) && !/SEMI|半决赛/.test(raw)) return "FINAL";
+  if (/SEMI|半决赛|4强/.test(raw)) return "SEMI_FINAL";
+  if (/QUARTER|1\/4|八强|8强/.test(raw)) return "QUARTER_FINAL";
+  if (/ROUND[_\s-]*OF[_\s-]*32|32强/.test(raw)) return "ROUND_OF_32";
+  if (/ROUND[_\s-]*OF[_\s-]*16|16强/.test(raw)) return "ROUND_OF_16";
+  if (/QUALIF|资格|预选/.test(raw)) return "QUALIFYING";
+  if (/GROUP|小组/.test(raw)) return "GROUP_STAGE";
+  return raw.replace(/\s+/g, "_");
+}
+
+function competitionStageAudit(context = {}, tieAudit = {}) {
+  const matchStage = String(context.match?.competitionStage || context.match?.stage || context.match?.round || "").trim();
+  const researchStageValue = context.research?.competitionStage;
+  const researchStage = String(
+    typeof researchStageValue === "object"
+      ? researchStageValue.researchLabel || researchStageValue.label || researchStageValue.stage || ""
+      : researchStageValue || context.research?.match?.competitionStage || context.research?.match?.stage || "",
+  ).trim();
+  const required = Boolean(matchStage || tieAudit.required || tieAudit.isTwoLeg);
+  const matchCanonical = canonicalCompetitionStage(matchStage);
+  const researchCanonical = canonicalCompetitionStage(researchStage);
+  const labelsComplete = !required || Boolean(matchCanonical && researchCanonical);
+  const consistent = labelsComplete && (!matchCanonical || !researchCanonical || matchCanonical === researchCanonical);
+  return {
+    required,
+    complete: consistent,
+    matchStage,
+    researchStage,
+    matchCanonical,
+    researchCanonical,
+    consistent,
+    policy: "SPORTTERY_STAGE_X_RESEARCH_STAGE_X_TIE_CONTEXT",
+  };
+}
+
+function twoLegLeadControlAudit(tieAudit = {}, research = {}, rawXg = {}) {
+  const leader = tieAudit.aggregateLeader;
+  const rawTie = research.tieContext || {};
+  const explicitSignals = [
+    rawTie.leaderNeedsGoalDifference,
+    rawTie.trailingSideSustainedThreat,
+    rawTie.trailingSideCollapseRisk,
+  ].filter((value) => value === true).length;
+  const leaderXgKey = leader === "HOME" ? "xgHome" : leader === "AWAY" ? "xgAway" : "";
+  const quantitativeSignals = leaderXgKey
+    ? RESEARCH_KEYS.filter((key) => {
+      const entry = research[key] || {};
+      return entry.status === "VERIFIED" && Number(entry.impact?.[leaderXgKey] || 0) >= 0.12;
+    }).length
+    : 0;
+  const expansionEvidenceCount = explicitSignals + quantitativeSignals;
+  const applied = tieAudit.isTwoLeg && leader !== "LEVEL" && expansionEvidenceCount === 0;
+  const factor = applied ? 0.88 : 1;
+  const before = { home: Number(rawXg.home || 0), away: Number(rawXg.away || 0) };
+  const after = {
+    home: leader === "HOME" ? Math.max(0.2, before.home * factor) : before.home,
+    away: leader === "AWAY" ? Math.max(0.2, before.away * factor) : before.away,
+  };
+  return {
+    applied,
+    aggregateLeader: leader,
+    factor,
+    expansionEvidenceCount,
+    before: { home: round(before.home, 2), away: round(before.away, 2) },
+    after: { home: round(after.home, 2), away: round(after.away, 2) },
+    policy: "DECAY_AGGREGATE_LEADER_FOLLOW_UP_GOALS_UNLESS_EXPANSION_EVIDENCE",
+  };
+}
+
+function directionFromStyleEvidence(research = {}) {
+  const style = research.styleMatchup || {};
+  const explicit = String(style.firstGoalSide || style.firstGoalLeader || "").toUpperCase();
+  if (["HOME", "DRAW", "AWAY"].includes(explicit)) return explicit;
+  const home = Number(style.impact?.home || 0);
+  const away = Number(style.impact?.away || 0);
+  if (Math.abs(home - away) < 0.02) return "";
+  return home > away ? "HOME" : "AWAY";
+}
+
+function evidenceDirectionConflictAudit({ marketBaseline, tieAudit, research, selectedDirection, auditedResearch }) {
+  const marketDirection = marketBaseline
+    ? resultLabels[marketBaseline.probabilities.indexOf(Math.max(...marketBaseline.probabilities))]
+    : "";
+  const styleDirection = directionFromStyleEvidence(research);
+  const tieExposureDirection = tieAudit.aggregateLeader === "AWAY"
+    ? "AWAY"
+    : tieAudit.aggregateLeader === "HOME"
+      ? "HOME"
+      : "";
+  const votes = [
+    marketDirection ? { source: "LOCK_MARKET", direction: marketDirection } : null,
+    styleDirection ? { source: "STYLE_FIRST_GOAL", direction: styleDirection } : null,
+    tieExposureDirection ? { source: "TIE_CHASE_EXPOSURE", direction: tieExposureDirection } : null,
+  ].filter(Boolean);
+  const counts = Object.fromEntries(resultLabels.map((label) => [label, votes.filter((vote) => vote.direction === label).length]));
+  const consensusDirection = resultLabels.slice().sort((left, right) => counts[right] - counts[left])[0];
+  const consensusCount = counts[consensusDirection] || 0;
+  const materialConflict = consensusCount >= 2 && consensusDirection !== selectedDirection;
+  const selectedKey = String(selectedDirection || "").toLowerCase();
+  const consensusKey = String(consensusDirection || "").toLowerCase();
+  const quantitativeSupport = (auditedResearch?.items || []).filter((item) => item.complete
+    && Number(item.impact?.[selectedKey] || 0) - Number(item.impact?.[consensusKey] || 0) >= 0.02);
+  return {
+    votes,
+    counts,
+    consensusDirection: consensusCount >= 2 ? consensusDirection : "",
+    consensusCount,
+    selectedDirection,
+    materialConflict,
+    quantitativeSupportForSelected: quantitativeSupport.map((item) => item.key),
+    quantitativeSupportCount: quantitativeSupport.length,
+    resolved: !materialConflict || quantitativeSupport.length >= 2,
+    championAction: materialConflict && quantitativeSupport.length < 2 ? "BLOCK_FINAL_LOCK" : "ALLOW",
+    challengerRiskWeight: consensusCount >= 2 ? 0.35 : 0.2,
+    policy: "TWO_OF_MARKET_FIRST_GOAL_TIE_EXPOSURE_REQUIRE_TWO_QUANTITATIVE_OVERRIDES",
   };
 }
 
@@ -593,11 +796,15 @@ function matchType(rows) {
 }
 
 export function researchTemplate(match = {}) {
+  const evidenceItems = Object.fromEntries(RESEARCH_KEYS.map((key) => [key, { status: "MISSING", evidenceGrade: "", summary: "", capturedAt: "", observedAt: "", sources: [], impact: { home: 0, draw: 0, away: 0, xgHome: 0, xgAway: 0 } }]));
   return {
-    match: { matchId: match.matchId || "", league: match.league || "", home: match.home || "", away: match.away || "", kickoffTime: match.kickoffTime || "" },
-    tieContext: { isTwoLeg: false, legNumber: null, aggregateHomeBeforeMatch: null, aggregateAwayBeforeMatch: null },
+    match: { matchId: match.matchId || "", league: match.league || "", home: match.home || "", away: match.away || "", kickoffTime: match.kickoffTime || "", competitionStage: match.competitionStage || match.stage || match.round || "" },
+    competitionStage: "",
+    tieContext: { isTwoLeg: false, legNumber: null, aggregateHomeBeforeMatch: null, aggregateAwayBeforeMatch: null, leaderNeedsGoalDifference: false, trailingSideSustainedThreat: false, trailingSideCollapseRisk: false },
     generatedAt: new Date().toISOString(),
-    ...Object.fromEntries(RESEARCH_KEYS.map((key) => [key, { status: "MISSING", evidenceGrade: "", summary: "", capturedAt: "", observedAt: "", sources: [], impact: { home: 0, draw: 0, away: 0, xgHome: 0, xgAway: 0 } }])),
+    ...evidenceItems,
+    teamState: { ...evidenceItems.teamState, recentMatches: [] },
+    styleMatchup: { ...evidenceItems.styleMatchup, firstGoalSide: "" },
   };
 }
 
@@ -613,15 +820,21 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const research = researchAudit(context.research, asOf);
   const motivationSummary = context.research?.motivation?.summary || "";
   const tieAudit = twoLegContextAudit(context, motivationSummary);
+  const stageAudit = competitionStageAudit(context, tieAudit);
   const leagueLearning = leagueLearningProfile(match.league);
   const verifiedRecentMatches = Array.isArray(context.research?.teamState?.recentMatches)
     ? context.research.teamState.recentMatches
     : [];
-  const baseXg = expectedGoals(samples, match.home, match.away, beforeDate, [...allSamples, ...verifiedRecentMatches]);
-  const xg = {
-    ...baseXg,
+  const baseXg = expectedGoals(samples, match.home, match.away, beforeDate, [...allSamples, ...verifiedRecentMatches], match.league);
+  const preControlXg = {
     home: Math.max(0.2, baseXg.home + research.adjustment.xgHome + leagueLearning.xg.home),
     away: Math.max(0.2, baseXg.away + research.adjustment.xgAway + leagueLearning.xg.away),
+  };
+  const leadControl = twoLegLeadControlAudit(tieAudit, { ...(context.research || {}), tieContext: context.tieContext || context.research?.tieContext || {} }, preControlXg);
+  const xg = {
+    ...baseXg,
+    home: leadControl.after.home,
+    away: leadControl.after.away,
   };
   const learningSignals = leagueLearningSignals(match.league, market, xg);
   const poissonScores = applyLeagueScoreLearning(scoreGrid(xg), leagueLearning, learningSignals);
@@ -675,6 +888,13 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const resolvedPair = independentPair.scoreProbability > 0 ? independentPair : conditionalDirectionCandidates[0];
   const selectedDirection = resolvedPair?.direction || independentDirectionLeader;
   const handicapPick = resolvedPair?.handicapPick || independentHandicapLeader;
+  const evidenceDirectionConflict = evidenceDirectionConflictAudit({
+    marketBaseline,
+    tieAudit,
+    research: context.research || {},
+    selectedDirection,
+    auditedResearch: research,
+  });
   const handicapDecision = handicapDecisionAudit(rankedHandicap, handicapPick);
   const jointCompatibility = Boolean(resolvedPair && resolvedPair.scoreProbability > 0);
   const jointResolutionApplied = selectedDirection !== independentDirectionLeader || handicapPick !== independentHandicapLeader;
@@ -728,7 +948,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   // as current form.
   const formFreshnessDays = match.league === "挪超" && research.complete ? 60 : 21;
   const recentFormFresh = daysBetween(newestHomeForm, beforeDate) <= formFreshnessDays && daysBetween(newestAwayForm, beforeDate) <= formFreshnessDays;
-  const fundamentalDataComplete = xg.homeRows.length >= 5 && xg.awayRows.length >= 5 && Boolean(formBaseline) && recentFormFresh;
+  const crossLeagueStrengthNormalized = xg.crossLeagueNormalization.complete;
+  const fundamentalDataComplete = xg.homeRows.length >= 5 && xg.awayRows.length >= 5 && Boolean(formBaseline) && recentFormFresh && crossLeagueStrengthNormalized;
   const evidenceCompleteness = RESEARCH_KEYS.filter((key) => research.items.find((item) => item.key === key)?.complete).length / RESEARCH_KEYS.length;
   const unavailableNonDecisiveCount = research.items.filter((item) => item.nonDecisiveUnavailable).length;
   const sourceCapturedAt = Date.parse(context.sourceCapturedAt || "");
@@ -749,20 +970,21 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const totalsIndependent = totalModel.components.length >= 2;
   const stepScores = [
     { id: 1, key: "spReview", title: "当前胜平负 SP 复核", score: normalOddsComplete ? 100 : 0, passed: normalOddsComplete },
-    { id: 2, key: "rulesMotivation", title: "赛事规则/动机", score: research.items.find((item) => item.key === "motivation")?.complete && tieAudit.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "motivation")?.complete) && tieAudit.complete },
+    { id: 2, key: "rulesMotivation", title: "赛事规则/动机", score: research.items.find((item) => item.key === "motivation")?.complete && tieAudit.complete && stageAudit.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "motivation")?.complete) && tieAudit.complete && stageAudit.complete },
     { id: 3, key: "teamState", title: "球队状态", score: fundamentalDataComplete ? 100 : Math.round(Math.min(90, (xg.homeRows.length + xg.awayRows.length) * 9)), passed: fundamentalDataComplete && ["teamState", "injuries", "expectedLineups"].every((key) => research.items.find((item) => item.key === key)?.complete) },
     { id: 4, key: "styleMatchup", title: "风格对位", score: research.items.find((item) => item.key === "styleMatchup")?.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "styleMatchup")?.complete) },
     { id: 5, key: "marketSamples", title: "盘口和样本", score: Math.round((normalOddsComplete ? 40 : 0) + Math.min(40, samples.length / 2) + (recentFormFresh ? 20 : 0)), passed: normalOddsComplete && samples.length >= 30 && recentFormFresh },
     { id: 6, key: "stateTransfer", title: "状态转移", score: movement.complete && research.items.find((item) => item.key === "marketNews")?.complete ? 100 : 0, passed: movement.complete && Boolean(research.items.find((item) => item.key === "marketNews")?.complete) },
     { id: 7, key: "scoreTotals", title: "比分/总进球独立闸门", score: [scoreGate, scoreIndependent, totalsIndependent, scoreCoverageOptimized, scenarioTotalsCovered].filter(Boolean).length * 20, passed: scoreGate && scoreMarketComplete && totalsMarketComplete && scoreIndependent && totalsIndependent && scoreCoverageOptimized && scenarioTotalsCovered },
     { id: 8, key: "handicapGate", title: "让球独立闸门", score: handicapIndependent ? 100 : 0, passed: handicapIndependent },
-    { id: 9, key: "failureValue", title: "失败方式和值过滤", score: research.complete && drawOverrideJustified ? 100 : 0, passed: research.complete && drawOverrideJustified },
+    { id: 9, key: "failureValue", title: "失败方式和值过滤", score: research.complete && drawOverrideJustified && evidenceDirectionConflict.resolved ? 100 : 0, passed: research.complete && drawOverrideJustified && evidenceDirectionConflict.resolved },
   ].map((step) => ({ ...step, score: round(step.score, 0) }));
   const tenStepPassed = stepScores.every((step) => step.passed);
   stepScores.push({ id: 10, key: "finalLock", title: "最终锁版", score: tenStepPassed ? 100 : 0, passed: tenStepPassed });
   const gates = {
     completeOdds: oddsGate,
     fundamentalData: fundamentalDataComplete,
+    crossLeagueStrengthNormalized,
     temporalIntegrity,
     historicalSamples: sampleGate,
     oddsMovement: movement.complete,
@@ -771,6 +993,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     scoreIndependent,
     totalsIndependent,
     decisionConflictResolved: !conflict || research.complete,
+    evidenceDirectionConflictResolved: evidenceDirectionConflict.resolved,
     handicapIndependent,
     handicapDecisionConflictResolved: !handicapDecision.materialConflict,
     jointCompatibility,
@@ -781,6 +1004,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     oppositeWinPathChecked,
     secondScenarioInProbability,
     twoLegContextComplete: tieAudit.complete,
+    competitionStageConsistent: stageAudit.complete,
     drawOverrideJustified,
     recentFormFresh,
     tenStepMechanism: tenStepPassed,
@@ -809,6 +1033,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       xg: { home: round(xg.home, 2), away: round(xg.away, 2) },
       venueProfile: xg.venueProfile,
       leagueProfile: xg.leagueProfile,
+      crossLeagueNormalization: xg.crossLeagueNormalization,
       leagueLearning: { version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, xgAdjustment: leagueLearning.xg, confidencePenalty: leagueLearning.confidencePenalty, appliedSignals: learningSignals, rules: leagueLearning.rules },
       seasonLearning,
       recentForm: { home: xg.homeRows, away: xg.awayRows, verifiedEvidenceRows: verifiedRecentMatches.length, lookupMode: "SAME_LEAGUE_MARKET_PLUS_CROSS_LEAGUE_TEAM_FORM" },
@@ -818,7 +1043,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       sampleCount: samples.length,
       oddsMovement: movement,
       research,
-      tieContext: { ...tieAudit, advancementProbabilities: advancementDistribution(scores, tieAudit), resultScopes: ["NINETY_MINUTE_WDL", "MATCH_GOAL_DIFFERENCE", "TIE_ADVANCEMENT"] },
+      tieContext: { ...tieAudit, leadControl, advancementProbabilities: advancementDistribution(scores, tieAudit), resultScopes: ["NINETY_MINUTE_WDL", "MATCH_GOAL_DIFFERENCE", "TIE_ADVANCEMENT"] },
+      competitionStage: stageAudit,
       handicap: {
         line: number(String(match.handicap ?? "0").replace("+", "")) ?? 0,
         probabilities: Object.fromEntries(handicapLabels.map((label, index) => [label, round(handicapProbabilities[index])])),
@@ -840,6 +1066,14 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       totals: { probabilities: Object.fromEntries(totalModel.probabilities), components: totalModel.components, marketComplete: totalModel.marketComplete },
       jointDecision: { selected: resolvedPair, candidateCount: jointDecision.candidates.length, independentDirectionLeader, independentHandicapLeader, independentPairCompatible: independentPair.scoreProbability > 0, resolutionApplied: jointResolutionApplied, directionPreserved: selectedDirection === independentDirectionLeader, handicapDecisionAudit: handicapDecision, role: "CONDITIONAL_HANDICAP_EVIDENCE_AFTER_INDEPENDENT_CONFLICT" },
       scenarioDirectionCalibration: { weight: 0.2, preScenario: Object.fromEntries(resultLabels.map((label, index) => [label, round(preScenarioProbabilities[index])])), scenarioOnly: Object.fromEntries(resultLabels.map((label, index) => [label, round(scenarioDirectionProbabilities[index])])), applied: true },
+      evidenceDirectionConflict,
+      evidenceDrivenRiskChallenger: {
+        mode: evidenceDirectionConflict.consensusCount >= 2 ? "CHALLENGER_SHADOW_35" : "CHAMPION_BASELINE_20",
+        championWeight: 0.2,
+        challengerWeight: evidenceDirectionConflict.challengerRiskWeight,
+        promotedToChampion: false,
+        promotionPolicy: "至少30至50场影子样本且四项命中率与样本外概率损失不退化",
+      },
     },
     scenarioSet: topScores.map((row, index) => ({ rank: index + 1, score: row.score, probability: round(row.probability), direction: scoreResult(row), directionProbability: round(probabilities[resultLabels.indexOf(scoreResult(row))] || 0), handicapResult: handicapMapped[index]?.result, role: index === 0 ? "PRIMARY_COVERAGE_PATH" : "SECONDARY_COVERAGE_PATH" })),
     riskScenario: riskScore ? {
@@ -854,9 +1088,9 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     tenStepResult: { passed: tenStepPassed, steps: stepScores, averageScore: round(stepScores.reduce((sum, step) => sum + step.score, 0) / stepScores.length, 1) },
     gateResult: { passed: allGatesPass, gates, blockers: Object.entries(gates).filter(([, passed]) => !passed).map(([name]) => name) },
     backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["winDrawLoseSingleHit", "handicapSingleHit", "totalGoalsDoubleHit", "scoreDoubleHit", "officialScoreCoverageProbability", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", immutablePreMatchSnapshot: true, scorePolicies: ["LEGACY_MAIN_PLUS_COUNTER", "TOP_TWO_GLOBAL", "TOP_TWO_LEAGUE_SEASON_CALIBRATED"] },
-    lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "league score priors plus bounded current-season score calibration; expand weight only when four hit-rate components and out-of-sample probability losses do not regress" },
+    lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "league score priors, bounded current-season score calibration, and evidence-driven 35% risk-path shadow; promote only when four hit-rate components and out-of-sample probability losses do not regress" },
     modelLessons: {
-      version: "LESSONS_2026-07-15_SCORE_COVERAGE_R5",
+      version: "LESSONS_2026-07-16_REVIEW_GATES_R6",
       rules: [
         "让球不穿不得自动推翻胜平负方向",
         "最终方向按全部场景概率汇总，不按单一主比分决定",
@@ -884,9 +1118,18 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "跳过场不计正式投注命中率，但必须继续验票胜平负、让球、总进球和比分组件，禁止VOID被记为命中正样本",
         "联赛先验进入比分分布；当前赛季满30场后只允许12%有上限比分校准，扩大权重仍须四项命中率和样本外概率损失不退化",
         "最终让球若偏离独立概率第一项超过10个百分点，必须阻断FINAL_LOCK而不是由联合兼容强行覆盖",
+        "跨联赛近期状态进入xG前必须按联赛强度、对手质量、正式或友谊赛和样本时效归一化，缺失结构化因子时不得使用",
+        "市场方向、风格层首球方和两回合追分暴露至少两项支持反向路径时，必须由两项独立量化证据解释，否则阻断FINAL_LOCK",
+        "两回合领先方缺少继续扩大比分证据时，对其后续进球xG执行12%衰减，胜负方向与三球以上幅度分开判断",
+        "赛事阶段、赛制识别和两回合状态必须一致，不一致时不得进入FINAL_LOCK",
+        "证据支持的独立风险路径先以35% Challenger影子权重回测，30至50场验证前不得直接改写Champion",
       ],
       leagueSpecific: { league: match.league || "通用", version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, rules: leagueLearning.rules },
       seasonSpecific: seasonLearning,
+      evidenceDirectionConflict,
+      crossLeagueNormalization: xg.crossLeagueNormalization,
+      competitionStage: stageAudit,
+      twoLegLeadControl: leadControl,
       drawOverrideNeeded,
       drawEvidenceCount,
       counterScriptDiverges,

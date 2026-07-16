@@ -95,6 +95,7 @@ const match = {
   matchDate: item.matchDate || item.ticaiDate || oddsData.lotterNo || "",
   kickoffTime: item.kickoffTime || "",
   handicap: item.handicap || "0",
+  competitionStage: item.competitionStage || item.stage || item.round || "",
 };
 
 const research = evidencePath

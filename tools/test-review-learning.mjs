@@ -25,6 +25,11 @@ const lock = {
       predictedScores: ["1-2", "0-2"],
       unifiedRunEvidence: {
         seasonLearning: { league: "欧冠", season: "2026", mode: "CHALLENGER_SHADOW" },
+        crossLeagueNormalization: { complete: true, policy: "LEAGUE_STRENGTH_X_OPPONENT_QUALITY_X_MATCH_TYPE_X_RECENCY" },
+        evidenceDirectionConflict: { materialConflict: true, resolved: false },
+        evidenceDrivenRiskChallenger: { mode: "CHALLENGER_SHADOW_35", challengerWeight: 0.35 },
+        competitionStage: { consistent: true, matchCanonical: "QUALIFYING" },
+        twoLegLeadControl: { applied: true, factor: 0.88 },
       },
     },
   }),
@@ -52,6 +57,11 @@ assert.equal(failedShadowPayload.modelAudit.handicapSingleHit, false);
 assert.equal(failedShadowPayload.modelAudit.totalGoalsDoubleHit, true);
 assert.equal(failedShadowPayload.modelAudit.scoreDoubleHit, true);
 assert.equal(failedShadowPayload.seasonLearning.mode, "CHALLENGER_SHADOW");
+assert.equal(failedShadowPayload.crossLeagueNormalization.complete, true);
+assert.equal(failedShadowPayload.evidenceDirectionConflict.materialConflict, true);
+assert.equal(failedShadowPayload.evidenceDrivenRiskChallenger.challengerWeight, 0.35);
+assert.equal(failedShadowPayload.competitionStageAudit.matchCanonical, "QUALIFYING");
+assert.equal(failedShadowPayload.twoLegLeadControl.factor, 0.88);
 const riskOnlyPayload = caseDiagnosticPayload({
   ...lock,
   payload_json: JSON.stringify({
@@ -118,5 +128,10 @@ assert.equal(exposedCase.learningEligibility, "SHADOW_AUDIT");
 assert.equal(exposedCase.modelAudit.status, "FAIL");
 assert.equal(exposedCase.failureMode, failedShadowPayload.failureMode);
 assert.equal(exposedCase.seasonLearning.mode, "CHALLENGER_SHADOW");
+assert.equal(exposedCase.crossLeagueNormalization.complete, true);
+assert.equal(exposedCase.evidenceDirectionConflict.materialConflict, true);
+assert.equal(exposedCase.evidenceDrivenRiskChallenger.challengerWeight, 0.35);
+assert.equal(exposedCase.competitionStageAudit.matchCanonical, "QUALIFYING");
+assert.equal(exposedCase.twoLegLeadControl.factor, 0.88);
 
 console.log("Review learning tests passed.");

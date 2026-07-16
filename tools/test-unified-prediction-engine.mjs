@@ -66,7 +66,11 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
-assert.equal(final.modelLessons.version, "LESSONS_2026-07-15_SCORE_COVERAGE_R5");
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-16_REVIEW_GATES_R6");
+assert.equal(final.gateResult.gates.crossLeagueStrengthNormalized, true);
+assert.equal(final.gateResult.gates.evidenceDirectionConflictResolved, true);
+assert.equal(final.gateResult.gates.competitionStageConsistent, true);
+assert.equal(final.featureSet.evidenceDrivenRiskChallenger.promotedToChampion, false);
 assert.equal(final.gateResult.gates.oppositeWinPathChecked, true);
 assert.equal(final.gateResult.gates.secondScenarioInProbability, true);
 assert.equal(final.gateResult.gates.twoLegContextComplete, true);
@@ -163,6 +167,9 @@ assert.equal(genericStrongFavourite.featureSet.leagueLearning.appliedSignals.str
 const uclAliasSamples = Array.from({ length: 6 }, (_, index) => ({
   league: index % 2 ? "匈甲" : "冰岛超",
   kickoffTime: `2026-07-0${index + 1}`,
+  matchType: "OFFICIAL",
+  leagueStrengthFactor: index % 2 ? 0.86 : 0.82,
+  opponentQualityFactor: 1,
   homeTeam: index % 2 ? "吉奥里" : "对手甲",
   awayTeam: index % 2 ? "对手乙" : "维京古尔",
   actualHomeGoals: index % 2 ? 2 : 0,
@@ -175,9 +182,21 @@ const uclAliases = runUnifiedPrediction({
 }, { lockType: "PRE_LOCK" });
 assert.equal(uclAliases.featureSet.recentForm.home.length, 3);
 assert.equal(uclAliases.featureSet.recentForm.away.length, 3);
+assert.equal(uclAliases.featureSet.crossLeagueNormalization.complete, true);
+assert.equal(uclAliases.featureSet.crossLeagueNormalization.home.normalizedCrossLeague, 3);
+
+const uclUnnormalized = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "欧冠", home: "杰尔", away: "维京人" },
+  samples: uclAliasSamples.map(({ leagueStrengthFactor, opponentQualityFactor, matchType, ...sample }) => sample),
+}, { lockType: "FINAL_LOCK" });
+assert.equal(uclUnnormalized.lockType, "PRE_LOCK");
+assert.equal(uclUnnormalized.featureSet.crossLeagueNormalization.complete, false);
+assert.ok(uclUnnormalized.gateResult.blockers.includes("crossLeagueStrengthNormalized"));
 
 const twoLegResearch = {
   ...research,
+  competitionStage: "QUALIFYING",
   motivation: {
     ...research.motivation,
     summary: "欧冠资格赛次回合，主队总比分落后，必须追赶；客队领先并可以控制比赛。",
@@ -185,7 +204,7 @@ const twoLegResearch = {
 };
 const missingTwoLegContext = runUnifiedPrediction({
   ...context,
-  match: { ...context.match, league: "欧冠" },
+  match: { ...context.match, league: "欧冠", competitionStage: "QUALIFYING" },
   samples: samples.map((sample) => ({ ...sample, league: "欧冠" })),
   research: twoLegResearch,
 }, { lockType: "FINAL_LOCK" });
@@ -194,7 +213,7 @@ assert.ok(missingTwoLegContext.gateResult.blockers.includes("twoLegContextComple
 
 const completeTwoLegContext = runUnifiedPrediction({
   ...context,
-  match: { ...context.match, league: "欧冠" },
+  match: { ...context.match, league: "欧冠", competitionStage: "QUALIFYING" },
   samples: samples.map((sample) => ({ ...sample, league: "欧冠" })),
   research: twoLegResearch,
   tieContext: { isTwoLeg: true, legNumber: 2, aggregateHomeBeforeMatch: 0, aggregateAwayBeforeMatch: 1 },
@@ -203,5 +222,69 @@ assert.equal(completeTwoLegContext.lockType, "FINAL_LOCK");
 assert.equal(completeTwoLegContext.featureSet.tieContext.objectives.home, "TRAILING_MUST_CHASE");
 assert.deepEqual(completeTwoLegContext.featureSet.tieContext.resultScopes, ["NINETY_MINUTE_WDL", "MATCH_GOAL_DIFFERENCE", "TIE_ADVANCEMENT"]);
 assert.ok(completeTwoLegContext.featureSet.tieContext.advancementProbabilities.AWAY_ADVANCES > 0);
+assert.equal(completeTwoLegContext.featureSet.tieContext.leadControl.applied, true);
+assert.equal(completeTwoLegContext.featureSet.tieContext.leadControl.factor, 0.88);
+assert.ok(completeTwoLegContext.featureSet.tieContext.leadControl.after.away < completeTwoLegContext.featureSet.tieContext.leadControl.before.away);
+
+const mismatchedStage = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "欧冠", competitionStage: "ROUND_OF_32" },
+  samples: samples.map((sample) => ({ ...sample, league: "欧冠" })),
+  research: { ...twoLegResearch, competitionStage: "SEMI_FINAL" },
+  tieContext: { isTwoLeg: true, legNumber: 2, aggregateHomeBeforeMatch: 0, aggregateAwayBeforeMatch: 1 },
+}, { lockType: "FINAL_LOCK" });
+assert.equal(mismatchedStage.lockType, "PRE_LOCK");
+assert.equal(mismatchedStage.featureSet.competitionStage.consistent, false);
+assert.ok(mismatchedStage.gateResult.blockers.includes("competitionStageConsistent"));
+
+const conflictResearch = Object.fromEntries(RESEARCH_KEYS.map((key) => [key, {
+  ...research[key],
+  impact: { home: 0, draw: 0, away: 0, xgHome: 0, xgAway: 0 },
+}]));
+conflictResearch.competitionStage = "QUALIFYING";
+conflictResearch.styleMatchup = { ...conflictResearch.styleMatchup, firstGoalSide: "AWAY" };
+conflictResearch.motivation = {
+  ...conflictResearch.motivation,
+  summary: "欧冠资格赛次回合，主队总比分落后必须前压，客队领先并能够利用追分暴露。",
+};
+const conflictSamples = Array.from({ length: 40 }, (_, index) => index % 2 === 0 ? {
+  league: "欧冠", kickoffTime: `2026-06-${String(1 + (index % 28)).padStart(2, "0")}`,
+  homeTeam: "追分主队", awayTeam: `主队对手${index}`, actualHomeGoals: 3, actualAwayGoals: 0,
+} : {
+  league: "欧冠", kickoffTime: `2026-06-${String(1 + (index % 28)).padStart(2, "0")}`,
+  homeTeam: `客队对手${index}`, awayTeam: "领先客队", actualHomeGoals: 1, actualAwayGoals: 1,
+});
+const evidenceConflict = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "欧冠", home: "追分主队", away: "领先客队", competitionStage: "QUALIFYING" },
+  market: { ...context.market, normal: { win: "3.25", draw: "3.20", lose: "2.05" } },
+  samples: conflictSamples,
+  research: conflictResearch,
+  tieContext: { isTwoLeg: true, legNumber: 2, aggregateHomeBeforeMatch: 0, aggregateAwayBeforeMatch: 1 },
+}, { lockType: "FINAL_LOCK" });
+assert.equal(evidenceConflict.finalDecision.recommendationSide, "HOME");
+assert.equal(evidenceConflict.featureSet.evidenceDirectionConflict.materialConflict, true);
+assert.equal(evidenceConflict.featureSet.evidenceDirectionConflict.quantitativeSupportCount, 0);
+assert.equal(evidenceConflict.featureSet.evidenceDrivenRiskChallenger.challengerWeight, 0.35);
+assert.equal(evidenceConflict.lockType, "PRE_LOCK");
+assert.ok(evidenceConflict.gateResult.blockers.includes("evidenceDirectionConflictResolved"));
+
+const resolvedConflictResearch = {
+  ...conflictResearch,
+  teamState: { ...conflictResearch.teamState, impact: { home: 0.04, draw: 0, away: 0, xgHome: 0, xgAway: 0 } },
+  injuries: { ...conflictResearch.injuries, impact: { home: 0.04, draw: 0, away: 0, xgHome: 0, xgAway: 0 } },
+};
+const evidenceConflictResolved = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "欧冠", home: "追分主队", away: "领先客队", competitionStage: "QUALIFYING" },
+  market: { ...context.market, normal: { win: "3.25", draw: "3.20", lose: "2.05" } },
+  samples: conflictSamples,
+  research: resolvedConflictResearch,
+  tieContext: { isTwoLeg: true, legNumber: 2, aggregateHomeBeforeMatch: 0, aggregateAwayBeforeMatch: 1 },
+}, { lockType: "FINAL_LOCK" });
+assert.equal(evidenceConflictResolved.featureSet.evidenceDirectionConflict.materialConflict, true);
+assert.equal(evidenceConflictResolved.featureSet.evidenceDirectionConflict.quantitativeSupportCount, 2);
+assert.equal(evidenceConflictResolved.featureSet.evidenceDirectionConflict.resolved, true);
+assert.ok(!evidenceConflictResolved.gateResult.blockers.includes("evidenceDirectionConflictResolved"));
 
 console.log("Unified prediction engine gates verified.");
