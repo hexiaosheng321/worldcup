@@ -47,6 +47,9 @@ if (missingRequired.length) {
 for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260714_i18n_safe_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing language selector marker: ${marker}`);
 }
+if (!index.includes("lib/similarCaseEngine.js?v=20260716_brazil_league_fix_r1")) {
+  throw new Error("Production baseline requires the Brazil Serie A competition-normalization cache namespace.");
+}
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
   throw new Error("Production baseline must keep the language menu outside the header clipping box");
 }
