@@ -4410,7 +4410,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
 
     if (path === "matches" && request.method === "POST") {
       const body = await readJson(request);
-      const matchId = String(body.matchId || body.match_id || id("match"));
+      const matchId = String(body.cloudMatchId || body.match_id || body.matchId || id("match"));
       await db.prepare(`
         INSERT INTO matches (match_id, match_code, league, home_team, away_team, kickoff_time, status, payload_json, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
