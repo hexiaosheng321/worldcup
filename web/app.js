@@ -3596,13 +3596,13 @@ function lockFromPrediction(pred, match = {}) {
   const confidenceScore = gate.score || 0;
   const result = matchResultFromScore(match);
   const lock = window.WC_LOCK_ENGINE.buildLockedPrediction(match, {
-    lockId: `${match.no || match.matchId}-${predictionModelVersion(pred)}-${pred.date || match.date}`,
+    lockId: pred.lockId || `${match.no || match.matchId}-${predictionModelVersion(pred)}-${pred.date || match.date}`,
     matchId: String(match.matchId || match.no || ""),
     matchCode: match.no || pred.no || "",
     league: competitionBucketForCase(pred, match),
     kickoffTime: match.matchDate || match.date || pred.date || "",
     lockedAt: pred.lockedAt || `${pred.date || match.date || data.currentDate}T00:00:00+08:00`,
-    lockType: "FINAL_LOCK",
+    lockType: pred.lockType === "PRE_LOCK" ? "PRE_LOCK" : "FINAL_LOCK",
     modelHomeProb,
     modelDrawProb,
     modelAwayProb,
