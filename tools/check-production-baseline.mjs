@@ -16,6 +16,7 @@ const syncWorker = fs.readFileSync("worker/sync-worker.js", "utf8");
 const syncWorkerConfig = fs.readFileSync("wrangler.sync.jsonc", "utf8");
 const unifiedEngine = fs.readFileSync("tools/lib/unified-prediction-engine.mjs", "utf8");
 const unifiedRunner = fs.readFileSync("tools/run-unified-prediction.mjs", "utf8");
+const unifiedPublisher = fs.readFileSync("tools/publish-unified-locks.mjs", "utf8");
 const i18n = fs.readFileSync("web/app/app-i18n.js", "utf8");
 const baseStyles = fs.readFileSync("web/styles-base.css", "utf8");
 const reviewEngine = fs.readFileSync("web/lib/reviewEngine.js", "utf8");
@@ -194,8 +195,8 @@ const unifiedPredictionMarkers = [
   "model-runs",
   "tenStepResult",
   "backtestContract",
-  "LESSONS_2026-07-16_CONDITIONAL_HANDICAP_R7",
-  "DIRECTION_CONDITIONAL_LEADER",
+  "LESSONS_2026-07-16_INDEPENDENT_HANDICAP_R8",
+  "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
   "LEAGUE_LEARNING_PROFILES",
   "scenarioTotalsCovered",
   "scenarioHandicapCovered",
@@ -211,6 +212,9 @@ const unifiedPredictionMarkers = [
   "CHALLENGER_SHADOW",
   "handicapDecisionConflictResolved",
   "winDrawLoseSingleHit",
+  "handicapChampionSingleHit",
+  "conditionalHandicapChallengerSingleHit",
+  "winDrawLoseHandicapJointHit",
   "totalGoalsDoubleHit",
   "scoreDoubleHit",
   "venueProfile",
@@ -229,6 +233,9 @@ const unifiedPredictionMarkers = [
 const missingUnifiedPredictionMarkers = unifiedPredictionMarkers.filter((marker) => !unifiedEngine.includes(marker) && !unifiedRunner.includes(marker) && !api.includes(marker));
 if (missingUnifiedPredictionMarkers.length) {
   throw new Error(`Production baseline missing unified prediction contract: ${missingUnifiedPredictionMarkers.join(", ")}`);
+}
+for (const marker of ["PRE_LOCK", "conditionalHandicapChallenger", "complete unified prediction package", "must publish its"]) {
+  if (!unifiedPublisher.includes(marker)) throw new Error(`Production baseline missing PRE_LOCK shadow publishing contract: ${marker}`);
 }
 for (const marker of ["betOutcome", "modelAudit", "SHADOW_AUDIT", "SHADOW_OBSERVATION", "四组件全部命中"]) {
   if (!api.includes(marker) && !reviewEngine.includes(marker)) throw new Error(`Production baseline missing self-learning review marker: ${marker}`);

@@ -4305,8 +4305,8 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         if (!handicapPick || rankedHandicap.length !== 3 || !Array.isArray(handicapEvidence.components) || handicapEvidence.components.length < 2) {
           return json({ ok: false, error: "FINAL_LOCK requires independent handicap probabilities from score grid and handicap market" }, 400);
         }
-        if (rankedHandicap[0][0] !== handicapPick && !(jointEvidence.resolutionApplied === true && jointEvidence.directionPreserved === true && jointEvidence.role === "CONDITIONAL_HANDICAP_EVIDENCE_AFTER_INDEPENDENT_CONFLICT")) {
-          return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with independent handicap probability leader ${rankedHandicap[0][0]} without an evidence-arbitrated joint resolution` }, 400);
+        if (rankedHandicap[0][0] !== handicapPick) {
+          return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with independent handicap probability leader ${rankedHandicap[0][0]}; conditional handicap evidence is Challenger-only` }, 400);
         }
         if (!Array.isArray(scoreEvidence.components) || scoreEvidence.components.length < 2 || scoreEvidence.marketComplete !== true) {
           return json({ ok: false, error: "FINAL_LOCK requires independent score probabilities from score model and score market" }, 400);
