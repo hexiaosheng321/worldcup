@@ -122,6 +122,7 @@ const teamFlags = {
 };
 
 function showHome() {
+  resetPageSeoMetadata();
   document.body.classList.add("home-mode");
   document.body.classList.remove(
     "dashboard-mode",
@@ -150,7 +151,7 @@ function showDashboard() {
     button.removeAttribute("aria-current");
   });
   const active =
-    window.location.hash === "#sporttery" || window.location.hash.startsWith("#sporttery-match-")
+    window.location.hash === "#sporttery" || isSportteryDetailRoute()
       ? "[data-sporttery-pool]"
       : window.location.hash === "#locks"
         ? "[data-site-locks]"
@@ -695,6 +696,84 @@ function sportteryLookupKeyFromHash(value = "") {
   }
 }
 
+function sportteryRouteKeyFromPath(pathname = window.location.pathname || "/") {
+  const path = String(pathname || "");
+  const match = path.match(/^\/sporttery-match\/([^/?#]+)\/?$/) || path.match(/^\/sporttery-match-([^/?#]+)\/?$/);
+  if (!match) return "";
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+function currentSportteryRouteKey() {
+  const pathKey = sportteryRouteKeyFromPath();
+  if (pathKey) return sportteryLookupKeyFromHash(pathKey);
+  const hashMatch = (window.location.hash || "").match(/^#sporttery-match-(.+)$/);
+  return hashMatch ? sportteryLookupKeyFromHash(hashMatch[1]) : "";
+}
+
+function isSportteryDetailRoute() {
+  return Boolean(currentSportteryRouteKey());
+}
+
+function canonicalSportteryMatchPath(key = "") {
+  const compact = sportteryComparableId(sportteryLookupKeyFromHash(key));
+  return compact ? `/sporttery-match/${encodeURIComponent(compact)}` : "/sporttery-match";
+}
+
+function normalizeLegacySportteryRoute() {
+  const key = currentSportteryRouteKey();
+  if (!key) return false;
+  const targetPath = canonicalSportteryMatchPath(key);
+  const currentPath = window.location.pathname || "/";
+  if (currentPath === targetPath && !window.location.hash) return false;
+  history.replaceState("", document.title, `${targetPath}${window.location.search || ""}`);
+  return true;
+}
+
+function ensureSeoMeta(name) {
+  let meta = document.head.querySelector(`meta[name="${name}"]`);
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute("name", name);
+    document.head.appendChild(meta);
+  }
+  return meta;
+}
+
+function setCanonicalPageUrl(pathname = "/") {
+  let canonical = document.head.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.setAttribute("rel", "canonical");
+    document.head.appendChild(canonical);
+  }
+  canonical.setAttribute("href", `https://ticai-model.com${pathname}`);
+}
+
+function resetPageSeoMetadata() {
+  document.title = "体彩足彩模型中心";
+  ensureSeoMeta("description").setAttribute("content", "聚合赛程、盘口快照、赛前锁版和赛后复盘的足彩模型研究工作台。");
+  setCanonicalPageUrl("/");
+}
+
+function updateSportterySeoMetadata(item = {}, pred = null) {
+  const home = item.displayHome || item.home || "";
+  const away = item.displayAway || item.away || "";
+  const league = item.league || item.competition || "竞彩";
+  const routeKey = item.matchId || item.cloudMatchId || item.sportteryKey || currentSportteryRouteKey();
+  const matchLabel = home && away ? `${home} vs ${away}` : "比赛锁版详情";
+  const pickText = pred?.pick || pred?.recommendationSide || "";
+  document.title = `${matchLabel}赛前锁版与模型推演 | 体彩足彩模型中心`;
+  ensureSeoMeta("description").setAttribute(
+    "content",
+    `${matchLabel}的${league}赛前锁版、盘口依据、总进球与比分推演${pickText ? `，当前锁版结论为${pickText}` : ""}。`
+  );
+  setCanonicalPageUrl(canonicalSportteryMatchPath(routeKey));
+}
+
 function cacheSportteryPoolItems(items = []) {
   sportteryPoolItemCache = new Map();
   items.forEach((item) => {
@@ -985,7 +1064,7 @@ async function ensureSportteryLockForItem(item = {}, key = "") {
       ? [preferred.lock]
       : (await window.WC_CLOUD_STORE.listLocks?.(matchId))?.locks || [];
     const changed = mergeCloudAutoPredictions(cloudLockRowsToPredictions(lockRows));
-    const currentKey = sportteryLookupKeyFromHash((window.location.hash || "").replace(/^#sporttery-match-/, ""));
+    const currentKey = currentSportteryRouteKey();
     if (changed && currentKey && (currentKey === key || sameSportteryIdentity(currentKey, key) || sameSportteryIdentity(currentKey, matchId))) {
       renderSportteryMatchDetail(currentKey);
     }

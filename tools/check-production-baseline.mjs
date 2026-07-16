@@ -45,7 +45,7 @@ const missingRequired = requiredMarkers.filter((marker) => !index.includes(marke
 if (missingRequired.length) {
   throw new Error(`Production baseline missing required World Cup behavior: ${missingRequired.join(", ")}`);
 }
-for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260714_i18n_safe_v1"]) {
+for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260716_canonical_match_routes_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing language selector marker: ${marker}`);
 }
 if (!index.includes("lib/similarCaseEngine.js?v=20260716_brazil_league_fix_r1")) {
@@ -124,6 +124,21 @@ if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('return `${competit
 }
 const appCore = fs.readFileSync("web/app/app-core.js", "utf8");
 const appDetail = fs.readFileSync("web/app/app-detail.js", "utf8");
+for (const marker of ["canonicalSportteryMatchPath", "currentSportteryRouteKey", "normalizeLegacySportteryRoute", "updateSportterySeoMetadata"]) {
+  if (!appCore.includes(marker)) throw new Error(`Production baseline missing canonical match route marker: ${marker}`);
+}
+for (const marker of ["history.pushState", "canonicalSportteryMatchPath", "handleClientRouteChange"]) {
+  if (!appDetail.includes(marker)) throw new Error(`Production baseline missing canonical detail navigation marker: ${marker}`);
+}
+for (const marker of ['window.addEventListener("popstate"', "canonicalSportteryMatchPath(sportteryKey)"]) {
+  if (!main.includes(marker)) throw new Error(`Production baseline missing canonical route analytics marker: ${marker}`);
+}
+for (const marker of ["canonicalAnalyticsPagePath", "analyticsCanonicalPagePathSql", "sportterySitemap"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing canonical analytics or sitemap marker: ${marker}`);
+}
+if (!fs.readFileSync("web/robots.txt", "utf8").includes("https://ticai-model.com/api/sitemap.xml")) {
+  throw new Error("Production baseline requires the canonical sporttery sitemap in robots.txt.");
+}
 if (!appCore.includes("return handicapLineFromPrediction(pred) || handicapLine(pred?.no)")) {
   throw new Error("Production baseline requires the locked prediction handicap before any number-only fallback.");
 }

@@ -62,7 +62,7 @@
     "status": "VERIFIED", "evidenceGrade": "A",
     "summary": "体彩胜平负从1.69/3.70/3.75变到1.65/3.75/3.90，21个同向快照显示主胜继续降温度上升；盘口信号只以有限权重校准，不能覆盖维京人状态与首回合优势。",
     "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
-    "sources": [{ "title": "体彩模型SP时间序列", "url": "https://ticai-model.com/#sporttery-match-id-1330948" }],
+    "sources": [{ "title": "体彩模型SP时间序列", "url": "https://ticai-model.com/sporttery-match/1330948" }],
     "impact": { "home": 0.005, "draw": 0, "away": -0.005, "xgHome": 0, "xgAway": 0 }
   }
 }

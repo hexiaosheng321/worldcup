@@ -34,7 +34,7 @@ for (const [id, [league, home, away, title, url]] of Object.entries(fixtures)) {
   const latest = movement.latest || {};
   const sources = [
     { title, url },
-    { title: "体彩模型当前赛事池与SP时间序列", url: `https://ticai-model.com/#sporttery-match-id-${id}` },
+    { title: "体彩模型当前赛事池与SP时间序列", url: `https://ticai-model.com/sporttery-match/${id}` },
   ];
   const entries = {
     teamState: `${home}${homeForm}；${away}${awayForm}。这些赛果来自锁版前历史样本，不读取赛后数据。`,

@@ -1028,8 +1028,9 @@ function sportteryPoolItems() {
 
 function sportteryPoolCard(item) {
   const linked = Boolean(item.linkedNo);
-  const cardKey = encodeURIComponent(item.sportteryKey || sportteryItemKey(item));
-  const detailHref = `#sporttery-match-${cardKey}`;
+  const routeKey = item.sportteryKey || sportteryItemKey(item);
+  const cardKey = encodeURIComponent(routeKey);
+  const detailHref = canonicalSportteryMatchPath(routeKey);
   const handicap = item.handicap || "0";
   const normalText = item.normal
     ? `胜 ${item.normal.win} · 平 ${item.normal.draw} · 负 ${item.normal.lose}`
@@ -1181,8 +1182,8 @@ function rerenderOddsSurfaces() {
   renderGlobalStats();
   const match = window.location.hash.match(/^#match-(.+)$/);
   if (match) renderMatchDetail(match[1]);
-  const sportteryMatch = window.location.hash.match(/^#sporttery-match-(.+)$/);
-  if (sportteryMatch) renderSportteryMatchDetail(decodeURIComponent(sportteryMatch[1]));
+  const sportteryKey = currentSportteryRouteKey();
+  if (sportteryKey) renderSportteryMatchDetail(sportteryKey);
 }
 
 function renderCurrentRouteSurfaces() {
@@ -1195,9 +1196,9 @@ function renderCurrentRouteSurfaces() {
     renderMatchDetail(match[1]);
     return;
   }
-  const sportteryMatch = hash.match(/^#sporttery-match-(.+)$/);
-  if (sportteryMatch) {
-    renderSportteryMatchDetail(decodeURIComponent(sportteryMatch[1]));
+  const sportteryKey = currentSportteryRouteKey();
+  if (sportteryKey) {
+    renderSportteryMatchDetail(sportteryKey);
     return;
   }
   if (hash === "#model-stats") {

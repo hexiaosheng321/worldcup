@@ -51,10 +51,43 @@ async function ensureAnalyticsSchema(db) {
   await db.prepare("CREATE INDEX IF NOT EXISTS idx_analytics_events_type ON analytics_events(event_type, created_at)").run();
 }
 
+function canonicalAnalyticsPagePath(value = "/") {
+  const pagePath = String(value || "/").slice(0, 240);
+  const hashMatch = pagePath.match(/#sporttery-match-(?:id-)?(?:sporttery-)?([A-Za-z0-9_-]+)/);
+  if (hashMatch) return `/sporttery-match/${hashMatch[1]}`;
+  const pathMatch = pagePath.match(/^\/sporttery-match\/(?:id-)?(?:sporttery-)?([A-Za-z0-9_-]+)\/?$/);
+  if (pathMatch) return `/sporttery-match/${pathMatch[1]}`;
+  const legacyPathMatch = pagePath.match(/^\/sporttery-match-(?:id-)?(?:sporttery-)?([A-Za-z0-9_-]+)\/?$/);
+  if (legacyPathMatch) return `/sporttery-match/${legacyPathMatch[1]}`;
+  return pagePath;
+}
+
+const analyticsCanonicalPagePathSql = `
+  CASE
+    WHEN instr(page_path, '#sporttery-match-id-') > 0
+      THEN '/sporttery-match/' || substr(page_path, instr(page_path, '#sporttery-match-id-') + length('#sporttery-match-id-'))
+    WHEN instr(page_path, '#sporttery-match-sporttery-') > 0
+      THEN '/sporttery-match/' || substr(page_path, instr(page_path, '#sporttery-match-sporttery-') + length('#sporttery-match-sporttery-'))
+    WHEN instr(page_path, '#sporttery-match-') > 0
+      THEN '/sporttery-match/' || substr(page_path, instr(page_path, '#sporttery-match-') + length('#sporttery-match-'))
+    WHEN page_path LIKE '/sporttery-match/id-%'
+      THEN '/sporttery-match/' || substr(page_path, length('/sporttery-match/id-') + 1)
+    WHEN page_path LIKE '/sporttery-match/sporttery-%'
+      THEN '/sporttery-match/' || substr(page_path, length('/sporttery-match/sporttery-') + 1)
+    WHEN page_path LIKE '/sporttery-match-id-%'
+      THEN '/sporttery-match/' || substr(page_path, length('/sporttery-match-id-') + 1)
+    WHEN page_path LIKE '/sporttery-match-sporttery-%'
+      THEN '/sporttery-match/' || substr(page_path, length('/sporttery-match-sporttery-') + 1)
+    WHEN page_path LIKE '/sporttery-match-%'
+      THEN '/sporttery-match/' || substr(page_path, length('/sporttery-match-') + 1)
+    ELSE page_path
+  END
+`;
+
 async function trackAnalyticsEvent(db, request) {
   const body = await readJson(request);
   const eventType = String(body.eventType || body.event_type || "page_view").slice(0, 40);
-  const pagePath = String(body.pagePath || body.page_path || "/").slice(0, 240);
+  const pagePath = canonicalAnalyticsPagePath(body.pagePath || body.page_path || "/");
   const pageTitle = String(body.pageTitle || body.page_title || "").slice(0, 160);
   const sessionId = String(body.sessionId || body.session_id || "").slice(0, 80);
   const referrer = String(body.referrer || request.headers.get("referer") || "").slice(0, 240);
@@ -63,7 +96,7 @@ async function trackAnalyticsEvent(db, request) {
   const ip = request.headers.get("cf-connecting-ip") || "";
   const visitorHash = await sha256Hex(`${ip}|${userAgent}`);
   const payload = {
-    route: body.route || "",
+    route: body.route ? canonicalAnalyticsPagePath(body.route) : "",
     target: body.target || "",
     source: "site",
   };
@@ -108,10 +141,10 @@ async function analyticsSummary(db, request, env) {
     WHERE created_at >= datetime('now', ?)
   `).bind(since).first();
   const pages = await db.prepare(`
-    SELECT page_path AS pagePath, COUNT(*) AS views, COUNT(DISTINCT visitor_hash) AS visitors
+    SELECT ${analyticsCanonicalPagePathSql} AS pagePath, COUNT(*) AS views, COUNT(DISTINCT visitor_hash) AS visitors
     FROM analytics_events
     WHERE created_at >= datetime('now', ?)
-    GROUP BY page_path
+    GROUP BY ${analyticsCanonicalPagePathSql}
     ORDER BY views DESC
     LIMIT 30
   `).bind(since).all();
@@ -138,6 +171,41 @@ async function analyticsSummary(db, request, env) {
     events: events.results || [],
     countries: countries.results || [],
   };
+}
+
+function xmlEscape(value = "") {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+async function sportterySitemap(db) {
+  const rows = await db.prepare(`
+    SELECT match_id AS matchId, MAX(locked_at) AS lastmod
+    FROM locked_predictions
+    WHERE lock_type IN ('FINAL_LOCK', 'PRE_LOCK')
+    GROUP BY match_id
+    ORDER BY lastmod DESC
+    LIMIT 500
+  `).all();
+  const urls = (rows.results || [])
+    .map((row) => {
+      const matchId = String(row.matchId || "").replace(/^sporttery-/, "").replace(/^id-/, "").trim();
+      if (!matchId) return "";
+      const lastmod = String(row.lastmod || "").slice(0, 10);
+      return `  <url>\n    <loc>${xmlEscape(`https://ticai-model.com/sporttery-match/${encodeURIComponent(matchId)}`)}</loc>${lastmod ? `\n    <lastmod>${xmlEscape(lastmod)}</lastmod>` : ""}\n  </url>`;
+    })
+    .filter(Boolean);
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://ticai-model.com/</loc>\n  </url>${urls.length ? `\n${urls.join("\n")}` : ""}\n</urlset>\n`;
+  return new Response(xml, {
+    headers: {
+      "content-type": "application/xml; charset=utf-8",
+      "cache-control": "public, max-age=0, s-maxage=300",
+    },
+  });
 }
 
 
@@ -4228,6 +4296,10 @@ export async function onRequest(context) {
   }
 
   try {
+    if (path === "sitemap.xml" && request.method === "GET") {
+      return edgeCached(request, { ttl: 300 }, () => sportterySitemap(db));
+    }
+
     if (path === "live-sporttery-data.js" && request.method === "GET") {
       return edgeCached(request, { ttl: 20 }, () => d1OddsScript(db));
     }

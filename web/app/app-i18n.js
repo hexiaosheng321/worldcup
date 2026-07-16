@@ -1,7 +1,7 @@
 // app-i18n.js — explicit, render-bound localization without DOM observers.
 (function () {
   const STORAGE_KEY = "ticai_ui_locale_v2";
-  const VERSION = "20260714_i18n_safe_v1";
+  const VERSION = "20260716_canonical_match_routes_v1";
   const SUPPORTED = ["zh-CN", "ja", "en"];
   const TITLES = {
     "zh-CN": "体彩足彩模型中心",
@@ -117,7 +117,9 @@
       while (walker.nextNode()) nodes += translateTextNode(walker.currentNode);
     });
     document.documentElement.lang = locale;
-    document.title = TITLES[locale];
+    if (typeof isSportteryDetailRoute !== "function" || !isSportteryDetailRoute()) {
+      document.title = TITLES[locale];
+    }
     lastMetrics = { nodes, durationMs: Number((performance.now() - startedAt).toFixed(2)) };
     return lastMetrics;
   }
@@ -199,6 +201,7 @@
   });
   document.addEventListener("change", () => schedule());
   window.addEventListener("hashchange", () => schedule());
+  window.addEventListener("popstate", () => schedule());
 
   window.WC_I18N = {
     get locale() { return locale; },

@@ -74,7 +74,7 @@
     "status": "VERIFIED", "evidenceGrade": "A",
     "summary": "体彩胜平负从2.07/3.18/3.01变到2.03/3.13/3.15，法国微降、西班牙抬高；456个同向有效快照确认变化连续。市场只以15%上限校准，不直接决定方向。",
     "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
-    "sources": [{ "title": "体彩模型当前赛事与SP时间序列", "url": "https://ticai-model.com/#sporttery-match-id-1277399" }],
+    "sources": [{ "title": "体彩模型当前赛事与SP时间序列", "url": "https://ticai-model.com/sporttery-match/1277399" }],
     "impact": { "home": 0.005, "draw": 0, "away": -0.005, "xgHome": 0, "xgAway": 0 }
   }
 }

@@ -45,7 +45,7 @@ function currentRouteNeedsWorldCupStaticData() {
 
 function currentRouteNeedsCloudBootstrap() {
   const hash = window.location.hash || "";
-  return hash === "#worldcup" || hash === "#worldcup-knockout" || hash === "#sporttery" || hash === "#locks" || hash === "#model-stats" || hash === "#odds-map" || /^#sporttery-match-/.test(hash);
+  return hash === "#worldcup" || hash === "#worldcup-knockout" || hash === "#sporttery" || hash === "#locks" || hash === "#model-stats" || hash === "#odds-map" || isSportteryDetailRoute();
 }
 
 function currentRouteNeedsFullCloudBootstrap() {
@@ -73,8 +73,10 @@ homeEnters.forEach((button) => {
 });
 
 siteHome?.addEventListener("click", () => {
-  if (window.location.hash) {
-    history.pushState("", document.title, window.location.pathname + window.location.search);
+  if (window.location.hash || isSportteryDetailRoute()) {
+    history.pushState("", document.title, `/${window.location.search || ""}`);
+    handleClientRouteChange();
+    return;
   }
   showHome();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -407,6 +409,8 @@ function analyticsSessionId() {
 }
 
 function analyticsPagePath() {
+  const sportteryKey = currentSportteryRouteKey();
+  if (sportteryKey) return canonicalSportteryMatchPath(sportteryKey);
   return `${window.location.pathname || "/"}${window.location.hash || "#home"}`;
 }
 
@@ -417,7 +421,7 @@ function sendAnalyticsEvent(eventType = "page_view", payload = {}) {
     pageTitle: document.title || "",
     sessionId: analyticsSessionId(),
     referrer: document.referrer || "",
-    route: window.location.hash || "#home",
+    route: currentSportteryRouteKey() ? canonicalSportteryMatchPath(currentSportteryRouteKey()) : window.location.hash || "#home",
     ...payload,
   });
   try {
@@ -434,7 +438,7 @@ function sendAnalyticsEvent(eventType = "page_view", payload = {}) {
   }).catch(() => {});
 }
 
-window.addEventListener("hashchange", () => {
+function handleClientRouteChange({ track = true } = {}) {
   handleRouteFromHash();
   if (currentRouteNeedsWorldCupStaticData()) {
     loadWorldCupStaticDataFallback({ rerender: true });
@@ -443,12 +447,17 @@ window.addEventListener("hashchange", () => {
     loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" })
       .then(() => syncCloudSportteryResultsIfNeeded({ rerender: true }));
   }
-  sendAnalyticsEvent("page_view");
-});
+  if (track) sendAnalyticsEvent("page_view");
+}
+
+window.addEventListener("hashchange", () => handleClientRouteChange());
+window.addEventListener("popstate", () => handleClientRouteChange());
 
 restoreCloudBootstrapCache();
+normalizeLegacySportteryRoute();
 const initialHash = window.location.hash;
-if (initialHash) {
+const initialRouteActive = Boolean(initialHash || currentSportteryRouteKey());
+if (initialRouteActive) {
   renderCurrentRouteSurfaces();
 } else {
   renderInitialHomeOnly();
@@ -465,7 +474,7 @@ if (currentRouteNeedsCloudBootstrap()) {
     } else if (synced) renderCurrentRouteSurfaces();
     scheduleSportterySpHistoryRefresh();
   });
-} else if (!initialHash) {
+} else if (!initialRouteActive) {
   const liveScoresReady = refreshLiveFootballScoresData({ rerender: false });
   loadCloudBootstrapData({ rerender: false, scope: "initial" }).then(async () => {
     renderCurrentRouteSurfaces();
@@ -481,13 +490,13 @@ if (currentRouteNeedsCloudBootstrap()) {
 if (currentRouteNeedsWorldCupStaticData()) {
   loadWorldCupStaticDataFallback({ rerender: true });
 }
-runWhenPageIdle(() => loadCloudCaseBaseData({ rerender: Boolean(initialHash) }), initialHash ? 2200 : 3600);
-runWhenPageIdle(() => loadFirecrawlEnrichmentData({ rerender: Boolean(window.location.hash) }), initialHash ? 2600 : 3900);
+runWhenPageIdle(() => loadCloudCaseBaseData({ rerender: initialRouteActive }), initialRouteActive ? 2200 : 3600);
+runWhenPageIdle(() => loadFirecrawlEnrichmentData({ rerender: initialRouteActive }), initialRouteActive ? 2600 : 3900);
 runWhenPageIdle(() => {
   if (window.location.hash && !currentRouteNeedsWorldCupStaticData()) {
     loadWorldCupStaticDataFallback({ rerender: Boolean(window.location.hash) });
   }
-}, initialHash ? 4200 : 2600);
+}, initialRouteActive ? 4200 : 2600);
 
 setInterval(refreshSportteryCloudData, 5 * 60 * 1000);
 

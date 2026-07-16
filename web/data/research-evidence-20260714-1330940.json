@@ -59,7 +59,7 @@
     "status": "VERIFIED", "evidenceGrade": "A",
     "summary": "体彩胜平负从4.75/4.05/1.49变到4.90/4.10/1.47，21个同向快照显示客胜继续受压；该变化与首回合两球优势同向，但仍只做有上限的市场校准。",
     "capturedAt": "2026-07-14T04:56:01Z", "observedAt": "2026-07-14T04:56:01Z",
-    "sources": [{ "title": "体彩模型SP时间序列", "url": "https://ticai-model.com/#sporttery-match-id-1330940" }],
+    "sources": [{ "title": "体彩模型SP时间序列", "url": "https://ticai-model.com/sporttery-match/1330940" }],
     "impact": { "home": -0.005, "draw": 0, "away": 0.005, "xgHome": 0, "xgAway": 0 }
   }
 }

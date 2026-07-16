@@ -951,9 +951,9 @@ function renderLeagueProfilePanel(match, pred) {
     ensureLeagueProfilesLoaded(() => {
       const hash = window.location.hash || "";
       const currentWorldCup = hash.match(/^#match-(.+)$/);
-      const currentSporttery = hash.match(/^#sporttery-match-(.+)$/);
+      const currentSporttery = currentSportteryRouteKey();
       if (currentWorldCup) renderMatchDetail(currentWorldCup[1]);
-      if (currentSporttery) renderSportteryMatchDetail(decodeURIComponent(currentSporttery[1]));
+      if (currentSporttery) renderSportteryMatchDetail(currentSporttery);
     });
     return `
       <section class="match-page-section similar-case-panel league-profile-panel">
@@ -1155,9 +1155,9 @@ function requestHistoricalSimilarSamples(lock, match) {
       historicalSimilarResultCache.set(key, result?.ok ? result : { ok: false, sampleCount: 0, topCases: [], stats: {} });
       const hash = window.location.hash || "";
       const worldCup = hash.match(/^#match-(.+)$/);
-      const sporttery = hash.match(/^#sporttery-match-(.+)$/);
+      const sporttery = currentSportteryRouteKey();
       if (worldCup) renderMatchDetail(worldCup[1]);
-      if (sporttery) renderSportteryMatchDetail(decodeURIComponent(sporttery[1]));
+      if (sporttery) renderSportteryMatchDetail(sporttery);
       return result;
     })
     .catch(() => historicalSimilarResultCache.set(key, { ok: false, sampleCount: 0, topCases: [], stats: {} }))
@@ -1479,13 +1479,14 @@ function renderSportteryMatchDetail(key) {
   const content = document.querySelector("#match-detail-body");
   const resetScroll = sportteryDetailNavigationPending;
   sportteryDetailNavigationPending = false;
-  const preserveScroll = !resetScroll && window.location.hash.startsWith("#sporttery-match-") && window.scrollY > 0;
+  const preserveScroll = !resetScroll && isSportteryDetailRoute() && window.scrollY > 0;
   const previousScrollY = preserveScroll ? window.scrollY : 0;
   if (!sportteryPoolItemCache.size) cacheSportteryPoolItems(sportteryPoolItems());
   const base = findSportteryItemByKey(key);
   if (!content) return;
   if (!base) {
     const lookupKey = sportteryLookupKeyFromHash(key);
+    updateSportterySeoMetadata({ matchId: lookupKey });
     content.innerHTML = `
       <div class="match-page-toolbar">
         <button type="button" data-detail-back>← 赛事池</button>
@@ -1514,6 +1515,7 @@ function renderSportteryMatchDetail(key) {
     modelPred = sportteryPredictionForItem(item) || (item.linkedNo ? latestPredictionFor(item.linkedNo) : null);
     if (!hasCompleteSportteryLockFields(modelPred)) modelPred = null;
   }
+  updateSportterySeoMetadata(item, modelPred);
   const lockSyncing = !modelPred && hasCloudMatchId;
   const research = sportteryResearchSnapshot(item, modelPred);
   const backLabel =
@@ -1622,10 +1624,12 @@ function renderSportteryMatchDetail(key) {
 function openSportteryMatchPage(key, returnTarget = "sporttery") {
   matchDetailReturnTarget = returnTarget;
   const lookupKey = sportteryLookupKeyFromHash(key);
-  const hashKey = encodeURIComponent(lookupKey);
-  if (window.location.hash !== `#sporttery-match-${hashKey}`) {
+  const targetPath = canonicalSportteryMatchPath(lookupKey);
+  if (window.location.pathname !== targetPath || window.location.hash) {
     sportteryDetailNavigationPending = true;
-    window.location.hash = `sporttery-match-${hashKey}`;
+    history.pushState("", document.title, `${targetPath}${window.location.search || ""}`);
+    if (typeof handleClientRouteChange === "function") handleClientRouteChange();
+    else handleRouteFromHash();
     return;
   }
   renderSportteryMatchDetail(lookupKey);
@@ -1633,14 +1637,27 @@ function openSportteryMatchPage(key, returnTarget = "sporttery") {
 }
 
 function closeMatchPage() {
-  if (window.location.hash.startsWith("#match-") || window.location.hash.startsWith("#sporttery-match-")) {
+  if (window.location.hash.startsWith("#match-") || isSportteryDetailRoute()) {
     const hash = matchDetailReturnTarget === "review" ? "#model-stats" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "odds-map" ? "#odds-map" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : "#worldcup";
-    history.pushState("", document.title, `${window.location.pathname}${window.location.search}${hash}`);
+    history.pushState("", document.title, `/${window.location.search || ""}${hash}`);
+    if (typeof handleClientRouteChange === "function") handleClientRouteChange();
+    else handleRouteFromHash();
+    return;
   }
   activateTab(matchDetailReturnTarget === "review" ? "model-stats" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "odds-map" ? "odds-map" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : "schedule");
 }
 
 function handleRouteFromHash() {
+  if (window.location.hash && sportteryRouteKeyFromPath()) {
+    history.replaceState("", document.title, `/${window.location.search || ""}${window.location.hash}`);
+  }
+  const sportteryKey = currentSportteryRouteKey();
+  if (sportteryKey) {
+    showDashboard();
+    renderSportteryMatchDetail(sportteryKey);
+    return;
+  }
+  resetPageSeoMetadata();
   if (!window.location.hash) {
     showHome();
     return;
@@ -1649,12 +1666,6 @@ function handleRouteFromHash() {
   if (match) {
     showDashboard();
     renderMatchDetail(match[1]);
-    return;
-  }
-  const sportteryMatch = window.location.hash.match(/^#sporttery-match-(.+)$/);
-  if (sportteryMatch) {
-    showDashboard();
-    renderSportteryMatchDetail(decodeURIComponent(sportteryMatch[1]));
     return;
   }
   if (window.location.hash === "#worldcup") {

@@ -120,6 +120,7 @@ const teamFlags = {
 };
 
 function showHome() {
+  resetPageSeoMetadata();
   document.body.classList.add("home-mode");
   document.body.classList.remove(
     "dashboard-mode",
@@ -141,7 +142,7 @@ function showDashboard() {
   document.body.classList.remove("home-mode");
   document.querySelectorAll(".home-topbar nav button").forEach((button) => button.classList.remove("active"));
   const active =
-    window.location.hash === "#sporttery" || window.location.hash.startsWith("#sporttery-match-")
+    window.location.hash === "#sporttery" || isSportteryDetailRoute()
       ? "[data-sporttery-pool]"
       : window.location.hash === "#locks"
         ? "[data-site-locks]"
@@ -638,6 +639,84 @@ function sportteryLookupKeyFromHash(value = "") {
   }
 }
 
+function sportteryRouteKeyFromPath(pathname = window.location.pathname || "/") {
+  const path = String(pathname || "");
+  const match = path.match(/^\/sporttery-match\/([^/?#]+)\/?$/) || path.match(/^\/sporttery-match-([^/?#]+)\/?$/);
+  if (!match) return "";
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+function currentSportteryRouteKey() {
+  const pathKey = sportteryRouteKeyFromPath();
+  if (pathKey) return sportteryLookupKeyFromHash(pathKey);
+  const hashMatch = (window.location.hash || "").match(/^#sporttery-match-(.+)$/);
+  return hashMatch ? sportteryLookupKeyFromHash(hashMatch[1]) : "";
+}
+
+function isSportteryDetailRoute() {
+  return Boolean(currentSportteryRouteKey());
+}
+
+function canonicalSportteryMatchPath(key = "") {
+  const compact = sportteryComparableId(sportteryLookupKeyFromHash(key));
+  return compact ? `/sporttery-match/${encodeURIComponent(compact)}` : "/sporttery-match";
+}
+
+function normalizeLegacySportteryRoute() {
+  const key = currentSportteryRouteKey();
+  if (!key) return false;
+  const targetPath = canonicalSportteryMatchPath(key);
+  const currentPath = window.location.pathname || "/";
+  if (currentPath === targetPath && !window.location.hash) return false;
+  history.replaceState("", document.title, `${targetPath}${window.location.search || ""}`);
+  return true;
+}
+
+function ensureSeoMeta(name) {
+  let meta = document.head.querySelector(`meta[name="${name}"]`);
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute("name", name);
+    document.head.appendChild(meta);
+  }
+  return meta;
+}
+
+function setCanonicalPageUrl(pathname = "/") {
+  let canonical = document.head.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.setAttribute("rel", "canonical");
+    document.head.appendChild(canonical);
+  }
+  canonical.setAttribute("href", `https://ticai-model.com${pathname}`);
+}
+
+function resetPageSeoMetadata() {
+  document.title = "体彩足彩模型中心";
+  ensureSeoMeta("description").setAttribute("content", "聚合赛程、盘口快照、赛前锁版和赛后复盘的足彩模型研究工作台。");
+  setCanonicalPageUrl("/");
+}
+
+function updateSportterySeoMetadata(item = {}, pred = null) {
+  const home = item.displayHome || item.home || "";
+  const away = item.displayAway || item.away || "";
+  const league = item.league || item.competition || "竞彩";
+  const routeKey = item.matchId || item.cloudMatchId || item.sportteryKey || currentSportteryRouteKey();
+  const matchLabel = home && away ? `${home} vs ${away}` : "比赛锁版详情";
+  const pickText = pred?.pick || pred?.recommendationSide || "";
+  document.title = `${matchLabel}赛前锁版与模型推演 | 体彩足彩模型中心`;
+  ensureSeoMeta("description").setAttribute(
+    "content",
+    `${matchLabel}的${league}赛前锁版、盘口依据、总进球与比分推演${pickText ? `，当前锁版结论为${pickText}` : ""}。`
+  );
+  setCanonicalPageUrl(canonicalSportteryMatchPath(routeKey));
+}
+
 function cacheSportteryPoolItems(items = []) {
   sportteryPoolItemCache = new Map();
   items.forEach((item) => {
@@ -917,7 +996,7 @@ async function ensureSportteryLockForItem(item = {}, key = "") {
       ? [preferred.lock]
       : (await window.WC_CLOUD_STORE.listLocks?.(matchId))?.locks || [];
     const changed = mergeCloudAutoPredictions(cloudLockRowsToPredictions(lockRows));
-    const currentKey = sportteryLookupKeyFromHash((window.location.hash || "").replace(/^#sporttery-match-/, ""));
+    const currentKey = currentSportteryRouteKey();
     if (changed && currentKey && (currentKey === key || sameSportteryIdentity(currentKey, key) || sameSportteryIdentity(currentKey, matchId))) {
       renderSportteryMatchDetail(currentKey);
     }
@@ -2167,8 +2246,9 @@ function sportteryPoolItems() {
 
 function sportteryPoolCard(item) {
   const linked = Boolean(item.linkedNo);
-  const cardKey = encodeURIComponent(item.sportteryKey || sportteryItemKey(item));
-  const detailHref = `#sporttery-match-${cardKey}`;
+  const routeKey = item.sportteryKey || sportteryItemKey(item);
+  const cardKey = encodeURIComponent(routeKey);
+  const detailHref = canonicalSportteryMatchPath(routeKey);
   const handicap = item.handicap || "0";
   const normalText = item.normal
     ? `胜 ${item.normal.win} · 平 ${item.normal.draw} · 负 ${item.normal.lose}`
@@ -2320,8 +2400,8 @@ function rerenderOddsSurfaces() {
   renderGlobalStats();
   const match = window.location.hash.match(/^#match-(.+)$/);
   if (match) renderMatchDetail(match[1]);
-  const sportteryMatch = window.location.hash.match(/^#sporttery-match-(.+)$/);
-  if (sportteryMatch) renderSportteryMatchDetail(decodeURIComponent(sportteryMatch[1]));
+  const sportteryKey = currentSportteryRouteKey();
+  if (sportteryKey) renderSportteryMatchDetail(sportteryKey);
 }
 
 function renderCurrentRouteSurfaces() {
@@ -2333,9 +2413,9 @@ function renderCurrentRouteSurfaces() {
     renderMatchDetail(match[1]);
     return;
   }
-  const sportteryMatch = hash.match(/^#sporttery-match-(.+)$/);
-  if (sportteryMatch) {
-    renderSportteryMatchDetail(decodeURIComponent(sportteryMatch[1]));
+  const sportteryKey = currentSportteryRouteKey();
+  if (sportteryKey) {
+    renderSportteryMatchDetail(sportteryKey);
     return;
   }
   if (hash === "#model-stats") {
@@ -3794,9 +3874,9 @@ function renderLeagueProfilePanel(match, pred) {
     ensureLeagueProfilesLoaded(() => {
       const hash = window.location.hash || "";
       const currentWorldCup = hash.match(/^#match-(.+)$/);
-      const currentSporttery = hash.match(/^#sporttery-match-(.+)$/);
+      const currentSporttery = currentSportteryRouteKey();
       if (currentWorldCup) renderMatchDetail(currentWorldCup[1]);
-      if (currentSporttery) renderSportteryMatchDetail(decodeURIComponent(currentSporttery[1]));
+      if (currentSporttery) renderSportteryMatchDetail(currentSporttery);
     });
     return `
       <section class="match-page-section similar-case-panel league-profile-panel">
@@ -3991,9 +4071,9 @@ function renderSimilarCasePanel(pred, match) {
     ensureExternalHistoricalSamplesLoaded(() => {
       const hash = window.location.hash || "";
       const currentWorldCup = hash.match(/^#match-(.+)$/);
-      const currentSporttery = hash.match(/^#sporttery-match-(.+)$/);
+      const currentSporttery = currentSportteryRouteKey();
       if (currentWorldCup) renderMatchDetail(currentWorldCup[1]);
-      if (currentSporttery) renderSportteryMatchDetail(decodeURIComponent(currentSporttery[1]));
+      if (currentSporttery) renderSportteryMatchDetail(currentSporttery);
     });
   }
   const result = window.WC_SIMILAR_CASE_ENGINE.findSimilarCases(lock, runtimeCaseBase());
@@ -4300,6 +4380,7 @@ function renderSportteryMatchDetail(key) {
   if (!content) return;
   if (!base) {
     const lookupKey = sportteryLookupKeyFromHash(key);
+    updateSportterySeoMetadata({ matchId: lookupKey });
     content.innerHTML = `
       <div class="match-page-toolbar">
         <button type="button" data-detail-back>← 赛事池</button>
@@ -4328,6 +4409,7 @@ function renderSportteryMatchDetail(key) {
     modelPred = sportteryPredictionForItem(item) || (item.linkedNo ? latestPredictionFor(item.linkedNo) : null);
     if (!hasCompleteSportteryLockFields(modelPred)) modelPred = null;
   }
+  updateSportterySeoMetadata(item, modelPred);
   const lockSyncing = !modelPred && hasCloudMatchId;
   const research = sportteryResearchSnapshot(item, modelPred);
   const backLabel =
@@ -4429,22 +4511,38 @@ function renderSportteryMatchDetail(key) {
 function openSportteryMatchPage(key, returnTarget = "sporttery") {
   matchDetailReturnTarget = returnTarget;
   const lookupKey = sportteryLookupKeyFromHash(key);
-  const hashKey = encodeURIComponent(lookupKey);
-  if (window.location.hash !== `#sporttery-match-${hashKey}`) {
-    window.location.hash = `sporttery-match-${hashKey}`;
+  const targetPath = canonicalSportteryMatchPath(lookupKey);
+  if (window.location.pathname !== targetPath || window.location.hash) {
+    history.pushState("", document.title, `${targetPath}${window.location.search || ""}`);
+    if (typeof handleClientRouteChange === "function") handleClientRouteChange();
+    else handleRouteFromHash();
+    return;
   }
   renderSportteryMatchDetail(lookupKey);
 }
 
 function closeMatchPage() {
-  if (window.location.hash.startsWith("#match-") || window.location.hash.startsWith("#sporttery-match-")) {
+  if (window.location.hash.startsWith("#match-") || isSportteryDetailRoute()) {
     const hash = matchDetailReturnTarget === "review" ? "#model-stats" : matchDetailReturnTarget === "model-stats" ? "#model-stats" : matchDetailReturnTarget === "locks" ? "#locks" : matchDetailReturnTarget === "odds-map" ? "#odds-map" : matchDetailReturnTarget === "sporttery" ? "#sporttery" : matchDetailReturnTarget === "knockout" ? "#worldcup-knockout" : "#worldcup";
-    history.pushState("", document.title, `${window.location.pathname}${window.location.search}${hash}`);
+    history.pushState("", document.title, `/${window.location.search || ""}${hash}`);
+    if (typeof handleClientRouteChange === "function") handleClientRouteChange();
+    else handleRouteFromHash();
+    return;
   }
   activateTab(matchDetailReturnTarget === "review" ? "model-stats" : matchDetailReturnTarget === "model-stats" ? "model-stats" : matchDetailReturnTarget === "locks" ? "site-locks" : matchDetailReturnTarget === "odds-map" ? "odds-map" : matchDetailReturnTarget === "sporttery" ? "sporttery-pool" : matchDetailReturnTarget === "knockout" ? "knockout" : "today");
 }
 
 function handleRouteFromHash() {
+  if (window.location.hash && sportteryRouteKeyFromPath()) {
+    history.replaceState("", document.title, `/${window.location.search || ""}${window.location.hash}`);
+  }
+  const sportteryKey = currentSportteryRouteKey();
+  if (sportteryKey) {
+    showDashboard();
+    renderSportteryMatchDetail(sportteryKey);
+    return;
+  }
+  resetPageSeoMetadata();
   if (!window.location.hash) {
     showHome();
     return;
@@ -4453,12 +4551,6 @@ function handleRouteFromHash() {
   if (match) {
     showDashboard();
     renderMatchDetail(match[1]);
-    return;
-  }
-  const sportteryMatch = window.location.hash.match(/^#sporttery-match-(.+)$/);
-  if (sportteryMatch) {
-    showDashboard();
-    renderSportteryMatchDetail(decodeURIComponent(sportteryMatch[1]));
     return;
   }
   if (window.location.hash === "#worldcup") {
@@ -7073,7 +7165,7 @@ function currentRouteNeedsWorldCupStaticData() {
 
 function currentRouteNeedsCloudBootstrap() {
   const hash = window.location.hash || "";
-  return hash === "#sporttery" || hash === "#locks" || hash === "#model-stats" || hash === "#odds-map" || /^#sporttery-match-/.test(hash);
+  return hash === "#sporttery" || hash === "#locks" || hash === "#model-stats" || hash === "#odds-map" || isSportteryDetailRoute();
 }
 
 function currentRouteNeedsFullCloudBootstrap() {
@@ -7101,8 +7193,10 @@ homeEnters.forEach((button) => {
 });
 
 siteHome?.addEventListener("click", () => {
-  if (window.location.hash) {
-    history.pushState("", document.title, window.location.pathname + window.location.search);
+  if (window.location.hash || isSportteryDetailRoute()) {
+    history.pushState("", document.title, `/${window.location.search || ""}`);
+    handleClientRouteChange();
+    return;
   }
   showHome();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -7424,6 +7518,8 @@ function analyticsSessionId() {
 }
 
 function analyticsPagePath() {
+  const sportteryKey = currentSportteryRouteKey();
+  if (sportteryKey) return canonicalSportteryMatchPath(sportteryKey);
   return `${window.location.pathname || "/"}${window.location.hash || "#home"}`;
 }
 
@@ -7434,7 +7530,7 @@ function sendAnalyticsEvent(eventType = "page_view", payload = {}) {
     pageTitle: document.title || "",
     sessionId: analyticsSessionId(),
     referrer: document.referrer || "",
-    route: window.location.hash || "#home",
+    route: currentSportteryRouteKey() ? canonicalSportteryMatchPath(currentSportteryRouteKey()) : window.location.hash || "#home",
     ...payload,
   });
   try {
@@ -7451,7 +7547,7 @@ function sendAnalyticsEvent(eventType = "page_view", payload = {}) {
   }).catch(() => {});
 }
 
-window.addEventListener("hashchange", () => {
+function handleClientRouteChange({ track = true } = {}) {
   handleRouteFromHash();
   if (currentRouteNeedsWorldCupStaticData()) {
     loadWorldCupStaticDataFallback({ rerender: true });
@@ -7460,12 +7556,17 @@ window.addEventListener("hashchange", () => {
     loadCloudBootstrapData({ rerender: true, scope: currentRouteNeedsFullCloudBootstrap() ? "full" : "initial" })
       .then(() => syncCloudSportteryResultsIfNeeded({ rerender: true }));
   }
-  sendAnalyticsEvent("page_view");
-});
+  if (track) sendAnalyticsEvent("page_view");
+}
+
+window.addEventListener("hashchange", () => handleClientRouteChange());
+window.addEventListener("popstate", () => handleClientRouteChange());
 
 restoreCloudBootstrapCache();
+normalizeLegacySportteryRoute();
 const initialHash = window.location.hash;
-if (initialHash) {
+const initialRouteActive = Boolean(initialHash || currentSportteryRouteKey());
+if (initialRouteActive) {
   renderCurrentRouteSurfaces();
 } else {
   renderInitialHomeOnly();
@@ -7480,7 +7581,7 @@ if (currentRouteNeedsCloudBootstrap()) {
     else if (synced) renderCurrentRouteSurfaces();
     scheduleSportterySpHistoryRefresh();
   });
-} else if (!initialHash) {
+} else if (!initialRouteActive) {
   runWhenPageIdle(() => {
     loadCloudBootstrapData({ rerender: true, scope: "initial" }).then(async (changed) => {
       const synced = await syncCloudSportteryResultsIfNeeded({ rerender: true });
@@ -7494,12 +7595,12 @@ if (currentRouteNeedsCloudBootstrap()) {
 if (currentRouteNeedsWorldCupStaticData()) {
   loadWorldCupStaticDataFallback({ rerender: true });
 }
-runWhenPageIdle(() => loadCloudCaseBaseData({ rerender: Boolean(initialHash) }), initialHash ? 2200 : 3600);
+runWhenPageIdle(() => loadCloudCaseBaseData({ rerender: initialRouteActive }), initialRouteActive ? 2200 : 3600);
 runWhenPageIdle(() => {
   if (window.location.hash && !currentRouteNeedsWorldCupStaticData()) {
     loadWorldCupStaticDataFallback({ rerender: Boolean(window.location.hash) });
   }
-}, initialHash ? 4200 : 2600);
+}, initialRouteActive ? 4200 : 2600);
 setInterval(refreshSportteryCloudData, 5 * 60 * 1000);
 
 /* ── 返回顶部 ── */
