@@ -191,10 +191,12 @@ async function sportterySitemap(db) {
     ORDER BY lastmod DESC
     LIMIT 500
   `).all();
+  const seenMatchIds = new Set();
   const urls = (rows.results || [])
     .map((row) => {
       const matchId = String(row.matchId || "").replace(/^sporttery-/, "").replace(/^id-/, "").trim();
-      if (!matchId) return "";
+      if (!matchId || seenMatchIds.has(matchId)) return "";
+      seenMatchIds.add(matchId);
       const lastmod = String(row.lastmod || "").slice(0, 10);
       return `  <url>\n    <loc>${xmlEscape(`https://ticai-model.com/sporttery-match/${encodeURIComponent(matchId)}`)}</loc>${lastmod ? `\n    <lastmod>${xmlEscape(lastmod)}</lastmod>` : ""}\n  </url>`;
     })
