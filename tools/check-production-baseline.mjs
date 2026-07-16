@@ -277,8 +277,11 @@ if (!worldCupFullMode.includes("renderJudgementRiskPanel(pred)") || !sportteryFu
 if (worldCupDetailShell.includes("renderJudgementRiskPanel(") || sportteryDetailShell.includes("renderJudgementRiskPanel(")) {
   throw new Error("Production baseline rejects judgement risk outside full projection mode.");
 }
-if (!api.includes("only the preferred FINAL_LOCK can enter Case Base")) {
-  throw new Error("Production baseline requires one official Case per preferred FINAL_LOCK.");
+for (const marker of [
+  'PREFERRED_LOCK_ORDER_SQL = "locked_at DESC, lock_id DESC"',
+  "only a latest preferred FINAL_LOCK can enter Case Base",
+]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing latest-model lock lifecycle marker: ${marker}`);
 }
 const syncPositions = syncMarkers.map((marker) => sync.indexOf(marker));
 if (!syncPositions.every((position, index) => index === 0 || position > syncPositions[index - 1])) {
