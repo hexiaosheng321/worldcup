@@ -913,6 +913,8 @@ function ensureLeagueProfilesLoaded(callback) {
 }
 
 function leagueProfileCandidates(match = {}, pred = {}) {
+  match = match || {};
+  pred = pred || {};
   return [
     match.league,
     match.displayGroup,
