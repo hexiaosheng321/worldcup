@@ -34,6 +34,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     ["挪超", /挪超|Eliteserien|Norway/i],
     ["丹超", /丹超|Superliga|Denmark/i],
     ["英超", /英超|Premier League/i],
+    ["巴西甲", /巴西甲|巴甲|Brasileir[aã]o|Brazil(?:ian)?\s+(?:S[eé]rie|Serie)\s+A/i],
     ["西甲", /西甲|La Liga/i],
     ["意甲", /意甲|Serie A/i],
     ["德甲", /德甲|Bundesliga/i],

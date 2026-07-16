@@ -188,7 +188,8 @@ const unifiedPredictionMarkers = [
   "model-runs",
   "tenStepResult",
   "backtestContract",
-  "LESSONS_2026-07-16_REVIEW_GATES_R6",
+  "LESSONS_2026-07-16_CONDITIONAL_HANDICAP_R7",
+  "DIRECTION_CONDITIONAL_LEADER",
   "LEAGUE_LEARNING_PROFILES",
   "scenarioTotalsCovered",
   "scenarioHandicapCovered",
@@ -341,6 +342,10 @@ for (const marker of ["sportteryDetailNavigationPending", "previousScrollY", 'be
   if (!detailApp.includes(marker) && !appCore.includes(marker)) {
     throw new Error(`Production baseline requires scroll-preserving detail refresh: ${marker}`);
   }
+}
+
+for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs"]) {
+  execFileSync(process.execPath, [testFile], { stdio: "inherit" });
 }
 
 if (!process.env.GITHUB_ACTIONS) {

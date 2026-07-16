@@ -165,13 +165,14 @@ const competitionRules = [
   ["欧冠", /欧冠|Champions League/i],
   ["欧联", /欧联|Europa League/i],
   ["英超", /英超|Premier League/i],
+  ["巴西甲", /巴西甲|巴甲|Brasileir[aã]o|Brazil(?:ian)?\s+(?:S[eé]rie|Serie)\s+A/i],
   ["西甲", /西甲|La Liga/i],
   ["意甲", /意甲|Serie A/i],
   ["德甲", /德甲|Bundesliga/i],
   ["法甲", /法甲|Ligue 1/i],
 ];
 
-function normalizeCompetition(value = "") {
+export function normalizeCompetition(value = "") {
   const text = String(value || "").trim();
   const found = competitionRules.find(([, pattern]) => pattern.test(text));
   if (found) return found[0];

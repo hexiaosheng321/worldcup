@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { RESEARCH_KEYS, handicapDecisionAudit, runUnifiedPrediction, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
+import { RESEARCH_KEYS, handicapDecisionAudit, runUnifiedPrediction, selectConditionalHandicapDecision, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
 
 const sameDirectionCoverage = selectOfficialScores([
   { score: "2-0", probability: 0.16 },
@@ -66,7 +66,7 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
-assert.equal(final.modelLessons.version, "LESSONS_2026-07-16_REVIEW_GATES_R6");
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-16_CONDITIONAL_HANDICAP_R7");
 assert.equal(final.gateResult.gates.crossLeagueStrengthNormalized, true);
 assert.equal(final.gateResult.gates.evidenceDirectionConflictResolved, true);
 assert.equal(final.gateResult.gates.competitionStageConsistent, true);
@@ -110,6 +110,29 @@ const materialHandicapConflict = handicapDecisionAudit([
 ], "让负");
 assert.equal(materialHandicapConflict.materialConflict, true);
 assert.ok(materialHandicapConflict.probabilityGap > 0.1);
+assert.equal(materialHandicapConflict.resolved, false);
+
+const conditionalLeader = selectConditionalHandicapDecision([
+  { direction: "HOME", handicapPick: "让平", scoreProbability: 0.21, conditionalProbability: 0.42, marginalProduct: 0.13 },
+  { direction: "HOME", handicapPick: "让胜", scoreProbability: 0.29, conditionalProbability: 0.58, marginalProduct: 0.11 },
+  { direction: "DRAW", handicapPick: "让负", scoreProbability: 0.27, conditionalProbability: 1, marginalProduct: 0.14 },
+], "HOME");
+assert.equal(conditionalLeader.handicapPick, "让胜");
+const resolvedHandicapConflict = handicapDecisionAudit([
+  { label: "让负", probability: 0.497 },
+  { label: "让胜", probability: 0.261 },
+  { label: "让平", probability: 0.242 },
+], conditionalLeader.handicapPick, {
+  mode: "DIRECTION_CONDITIONAL_LEADER",
+  directionPreserved: true,
+  isConditionalLeader: true,
+  scoreProbability: conditionalLeader.scoreProbability,
+  conditionalProbability: conditionalLeader.conditionalProbability,
+});
+assert.equal(resolvedHandicapConflict.materialConflict, true);
+assert.equal(resolvedHandicapConflict.conditionalResolution, true);
+assert.equal(resolvedHandicapConflict.resolved, true);
+assert.ok(resolvedHandicapConflict.confidencePenalty > 0);
 
 const blocked = runUnifiedPrediction({ ...context, research: { ...research, injuries: { status: "MISSING" } } }, { lockType: "FINAL_LOCK" });
 assert.equal(blocked.lockType, "PRE_LOCK");

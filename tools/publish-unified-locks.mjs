@@ -3,6 +3,8 @@ import fs from "node:fs/promises";
 const ids = process.argv.slice(2);
 if (!ids.length) throw new Error("Usage: node tools/publish-unified-locks.mjs <matchId...>");
 const apiBase = String(process.env.PUBLIC_API_BASE || "https://ticai-model.com").replace(/\/$/, "");
+const runLabel = String(process.env.UNIFIED_RUN_LABEL || "v4");
+const lockRevision = String(process.env.UNIFIED_LOCK_REVISION || "r2");
 const bootstrap = await (await fetch(`${apiBase}/api/bootstrap?scope=full&includeCases=0`)).json();
 const live = (bootstrap.matches || []).map((row) => {
   try { return { ...JSON.parse(row.payload_json || "{}"), cloudMatchId: row.match_id }; } catch { return {}; }
@@ -13,7 +15,7 @@ const grade = (confidence) => confidence >= 70 ? "A" : confidence >= 60 ? "B" : 
 const sideText = { HOME: "胜", DRAW: "平", AWAY: "负" };
 
 for (const id of ids) {
-  const run = JSON.parse(await fs.readFile(`/tmp/v4-${id}.json`, "utf8"));
+  const run = JSON.parse(await fs.readFile(`/tmp/${runLabel}-${id}.json`, "utf8"));
   if (run.lockType !== "FINAL_LOCK" || !run.gateResult?.passed || !run.tenStepResult?.passed) throw new Error(`${id} has not passed FINAL_LOCK gates`);
   const item = live.find((row) => String(row.matchId || row.cloudMatchId || "").replace(/^sporttery-/, "") === String(id));
   if (!item) throw new Error(`${id} missing from live pool`);
@@ -23,7 +25,7 @@ for (const id of ids) {
   const modelRunId = run.sourceContext?.modelRunId;
   const handicap = Number(String(item.handicap || "0").replace("+", ""));
   const lock = {
-    lockId: `manual-sporttery-${id}-${String(item.ticaiDate || item.matchDate || "").replaceAll("-", "")}-v4-final-r2`, matchId: `sporttery-${id}`, modelRunId,
+    lockId: `manual-sporttery-${id}-${String(item.ticaiDate || item.matchDate || "").replaceAll("-", "")}-v4-final-${lockRevision}`, matchId: `sporttery-${id}`, modelRunId,
     matchCode: item.issue || item.no || "", homeTeam: item.home, awayTeam: item.away, league: run.match.league,
     kickoffTime: `${item.matchDate || item.ticaiDate} ${item.kickoffTime}`, lockedAt: new Date().toISOString(), lockType: "FINAL_LOCK",
     modelVersion: run.modelVersion, finalApproval: true,
@@ -33,7 +35,7 @@ for (const id of ids) {
     riskScore: 100 - decision.confidence, consistencyScore: 100,
     sportteryHomeSp: Number(item.normal?.win), sportteryDrawSp: Number(item.normal?.draw), sportteryAwaySp: Number(item.normal?.lose),
     asianHandicap: handicap, dataQuality: run.featureSet?.dataQuality?.grade || "D",
-    reasoningSummary: `统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立映射、失败方式和价值过滤。正式比分按联合概率覆盖选择${decision.scores.join(" / ")}，独立风险剧本${independentRisk.score || "-"}不占正式名额。`,
+    reasoningSummary: `统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际与主方向条件化决策、失败方式和价值过滤。正式比分按联合概率覆盖选择${decision.scores.join(" / ")}，独立风险剧本${independentRisk.score || "-"}不占正式名额。`,
     sportteryPrediction: {
       type: `${run.match.league} 稳定 V4 模型锁版`, matchId: id, no: item.no || "", issue: item.issue || "",
       matchDate: item.matchDate || item.ticaiDate, kickoffTime: item.kickoffTime, competition: run.match.league,
@@ -50,6 +52,7 @@ for (const id of ids) {
         crossLeagueNormalization: run.featureSet?.crossLeagueNormalization || null,
         evidenceDirectionConflict: run.featureSet?.evidenceDirectionConflict || null,
         evidenceDrivenRiskChallenger: run.featureSet?.evidenceDrivenRiskChallenger || null,
+        jointDecision: run.featureSet?.jointDecision || null,
         competitionStage: run.featureSet?.competitionStage || null,
         twoLegLeadControl: run.featureSet?.tieContext?.leadControl || null,
       },
@@ -62,6 +65,7 @@ for (const id of ids) {
   const first = movement.first || {};
   const latest = movement.latest || {};
   const handicapProbabilities = run.featureSet?.handicap?.probabilities || {};
+  const handicapAudit = run.featureSet?.jointDecision?.handicapDecisionAudit || {};
   const formText = (rows = []) => {
     const recent = rows.slice(0, 5);
     const wins = recent.filter((row) => row.result === "W").length;
@@ -85,7 +89,7 @@ for (const id of ids) {
       `05 盘口与样本：完整盘口样本${run.featureSet.sampleCount}场，两队近期赛果已读取并去重。`,
       `06 赔率动态：${first.updateDate} ${first.updateTime} ${first.h}/${first.d}/${first.a} -> ${latest.updateDate} ${latest.updateTime} ${latest.h}/${latest.d}/${latest.a}，状态${movement.marketState}。`,
       `07 比分/总进球独立闸门：比分${decision.scores.join(" / ")}，总进球${decision.totalGoalsPick}，两个比分脚本至少覆盖一个总进球选择。`,
-      `08 让球独立闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%，结论${decision.handicapPick}。`,
+      `08 让球独立闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%；独立边际第一项${handicapAudit.independentLeader || "-"}，主方向条件概率${((handicapAudit.conditionalProbability || 0) * 100).toFixed(1)}%，最终结论${decision.handicapPick}。`,
       `09 冲突与失败方式：正式比分${decision.scores.join(" / ")}服务最大概率覆盖；独立风险${independentRisk.score || "-"}只进入风险诊断和置信扣分。`,
       `10 最终锁版：${decision.winDrawLose}；${decision.handicapPick}；${decision.totalGoalsPick}；${decision.scores.join(" / ")}；${decision.advice}。`,
     ],
@@ -98,7 +102,7 @@ for (const id of ids) {
 }
 
 const snapshotDate = String(live.find((item) => ids.includes(String(item.matchId)))?.ticaiDate || new Date().toISOString().slice(0, 10)).replaceAll("-", "");
-const output = `web/data/manual-locks-${snapshotDate}-v4-r2.json`;
+const output = `web/data/manual-locks-${snapshotDate}-v4-${lockRevision}.json`;
 let mergedLocks = locks;
 try {
   const existingLocks = JSON.parse(await fs.readFile(output, "utf8"));
