@@ -28,7 +28,7 @@ const allRows = Array.isArray(sandbox.window.WC_EXTERNAL_HISTORICAL_SAMPLES)
   ? sandbox.window.WC_EXTERNAL_HISTORICAL_SAMPLES
   : [];
 
-const targetPrimaryLeagues = new Set(["美职", "巴西甲"]);
+const targetPrimaryLeagues = new Set(["美职", "巴西甲", "欧联"]);
 const primarySourcePattern = /^(500\.com|okooo)/i;
 const primaryCountByLeague = new Map();
 allRows.forEach((row) => {

@@ -118,7 +118,7 @@ function dedupeProfileRows(rows) {
 }
 
 function preferProjectPrimarySources(rows) {
-  const targetLeagues = new Set(["美职", "巴西甲"]);
+  const targetLeagues = new Set(["美职", "巴西甲", "欧联"]);
   const primaryPattern = /^(500\.com|okooo)/i;
   const primaryCountByLeague = new Map();
   rows.forEach((row) => {

@@ -1,5 +1,5 @@
 window.WC_LEAGUE_PROFILES = {
-  "generatedAt": "2026-07-15T05:17:35.029Z",
+  "generatedAt": "2026-07-16T04:57:58.703Z",
   "source": [
     "web/data/externalHistoricalSamples.js",
     "web/data/externalHistoricalSamplesBig5England.js",
@@ -12,7 +12,7 @@ window.WC_LEAGUE_PROFILES = {
   "profiles": [
     {
       "league": "世界杯",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.702Z",
       "sampleCount": 855,
       "completedSampleCount": 855,
       "usableSampleCount": 741,
@@ -126,7 +126,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "欧冠",
-      "generatedAt": "2026-07-15T05:17:35.028Z",
+      "generatedAt": "2026-07-16T04:57:58.700Z",
       "sampleCount": 282,
       "completedSampleCount": 282,
       "usableSampleCount": 282,
@@ -238,7 +238,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "韩职",
-      "generatedAt": "2026-07-15T05:17:35.028Z",
+      "generatedAt": "2026-07-16T04:57:58.701Z",
       "sampleCount": 189,
       "completedSampleCount": 189,
       "usableSampleCount": 189,
@@ -359,7 +359,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "澳超",
-      "generatedAt": "2026-07-15T05:17:35.028Z",
+      "generatedAt": "2026-07-16T04:57:58.700Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -472,7 +472,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "巴西甲",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.702Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -577,7 +577,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "丹超",
-      "generatedAt": "2026-07-15T05:17:35.028Z",
+      "generatedAt": "2026-07-16T04:57:58.701Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -689,7 +689,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "德甲",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.702Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -800,7 +800,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "法甲",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.703Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -919,7 +919,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "芬超",
-      "generatedAt": "2026-07-15T05:17:35.027Z",
+      "generatedAt": "2026-07-16T04:57:58.700Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1042,7 +1042,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "荷甲",
-      "generatedAt": "2026-07-15T05:17:35.028Z",
+      "generatedAt": "2026-07-16T04:57:58.700Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1153,7 +1153,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "美职",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.702Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1264,7 +1264,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "挪超",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.702Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1376,7 +1376,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "欧联",
-      "generatedAt": "2026-07-15T05:17:35.028Z",
+      "generatedAt": "2026-07-16T04:57:58.701Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1390,29 +1390,30 @@ window.WC_LEAGUE_PROFILES = {
       "marketSampleQuality": "FULL",
       "marketSampleQualityLabel": "盘口样本可作为市场画像基准",
       "seasons": [
-        "2025/2026"
+        "2025/2026",
+        "2026/2027"
       ],
       "sourceCounts": [
         {
-          "label": "footiqo",
+          "label": "500.com",
           "count": 100,
           "rate": 1
         }
       ],
-      "homeWinRate": 0.5,
-      "drawRate": 0.17,
+      "homeWinRate": 0.48,
+      "drawRate": 0.19,
       "awayWinRate": 0.33,
-      "avgGoals": 2.73,
-      "homeGoalsAvg": 1.54,
-      "awayGoalsAvg": 1.19,
-      "over25Rate": 0.52,
-      "under25Rate": 0.48,
-      "bttsRate": 0.5,
+      "avgGoals": 2.68,
+      "homeGoalsAvg": 1.51,
+      "awayGoalsAvg": 1.17,
+      "over25Rate": 0.5,
+      "under25Rate": 0.5,
+      "bttsRate": 0.49,
       "commonScores": [
         {
           "label": "1-0",
-          "count": 15,
-          "rate": 0.15
+          "count": 14,
+          "rate": 0.14
         },
         {
           "label": "0-1",
@@ -1425,36 +1426,36 @@ window.WC_LEAGUE_PROFILES = {
           "rate": 0.1
         },
         {
-          "label": "2-1",
-          "count": 9,
-          "rate": 0.09
+          "label": "1-2",
+          "count": 8,
+          "rate": 0.08
         },
         {
-          "label": "1-2",
-          "count": 7,
-          "rate": 0.07
+          "label": "2-0",
+          "count": 8,
+          "rate": 0.08
         }
       ],
       "totalGoalDistribution": [
         {
           "label": "1球",
-          "count": 27,
-          "rate": 0.27
+          "count": 26,
+          "rate": 0.26
         },
         {
           "label": "3球",
-          "count": 22,
-          "rate": 0.22
+          "count": 21,
+          "rate": 0.21
         },
         {
           "label": "2球",
-          "count": 19,
-          "rate": 0.19
+          "count": 20,
+          "rate": 0.2
         },
         {
           "label": "4球",
-          "count": 17,
-          "rate": 0.17
+          "count": 15,
+          "rate": 0.15
         },
         {
           "label": "6球",
@@ -1463,13 +1464,13 @@ window.WC_LEAGUE_PROFILES = {
         },
         {
           "label": "5球",
-          "count": 5,
-          "rate": 0.05
+          "count": 6,
+          "rate": 0.06
         },
         {
           "label": "0球",
-          "count": 2,
-          "rate": 0.02
+          "count": 4,
+          "rate": 0.04
         },
         {
           "label": "7球",
@@ -1481,11 +1482,11 @@ window.WC_LEAGUE_PROFILES = {
         "主场优势强",
         "含赔率样本"
       ],
-      "modelHint": "联赛画像：欧联 可用赛果样本 100 场，主胜 50.0%，平 17.0%，客胜 33.0%，均球 2.73；常见比分 1-0 15场 / 0-1 12场 / 1-1 10场 / 2-1 9场 / 1-2 7场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 100 场，盘口样本可作为市场画像基准。"
+      "modelHint": "联赛画像：欧联 可用赛果样本 100 场，主胜 48.0%，平 19.0%，客胜 33.0%，均球 2.68；常见比分 1-0 14场 / 0-1 12场 / 1-1 10场 / 1-2 8场 / 2-0 8场；模型使用：总进球按常规区间校验，可作为联赛画像基准；盘口样本 100 场，盘口样本可作为市场画像基准。"
     },
     {
       "league": "葡超",
-      "generatedAt": "2026-07-15T05:17:35.028Z",
+      "generatedAt": "2026-07-16T04:57:58.701Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1589,7 +1590,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "瑞超",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.702Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1702,7 +1703,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "西甲",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.702Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1812,7 +1813,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "意甲",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.702Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1922,7 +1923,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "英超",
-      "generatedAt": "2026-07-15T05:17:35.029Z",
+      "generatedAt": "2026-07-16T04:57:58.702Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -2033,7 +2034,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "中超",
-      "generatedAt": "2026-07-15T05:17:35.019Z",
+      "generatedAt": "2026-07-16T04:57:58.677Z",
       "sampleCount": 8,
       "completedSampleCount": 8,
       "usableSampleCount": 8,
@@ -2130,7 +2131,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "冰岛超",
-      "generatedAt": "2026-07-15T05:17:35.028Z",
+      "generatedAt": "2026-07-16T04:57:58.700Z",
       "sampleCount": 6,
       "completedSampleCount": 6,
       "usableSampleCount": 6,
@@ -2216,7 +2217,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "冰岛杯",
-      "generatedAt": "2026-07-15T05:17:35.028Z",
+      "generatedAt": "2026-07-16T04:57:58.700Z",
       "sampleCount": 1,
       "completedSampleCount": 1,
       "usableSampleCount": 1,
