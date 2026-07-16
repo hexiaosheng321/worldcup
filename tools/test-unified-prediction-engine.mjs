@@ -121,6 +121,20 @@ assert.ok(thinFundamentals.gateResult.blockers.includes("fundamentalData"));
 assert.equal(thinFundamentals.featureSet.seasonLearning.appliedToChampion, false);
 assert.ok(!thinFundamentals.featureSet.score.components.some((part) => part.label === "league-season-score-calibration"));
 
+const mlsPauseSamples = samples.map((sample) => ({ ...sample, league: "美职", kickoffTime: "2026-05-24" }));
+const mlsRestart = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "美职", matchDate: "2026-07-17" },
+  samples: mlsPauseSamples,
+}, { lockType: "FINAL_LOCK" });
+assert.equal(mlsRestart.featureSet.recentFormFresh, true);
+const expiredRestartBridge = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "美职", matchDate: "2026-07-25" },
+  samples: mlsPauseSamples,
+}, { lockType: "FINAL_LOCK" });
+assert.equal(expiredRestartBridge.featureSet.recentFormFresh, false);
+
 for (const [league, version, penalty] of [
   ["韩职", "KLEAGUE_2026-07-12_R1", 2],
   ["瑞超", "ALLSVENSKAN_2026-07-14_R2", 3],

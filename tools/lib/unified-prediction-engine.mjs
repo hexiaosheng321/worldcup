@@ -942,11 +942,15 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const counterPathRisk = riskPathRisk;
   const newestHomeForm = xg.homeRows[0]?.date || "";
   const newestAwayForm = xg.awayRows[0]?.date || "";
-  // The 2026 Eliteserien pauses across the World Cup window. Keep the normal
-  // 21-day gate everywhere else, but allow the verified pre-match research
-  // layer to bridge that scheduled league break without treating old seasons
-  // as current form.
-  const formFreshnessDays = match.league === "挪超" && research.complete ? 60 : 21;
+  // These leagues pause across the 2026 World Cup window. Keep the normal
+  // 21-day gate outside the documented restart period, and only allow complete
+  // pre-match research to bridge the scheduled break. This never treats an old
+  // season as current form and expires after the restart window.
+  const worldCupRestartBridge = ["挪超", "巴西甲", "美职"].includes(match.league)
+    && beforeDate >= "2026-07-11"
+    && beforeDate <= "2026-07-24"
+    && research.complete;
+  const formFreshnessDays = worldCupRestartBridge ? 60 : 21;
   const recentFormFresh = daysBetween(newestHomeForm, beforeDate) <= formFreshnessDays && daysBetween(newestAwayForm, beforeDate) <= formFreshnessDays;
   const crossLeagueStrengthNormalized = xg.crossLeagueNormalization.complete;
   const fundamentalDataComplete = xg.homeRows.length >= 5 && xg.awayRows.length >= 5 && Boolean(formBaseline) && recentFormFresh && crossLeagueStrengthNormalized;
