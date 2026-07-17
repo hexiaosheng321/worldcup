@@ -652,6 +652,37 @@ function exceptionalLiveStatusText(row = {}) {
   return "中止";
 }
 
+function sportteryReviewLifecycle(item = {}, pred = {}, liveScore = null, actualScore = "") {
+  if (normalizeResultScore(actualScore)) {
+    return { code: "VERIFIED", label: "已验证", scoreLabel: normalizeResultScore(actualScore), severity: "good", note: "已有正式赛果，按原锁版验票。" };
+  }
+  const result = resultForSportteryItem(item);
+  const exceptional = exceptionalLiveStatusText(liveScore || liveScoreForSportteryItem(item))
+    || exceptionalLiveStatusText(result)
+    || exceptionalLiveStatusText(item);
+  if (exceptional === "延期") {
+    return { code: "POSTPONED", label: "延期追踪", scoreLabel: "延期", severity: "postponed", note: "暂停验票并保留原锁版，等待官方新开赛时间。" };
+  }
+  if (exceptional === "取消") {
+    return { code: "VOID", label: "无效样本", scoreLabel: "取消", severity: "void", note: "比赛已取消，不计入命中率、错因和置信等级回测。" };
+  }
+  if (["腰斩", "中止"].includes(exceptional)) {
+    return { code: "SUSPENDED", label: "中止待定", scoreLabel: exceptional, severity: "suspended", note: "暂停验票，等待官方确认补赛、恢复或取消。" };
+  }
+  const lockedDate = String(pred.matchDate || pred.date || "").slice(0, 10);
+  const currentDate = String(item.matchDate || item.date || "").slice(0, 10);
+  if (lockedDate && currentDate && lockedDate !== currentDate) {
+    return {
+      code: "RESCHEDULED",
+      label: "改期待赛",
+      scoreLabel: "改期",
+      severity: "rescheduled",
+      note: `官方赛程已调整至 ${currentDate}，沿用原锁版，完赛后自动验票。`,
+    };
+  }
+  return { code: "PENDING", label: "待赛果", scoreLabel: "", severity: "pending", note: "比赛未结束，暂不归因。" };
+}
+
 function liveScoreIsScheduled(row = {}) {
   const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.rawStatus || ""}`;
   return Boolean(

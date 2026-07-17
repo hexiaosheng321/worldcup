@@ -1,7 +1,7 @@
 // app-i18n.js — explicit, render-bound localization without DOM observers.
 (function () {
   const STORAGE_KEY = "ticai_ui_locale_v2";
-  const VERSION = "20260717_confidence_backtest_v1";
+  const VERSION = "20260717_postponed_lifecycle_v1";
   const SUPPORTED = ["zh-CN", "ja", "en"];
   const TITLES = {
     "zh-CN": "体彩足彩模型中心",

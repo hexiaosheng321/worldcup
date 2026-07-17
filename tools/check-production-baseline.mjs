@@ -47,7 +47,7 @@ const missingRequired = requiredMarkers.filter((marker) => !index.includes(marke
 if (missingRequired.length) {
   throw new Error(`Production baseline missing required World Cup behavior: ${missingRequired.join(", ")}`);
 }
-for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260717_confidence_backtest_v1"]) {
+for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260717_postponed_lifecycle_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing language selector marker: ${marker}`);
 }
 if (!index.includes("lib/similarCaseEngine.js?v=20260716_brazil_league_fix_r1")) {
@@ -67,7 +67,7 @@ for (const marker of ["activeRoots", "requestAnimationFrame", "loadDictionary", 
 }
 for (const localeFile of ["web/i18n/en.json", "web/i18n/ja.json"]) {
   const locale = fs.readFileSync(localeFile, "utf8");
-  for (const marker of ["A级方向命中率", "B级方向命中率", "C级方向命中率", "D级方向命中率", "暂无验证样本"]) {
+  for (const marker of ["A级方向命中率", "B级方向命中率", "C级方向命中率", "D级方向命中率", "暂无验证样本", "延期追踪", "无效样本"]) {
     if (!locale.includes(marker)) throw new Error(`Production baseline missing confidence backtest translation in ${localeFile}: ${marker}`);
   }
 }
@@ -167,7 +167,6 @@ for (const marker of ["liveFallbackRowsFromSyncLogs", "d1RecentLiveFallbackRows"
 }
 for (const marker of [
   "20260717_sporttery_dedupe_v1",
-  "app/app-core.js?v=20260717_sporttery_dedupe_v1",
   "app/app-data.js?v=20260717_sporttery_dedupe_v1",
   "app/app-home.js?v=20260717_sporttery_dedupe_v1",
 ]) {
@@ -178,6 +177,17 @@ for (const marker of ["dedupeSportteryMatchRows", "authoritativeSportteryMatchId
 }
 for (const marker of ["dedupeSportteryPoolRows", "sportteryPoolRowQuality", "sportteryNoDateTeamMatch"]) {
   if (!appCore.includes(marker) && !homeApp.includes(marker)) throw new Error(`Production baseline missing client Sporttery fixture dedupe marker: ${marker}`);
+}
+for (const marker of [
+  "20260717_postponed_lifecycle_v1",
+  "styles.css?v=20260717_postponed_lifecycle_v1",
+  "app/app-core.js?v=20260717_postponed_lifecycle_v1",
+  "app/app-panels.js?v=20260717_postponed_lifecycle_v1",
+]) {
+  if (!index.includes(marker)) throw new Error(`Production baseline missing postponed lifecycle cache namespace: ${marker}`);
+}
+for (const marker of ["sportteryReviewLifecycle", "POSTPONED", "RESCHEDULED", "无效样本"]) {
+  if (!appCore.includes(marker) && !panels.includes(marker)) throw new Error(`Production baseline missing postponed review lifecycle marker: ${marker}`);
 }
 if (!fs.readFileSync("web/robots.txt", "utf8").includes("https://ticai-model.com/api/sitemap.xml")) {
   throw new Error("Production baseline requires the canonical sporttery sitemap in robots.txt.");
@@ -439,7 +449,7 @@ for (const marker of ["sportteryDetailNavigationPending", "previousScrollY", 'be
   }
 }
 
-for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-live-score-targets.mjs", "tools/test-online-stability.mjs"]) {
+for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-live-score-targets.mjs", "tools/test-online-stability.mjs", "tools/test-postponed-review-lifecycle.mjs"]) {
   execFileSync(process.execPath, [testFile], { stdio: "inherit" });
 }
 

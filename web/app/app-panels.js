@@ -864,8 +864,10 @@ function predictionReviewData(pred, match) {
   const actualDirection = direction(scoreText);
   const actualHandicapDirection = handicapDirection(scoreText, reviewHandicapLine(pred));
   const hPick = handicapPick(pred);
+  const lifecycle = match?.reviewLifecycle || sportteryReviewLifecycle(match || {}, pred, null, scoreText);
   return {
     pred,
+    lifecycle,
     actualDirection,
     actualHandicapDirection,
     hPick,
@@ -890,6 +892,14 @@ function predictedGoalAverage(pred) {
 }
 
 function reviewAttribution(pred, match, review = predictionReviewData(pred, match)) {
+  const lifecycle = review.lifecycle || match?.reviewLifecycle;
+  if (!review.actualDirection && lifecycle && lifecycle.code !== "PENDING") {
+    return {
+      type: lifecycle.label,
+      severity: lifecycle.severity,
+      note: lifecycle.note,
+    };
+  }
   if (!review.actualDirection) {
     return {
       type: "待赛果",
@@ -982,6 +992,8 @@ function modelAuditRows() {
     const item = findSportteryItemForPrediction(pred);
     if (hasOfficialWorldCupLock(pred, item)) return null;
     const actualScore = item ? verifiedSportteryScore(item) : "";
+    const liveScore = item ? liveScoreForSportteryItem(item) : null;
+    const reviewLifecycle = sportteryReviewLifecycle(item || pred, pred, liveScore, actualScore);
     const match = {
       no: pred.no,
       date: pred.date || pred.matchDate,
@@ -994,6 +1006,9 @@ function modelAuditRows() {
       score: actualScore,
       sportteryKey: pred.sportteryKey || (item ? sportteryItemKey(item) : ""),
       matchId: pred.matchId || item?.matchId || "",
+      currentMatchDate: item?.matchDate || "",
+      currentKickoffTime: item?.kickoffTime || "",
+      reviewLifecycle,
     };
     return {
       match,
@@ -1072,6 +1087,8 @@ function renderGlobalStats() {
   const adviceRows = verifiedRows.filter((row) => ["A", "A-", "B", "B-"].includes(row.confidence));
   const adviceHits = adviceRows.filter((row) => row.directionHit).length;
   const confidenceBacktests = confidenceDirectionBacktests(verifiedRows);
+  const postponedRows = rows.filter((row) => ["POSTPONED", "RESCHEDULED"].includes(row.lifecycle?.code));
+  const voidRows = rows.filter((row) => row.lifecycle?.code === "VOID");
   const gateRows = rows.map((row) => ({ ...row, gate: autoDecisionGate(row.match.no, row.pred) }));
   const mainGateRows = gateRows.filter((row) => row.gate.level === "A");
   const attributionRows = verifiedRows.map((row) => ({ ...row, attribution: reviewAttribution(row.pred, row.match, row) }));
@@ -1094,6 +1111,8 @@ function renderGlobalStats() {
           <em>${rate}</em>
         </article>
       `).join("")}
+      <article class="review-metric"><span>延期追踪</span><strong>${postponedRows.length}</strong><em>暂停验票，恢复后自动回测</em></article>
+      <article class="review-metric"><span>无效样本</span><strong>${voidRows.length}</strong><em>取消比赛不进入统计分母</em></article>
       <article class="review-metric"><span>错因样本</span><strong>${missAttributions.length}</strong><em>用于迭代模型</em></article>
     </div>
   `;
@@ -1150,6 +1169,8 @@ function renderGlobalStats() {
       const attribution = reviewAttribution(pred, match, review);
       const confidence = confidenceGrade(pred);
       const scoreText = officialScoreForMatch(match);
+      const lifecycle = review.lifecycle || match.reviewLifecycle || {};
+      const actualDisplay = scoreText || lifecycle.scoreLabel || "";
       return `
         <tr data-global-stats-no="${match.no}">
           <td>${dash(competition)}</td>
@@ -1158,7 +1179,7 @@ function renderGlobalStats() {
           <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
           <td>${match.no}</td>
           <td class="text-cell match-name-cell">${reviewMatchButton(match)}</td>
-          <td class="actual-cell">${dash(scoreText)}</td>
+          <td class="actual-cell lifecycle-${String(lifecycle.code || "pending").toLowerCase()}">${dash(actualDisplay)}</td>
           <td><span class="gate-badge ${confidenceTone(confidence)}">${dash(confidence)}</span></td>
           <td><b>${dash(pred.pick)}</b>${hitCell(review.directionHit)}</td>
           <td><b>${dash(review.hPick)}</b>${hitCell(review.handicapHit)}</td>
