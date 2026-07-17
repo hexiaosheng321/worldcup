@@ -1463,11 +1463,14 @@ function sportteryProxyDiagnostics(env, targetUrl) {
   return { source, host, protocol, path, targetHost: new URL(targetUrl).host };
 }
 
-async function fetchSportteryJson(env, targetUrl) {
+export function sportteryRequestCandidates(env, targetUrl) {
   const primary = sportteryProxyUrl(env, targetUrl);
-  const urls = [primary];
   const fallback = sportteryCacheUrl(targetUrl);
-  if (fallback !== primary) urls.push(fallback);
+  return [...new Set([primary, targetUrl, fallback])];
+}
+
+export async function fetchSportteryJson(env, targetUrl) {
+  const urls = sportteryRequestCandidates(env, targetUrl);
   let lastError = null;
   for (const requestUrl of urls) {
     try {
@@ -2675,7 +2678,33 @@ function sportteryResultRowsFromPages(resultPages = []) {
 
 async function syncOfficialSportteryResultsToD1(db, env, { maxPages = 5 } = {}) {
   const capturedAt = new Date().toISOString();
-  const resultPages = await fetchSportteryResultPages(env, maxPages);
+  let resultPages = [];
+  try {
+    resultPages = await fetchSportteryResultPages(env, maxPages);
+  } catch (error) {
+    const message = String(error?.message || "Sporttery result source unavailable").slice(0, 500);
+    try {
+      await db.prepare(`
+        INSERT INTO sync_logs (sync_id, source, status, message, payload_json, created_at)
+        VALUES (?, 'sporttery-official-results', 'DEGRADED', 'sporttery official result source unavailable', ?, ?)
+      `).bind(
+        `sporttery-results-degraded-${Date.now()}-${crypto.randomUUID()}`,
+        JSON.stringify({ maxPages, error: message }),
+        capturedAt
+      ).run();
+    } catch {}
+    return {
+      ok: false,
+      degraded: true,
+      retryable: true,
+      stage: "upstream-results-fetch",
+      capturedAt,
+      pages: 0,
+      scannedResults: 0,
+      results: 0,
+      error: message,
+    };
+  }
   const resultRows = sportteryResultRowsFromPages(resultPages);
   let resultCount = 0;
   let reviewed = 0;

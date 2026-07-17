@@ -21,8 +21,6 @@ const SPORTTERY_RESULTS_API_URL =
 const SPORTTERY_FIXED_BONUS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
 const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v3";
-const SPORTTERY_RESULT_SYNC_THROTTLE_KEY = "wc_sporttery_result_sync_checked_at_v1";
-const SPORTTERY_RESULT_SYNC_DELAY_MINUTES = 105;
 const SPORTTERY_RESULT_PENDING_WINDOW_MINUTES = 135;
 const STATIC_SNAPSHOT_FALLBACKS = [
   "./live-sporttery-data.js?v=13task-20260705-2025",
@@ -2940,31 +2938,9 @@ async function loadCloudCaseBaseData({ rerender = false } = {}) {
   return Boolean(added);
 }
 
-function hasPastUnfilledSportteryMatches() {
-  const now = Date.now();
-  return (oddsData.matches || []).some((item) => {
-    if (verifiedSportteryScore(item)) return false;
-    const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
-    return Number.isFinite(kickoffAt) && now - kickoffAt > SPORTTERY_RESULT_SYNC_DELAY_MINUTES * 60 * 1000;
-  });
-}
-
-function recentSportteryResultSyncChecked() {
-  try {
-    const checkedAt = Number(localStorage.getItem(SPORTTERY_RESULT_SYNC_THROTTLE_KEY) || 0);
-    return Number.isFinite(checkedAt) && Date.now() - checkedAt < 10 * 60 * 1000;
-  } catch {
-    return false;
-  }
-}
-
 async function syncCloudSportteryResultsIfNeeded({ force = false, rerender = true } = {}) {
-  if (!window.WC_CLOUD_STORE?.syncSportteryResults) return false;
-  if (!force && !hasPastUnfilledSportteryMatches()) return false;
-  if (!force && recentSportteryResultSyncChecked()) return false;
-  try {
-    localStorage.setItem(SPORTTERY_RESULT_SYNC_THROTTLE_KEY, String(Date.now()));
-  } catch {}
+  // 普通访客只读云端快照；写同步由 5 分钟 Worker 和定时任务负责。
+  if (!force || !window.WC_CLOUD_STORE?.syncSportteryResults) return false;
   const synced = await window.WC_CLOUD_STORE.syncSportteryResults({ pages: 5 });
   if (!synced?.ok) return false;
   const changed = await loadCloudBootstrapData({ rerender, scope: "initial" });

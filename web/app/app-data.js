@@ -561,31 +561,9 @@ async function loadCloudSportterySpHistoryData({ rerender = false } = {}) {
   return false;
 }
 
-function hasPastUnfilledSportteryMatches() {
-  const now = Date.now();
-  return (oddsData.matches || []).some((item) => {
-    if (verifiedSportteryScore(item)) return false;
-    const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
-    return Number.isFinite(kickoffAt) && now - kickoffAt > SPORTTERY_RESULT_SYNC_DELAY_MINUTES * 60 * 1000;
-  });
-}
-
-function recentSportteryResultSyncChecked() {
-  try {
-    const checkedAt = Number(localStorage.getItem(SPORTTERY_RESULT_SYNC_THROTTLE_KEY) || 0);
-    return Number.isFinite(checkedAt) && Date.now() - checkedAt < 10 * 60 * 1000;
-  } catch {
-    return false;
-  }
-}
-
 async function syncCloudSportteryResultsIfNeeded({ force = false, rerender = true } = {}) {
-  if (!window.WC_CLOUD_STORE?.syncSportteryResults) return false;
-  if (!force && !hasPastUnfilledSportteryMatches()) return false;
-  if (!force && recentSportteryResultSyncChecked()) return false;
-  try {
-    localStorage.setItem(SPORTTERY_RESULT_SYNC_THROTTLE_KEY, String(Date.now()));
-  } catch {}
+  // 普通访客只读云端快照；写同步由 5 分钟 Worker 和定时任务负责。
+  if (!force || !window.WC_CLOUD_STORE?.syncSportteryResults) return false;
   const synced = await window.WC_CLOUD_STORE.syncSportteryResults({ pages: 5 });
   if (!synced?.ok) return false;
   const changed = await loadCloudBootstrapData({ rerender, scope: "initial" });

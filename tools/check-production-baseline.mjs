@@ -20,6 +20,7 @@ const unifiedPublisher = fs.readFileSync("tools/publish-unified-locks.mjs", "utf
 const i18n = fs.readFileSync("web/app/app-i18n.js", "utf8");
 const baseStyles = fs.readFileSync("web/styles-base.css", "utf8");
 const reviewEngine = fs.readFileSync("web/lib/reviewEngine.js", "utf8");
+const firecrawlContext = fs.readFileSync("web/data/firecrawlObjectiveContext.js", "utf8");
 
 const retiredMarkers = [
   'data-tab="path"',
@@ -145,6 +146,18 @@ for (const marker of ["canonicalAnalyticsPagePath", "analyticsCanonicalPagePathS
 }
 for (const marker of ["lockRowToSportteryMatch", "mergeLiveTargetMatches", "d1LiveTargetMatches", "insertMissingLiveTargetMatch", "lockedPredictionOnlyCount"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing lock-backed live-score target marker: ${marker}`);
+}
+for (const marker of ["sportteryRequestCandidates", "targetUrl, fallback", 'stage: "upstream-results-fetch"', "retryable: true"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing resilient Sporttery result-source marker: ${marker}`);
+}
+if (!dataApp.includes("if (!force || !window.WC_CLOUD_STORE?.syncSportteryResults) return false")) {
+  throw new Error("Production baseline forbids ordinary visitors from triggering a server-side Sporttery result write sync.");
+}
+for (const marker of ["WC_FIRECRAWL_OBJECTIVE_CONTEXT", "firecrawl-objective-context-placeholder", "matches: []"]) {
+  if (!firecrawlContext.includes(marker)) throw new Error(`Production baseline missing safe Firecrawl placeholder marker: ${marker}`);
+}
+for (const marker of ["20260717_online_stability_v1", "app/app-data.js?v=20260717_online_stability_v1"]) {
+  if (!index.includes(marker)) throw new Error(`Production baseline missing online-stability cache namespace: ${marker}`);
 }
 for (const marker of ["liveFallbackRowHasScheduledStatus", "liveFallbackRowHasMatchStatus", "liveFallbackRowMatchesSportteryMatch", "scheduled", "sourceState"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing scheduled live-score matching marker: ${marker}`);
@@ -393,7 +406,7 @@ for (const marker of ['data-live-score-active', 'dataset.liveScoreActive === "1"
 if (!sync.includes('postApi("/api/sync/okooo-live", { calculatorRaw })')) {
   throw new Error("Production baseline requires the reachable sync runner to supply official kickoff times to OKOOO odds sync.");
 }
-for (const marker of ["syncHealthDecision", "retryableStatuses", 'health.level === "DEGRADED"', "process.exitCode = health.exitCode"]) {
+for (const marker of ["syncHealthDecision", "retryableStatuses", "payload?.ok !== false", 'health.level === "DEGRADED"', "process.exitCode = health.exitCode"]) {
   if (!sync.includes(marker)) throw new Error(`Production baseline requires retry/degraded-success sync policy: ${marker}`);
 }
 if (index.includes('<script src="./live-sporttery-data.js')) {
@@ -415,7 +428,7 @@ for (const marker of ["sportteryDetailNavigationPending", "previousScrollY", 'be
   }
 }
 
-for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-live-score-targets.mjs"]) {
+for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-live-score-targets.mjs", "tools/test-online-stability.mjs"]) {
   execFileSync(process.execPath, [testFile], { stdio: "inherit" });
 }
 

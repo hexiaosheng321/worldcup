@@ -29,9 +29,13 @@ async function postApi(path, body = {}, options = {}) {
     try {
       const response = await fetch(`${apiBase}${path}`, { method: "POST", headers, body: JSON.stringify(body) });
       const text = await response.text();
-      last = { ok: response.ok, status: response.status, text, attempts: attempt };
+      let payload = null;
+      try {
+        payload = text ? JSON.parse(text) : null;
+      } catch {}
+      last = { ok: response.ok && payload?.ok !== false, status: response.status, text, payload, attempts: attempt };
       console.log(`${path} ${response.status} [${attempt}/${attempts}]: ${text.slice(0, 200)}`);
-      if (response.ok || !retryableStatuses.has(response.status) || attempt === attempts) return last;
+      if (last.ok || !retryableStatuses.has(response.status) || attempt === attempts) return last;
     } catch (error) {
       last = { ok: false, status: 0, text: error.message || "network error", attempts: attempt };
       console.warn(`${path} network error [${attempt}/${attempts}]: ${last.text}`);
