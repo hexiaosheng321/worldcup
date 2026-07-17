@@ -56,6 +56,9 @@ if (!index.includes("lib/similarCaseEngine.js?v=20260716_brazil_league_fix_r1"))
 if (!index.includes("app/app-detail.js?v=20260716_brazil_profile_null_guard_r1") || !detailApp.includes("pred = pred || {}")) {
   throw new Error("Production baseline requires the league-profile null-data guard and cache namespace.");
 }
+for (const marker of ["market_unavailable_r1", "未开售", "marketAvailability"]) {
+  if (!index.includes(marker) && !detailApp.includes(marker) && !main.includes(marker)) throw new Error(`Production baseline missing unavailable-market presentation: ${marker}`);
+}
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
   throw new Error("Production baseline must keep the language menu outside the header clipping box");
 }
@@ -203,7 +206,7 @@ if (!fs.readFileSync("web/robots.txt", "utf8").includes("https://ticai-model.com
 if (!appCore.includes("return handicapLineFromPrediction(pred) || handicapLine(pred?.no)")) {
   throw new Error("Production baseline requires the locked prediction handicap before any number-only fallback.");
 }
-if (!appCore.includes("const resolvedHandicap = originalHandicap || primaryHandicap")) {
+if (!appCore.includes("const resolvedHandicapCandidate = originalHandicap || primaryHandicap") || !appCore.includes('handicapAvailable ? resolvedHandicapCandidate : "未开售"')) {
   throw new Error("Production baseline forbids presentation code from rewriting an explicit locked handicap conclusion.");
 }
 if (!appDetail.includes("handicapLine(match)")) {
@@ -329,7 +332,7 @@ const missingUnifiedPredictionMarkers = unifiedPredictionMarkers.filter((marker)
 if (missingUnifiedPredictionMarkers.length) {
   throw new Error(`Production baseline missing unified prediction contract: ${missingUnifiedPredictionMarkers.join(", ")}`);
 }
-for (const marker of ["PRE_LOCK", "conditionalHandicapChallenger", "complete unified prediction package", "must publish its", "candidateSelections", "formalSelections", "blocked market leaked into formal markets"]) {
+for (const marker of ["PRE_LOCK", "conditionalHandicapChallenger", "complete unified prediction package", "must publish its", "candidateSelections", "formalSelections", "blocked market leaked into formal markets", "unavailable market leaked into formal markets"]) {
   if (!unifiedPublisher.includes(marker)) throw new Error(`Production baseline missing PRE_LOCK shadow publishing contract: ${marker}`);
 }
 for (const marker of ["replaySamples", "replaySampleCount", "input: { ...modelInput, samples: replaySamples }"]) {

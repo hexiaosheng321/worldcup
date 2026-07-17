@@ -787,15 +787,21 @@ function completeOddCount(odds = {}) {
 function marketAvailabilityAudit(market = {}, history = {}) {
   const normalOddCount = completeOddCount(market.normal);
   const handicapOddCount = completeOddCount(market.handicapOdds);
+  const markets = {
+    winDrawLose: normalOddCount === 3,
+    handicap: handicapOddCount === 3,
+    totalGoals: totalMarketDistribution(market.totalGoalsOdds || []).size >= 8,
+    scores: scoreMarketDistribution(market.scoreOdds || []).size >= 8,
+  };
   const validHadSnapshots = (Array.isArray(history.had) ? history.had : [])
     .filter((row) => [row.h, row.d, row.a].every((value) => validOdd(value))).length;
   const validHhadSnapshots = (Array.isArray(history.hhad) ? history.hhad : [])
     .filter((row) => [row.h, row.d, row.a].every((value) => validOdd(value))).length;
   if (normalOddCount === 3) {
-    return { mode: "HAD_COMPLETE", complete: true, movementMarket: "had", confidencePenalty: 0, normalOddCount, handicapOddCount, validHadSnapshots, validHhadSnapshots, reason: "官方普通胜平负已开售且三项SP完整" };
+    return { mode: "HAD_COMPLETE", complete: true, movementMarket: "had", confidencePenalty: 0, normalOddCount, handicapOddCount, validHadSnapshots, validHhadSnapshots, markets, reason: "官方普通胜平负已开售且三项SP完整" };
   }
   if (normalOddCount === 0 && handicapOddCount === 3 && validHhadSnapshots >= 2) {
-    return { mode: "HHAD_ONLY", complete: true, movementMarket: "hhad", confidencePenalty: 4, normalOddCount, handicapOddCount, validHadSnapshots, validHhadSnapshots, reason: "普通胜平负未开售；让球胜平负完整且已有至少两个有效SP快照" };
+    return { mode: "HHAD_ONLY", complete: true, movementMarket: "hhad", confidencePenalty: 4, normalOddCount, handicapOddCount, validHadSnapshots, validHhadSnapshots, markets, reason: "普通胜平负未开售；让球胜平负完整且已有至少两个有效SP快照" };
   }
   return {
     mode: normalOddCount === 0 && handicapOddCount === 0 ? "DATA_PENDING" : "DATA_INCOMPLETE",
@@ -806,6 +812,7 @@ function marketAvailabilityAudit(market = {}, history = {}) {
     handicapOddCount,
     validHadSnapshots,
     validHhadSnapshots,
+    markets,
     reason: normalOddCount > 0 && normalOddCount < 3 ? "普通胜平负部分字段缺失，不能按未开售处理" : "尚未满足普通胜平负完整或仅让球市场确认条件",
   };
 }
@@ -994,7 +1001,7 @@ export function packageAdviceForGrade(baseAdvice, overallGrade, allGatesPass) {
   return baseAdvice;
 }
 
-export function packageMarketSelection(componentRecommendations = {}, criticalPackageGap = {}) {
+export function packageMarketSelection(componentRecommendations = {}, criticalPackageGap = {}, availableMarkets = {}) {
   const observationalMarkets = Object.entries(componentRecommendations)
     .filter(([, value]) => value.eligible && value.advice !== "跳过")
     .map(([key]) => key);
@@ -1003,7 +1010,9 @@ export function packageMarketSelection(componentRecommendations = {}, criticalPa
   return {
     observationalMarkets,
     formalMarkets: sharedCriticalGapBlocking ? [] : observationalMarkets.filter((market) =>
-      !blockedMarkets.has(market) && ["A", "B"].includes(componentRecommendations[market]?.grade)
+      !blockedMarkets.has(market)
+      && availableMarkets[market] === true
+      && ["A", "B"].includes(componentRecommendations[market]?.grade)
     ),
   };
 }
@@ -1474,7 +1483,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const overallGradeAudit = overallComponentGradeAudit(componentRecommendations, componentFoundationEligible, criticalPackageGap);
   const overallGrade = overallGradeAudit.grade;
   const packageAdvice = packageAdviceForGrade(advice, overallGrade, allGatesPass);
-  const { observationalMarkets, formalMarkets } = packageMarketSelection(componentRecommendations, criticalPackageGap);
+  const { observationalMarkets, formalMarkets } = packageMarketSelection(componentRecommendations, criticalPackageGap, marketAvailability.markets);
   return {
     contractVersion: "UNIFIED_PREDICTION_V4",
     generatedAt: new Date().toISOString(),

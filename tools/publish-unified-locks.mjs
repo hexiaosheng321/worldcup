@@ -12,7 +12,13 @@ const live = (bootstrap.matches || []).map((row) => {
 const locks = [];
 
 const grade = (confidence) => confidence >= 70 ? "A" : confidence >= 60 ? "B" : confidence >= 45 ? "C" : "D";
-const sideText = { HOME: "胜", DRAW: "平", AWAY: "负" };
+const completeThreeWayMarket = (odds = {}) => ["win", "draw", "lose"].every((key) => Number.isFinite(Number(odds?.[key])) && Number(odds[key]) > 1);
+const completeScoreMarket = (rows = []) => new Set((Array.isArray(rows) ? rows : [])
+  .filter((row) => /^\d+[:\-]\d+$/.test(String(row?.score || "")) && Number.isFinite(Number(row?.odds)) && Number(row.odds) > 1)
+  .map((row) => String(row.score).replace(":", "-"))).size >= 8;
+const completeTotalGoalsMarket = (rows = []) => new Set((Array.isArray(rows) ? rows : [])
+  .filter((row) => /^(?:[0-6]|7\+)$/.test(String(row?.goals ?? "")) && Number.isFinite(Number(row?.odds)) && Number(row.odds) > 1)
+  .map((row) => String(row.goals))).size >= 8;
 
 for (const id of ids) {
   const run = JSON.parse(await fs.readFile(`/tmp/${runLabel}-${id}.json`, "utf8"));
@@ -27,15 +33,24 @@ for (const id of ids) {
   const decision = run.finalDecision;
   const formalMarkets = Array.isArray(decision.formalMarkets) ? decision.formalMarkets : [];
   const formalMarketSet = new Set(formalMarkets);
+  const modelMarketAvailability = run.featureSet?.marketAvailability?.markets || {};
+  const liveMarketAvailability = {
+    winDrawLose: completeThreeWayMarket(item.normal),
+    handicap: completeThreeWayMarket(item.handicapOdds),
+    totalGoals: completeTotalGoalsMarket(item.totalGoalsOdds),
+    scores: completeScoreMarket(item.scoreOdds),
+  };
   const criticalPackageGap = decision.criticalPackageGap || {};
   const blockedMarkets = Array.isArray(criticalPackageGap.blockedMarkets) ? criticalPackageGap.blockedMarkets : [];
   if (criticalPackageGap.packageBlocking && formalMarkets.length) throw new Error(`${id} shared critical gap cannot expose formal markets`);
   if (blockedMarkets.some((market) => formalMarketSet.has(market))) throw new Error(`${id} blocked market leaked into formal markets`);
+  const unavailableFormalMarkets = formalMarkets.filter((market) => modelMarketAvailability[market] !== true || liveMarketAvailability[market] !== true);
+  if (unavailableFormalMarkets.length) throw new Error(`${id} unavailable market leaked into formal markets: ${unavailableFormalMarkets.join(", ")}`);
   const candidateSelections = {
-    winDrawLose: decision.winDrawLose,
-    handicap: decision.handicapPick,
-    totalGoals: decision.totalGoalsPick,
-    scores: decision.scores,
+    winDrawLose: modelMarketAvailability.winDrawLose === true ? decision.winDrawLose : null,
+    handicap: modelMarketAvailability.handicap === true ? decision.handicapPick : null,
+    totalGoals: modelMarketAvailability.totalGoals === true ? decision.totalGoalsPick : null,
+    scores: modelMarketAvailability.scores === true ? decision.scores : [],
   };
   const formalSelections = {
     winDrawLose: formalMarketSet.has("winDrawLose") ? decision.winDrawLose : null,
@@ -59,7 +74,7 @@ for (const id of ids) {
     kickoffTime: `${item.matchDate || item.ticaiDate} ${item.kickoffTime}`, lockedAt: new Date().toISOString(), lockType,
     modelVersion: run.modelVersion, modelRevision, ...(isFinal ? { finalApproval: true } : {}),
     modelHomeProb: probabilities.HOME, modelDrawProb: probabilities.DRAW, modelAwayProb: probabilities.AWAY,
-    recommendation: decision.winDrawLose || sideText[decision.recommendationSide], recommendationSide: decision.recommendationSide,
+    recommendation: candidateSelections.winDrawLose || "未开售", recommendationSide: candidateSelections.winDrawLose ? decision.recommendationSide : null,
     finalGrade: decision.overallGrade || grade(decision.confidence), finalAction: decision.advice, confidenceScore: decision.confidence,
     riskScore: 100 - decision.confidence, consistencyScore: Number(outputConsistency.score ?? gateCompletionScore),
     sportteryHomeSp: Number(item.normal?.win), sportteryDrawSp: Number(item.normal?.draw), sportteryAwaySp: Number(item.normal?.lose),
@@ -68,9 +83,10 @@ for (const id of ids) {
     sportteryPrediction: {
       type: `${run.match.league} 稳定 V4 模型${isFinal ? "锁版" : "待锁版"}`, matchId: id, no: item.no || "", issue: item.issue || "",
       matchDate: item.matchDate || item.ticaiDate, kickoffTime: item.kickoffTime, competition: run.match.league,
-      home: item.home, away: item.away, modelVersion: run.modelVersion, modelRevision, pick: decision.winDrawLose,
-      handicap: item.handicap, handicapPick: decision.handicapPick, totalGoalsPick: decision.totalGoalsPick,
-      mainScore: decision.scores[0], counterScore: decision.scores[1], matchType: decision.matchType,
+      home: item.home, away: item.away, modelVersion: run.modelVersion, modelRevision, pick: candidateSelections.winDrawLose || "",
+      handicap: item.handicap, handicapPick: candidateSelections.handicap || "", totalGoalsPick: candidateSelections.totalGoals || "",
+      mainScore: candidateSelections.scores[0] || "", counterScore: candidateSelections.scores[1] || "", matchType: decision.matchType,
+      marketAvailability: modelMarketAvailability,
       candidateSelections,
       formalSelections,
       independentRiskScenario: independentRisk,
@@ -121,11 +137,11 @@ for (const id of ids) {
     return `近5场${wins}胜${draws}平${losses}负，进${gf}失${ga}`;
   };
   lock.teamState = `主队${lock.homeTeam}${formText(run.featureSet?.recentForm?.home)}；客队${lock.awayTeam}${formText(run.featureSet?.recentForm?.away)}。${research.injuries || ""}${research.expectedLineups || ""}`;
-  lock.scorePick = decision.scores.join(" / ");
-  lock.totalGoalsPick = decision.totalGoalsPick;
+  lock.scorePick = candidateSelections.scores.join(" / ");
+  lock.totalGoalsPick = candidateSelections.totalGoals;
   lock.analysis = {
     teamState: lock.teamState,
-    finalPick: { winDrawLose: decision.winDrawLose, scores: decision.scores, totalGoals: decision.totalGoalsPick },
+    finalPick: { winDrawLose: candidateSelections.winDrawLose, handicap: candidateSelections.handicap, scores: candidateSelections.scores, totalGoals: candidateSelections.totalGoals },
     unifiedSteps: [
       marketAvailability.mode === "HHAD_ONLY"
         ? `01 当前可售SP复核：官方未开售普通胜平负；让球${lock.asianHandicap} SP ${item.handicapOdds?.win || "-"} / ${item.handicapOdds?.draw || "-"} / ${item.handicapOdds?.lose || "-"}，按R15 HHAD_ONLY门禁处理。`
@@ -138,7 +154,7 @@ for (const id of ids) {
       `07 比分/总进球独立闸门：比分候选${decision.scores.join(" / ")}，总进球候选${decision.totalGoalsPick}，两个比分脚本至少覆盖一个总进球选择；是否正式放行以formalSelections为准。`,
       `08 让球统一闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%；独立边际第一项${handicapAudit.independentLeader || "-"}，主方向完整分布候选单选${decision.handicapPick}，条件Challenger为${run.featureSet?.conditionalHandicapChallenger?.pick || "-"}，候选比分只作支持性验证。`,
       `09 冲突与失败方式：正式比分${decision.scores.join(" / ")}服务最大概率覆盖；独立风险${independentRisk.score || "-"}只进入风险诊断和置信扣分。`,
-      `10 最终${isFinal ? "锁版" : "待锁版"}：${decision.winDrawLose}；${decision.handicapPick}；${decision.totalGoalsPick}；${decision.scores.join(" / ")}；${decision.advice}。`,
+      `10 最终${isFinal ? "锁版" : "待锁版"}：${candidateSelections.winDrawLose || "未开售"}；${candidateSelections.handicap || "未开售"}；${candidateSelections.totalGoals || "未开售"}；${candidateSelections.scores.join(" / ") || "未开售"}；${decision.advice}。`,
     ],
   };
   const response = await fetch(`${apiBase}/api/locks`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(lock) });

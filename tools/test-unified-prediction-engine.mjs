@@ -140,6 +140,7 @@ assert.equal(final.featureSet.criticalPackageGap.blocking, false);
 assert.ok(Array.isArray(final.finalDecision.formalMarkets));
 
 const recommendation = (grade, advice = "可选", eligible = true) => ({ grade, advice, eligible, probability: 0.6 });
+const allMarketsAvailable = { winDrawLose: true, handicap: true, totalGoals: true, scores: true };
 assert.equal(overallComponentGradeAudit({
   winDrawLose: recommendation("A", "主打"),
   handicap: recommendation("D", "跳过", false),
@@ -184,12 +185,16 @@ const hhadOnly = runUnifiedPrediction({
 assert.equal(hhadOnly.modelLessons.version, "LESSONS_2026-07-17_MARKET_SCOPED_GATES_R15");
 assert.equal(hhadOnly.featureSet.marketAvailability.mode, "HHAD_ONLY");
 assert.equal(hhadOnly.featureSet.marketAvailability.complete, true);
+assert.equal(hhadOnly.featureSet.marketAvailability.markets.winDrawLose, false);
+assert.equal(hhadOnly.featureSet.marketAvailability.markets.handicap, true);
 assert.equal(hhadOnly.featureSet.oddsMovement.market, "HHAD");
 assert.equal(hhadOnly.gateResult.gates.completeOdds, true);
 assert.equal(hhadOnly.gateResult.gates.oddsMovement, true);
 assert.equal(hhadOnly.tenStepResult.steps[0].title, "当前可售让球 SP 复核");
 assert.equal(hhadOnly.featureSet.baselineParts.some((part) => part.label === "sporttery-wdl-calibration"), false);
 assert.equal(hhadOnly.finalDecision.confidenceAdjustments.marketAvailability, -4);
+assert.ok(hhadOnly.finalDecision.winDrawLose);
+assert.ok(!hhadOnly.finalDecision.formalMarkets.includes("winDrawLose"));
 
 const partialHad = runUnifiedPrediction({
   ...context,
@@ -310,7 +315,7 @@ const extremePackageMarkets = packageMarketSelection({
   handicap: recommendation("D", "跳过", false),
   totalGoals: recommendation("C", "谨慎"),
   scores: recommendation("C", "谨慎"),
-}, extremeGap);
+}, extremeGap, allMarketsAvailable);
 assert.deepEqual(extremePackageMarkets.observationalMarkets, ["winDrawLose", "totalGoals", "scores"]);
 assert.deepEqual(extremePackageMarkets.formalMarkets, ["winDrawLose"]);
 
@@ -329,7 +334,7 @@ const outputScopedMarkets = packageMarketSelection({
   handicap: recommendation("B"),
   totalGoals: recommendation("C", "谨慎"),
   scores: recommendation("C", "谨慎"),
-}, outputScopedGap);
+}, outputScopedGap, allMarketsAvailable);
 assert.deepEqual(outputScopedMarkets.observationalMarkets, ["winDrawLose", "handicap", "totalGoals", "scores"]);
 assert.deepEqual(outputScopedMarkets.formalMarkets, ["winDrawLose", "handicap"]);
 
@@ -352,7 +357,7 @@ assert.equal(overallComponentGradeAudit({
 assert.deepEqual(packageMarketSelection({
   winDrawLose: recommendation("A", "主打"),
   handicap: recommendation("B"),
-}, sharedGap).formalMarkets, []);
+}, sharedGap, allMarketsAvailable).formalMarkets, []);
 const resolvedHandicapConflict = handicapDecisionAudit([
   { label: "让负", probability: 0.497 },
   { label: "让胜", probability: 0.261 },

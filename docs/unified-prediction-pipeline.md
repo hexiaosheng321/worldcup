@@ -148,5 +148,6 @@ npm run prediction:unified -- --match 1320350 --evidence /tmp/research-1320350.j
 - 正式玩法只准入A/B级组件；C级保持 `observationalMarkets` 观察与赛后验票，不进入 `formalMarkets`。这只调整等级动作，不改变R14既有ABCD概率阈值。
 - `criticalPackageGap` 必须分别记录 `packageBlocking`、`marketBlocking`、`sharedReasons`、`marketReasons` 和 `blockedMarkets`；`overallGradeAudit` 只在共享缺口时强制整包D级，玩法局部缺口由分项等级和正式玩法名单表达。
 - 发布载荷同时保留 `candidateSelections` 和 `formalSelections`：前者用于影子验票，后者只包含 `formalMarkets` 已放行的玩法；发布前必须拒绝共享缺口或局部禁用玩法泄漏进正式结论。
+- `formalMarkets` 和 `candidateSelections` 都必须与逐玩法开售矩阵取交集；未开售玩法不生成对外候选、不进入 `formalMarkets/formalSelections`，前端明确显示“未开售”。模型内部方向只服务其他玩法的联合分布，不得包装成可购买候选；发布前同时复核模型快照和最新线上盘口。
 - 近7日历史回放只能用于验证门禁作用范围，不能作为R15样本外晋级依据；正式效果必须从完整R15赛前快照开始连续记录30至50场，并同时报告命中率和覆盖率。
 - 普通胜平负三项全空、让球胜平负三项完整且至少存在两个同盘口有效快照时，R15 标记 `HHAD_ONLY`：胜平负方向仍由完整联合比分分布和基本面生成，不伪造普通 SP；赔率动态改用让球 SP，并固定扣减4分置信度。普通胜平负只缺一至两项时仍为 `DATA_INCOMPLETE`，不得旁路。

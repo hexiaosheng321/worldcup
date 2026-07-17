@@ -1298,20 +1298,25 @@ function handicapPick(pred) {
 
 function resolvedPredictionDecision(pred, context = {}) {
   if (!pred) return null;
+  const availability = pred.marketAvailability || pred.unifiedRunEvidence?.marketAvailability || {};
+  const winDrawLoseAvailable = availability.winDrawLose !== false;
+  const handicapAvailable = availability.handicap !== false;
   const mainScore = pred.mainScore || pred.score1 || "";
   const primaryDirection = direction(mainScore);
   const primaryHandicap = handicapDirection(mainScore, context.handicapLine || reviewHandicapLine(pred));
-  const originalPick = pred.pick || context.directionPick || "";
-  const originalHandicap = handicapPick(pred) || context.handicapPick || "";
+  const originalPick = winDrawLoseAvailable ? pred.pick || context.directionPick || "" : "";
+  const originalHandicap = handicapAvailable ? handicapPick(pred) || context.handicapPick || "" : "";
   // Never rewrite an explicit locked conclusion in the presentation layer.
   // Score-derived values are only fallbacks for incomplete legacy records.
-  const resolvedPick = originalPick || primaryDirection || "";
-  const resolvedHandicap = originalHandicap || primaryHandicap || "";
+  const resolvedPickCandidate = originalPick || primaryDirection || "";
+  const resolvedHandicapCandidate = originalHandicap || primaryHandicap || "";
+  const resolvedPick = winDrawLoseAvailable ? resolvedPickCandidate : "未开售";
+  const resolvedHandicap = handicapAvailable ? resolvedHandicapCandidate : "未开售";
   const conflicts = [];
-  if (primaryDirection && originalPick && primaryDirection !== originalPick) {
+  if (winDrawLoseAvailable && primaryDirection && originalPick && primaryDirection !== originalPick) {
     conflicts.push(`锁版胜平负${originalPick}与主比分映射${primaryDirection}不一致`);
   }
-  if (primaryHandicap && originalHandicap && primaryHandicap !== originalHandicap) {
+  if (handicapAvailable && primaryHandicap && originalHandicap && primaryHandicap !== originalHandicap) {
     conflicts.push(`锁版让球${originalHandicap}与主比分映射${primaryHandicap}不一致`);
   }
   const hasConflict = conflicts.length > 0;

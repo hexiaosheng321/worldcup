@@ -551,7 +551,12 @@ function oddsPairList(label, odds = {}) {
     ["平", odds.draw],
     ["负", odds.lose],
   ].filter(([, value]) => value);
-  if (!rows.length) return "";
+  if (!rows.length) return `
+    <section class="match-page-section">
+      <span>${label}</span>
+      <p>未开售</p>
+    </section>
+  `;
   return `
     <section class="match-page-section">
       <span>${label}</span>
@@ -608,6 +613,7 @@ function sportteryOddsLeader(odds = {}, labels = [["胜", "win"], ["平", "draw"
 function sportteryResearchSnapshot(item, modelPred) {
   const score = normalizeResultScore(item.score);
   if (modelPred) {
+    const availability = modelPred.marketAvailability || modelPred.unifiedRunEvidence?.marketAvailability || {};
     const modelName = modelDisplayName(modelPred, item, modelPred.competitionModel || modelPred.competitionType || item?.league);
     const actualTotal = parseScore(score)?.total;
     const resolved = resolvedPredictionDecision(modelPred, { handicapLine: item?.handicap || reviewHandicapLine(modelPred) });
@@ -621,10 +627,10 @@ function sportteryResearchSnapshot(item, modelPred) {
     return {
       statusLabel: score ? "赛后复盘" : `${modelName}锁版`,
       action: modelPred.advice || "已锁版",
-      directionPick: resolved?.pick || modelPred.pick || "-",
-      handicapPick: resolved?.handicapPick || handicapPick(modelPred) || "-",
-      totalPick: modelPred.totalGoalsPick || "-",
-      scorePick: [modelPred.mainScore, modelPred.counterScore].filter(Boolean).join(" / ") || modelPred.scorePick || "-",
+      directionPick: availability.winDrawLose === false ? "未开售" : resolved?.pick || modelPred.pick || "-",
+      handicapPick: availability.handicap === false ? "未开售" : resolved?.handicapPick || handicapPick(modelPred) || "-",
+      totalPick: availability.totalGoals === false ? "未开售" : modelPred.totalGoalsPick || "-",
+      scorePick: availability.scores === false ? "未开售" : [modelPred.mainScore, modelPred.counterScore].filter(Boolean).join(" / ") || modelPred.scorePick || "-",
       riskNotes,
       score,
       actualDirection: direction(score),
