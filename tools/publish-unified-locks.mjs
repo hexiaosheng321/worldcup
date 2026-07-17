@@ -25,9 +25,29 @@ for (const id of ids) {
   const item = live.find((row) => String(row.matchId || row.cloudMatchId || "").replace(/^sporttery-/, "") === String(id));
   if (!item) throw new Error(`${id} missing from live pool`);
   const decision = run.finalDecision;
+  const formalMarkets = Array.isArray(decision.formalMarkets) ? decision.formalMarkets : [];
+  const formalMarketSet = new Set(formalMarkets);
+  const criticalPackageGap = decision.criticalPackageGap || {};
+  const blockedMarkets = Array.isArray(criticalPackageGap.blockedMarkets) ? criticalPackageGap.blockedMarkets : [];
+  if (criticalPackageGap.packageBlocking && formalMarkets.length) throw new Error(`${id} shared critical gap cannot expose formal markets`);
+  if (blockedMarkets.some((market) => formalMarketSet.has(market))) throw new Error(`${id} blocked market leaked into formal markets`);
+  const candidateSelections = {
+    winDrawLose: decision.winDrawLose,
+    handicap: decision.handicapPick,
+    totalGoals: decision.totalGoalsPick,
+    scores: decision.scores,
+  };
+  const formalSelections = {
+    winDrawLose: formalMarketSet.has("winDrawLose") ? decision.winDrawLose : null,
+    handicap: formalMarketSet.has("handicap") ? decision.handicapPick : null,
+    totalGoals: formalMarketSet.has("totalGoals") ? decision.totalGoalsPick : null,
+    scores: formalMarketSet.has("scores") ? decision.scores : [],
+  };
   const modelRevision = run.modelLessons?.version || run.modelVersion;
   const independentRisk = run.riskScenario || {};
   const probabilities = run.featureSet.probabilities;
+  const outputConsistency = run.featureSet?.totals?.outputConsistency || {};
+  const gateCompletionScore = Math.round(Object.values(run.gateResult?.gates || {}).filter(Boolean).length / Math.max(1, Object.keys(run.gateResult?.gates || {}).length) * 100);
   const modelRunId = run.sourceContext?.modelRunId;
   if (!modelRunId) throw new Error(`${id} must publish its ${run.lockType} model run before publishing the lock`);
   const handicap = Number(String(item.handicap || "0").replace("+", ""));
@@ -40,17 +60,19 @@ for (const id of ids) {
     modelVersion: run.modelVersion, modelRevision, ...(isFinal ? { finalApproval: true } : {}),
     modelHomeProb: probabilities.HOME, modelDrawProb: probabilities.DRAW, modelAwayProb: probabilities.AWAY,
     recommendation: decision.winDrawLose || sideText[decision.recommendationSide], recommendationSide: decision.recommendationSide,
-    finalGrade: grade(decision.confidence), finalAction: decision.advice, confidenceScore: decision.confidence,
-    riskScore: 100 - decision.confidence, consistencyScore: Math.round(Object.values(run.gateResult?.gates || {}).filter(Boolean).length / Math.max(1, Object.keys(run.gateResult?.gates || {}).length) * 100),
+    finalGrade: decision.overallGrade || grade(decision.confidence), finalAction: decision.advice, confidenceScore: decision.confidence,
+    riskScore: 100 - decision.confidence, consistencyScore: Number(outputConsistency.score ?? gateCompletionScore),
     sportteryHomeSp: Number(item.normal?.win), sportteryDrawSp: Number(item.normal?.draw), sportteryAwaySp: Number(item.normal?.lose),
     asianHandicap: handicap, dataQuality: run.featureSet?.dataQuality?.grade || "D",
-    reasoningSummary: `统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。正式让球按胜平负主方向下的完整联合净胜球分布选择，并必须由至少一个正式比分验证；独立边际第一项和排除正式项后的次优条件让球分别作风险审计与Challenger影子验票。正式比分按联合概率覆盖选择${decision.scores.join(" / ")}，独立风险剧本${independentRisk.score || "-"}不占正式名额。`,
+    reasoningSummary: `统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。让球候选按胜平负主方向下的完整联合净胜球分布选择，并由候选比分验证；独立边际第一项和排除候选项后的次优条件让球分别作风险审计与Challenger影子验票。比分候选按联合概率覆盖选择${decision.scores.join(" / ")}，独立风险剧本${independentRisk.score || "-"}不占候选名额；正式玩法仅以formalSelections为准。`,
     sportteryPrediction: {
       type: `${run.match.league} 稳定 V4 模型${isFinal ? "锁版" : "待锁版"}`, matchId: id, no: item.no || "", issue: item.issue || "",
       matchDate: item.matchDate || item.ticaiDate, kickoffTime: item.kickoffTime, competition: run.match.league,
       home: item.home, away: item.away, modelVersion: run.modelVersion, modelRevision, pick: decision.winDrawLose,
       handicap: item.handicap, handicapPick: decision.handicapPick, totalGoalsPick: decision.totalGoalsPick,
       mainScore: decision.scores[0], counterScore: decision.scores[1], matchType: decision.matchType,
+      candidateSelections,
+      formalSelections,
       independentRiskScenario: independentRisk,
       scoreSelectionPolicy: decision.scoreSelectionPolicy,
       officialScoreCoverageProbability: run.featureSet?.score?.officialCoverageProbability ?? null,
@@ -64,6 +86,15 @@ for (const id of ids) {
         evidenceDirectionConflict: run.featureSet?.evidenceDirectionConflict || null,
         evidenceDrivenRiskChallenger: run.featureSet?.evidenceDrivenRiskChallenger || null,
         conditionalHandicapChallenger: run.featureSet?.conditionalHandicapChallenger || null,
+        componentRecommendations: decision.componentRecommendations || null,
+        marketAvailability: run.featureSet?.marketAvailability || null,
+        outputConsistency,
+        criticalPackageGap,
+        observationalMarkets: decision.observationalMarkets || [],
+        formalMarkets,
+        overallGrade: decision.overallGrade || grade(decision.confidence),
+        overallGradeAudit: decision.overallGradeAudit || null,
+        gateCompletionScore,
         jointDecision: run.featureSet?.jointDecision || null,
         backtestContract: run.backtestContract || null,
         competitionStage: run.featureSet?.competitionStage || null,
@@ -75,6 +106,7 @@ for (const id of ids) {
   };
   const research = Object.fromEntries((run.featureSet?.research?.items || []).map((entry) => [entry.key, entry.summary]));
   const movement = run.featureSet?.oddsMovement || {};
+  const marketAvailability = run.featureSet?.marketAvailability || {};
   const first = movement.first || {};
   const latest = movement.latest || {};
   const handicapProbabilities = run.featureSet?.handicap?.probabilities || {};
@@ -95,14 +127,16 @@ for (const id of ids) {
     teamState: lock.teamState,
     finalPick: { winDrawLose: decision.winDrawLose, scores: decision.scores, totalGoals: decision.totalGoalsPick },
     unifiedSteps: [
-      `01 当前胜平负SP复核：${lock.sportteryHomeSp} / ${lock.sportteryDrawSp} / ${lock.sportteryAwaySp}。`,
+      marketAvailability.mode === "HHAD_ONLY"
+        ? `01 当前可售SP复核：官方未开售普通胜平负；让球${lock.asianHandicap} SP ${item.handicapOdds?.win || "-"} / ${item.handicapOdds?.draw || "-"} / ${item.handicapOdds?.lose || "-"}，按R15 HHAD_ONLY门禁处理。`
+        : `01 当前胜平负SP复核：${lock.sportteryHomeSp} / ${lock.sportteryDrawSp} / ${lock.sportteryAwaySp}。`,
       `02 赛事规则与动机：${research.motivation}`,
       `03 球队状态：${lock.teamState}`,
       `04 风格对位：${research.styleMatchup}`,
       `05 盘口与样本：完整盘口样本${run.featureSet.sampleCount}场，两队近期赛果已读取并去重。`,
-      `06 赔率动态：${first.updateDate} ${first.updateTime} ${first.h}/${first.d}/${first.a} -> ${latest.updateDate} ${latest.updateTime} ${latest.h}/${latest.d}/${latest.a}，状态${movement.marketState}。`,
-      `07 比分/总进球独立闸门：比分${decision.scores.join(" / ")}，总进球${decision.totalGoalsPick}，两个比分脚本至少覆盖一个总进球选择。`,
-      `08 让球统一闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%；独立边际第一项${handicapAudit.independentLeader || "-"}，主方向完整分布正式单选${decision.handicapPick}，条件Challenger为${run.featureSet?.conditionalHandicapChallenger?.pick || "-"}，正式比分只作支持性验证。`,
+      `06 赔率动态：${movement.market || "HAD"} ${first.updateDate || ""} ${first.updateTime || ""} ${first.h}/${first.d}/${first.a} -> ${latest.updateDate || ""} ${latest.updateTime || ""} ${latest.h}/${latest.d}/${latest.a}，状态${movement.marketState}。`,
+      `07 比分/总进球独立闸门：比分候选${decision.scores.join(" / ")}，总进球候选${decision.totalGoalsPick}，两个比分脚本至少覆盖一个总进球选择；是否正式放行以formalSelections为准。`,
+      `08 让球统一闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%；独立边际第一项${handicapAudit.independentLeader || "-"}，主方向完整分布候选单选${decision.handicapPick}，条件Challenger为${run.featureSet?.conditionalHandicapChallenger?.pick || "-"}，候选比分只作支持性验证。`,
       `09 冲突与失败方式：正式比分${decision.scores.join(" / ")}服务最大概率覆盖；独立风险${independentRisk.score || "-"}只进入风险诊断和置信扣分。`,
       `10 最终${isFinal ? "锁版" : "待锁版"}：${decision.winDrawLose}；${decision.handicapPick}；${decision.totalGoalsPick}；${decision.scores.join(" / ")}；${decision.advice}。`,
     ],

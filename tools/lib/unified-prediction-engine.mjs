@@ -554,6 +554,22 @@ function totalGoalModel(scoreRows, marketRows) {
   return { probabilities, pick: ranked.slice(0, 2).map(([goals]) => `${goals}球`).join("/"), components: parts.map((part) => ({ label: part.label, weight: part.weight })), marketComplete: marketProbabilities.size >= 8 };
 }
 
+function alignTotalGoalsWithOfficialScores(totalModel, officialScores = []) {
+  const rankedKeys = [...totalModel.probabilities.entries()].sort((left, right) => right[1] - left[1]).map(([key]) => key);
+  const officialKeys = [...new Set(officialScores.map((row) => totalKey(row.home + row.away)))];
+  const selectedKeys = [...officialKeys];
+  for (const key of rankedKeys) {
+    if (selectedKeys.length >= 2) break;
+    if (!selectedKeys.includes(key)) selectedKeys.push(key);
+  }
+  return {
+    ...totalModel,
+    pick: selectedKeys.slice(0, 2).map((goals) => `${goals}球`).join("/"),
+    selectionPolicy: "OFFICIAL_SCORE_TOTALS_THEN_HIGHEST_REMAINING_BUCKET",
+    originalProbabilityPick: rankedKeys.slice(0, 2).map((goals) => `${goals}球`).join("/"),
+  };
+}
+
 function resultFromScores(rows) {
   return normalizeProbabilities([
     rows.filter((row) => row.home > row.away).reduce((sum, row) => sum + row.probability, 0),
@@ -764,9 +780,43 @@ function researchAudit(research = {}, asOf = new Date().toISOString()) {
   return { complete: items.every((item) => item.complete), items, missing: items.filter((item) => !item.complete).map((item) => item.key), adjustment: capped };
 }
 
-function oddsMovementAudit(history = {}) {
-  const had = Array.isArray(history.had) ? history.had : [];
-  const snapshots = had.filter((row) => [row.h, row.d, row.a].every((value) => validOdd(value)));
+function completeOddCount(odds = {}) {
+  return [odds?.win, odds?.draw, odds?.lose].filter((value) => validOdd(value)).length;
+}
+
+function marketAvailabilityAudit(market = {}, history = {}) {
+  const normalOddCount = completeOddCount(market.normal);
+  const handicapOddCount = completeOddCount(market.handicapOdds);
+  const validHadSnapshots = (Array.isArray(history.had) ? history.had : [])
+    .filter((row) => [row.h, row.d, row.a].every((value) => validOdd(value))).length;
+  const validHhadSnapshots = (Array.isArray(history.hhad) ? history.hhad : [])
+    .filter((row) => [row.h, row.d, row.a].every((value) => validOdd(value))).length;
+  if (normalOddCount === 3) {
+    return { mode: "HAD_COMPLETE", complete: true, movementMarket: "had", confidencePenalty: 0, normalOddCount, handicapOddCount, validHadSnapshots, validHhadSnapshots, reason: "官方普通胜平负已开售且三项SP完整" };
+  }
+  if (normalOddCount === 0 && handicapOddCount === 3 && validHhadSnapshots >= 2) {
+    return { mode: "HHAD_ONLY", complete: true, movementMarket: "hhad", confidencePenalty: 4, normalOddCount, handicapOddCount, validHadSnapshots, validHhadSnapshots, reason: "普通胜平负未开售；让球胜平负完整且已有至少两个有效SP快照" };
+  }
+  return {
+    mode: normalOddCount === 0 && handicapOddCount === 0 ? "DATA_PENDING" : "DATA_INCOMPLETE",
+    complete: false,
+    movementMarket: normalOddCount > 0 ? "had" : "hhad",
+    confidencePenalty: 0,
+    normalOddCount,
+    handicapOddCount,
+    validHadSnapshots,
+    validHhadSnapshots,
+    reason: normalOddCount > 0 && normalOddCount < 3 ? "普通胜平负部分字段缺失，不能按未开售处理" : "尚未满足普通胜平负完整或仅让球市场确认条件",
+  };
+}
+
+function oddsMovementAudit(history = {}, marketKey = "had") {
+  const rows = Array.isArray(history[marketKey]) ? history[marketKey] : [];
+  let snapshots = rows.filter((row) => [row.h, row.d, row.a].every((value) => validOdd(value)));
+  if (marketKey === "hhad" && snapshots.length) {
+    const latestGoalLine = String(snapshots.at(-1)?.goalLine ?? "");
+    snapshots = snapshots.filter((row) => String(row.goalLine ?? "") === latestGoalLine);
+  }
   const latest = snapshots.at(-1) || null;
   const distance = (left, right) => Math.abs(Number(left) - Number(right));
   const cleanSnapshots = latest ? snapshots.filter((row) => {
@@ -780,6 +830,7 @@ function oddsMovementAudit(history = {}) {
     : 0;
   return {
     complete: cleanSnapshots.length >= 2,
+    market: marketKey.toUpperCase(),
     snapshots: snapshots.length,
     cleanSnapshots: cleanSnapshots.length,
     rejectedOrientationSnapshots: snapshots.length - cleanSnapshots.length,
@@ -868,6 +919,260 @@ function matchType(rows) {
   return average < 1.9 ? "闷局" : average < 2.9 ? "常规局" : average < 3.8 ? "开放局" : "打花局";
 }
 
+function totalKey(value) {
+  return Number(value) >= 7 ? "7+" : String(Number(value));
+}
+
+function componentAdvice(kind, probability, eligible = true) {
+  if (!eligible) return "跳过";
+  const thresholds = kind === "score"
+    ? [0.35, 0.28, 0.22]
+    : kind === "totalGoals"
+      ? [0.55, 0.45, 0.35]
+      : [0.62, 0.55, 0.48];
+  if (probability >= thresholds[0]) return "主打";
+  if (probability >= thresholds[1]) return "可选";
+  if (probability >= thresholds[2]) return "谨慎";
+  return "跳过";
+}
+
+function componentGrade(kind, probability, eligible = true) {
+  if (!eligible) return "D";
+  const thresholds = kind === "score"
+    ? [0.35, 0.28]
+    : kind === "totalGoals"
+      ? [0.55, 0.45]
+      : [0.62, 0.55];
+  if (probability >= thresholds[0]) return "A";
+  if (probability >= thresholds[1]) return "B";
+  return "C";
+}
+
+export function overallComponentGradeAudit(componentRecommendations = {}, foundationEligible = false, criticalPackageGap = {}) {
+  const items = Object.entries(componentRecommendations).map(([market, value]) => ({ market, ...value }));
+  const actionable = items.filter((item) => item.eligible && item.advice !== "跳过");
+  const strong = items.filter((item) => ["A", "B"].includes(item.grade));
+  const allEligible = items.length === 4 && items.every((item) => item.eligible);
+  const allGradeA = items.length === 4 && items.every((item) => item.grade === "A");
+  const sharedCriticalGapBlocking = Boolean(criticalPackageGap.packageBlocking ?? criticalPackageGap.blocking);
+  let grade = "D";
+  let reason = "FOUNDATION_OR_COMPONENTS_NOT_ACTIONABLE";
+  if (sharedCriticalGapBlocking) {
+    reason = "SHARED_CRITICAL_PACKAGE_GAP";
+  } else if (foundationEligible && actionable.length > 0 && strong.length > 0) {
+    if (allGradeA) {
+      grade = "A";
+      reason = "ALL_FOUR_COMPONENTS_GRADE_A";
+    } else if (allEligible && strong.length >= 2 && items.every((item) => item.grade !== "D")) {
+      grade = "B";
+      reason = "ALL_COMPONENTS_ELIGIBLE_WITH_AT_LEAST_TWO_STRONG";
+    } else {
+      grade = "C";
+      reason = "SINGLE_COMPONENT_OR_PARTIAL_PACKAGE_ONLY";
+    }
+  }
+  return {
+    grade,
+    foundationEligible,
+    eligibleCount: items.filter((item) => item.eligible).length,
+    actionableCount: actionable.length,
+    strongCount: strong.length,
+    criticalGapBlocking: sharedCriticalGapBlocking,
+    criticalGapReasons: criticalPackageGap.reasons || [],
+    marketCriticalGapBlocking: Boolean(criticalPackageGap.marketBlocking),
+    blockedMarkets: criticalPackageGap.blockedMarkets || [],
+    reason,
+    policy: "SHARED_FOUNDATION_FIRST_THEN_MARKET_SCOPED_BLOCKS_AND_COMPONENT_STRENGTH",
+  };
+}
+
+export function packageAdviceForGrade(baseAdvice, overallGrade, allGatesPass) {
+  if (overallGrade === "D") return "跳过";
+  if (!allGatesPass) return baseAdvice;
+  if (overallGrade === "C") return ["跳过", "谨慎"].includes(baseAdvice) ? baseAdvice : "谨慎";
+  if (overallGrade === "B") return baseAdvice === "主打" ? "可选" : baseAdvice;
+  return baseAdvice;
+}
+
+export function packageMarketSelection(componentRecommendations = {}, criticalPackageGap = {}) {
+  const observationalMarkets = Object.entries(componentRecommendations)
+    .filter(([, value]) => value.eligible && value.advice !== "跳过")
+    .map(([key]) => key);
+  const sharedCriticalGapBlocking = Boolean(criticalPackageGap.packageBlocking ?? criticalPackageGap.blocking);
+  const blockedMarkets = new Set(criticalPackageGap.blockedMarkets || []);
+  return {
+    observationalMarkets,
+    formalMarkets: sharedCriticalGapBlocking ? [] : observationalMarkets.filter((market) =>
+      !blockedMarkets.has(market) && ["A", "B"].includes(componentRecommendations[market]?.grade)
+    ),
+  };
+}
+
+function qualifyingVenueSampleAudit(stageAudit = {}, venueProfile = {}, research = {}) {
+  const required = stageAudit.matchCanonical === "QUALIFYING" || stageAudit.researchCanonical === "QUALIFYING";
+  const replacements = research.teamState?.venueSampleReplacements || {};
+  const replacementValid = (side) => {
+    const item = replacements[side] || {};
+    const strengthFactor = number(item.leagueStrengthFactor ?? item.strengthFactor);
+    return item.status === "VERIFIED"
+      && Number(item.sampleCount || 0) >= 3
+      && strengthFactor !== null
+      && strengthFactor >= 0.85
+      && strengthFactor <= 1.15
+      && Array.isArray(item.sources)
+      && item.sources.some((source) => source?.url && source?.title);
+  };
+  const homeDirect = Number(venueProfile.homeSampleCount || 0) > 0;
+  const awayDirect = Number(venueProfile.awaySampleCount || 0) > 0;
+  const homeReplacement = replacementValid("home");
+  const awayReplacement = replacementValid("away");
+  const missingSides = required
+    ? [!homeDirect && !homeReplacement ? "HOME" : "", !awayDirect && !awayReplacement ? "AWAY" : ""].filter(Boolean)
+    : [];
+  return {
+    required,
+    complete: !required || missingSides.length === 0,
+    directVenueSamples: { home: Number(venueProfile.homeSampleCount || 0), away: Number(venueProfile.awaySampleCount || 0) },
+    verifiedSameStrengthReplacement: { home: homeReplacement, away: awayReplacement },
+    missingSides,
+    policy: "QUALIFYING_ZERO_VENUE_SAMPLE_BLOCKS_FINAL_LOCK_UNLESS_VERIFIED_SAME_STRENGTH_REPLACEMENT",
+  };
+}
+
+export function oneGoalWinAudit({ direction, handicapPick, handicap, officialScores = [], candidates = [] } = {}) {
+  const line = number(String(handicap ?? "0").replace("+", "")) ?? 0;
+  const required = line === -1 && direction === "HOME" && handicapPick === "让胜";
+  const primary = officialScores[0] || null;
+  const primaryOneGoalWin = Boolean(primary && primary.home - primary.away === 1);
+  const oneGoalBranch = candidates.find((item) => item.direction === "HOME" && item.handicapPick === "让平") || null;
+  const multiGoalBranch = candidates.find((item) => item.direction === "HOME" && item.handicapPick === "让胜") || null;
+  return {
+    required,
+    complete: !required || !primaryOneGoalWin,
+    primaryScore: primary?.score || "",
+    primaryOneGoalWin,
+    oneGoalConditionalProbability: round(oneGoalBranch?.conditionalProbability || 0),
+    multiGoalConditionalProbability: round(multiGoalBranch?.conditionalProbability || 0),
+    action: required && primaryOneGoalWin ? "BLOCK_FINAL_LOCK_KEEP_HANDICAP_CAUTION" : "ALLOW",
+    policy: "MINUS_ONE_PRIMARY_1_0_OR_2_1_CANNOT_FORMALLY_UPGRADE_TO_HANDICAP_WIN",
+  };
+}
+
+export function outputConsistencyAudit({ scoreRows = [], officialScores = [], selectedTotalKeys = [], xg = {}, venueProfile = {}, leagueProfile = {}, directionProbability = 0 } = {}) {
+  const selectedNumeric = selectedTotalKeys.map((key) => key === "7+" ? 7 : Number(key)).filter(Number.isFinite);
+  const selectedCountComplete = selectedNumeric.length === 2;
+  const selectedCenter = selectedNumeric.length ? selectedNumeric.reduce((sum, value) => sum + value, 0) / selectedNumeric.length : 0;
+  const xgTotal = Number(xg.home || 0) + Number(xg.away || 0);
+  const xgTolerance = xgTotal >= 4 ? 1 : 1.25;
+  const xgDistance = Math.abs(selectedCenter - xgTotal);
+  const xgAligned = selectedCountComplete && xgDistance <= xgTolerance;
+  const officialScoreTotals = officialScores.map((row) => totalKey(row.home + row.away));
+  const officialScoreCoveredCount = officialScoreTotals.filter((key) => selectedTotalKeys.includes(key)).length;
+  const officialScoreCoverageRatio = officialScoreTotals.length === 2 ? officialScoreCoveredCount / 2 : 0;
+  const officialScoresCovered = officialScoreCoverageRatio === 1;
+  const type = matchType(scoreRows);
+  const matchTypeAligned = type === "闷局"
+    ? selectedCenter <= 2.5
+    : type === "常规局"
+      ? selectedCenter >= 1.5 && selectedCenter <= 3.5
+      : type === "开放局"
+        ? selectedCenter >= 2.5 && selectedCenter <= 4.5
+        : selectedCenter >= 3.5;
+  const maximumVariance = Math.max(
+    Number(venueProfile.homeAttackVariance || 0),
+    Number(venueProfile.homeDefenceVariance || 0),
+    Number(venueProfile.awayAttackVariance || 0),
+    Number(venueProfile.awayDefenceVariance || 0),
+  );
+  const tailProbability = scoreRows
+    .filter((row) => row.home + row.away >= 5)
+    .reduce((sum, row) => sum + Number(row.probability || 0), 0);
+  const highVarianceTailRequired = Number(leagueProfile.opennessFactor || 0) >= 1.1
+    && Number(directionProbability || 0) >= 0.65
+    && maximumVariance >= 1.25
+    && tailProbability >= 0.18;
+  const highVarianceTailCovered = !highVarianceTailRequired || selectedNumeric.some((value) => value >= 5);
+  const xgScore = selectedCountComplete ? 25 * Math.max(0, 1 - xgDistance / (xgTolerance * 2)) : 0;
+  const score = round(
+    (selectedCountComplete ? 10 : 0)
+    + xgScore
+    + officialScoreCoverageRatio * 25
+    + (matchTypeAligned ? 20 : 0)
+    + (highVarianceTailCovered ? 20 : 0),
+    1,
+  );
+  const grade = score >= 90 ? "A" : score >= 75 ? "B" : score >= 60 ? "C" : "D";
+  const criticalReasons = [
+    !selectedCountComplete ? "TOTAL_SELECTION_INCOMPLETE" : "",
+    officialScoreCoverageRatio < 1 ? "OFFICIAL_SCORE_TOTALS_NOT_COVERED" : "",
+    highVarianceTailRequired && !highVarianceTailCovered ? "HIGH_VARIANCE_TAIL_NOT_COVERED" : "",
+    selectedCountComplete && xgDistance > xgTolerance * 1.5 ? "XG_TOTAL_SEVERE_DIVERGENCE" : "",
+    !matchTypeAligned && xgDistance > xgTolerance ? "MATCH_TYPE_AND_XG_DIVERGE" : "",
+    score < 60 ? "OUTPUT_CONSISTENCY_SCORE_BELOW_60" : "",
+  ].filter(Boolean);
+  return {
+    complete: xgAligned && officialScoresCovered && matchTypeAligned && highVarianceTailCovered,
+    score,
+    grade,
+    criticalConflict: criticalReasons.length > 0,
+    criticalReasons,
+    selectedCountComplete,
+    selectedTotalKeys,
+    selectedCenter: round(selectedCenter, 2),
+    xgTotal: round(xgTotal, 2),
+    xgTolerance,
+    xgDistance: round(xgDistance, 2),
+    xgAligned,
+    officialScoreTotals,
+    officialScoreCoverageRatio: round(officialScoreCoverageRatio),
+    officialScoresCovered,
+    matchType: type,
+    matchTypeAligned,
+    maximumVariance: round(maximumVariance, 3),
+    highVarianceTailRequired,
+    highVarianceTailProbability: round(tailProbability),
+    highVarianceTailCovered,
+    policy: "XG_TOTAL_OFFICIAL_SCORES_MATCH_TYPE_AND_HIGH_VARIANCE_TAIL_MUST_AGREE",
+  };
+}
+
+export function criticalPackageGapAudit({ foundationEligible = false, qualifyingVenueSamples = {}, tieAudit = {}, stageAudit = {}, handicapDecision = {}, outputConsistency = {} } = {}) {
+  const extremeHandicapConflict = Boolean(
+    handicapDecision.materialConflict
+    && !handicapDecision.resolved
+    && new Set([handicapDecision.independentLeader, handicapDecision.selected]).has("让胜")
+    && new Set([handicapDecision.independentLeader, handicapDecision.selected]).has("让负"),
+  );
+  const sharedReasons = [
+    !foundationEligible ? "SHARED_EVIDENCE_FOUNDATION_INCOMPLETE" : "",
+    qualifyingVenueSamples.required && !qualifyingVenueSamples.complete ? "QUALIFYING_VENUE_SAMPLE_GAP" : "",
+    tieAudit.required && !tieAudit.complete ? "TWO_LEG_CONTEXT_GAP" : "",
+    stageAudit.required && !stageAudit.complete ? "COMPETITION_STAGE_GAP" : "",
+  ].filter(Boolean);
+  const marketReasons = {
+    winDrawLose: [],
+    handicap: [extremeHandicapConflict ? "EXTREME_HANDICAP_CONFLICT" : ""].filter(Boolean),
+    totalGoals: [outputConsistency.criticalConflict ? "CRITICAL_OUTPUT_INCONSISTENCY" : ""].filter(Boolean),
+    scores: [outputConsistency.criticalConflict ? "CRITICAL_OUTPUT_INCONSISTENCY" : ""].filter(Boolean),
+  };
+  const blockedMarkets = Object.entries(marketReasons).filter(([, values]) => values.length > 0).map(([market]) => market);
+  const marketScopedReasons = [...new Set(Object.values(marketReasons).flat())];
+  const reasons = [...sharedReasons, ...marketScopedReasons];
+  return {
+    blocking: reasons.length > 0,
+    packageBlocking: sharedReasons.length > 0,
+    marketBlocking: blockedMarkets.length > 0,
+    reasons,
+    sharedReasons,
+    marketReasons,
+    blockedMarkets,
+    extremeHandicapConflict,
+    outputConsistencyScore: Number(outputConsistency.score || 0),
+    outputConsistencyGrade: outputConsistency.grade || "D",
+    policy: "SHARED_GAPS_FORCE_PACKAGE_D_MARKET_GAPS_BLOCK_ONLY_AFFECTED_MARKETS",
+  };
+}
+
 export function researchTemplate(match = {}) {
   const evidenceItems = Object.fromEntries(RESEARCH_KEYS.map((key) => [key, { status: "MISSING", evidenceGrade: "", summary: "", capturedAt: "", observedAt: "", sources: [], impact: { home: 0, draw: 0, away: 0, xgHome: 0, xgAway: 0 } }]));
   return {
@@ -876,7 +1181,7 @@ export function researchTemplate(match = {}) {
     tieContext: { isTwoLeg: false, legNumber: null, aggregateHomeBeforeMatch: null, aggregateAwayBeforeMatch: null, leaderNeedsGoalDifference: false, trailingSideSustainedThreat: false, trailingSideCollapseRisk: false },
     generatedAt: new Date().toISOString(),
     ...evidenceItems,
-    teamState: { ...evidenceItems.teamState, recentMatches: [] },
+    teamState: { ...evidenceItems.teamState, recentMatches: [], venueSampleReplacements: { home: null, away: null } },
     styleMatchup: { ...evidenceItems.styleMatchup, firstGoalSide: "" },
   };
 }
@@ -909,6 +1214,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     home: leadControl.after.home,
     away: leadControl.after.away,
   };
+  const qualifyingVenueSamples = qualifyingVenueSampleAudit(stageAudit, xg.venueProfile, context.research || {});
   const learningSignals = leagueLearningSignals(match.league, market, xg);
   const poissonScores = applyLeagueScoreLearning(scoreGrid(xg), leagueLearning, learningSignals);
   const formBaseline = formProbabilities(xg.homeRows, xg.awayRows);
@@ -926,19 +1232,21 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const baselineProbabilities = normalizeProbabilities(resultLabels.map((_, index) => baselineParts.reduce((sum, part) => sum + part.values[index] * part.weight, 0) / weightTotal));
   const preScenarioProbabilities = normalizeProbabilities(baselineProbabilities.map((value, index) => value + [research.adjustment.home, research.adjustment.draw, research.adjustment.away][index] * 0.25 + tieAudit.ninetyMinuteAdjustment[index]));
   // The two official exact-score picks maximize cumulative coverage from the
-  // calibrated joint distribution. They may share the same W/D/L direction.
+  // calibrated joint distribution. They are downstream outputs and must not
+  // feed back into W/D/L, which is already derived from the full score grid.
   const topScores = selectOfficialScores(scores);
   const scenarioDirectionProbabilities = resultFromScores(topScores);
-  const probabilities = normalizeProbabilities(preScenarioProbabilities.map((value, index) => value * 0.8 + scenarioDirectionProbabilities[index] * 0.2));
+  const probabilities = preScenarioProbabilities;
   const rankedResults = resultLabels.map((label, index) => ({ label, text: resultText[label], probability: probabilities[index] })).sort((a, b) => b.probability - a.probability);
-  const totalModel = totalGoalModel(scores, market.totalGoalsOdds || []);
-  const movement = oddsMovementAudit(context.oddsHistory);
+  const totalModel = alignTotalGoalsWithOfficialScores(totalGoalModel(scores, market.totalGoalsOdds || []), topScores);
+  const handicapMarket = noVig([market.handicapOdds?.win, market.handicapOdds?.draw, market.handicapOdds?.lose]);
+  const marketAvailability = marketAvailabilityAudit(market, context.oddsHistory);
+  const movement = oddsMovementAudit(context.oddsHistory, marketAvailability.movementMarket);
   const sampleGate = samples.length >= 10;
-  const oddsGate = Boolean(marketBaseline);
+  const oddsGate = marketAvailability.complete;
   const scoreGate = topScores.length === 2 && topScores.every((row) => row.probability > 0);
   let handicapMapped = topScores.map((row) => ({ score: row.score, result: handicapResult(row, match.handicap) }));
   const handicapScoreProbabilities = handicapProbabilitiesFromScores(scores, match.handicap);
-  const handicapMarket = noVig([market.handicapOdds?.win, market.handicapOdds?.draw, market.handicapOdds?.lose]);
   const handicapHistory = historicalHandicapDistribution(samples, market, match.handicap);
   const handicapParts = [
     { label: "joint-score-model", weight: 0.75, probabilities: handicapScoreProbabilities },
@@ -973,6 +1281,13 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     mode: "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
     conditionalProbability: formalPair?.conditionalProbability,
   });
+  const oneGoalWinProtection = oneGoalWinAudit({
+    direction: selectedDirection,
+    handicapPick,
+    handicap: match.handicap,
+    officialScores: topScores,
+    candidates: jointDecision.candidates,
+  });
   const jointCompatibility = Boolean(formalPair && formalPair.direction === selectedDirection && formalPair.scoreProbability > 0);
   const selectedTotalKeys = String(totalModel.pick || "").match(/(?:[0-6]|7\+)/g) || [];
   const coversSelectedTotal = (row) => selectedTotalKeys.includes(row.home + row.away >= 7 ? "7+" : String(row.home + row.away));
@@ -996,6 +1311,16 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const secondScenarioInProbability = Boolean(topScores[1])
     && scenarioDirectionProbabilities[resultLabels.indexOf(scoreResult(topScores[1]))] > 0;
   const selectedDirectionProbability = probabilities[resultLabels.indexOf(selectedDirection)] || 0;
+  const fullDistributionMatchType = matchType(scores);
+  const outputConsistency = outputConsistencyAudit({
+    scoreRows: scores,
+    officialScores: topScores,
+    selectedTotalKeys,
+    xg,
+    venueProfile: xg.venueProfile,
+    leagueProfile: xg.leagueProfile,
+    directionProbability: selectedDirectionProbability,
+  });
   const selectedOppositeDirection = selectedDirection === "HOME" ? "AWAY" : selectedDirection === "AWAY" ? "HOME" : null;
   const selectedOppositeProbability = selectedOppositeDirection ? probabilities[resultLabels.indexOf(selectedOppositeDirection)] : 0;
   const selectedOppositeScore = selectedOppositeDirection && selectedOppositeProbability >= 0.12
@@ -1048,15 +1373,32 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const totalsMarketComplete = totalModel.marketComplete;
   const scoreIndependent = scoreModel.parts.length >= 2;
   const totalsIndependent = totalModel.components.length >= 2;
+  const componentFoundationEligible = oddsGate
+    && fundamentalDataComplete
+    && qualifyingVenueSamples.complete
+    && temporalIntegrity
+    && research.complete
+    && evidenceDirectionConflict.resolved
+    && tieAudit.complete
+    && stageAudit.complete
+    && recentFormFresh;
+  const criticalPackageGap = criticalPackageGapAudit({
+    foundationEligible: componentFoundationEligible,
+    qualifyingVenueSamples,
+    tieAudit,
+    stageAudit,
+    handicapDecision,
+    outputConsistency,
+  });
   const stepScores = [
-    { id: 1, key: "spReview", title: "当前胜平负 SP 复核", score: normalOddsComplete ? 100 : 0, passed: normalOddsComplete },
+    { id: 1, key: "spReview", title: marketAvailability.mode === "HHAD_ONLY" ? "当前可售让球 SP 复核" : "当前胜平负 SP 复核", score: oddsGate ? 100 : 0, passed: oddsGate },
     { id: 2, key: "rulesMotivation", title: "赛事规则/动机", score: research.items.find((item) => item.key === "motivation")?.complete && tieAudit.complete && stageAudit.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "motivation")?.complete) && tieAudit.complete && stageAudit.complete },
-    { id: 3, key: "teamState", title: "球队状态", score: fundamentalDataComplete ? 100 : Math.round(Math.min(90, (xg.homeRows.length + xg.awayRows.length) * 9)), passed: fundamentalDataComplete && ["teamState", "injuries", "expectedLineups"].every((key) => research.items.find((item) => item.key === key)?.complete) },
+    { id: 3, key: "teamState", title: "球队状态", score: fundamentalDataComplete && qualifyingVenueSamples.complete ? 100 : Math.round(Math.min(90, (xg.homeRows.length + xg.awayRows.length) * 9)), passed: fundamentalDataComplete && qualifyingVenueSamples.complete && ["teamState", "injuries", "expectedLineups"].every((key) => research.items.find((item) => item.key === key)?.complete) },
     { id: 4, key: "styleMatchup", title: "风格对位", score: research.items.find((item) => item.key === "styleMatchup")?.complete ? 100 : 0, passed: Boolean(research.items.find((item) => item.key === "styleMatchup")?.complete) },
-    { id: 5, key: "marketSamples", title: "盘口和样本", score: Math.round((normalOddsComplete ? 40 : 0) + Math.min(40, samples.length / 2) + (recentFormFresh ? 20 : 0)), passed: normalOddsComplete && samples.length >= 30 && recentFormFresh },
+    { id: 5, key: "marketSamples", title: "盘口和样本", score: Math.round((oddsGate ? 40 : 0) + Math.min(40, samples.length / 2) + (recentFormFresh ? 20 : 0)), passed: oddsGate && samples.length >= 30 && recentFormFresh },
     { id: 6, key: "stateTransfer", title: "状态转移", score: movement.complete && research.items.find((item) => item.key === "marketNews")?.complete ? 100 : 0, passed: movement.complete && Boolean(research.items.find((item) => item.key === "marketNews")?.complete) },
-    { id: 7, key: "scoreTotals", title: "比分/总进球独立闸门", score: [scoreGate, scoreIndependent, totalsIndependent, scoreCoverageOptimized, scenarioTotalsCovered].filter(Boolean).length * 20, passed: scoreGate && scoreMarketComplete && totalsMarketComplete && scoreIndependent && totalsIndependent && scoreCoverageOptimized && scenarioTotalsCovered },
-    { id: 8, key: "handicapGate", title: "让球独立闸门", score: handicapIndependent ? 100 : 0, passed: handicapIndependent },
+    { id: 7, key: "scoreTotals", title: "比分/总进球独立闸门", score: (scoreGate ? 20 : 0) + (scoreIndependent ? 15 : 0) + (totalsIndependent ? 15 : 0) + (scoreCoverageOptimized ? 10 : 0) + outputConsistency.score * 0.4, passed: scoreGate && scoreMarketComplete && totalsMarketComplete && scoreIndependent && totalsIndependent && scoreCoverageOptimized && outputConsistency.complete },
+    { id: 8, key: "handicapGate", title: "让球独立闸门", score: handicapIndependent && oneGoalWinProtection.complete ? 100 : 0, passed: handicapIndependent && oneGoalWinProtection.complete },
     { id: 9, key: "failureValue", title: "失败方式和值过滤", score: research.complete && drawOverrideJustified && evidenceDirectionConflict.resolved ? 100 : 0, passed: research.complete && drawOverrideJustified && evidenceDirectionConflict.resolved },
   ].map((step) => ({ ...step, score: round(step.score, 0) }));
   const tenStepPassed = stepScores.every((step) => step.passed);
@@ -1064,6 +1406,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const gates = {
     completeOdds: oddsGate,
     fundamentalData: fundamentalDataComplete,
+    qualifyingVenueSamplesComplete: qualifyingVenueSamples.complete,
     crossLeagueStrengthNormalized,
     temporalIntegrity,
     historicalSamples: sampleGate,
@@ -1078,7 +1421,11 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     handicapDecisionConflictResolved: handicapDecision.resolved,
     jointCompatibility,
     scenarioTotalsCovered,
+    outputConsistencyComplete: outputConsistency.complete,
+    sharedPackageGapFree: !criticalPackageGap.packageBlocking,
+    criticalPackageGapFree: !criticalPackageGap.blocking,
     scenarioHandicapCovered,
+    oneGoalWinProtected: oneGoalWinProtection.complete,
     scoreCoverageOptimized,
     riskScenarioAvailable,
     oppositeWinPathChecked,
@@ -1095,12 +1442,39 @@ export function runUnifiedPrediction(context = {}, options = {}) {
   const lockType = requestedFinal && allGatesPass ? "FINAL_LOCK" : "PRE_LOCK";
   const selectedHandicapProbability = handicapProbabilities[handicapLabels.indexOf(handicapPick)] || 0;
   const selectedTotalProbability = Math.max(...selectedTotalKeys.map((key) => Number(totalModel.probabilities.get(key) || 0)), 0);
+  const selectedTotalCoverageProbability = selectedTotalKeys.reduce((sum, key) => sum + Number(totalModel.probabilities.get(key) || 0), 0);
   const selectedScenarioProbability = topScores.reduce((sum, row) => sum + Number(row.probability || 0), 0);
   const marketConfidenceBase = selectedDirectionProbability * 65 + selectedHandicapProbability * 20 + selectedTotalProbability * 10 + selectedScenarioProbability * 5;
-  const confidence = Math.round(Math.max(0, Math.min(100, marketConfidenceBase - riskPathRisk - leagueLearning.confidencePenalty - handicapDecision.confidencePenalty - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
+  const outputConsistencyPenalty = Math.min(8, Math.max(0, Math.round((90 - outputConsistency.score) / 6)));
+  const confidence = Math.round(Math.max(0, Math.min(100, marketConfidenceBase - riskPathRisk - leagueLearning.confidencePenalty - handicapDecision.confidencePenalty - outputConsistencyPenalty - marketAvailability.confidencePenalty - (conflict ? 8 : 0) + (research.complete ? 5 : -10) + (movement.complete ? 3 : -5))));
   const completeDecisionConflict = blockers.length > 0
     && blockers.every((name) => ["handicapDecisionConflictResolved", "jointCompatibility", "scenarioHandicapCovered"].includes(name));
   const advice = !allGatesPass ? completeDecisionConflict ? "跳过" : "观察" : confidence >= 62 ? "主打" : confidence >= 55 ? "可选" : confidence >= 48 ? "谨慎" : "跳过";
+  // Component advice is independent only after the shared evidence foundation
+  // is valid. Shared critical gaps suppress the entire package; market-scoped
+  // gaps suppress only the affected formal markets.
+  const componentEligibility = {
+    winDrawLose: componentFoundationEligible,
+    handicap: componentFoundationEligible && handicapIndependent && handicapDecision.resolved && jointCompatibility && scenarioHandicapCovered && oneGoalWinProtection.complete,
+    totalGoals: componentFoundationEligible && totalsIndependent && totalsMarketComplete && outputConsistency.complete,
+    scores: componentFoundationEligible && scoreGate && scoreIndependent && scoreMarketComplete && scoreCoverageOptimized && outputConsistency.complete,
+  };
+  const componentProbabilities = {
+    winDrawLose: selectedDirectionProbability,
+    handicap: selectedHandicapProbability,
+    totalGoals: selectedTotalCoverageProbability,
+    scores: selectedScenarioProbability,
+  };
+  const componentRecommendations = {
+    winDrawLose: { probability: round(componentProbabilities.winDrawLose), eligible: componentEligibility.winDrawLose, grade: componentGrade("winDrawLose", componentProbabilities.winDrawLose, componentEligibility.winDrawLose), advice: componentAdvice("winDrawLose", componentProbabilities.winDrawLose, componentEligibility.winDrawLose) },
+    handicap: { probability: round(componentProbabilities.handicap), eligible: componentEligibility.handicap, grade: componentGrade("handicap", componentProbabilities.handicap, componentEligibility.handicap), advice: componentAdvice("handicap", componentProbabilities.handicap, componentEligibility.handicap) },
+    totalGoals: { probability: round(componentProbabilities.totalGoals), eligible: componentEligibility.totalGoals, grade: componentGrade("totalGoals", componentProbabilities.totalGoals, componentEligibility.totalGoals), advice: componentAdvice("totalGoals", componentProbabilities.totalGoals, componentEligibility.totalGoals) },
+    scores: { probability: round(componentProbabilities.scores), eligible: componentEligibility.scores, grade: componentGrade("score", componentProbabilities.scores, componentEligibility.scores), advice: componentAdvice("score", componentProbabilities.scores, componentEligibility.scores) },
+  };
+  const overallGradeAudit = overallComponentGradeAudit(componentRecommendations, componentFoundationEligible, criticalPackageGap);
+  const overallGrade = overallGradeAudit.grade;
+  const packageAdvice = packageAdviceForGrade(advice, overallGrade, allGatesPass);
+  const { observationalMarkets, formalMarkets } = packageMarketSelection(componentRecommendations, criticalPackageGap);
   return {
     contractVersion: "UNIFIED_PREDICTION_V4",
     generatedAt: new Date().toISOString(),
@@ -1110,6 +1484,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     modelVersion: match.league === "世界杯" ? "V4-UNIFIED" : "V1-UNIFIED",
     featureSet: {
       market: marketBaseline,
+      marketAvailability,
       baselineParts: baselineParts.map((part) => ({ label: part.label, weight: part.weight, probabilities: part.values.map((value) => round(value)) })),
       probabilities: Object.fromEntries(resultLabels.map((label, index) => [label, round(probabilities[index])])),
       baselineProbabilities: Object.fromEntries(resultLabels.map((label, index) => [label, round(baselineProbabilities[index])])),
@@ -1128,6 +1503,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       research,
       tieContext: { ...tieAudit, leadControl, advancementProbabilities: advancementDistribution(scores, tieAudit), resultScopes: ["NINETY_MINUTE_WDL", "MATCH_GOAL_DIFFERENCE", "TIE_ADVANCEMENT"] },
       competitionStage: stageAudit,
+      qualifyingVenueSamples,
       handicap: {
         line: number(String(match.handicap ?? "0").replace("+", "")) ?? 0,
         probabilities: Object.fromEntries(handicapLabels.map((label, index) => [label, round(handicapProbabilities[index])])),
@@ -1146,7 +1522,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         officialCoverageProbability: round(selectedScenarioProbability),
         topCandidates: scores.slice(0, 8).map((row) => ({ score: row.score, probability: round(row.probability), direction: scoreResult(row) })),
       },
-      totals: { probabilities: Object.fromEntries(totalModel.probabilities), components: totalModel.components, marketComplete: totalModel.marketComplete },
+      totals: { probabilities: Object.fromEntries(totalModel.probabilities), components: totalModel.components, marketComplete: totalModel.marketComplete, selectionPolicy: totalModel.selectionPolicy, originalProbabilityPick: totalModel.originalProbabilityPick, outputConsistency },
       jointDecision: {
         selected: formalPair,
         candidateCount: jointDecision.candidates.length,
@@ -1181,7 +1557,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         targetSettledSamples: 50,
         promotionPolicy: "30至50场独立验票；让球单选命中率提升且胜平负+让球联合命中与概率损失不退化后才可申请晋级",
       },
-      scenarioDirectionCalibration: { weight: 0.2, preScenario: Object.fromEntries(resultLabels.map((label, index) => [label, round(preScenarioProbabilities[index])])), scenarioOnly: Object.fromEntries(resultLabels.map((label, index) => [label, round(scenarioDirectionProbabilities[index])])), applied: true },
+      scenarioDirectionCalibration: { weight: 0, preScenario: Object.fromEntries(resultLabels.map((label, index) => [label, round(preScenarioProbabilities[index])])), scenarioOnly: Object.fromEntries(resultLabels.map((label, index) => [label, round(scenarioDirectionProbabilities[index])])), applied: false, role: "OFFICIAL_SCORE_DIRECTION_AUDIT_ONLY", policy: "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED" },
       evidenceDirectionConflict,
       evidenceDrivenRiskChallenger: {
         mode: evidenceDirectionConflict.consensusCount >= 2 ? "CHALLENGER_SHADOW_35" : "CHAMPION_BASELINE_20",
@@ -1190,6 +1566,11 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         promotedToChampion: false,
         promotionPolicy: "至少30至50场影子样本且四项命中率与样本外概率损失不退化",
       },
+      oneGoalWinProtection,
+      componentRecommendations,
+      componentFoundationEligible,
+      criticalPackageGap,
+      overallGradeAudit,
     },
     scenarioSet: topScores.map((row, index) => ({ rank: index + 1, score: row.score, probability: round(row.probability), direction: scoreResult(row), directionProbability: round(probabilities[resultLabels.indexOf(scoreResult(row))] || 0), handicapResult: handicapMapped[index]?.result, role: index === 0 ? "PRIMARY_COVERAGE_PATH" : "SECONDARY_COVERAGE_PATH" })),
     riskScenario: riskScore ? {
@@ -1203,10 +1584,10 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     } : null,
     tenStepResult: { passed: tenStepPassed, steps: stepScores, averageScore: round(stepScores.reduce((sum, step) => sum + step.score, 0) / stepScores.length, 1) },
     gateResult: { passed: allGatesPass, gates, blockers },
-    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["winDrawLoseSingleHit", "formalHandicapSingleHit", "independentHandicapLeaderSingleHit", "conditionalHandicapChallengerSingleHit", "formalWinDrawLoseHandicapJointHit", "totalGoalsDoubleHit", "scoreDoubleHit", "officialScoreCoverageProbability", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", shadowReuse: "PRE_LOCK_CHALLENGER_AUDIT_ONLY", immutablePreMatchSnapshot: true, scorePolicies: ["LEGACY_MAIN_PLUS_COUNTER", "TOP_TWO_GLOBAL", "TOP_TWO_LEAGUE_SEASON_CALIBRATED"] },
+    backtestContract: { probabilityFields: ["HOME", "DRAW", "AWAY"], metrics: ["winDrawLoseSingleHit", "formalHandicapSingleHit", "independentHandicapLeaderSingleHit", "conditionalHandicapChallengerSingleHit", "formalWinDrawLoseHandicapJointHit", "totalGoalsDoubleHit", "scoreDoubleHit", "officialScoreCoverageProbability", "outputConsistencyScore", "criticalPackageGapRate", "sharedPackageGapRate", "marketScopedGapRate", "componentRecommendationEligibility", "componentGradeHitRate", "formalMarketCoverageByComponent", "overallGradePackageHit", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", caseReuse: "PREFERRED_FINAL_LOCK_ONLY", shadowReuse: "PRE_LOCK_CHALLENGER_AUDIT_ONLY", immutablePreMatchSnapshot: true, directionPolicy: "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED", componentPolicy: "SHARED_FOUNDATION_WITH_MARKET_SCOPED_CRITICAL_GATES", formalAdmissionPolicy: "GRADE_A_B_ONLY_C_OBSERVATION", scorePolicies: ["LEGACY_MAIN_PLUS_COUNTER", "TOP_TWO_GLOBAL", "TOP_TWO_LEAGUE_SEASON_CALIBRATED"] },
     lifecycleContract: { version: "STABLE_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_V4", challengerPolicy: "formal handicap is chosen from aggregate direction-conditioned goal-margin mass and must then be supported by an official score; the independent leader and the next-best non-Champion direction-compatible margin remain separately audited until 30-50 settled samples" },
     modelLessons: {
-      version: "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10",
+      version: "LESSONS_2026-07-17_MARKET_SCOPED_GATES_R15",
       rules: [
         "让球不穿不得自动推翻胜平负方向",
         "最终方向按全部场景概率汇总，不按单一主比分决定",
@@ -1217,11 +1598,12 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "状态、阵容和市场消息必须按各自新鲜度验收",
         "PRE_LOCK不计正式模型命中率",
         "体彩赔率只做有上限的校准，不得替代缺失的基本面",
+        "官方未开售普通胜平负但让球胜平负完整且至少有两个同盘口快照时，使用HHAD_ONLY替代门禁；不得伪造普通SP，并固定扣减4分置信度",
         "胜平负、让球、总进球和比分必须共享同一联合比分分布",
         "每队至少五场新鲜赛前比赛数据，缺失时进入DATA_REPAIR",
         "伤停和预计首发必须先搜索；未发布时只允许记录NOT_PUBLISHED、中性0并降低数据质量，不得虚构",
         "只有preferred FINAL_LOCK赛后结算才能生成并复用Base Case",
-        "两个正式比分共同进入方向概率；独立风险剧本只进入风险诊断和置信扣分",
+        "胜平负只由完整联合比分分布、有限市场校准和赛前证据生成；两个正式比分只作下游覆盖审计，不得重复回灌方向概率",
         "联赛强弱差必须结合主队主场、客队客场的攻防均值与方差，并用联赛开放度校正xG",
         "四个市场必须共享联合比分分布并在锁版前交叉验证",
         "方向概率与净胜球概率必须分层，胜平负不得直接映射让球",
@@ -1229,7 +1611,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "置信等级必须按联赛和市场回测校准，不得仅按通过闸门数量决定",
         "第二正式比分必须是第二概率落点，不得固定为1-1或固定反向赛果",
         "主选主胜或客胜时必须在独立风险剧本中显式检查相反胜负的可验证路径，不能永远只用平局充当风险",
-        "第二比分按20%场景权重回灌胜平负概率并同步影响最终方向与置信等级",
+        "第一与第二正式比分均不得反向修改胜平负概率；它们只保留比分覆盖、玩法兼容和置信覆盖贡献",
         "两回合赛事必须结构化计算90分钟胜平负、本场净胜球差和总比分晋级状态，缺失时不得进入FINAL_LOCK",
         "跳过场不计正式投注命中率，但必须继续验票胜平负、让球、总进球和比分组件，禁止VOID被记为命中正样本",
         "联赛先验进入比分分布；当前赛季满30场后只允许12%有上限比分校准，扩大权重仍须四项命中率和样本外概率损失不退化",
@@ -1244,12 +1626,23 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "两回合领先方缺少继续扩大比分证据时，对其后续进球xG执行12%衰减，胜负方向与三球以上幅度分开判断",
         "赛事阶段、赛制识别和两回合状态必须一致，不一致时不得进入FINAL_LOCK",
         "证据支持的独立风险路径先以35% Challenger影子权重回测，30至50场验证前不得直接改写Champion",
+        "资格赛任一方有效主客场样本为0且无已核验同强度替代样本时，必须阻断FINAL_LOCK",
+        "-1主让且第一正式比分为1-0或2-1时，不得把主胜自动升级为让胜，正式让球必须保持谨慎并阻断锁版",
+        "xG总和、总进球双选、两个正式比分和比赛类型必须同时一致；高开放度高方差场还必须覆盖5球以上尾部，否则阻断FINAL_LOCK",
+        "胜平负、让球、总进球和比分必须分别输出概率、可出手状态和建议等级，禁止继承整场统一主打评级",
+        "ABCD必须分玩法评级；共享基础证据不完整时四组件统一为D，整包等级按基础有效性、可出手广度和强组件数量综合评级",
+        "整包ABCD先判断共享证据基础，再判断可出手组件广度和强组件数量；C级整包最多谨慎，B级整包最多可选，单项A级仍可独立主打",
+        "输出一致性必须形成0至100分并分解xG距离、正式比分覆盖、比赛类型和高方差尾部；严重偏离封顶整包D，轻微偏离保留C级影子观察",
+        "共享基础、资格赛场地样本、两回合或赛事阶段严重缺失时，整包D级、PRE_LOCK且正式玩法全部清空",
+        "让胜与让负极端冲突只关闭让球正式玩法；严重输出不一致只关闭总进球与比分，不得误伤证据独立且评级合格的胜平负",
+        "正式玩法只准入A/B级组件，C级只进入观察与赛后验票，不调整原有ABCD概率阈值",
       ],
       leagueSpecific: { league: match.league || "通用", version: leagueLearning.version, reviewSampleCount: leagueLearning.reviewSampleCount, rules: leagueLearning.rules },
       seasonSpecific: seasonLearning,
       evidenceDirectionConflict,
       crossLeagueNormalization: xg.crossLeagueNormalization,
       competitionStage: stageAudit,
+      qualifyingVenueSamples,
       twoLegLeadControl: leadControl,
       drawOverrideNeeded,
       drawEvidenceCount,
@@ -1262,6 +1655,11 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       riskPathRisk,
       riskDirectionProbability: round(riskDirectionProbability),
       riskScoreProbability: round(riskScoreProbability),
+      oneGoalWinProtection,
+      outputConsistency,
+      criticalPackageGap,
+      componentRecommendations,
+      overallGradeAudit,
     },
     finalDecision: {
       winDrawLose: resultText[selectedDirection],
@@ -1269,16 +1667,22 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       handicapPick,
       independentHandicapLeader,
       conditionalHandicapChallenger: conditionalPair?.handicapPick || "",
-      decisionStatus: lockType === "FINAL_LOCK" ? "FINAL_LOCK_ELIGIBLE" : completeDecisionConflict ? "COMPLETE_PRE_LOCK_CONFLICT" : allGatesPass ? "PRE_LOCK_READY" : "PRE_LOCK_REPAIR_REQUIRED",
+      decisionStatus: lockType === "FINAL_LOCK" ? "FINAL_LOCK_ELIGIBLE" : criticalPackageGap.packageBlocking ? "PRE_LOCK_SHARED_CRITICAL_GAP" : criticalPackageGap.marketBlocking ? "PRE_LOCK_MARKET_CRITICAL_GAP" : completeDecisionConflict ? "COMPLETE_PRE_LOCK_CONFLICT" : allGatesPass ? "PRE_LOCK_READY" : "PRE_LOCK_REPAIR_REQUIRED",
       totalGoalsPick: totalModel.pick,
       scores: topScores.map((row) => row.score),
       scoreSelectionPolicy: "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
       riskScenario: riskScore?.score || "",
-      matchType: matchType(topScores),
+      matchType: fullDistributionMatchType,
       confidence,
       confidenceComponents: { direction: round(selectedDirectionProbability), handicap: round(selectedHandicapProbability), totalGoals: round(selectedTotalProbability), scorePaths: round(selectedScenarioProbability) },
-      confidenceAdjustments: { riskPathRisk: -riskPathRisk, counterPathRisk: -counterPathRisk, leagueLearning: -leagueLearning.confidencePenalty, handicapMarginalConflict: -handicapDecision.confidencePenalty },
-      advice,
+      componentRecommendations,
+      overallGrade,
+      overallGradeAudit,
+      criticalPackageGap,
+      observationalMarkets,
+      formalMarkets,
+      confidenceAdjustments: { riskPathRisk: -riskPathRisk, counterPathRisk: -counterPathRisk, leagueLearning: -leagueLearning.confidencePenalty, handicapMarginalConflict: -handicapDecision.confidencePenalty, outputConsistency: -outputConsistencyPenalty, marketAvailability: -marketAvailability.confidencePenalty },
+      advice: packageAdvice,
       conflict,
     },
   };

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { RESEARCH_KEYS, handicapDecisionAudit, runUnifiedPrediction, selectConditionalHandicapDecision, selectFormalHandicapDecision, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
+import { RESEARCH_KEYS, criticalPackageGapAudit, handicapDecisionAudit, oneGoalWinAudit, outputConsistencyAudit, overallComponentGradeAudit, packageAdviceForGrade, packageMarketSelection, runUnifiedPrediction, selectConditionalHandicapDecision, selectFormalHandicapDecision, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
 
 const sameDirectionCoverage = selectOfficialScores([
   { score: "2-0", probability: 0.16 },
@@ -32,7 +32,7 @@ const context = {
     normal: { win: "2.30", draw: "3.10", lose: "2.80" },
     handicapOdds: { win: "2.30", draw: "3.10", lose: "2.80" },
     scoreOdds: ["0:0", "1:0", "0:1", "1:1", "2:0", "0:2", "2:1", "1:2"].map((score, index) => ({ score, odds: String(6 + index) })),
-    totalGoalsOdds: Array.from({ length: 8 }, (_, index) => ({ goals: index === 7 ? "7+" : String(index), odds: String(3 + index) })),
+    totalGoalsOdds: Array.from({ length: 8 }, (_, index) => ({ goals: index === 7 ? "7+" : String(index), odds: String(index <= 1 ? 1.5 + index * 0.1 : 30 + index) })),
   },
   oddsHistory: { had: [{ h: 2.4, d: 3.1, a: 2.7 }, { h: 2.3, d: 3.1, a: 2.8 }] },
   samples,
@@ -66,7 +66,7 @@ assert.equal(final.featureSet.jointDecision.selected.direction, final.finalDecis
 assert.equal(final.featureSet.jointDecision.selected.handicapPick, final.finalDecision.handicapPick);
 assert.equal(final.featureSet.baselineParts.find((part) => part.label === "sporttery-wdl-calibration").weight, 0.15);
 assert.equal(final.featureSet.dataQuality.minimumRecentMatchesPerTeam, 5);
-assert.equal(final.modelLessons.version, "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10");
+assert.equal(final.modelLessons.version, "LESSONS_2026-07-17_MARKET_SCOPED_GATES_R15");
 assert.equal(final.gateResult.gates.crossLeagueStrengthNormalized, true);
 assert.equal(final.gateResult.gates.evidenceDirectionConflictResolved, true);
 assert.equal(final.gateResult.gates.competitionStageConsistent, true);
@@ -74,8 +74,12 @@ assert.equal(final.featureSet.evidenceDrivenRiskChallenger.promotedToChampion, f
 assert.equal(final.gateResult.gates.oppositeWinPathChecked, true);
 assert.equal(final.gateResult.gates.secondScenarioInProbability, true);
 assert.equal(final.gateResult.gates.twoLegContextComplete, true);
-assert.equal(final.featureSet.scenarioDirectionCalibration.weight, 0.2);
-assert.equal(final.featureSet.scenarioDirectionCalibration.applied, true);
+assert.equal(final.featureSet.scenarioDirectionCalibration.weight, 0);
+assert.equal(final.featureSet.scenarioDirectionCalibration.applied, false);
+assert.equal(final.featureSet.scenarioDirectionCalibration.role, "OFFICIAL_SCORE_DIRECTION_AUDIT_ONLY");
+assert.equal(final.featureSet.scenarioDirectionCalibration.policy, "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED");
+assert.deepEqual(final.featureSet.probabilities, final.featureSet.scenarioDirectionCalibration.preScenario);
+assert.notDeepEqual(final.featureSet.probabilities, final.featureSet.scenarioDirectionCalibration.scenarioOnly);
 assert.equal(final.featureSet.seasonLearning.mode, "BOUNDED_SCORE_CALIBRATION");
 assert.equal(final.featureSet.seasonLearning.appliedToChampion, true);
 assert.equal(final.featureSet.seasonLearning.appliedScope, "SCORE_DISTRIBUTION_ONLY");
@@ -88,23 +92,113 @@ assert.ok(final.backtestContract.metrics.includes("winDrawLoseSingleHit"));
 assert.ok(final.backtestContract.metrics.includes("formalHandicapSingleHit"));
 assert.ok(final.backtestContract.metrics.includes("independentHandicapLeaderSingleHit"));
 assert.ok(final.backtestContract.metrics.includes("conditionalHandicapChallengerSingleHit"));
+assert.equal(final.backtestContract.directionPolicy, "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED");
 assert.ok(final.backtestContract.metrics.includes("formalWinDrawLoseHandicapJointHit"));
 assert.ok(final.backtestContract.metrics.includes("totalGoalsDoubleHit"));
 assert.ok(final.backtestContract.metrics.includes("scoreDoubleHit"));
 assert.equal(final.modelLessons.leagueSpecific.league, "韩职");
 assert.equal(final.featureSet.leagueLearning.version, "KLEAGUE_2026-07-12_R1");
 assert.equal(final.gateResult.gates.scenarioTotalsCovered, true);
+assert.equal(final.gateResult.gates.outputConsistencyComplete, true);
+assert.equal(final.gateResult.gates.sharedPackageGapFree, true);
+assert.equal(final.gateResult.gates.criticalPackageGapFree, true);
 assert.equal(final.gateResult.gates.scenarioHandicapCovered, true);
+assert.equal(final.gateResult.gates.oneGoalWinProtected, true);
+assert.equal(final.gateResult.gates.qualifyingVenueSamplesComplete, true);
 assert.equal(final.gateResult.gates.scoreCoverageOptimized, true);
 assert.equal(final.gateResult.gates.riskScenarioAvailable, true);
 assert.equal(final.finalDecision.confidenceAdjustments.leagueLearning, -2);
 assert.equal(Object.keys(final.finalDecision.confidenceComponents).length, 4);
+assert.equal(Object.keys(final.finalDecision.confidenceAdjustments).length, 6);
 assert.ok(final.finalDecision.confidenceComponents.handicap > 0);
 assert.equal(final.lifecycleContract.champion, "UNIFIED_PREDICTION_V4");
 assert.ok(final.scenarioSet.some((row) => row.direction === final.finalDecision.recommendationSide && row.handicapResult === final.finalDecision.handicapPick));
 assert.equal(Object.keys(final.featureSet.handicap.probabilities).length, 3);
 assert.equal(Object.keys(final.featureSet.totals.probabilities).length >= 2, true);
 assert.equal(new Set(final.finalDecision.scores).size, 2);
+assert.equal(final.featureSet.totals.selectionPolicy, "OFFICIAL_SCORE_TOTALS_THEN_HIGHEST_REMAINING_BUCKET");
+assert.equal(final.featureSet.totals.outputConsistency.complete, true);
+assert.ok(final.featureSet.totals.outputConsistency.score >= 75);
+assert.equal(final.featureSet.totals.outputConsistency.grade, "B");
+assert.equal(final.featureSet.totals.outputConsistency.criticalConflict, false);
+assert.equal(final.backtestContract.componentPolicy, "SHARED_FOUNDATION_WITH_MARKET_SCOPED_CRITICAL_GATES");
+assert.equal(final.backtestContract.formalAdmissionPolicy, "GRADE_A_B_ONLY_C_OBSERVATION");
+assert.ok(final.backtestContract.metrics.includes("componentGradeHitRate"));
+assert.ok(final.backtestContract.metrics.includes("formalMarketCoverageByComponent"));
+assert.ok(final.backtestContract.metrics.includes("overallGradePackageHit"));
+assert.ok(final.backtestContract.metrics.includes("outputConsistencyScore"));
+assert.ok(final.backtestContract.metrics.includes("criticalPackageGapRate"));
+assert.deepEqual(Object.keys(final.finalDecision.componentRecommendations), ["winDrawLose", "handicap", "totalGoals", "scores"]);
+assert.ok(Object.values(final.finalDecision.componentRecommendations).every((item) => ["A", "B", "C", "D"].includes(item.grade)));
+assert.ok(["A", "B", "C", "D"].includes(final.finalDecision.overallGrade));
+assert.equal(final.finalDecision.overallGradeAudit.policy, "SHARED_FOUNDATION_FIRST_THEN_MARKET_SCOPED_BLOCKS_AND_COMPONENT_STRENGTH");
+assert.equal(final.finalDecision.overallGradeAudit.foundationEligible, true);
+assert.ok(final.finalDecision.overallGradeAudit.eligibleCount >= final.finalDecision.overallGradeAudit.actionableCount);
+assert.ok(({ A: ["主打", "可选", "谨慎", "跳过"], B: ["可选", "谨慎", "跳过"], C: ["谨慎", "跳过"], D: ["跳过"] })[final.finalDecision.overallGrade].includes(final.finalDecision.advice));
+assert.equal(final.featureSet.componentFoundationEligible, true);
+assert.equal(final.featureSet.criticalPackageGap.blocking, false);
+assert.ok(Array.isArray(final.finalDecision.formalMarkets));
+
+const recommendation = (grade, advice = "可选", eligible = true) => ({ grade, advice, eligible, probability: 0.6 });
+assert.equal(overallComponentGradeAudit({
+  winDrawLose: recommendation("A", "主打"),
+  handicap: recommendation("D", "跳过", false),
+  totalGoals: recommendation("D", "跳过", false),
+  scores: recommendation("D", "跳过", false),
+}, true).grade, "C");
+assert.equal(overallComponentGradeAudit({
+  winDrawLose: recommendation("A", "主打"),
+  handicap: recommendation("B"),
+  totalGoals: recommendation("C", "谨慎"),
+  scores: recommendation("C", "谨慎"),
+}, true).grade, "B");
+assert.equal(overallComponentGradeAudit({
+  winDrawLose: recommendation("A", "主打"),
+  handicap: recommendation("A", "主打"),
+  totalGoals: recommendation("A", "主打"),
+  scores: recommendation("A", "主打"),
+}, true).grade, "A");
+assert.equal(overallComponentGradeAudit({
+  winDrawLose: recommendation("A", "主打"),
+  handicap: recommendation("A", "主打"),
+  totalGoals: recommendation("A", "主打"),
+  scores: recommendation("A", "主打"),
+}, false).grade, "D");
+assert.equal(packageAdviceForGrade("主打", "B", true), "可选");
+assert.equal(packageAdviceForGrade("主打", "C", true), "谨慎");
+assert.equal(packageAdviceForGrade("主打", "D", true), "跳过");
+assert.equal(packageAdviceForGrade("观察", "D", false), "跳过");
+assert.equal(packageAdviceForGrade("观察", "C", false), "观察");
+
+const hhadOnly = runUnifiedPrediction({
+  ...context,
+  market: { ...context.market, normal: { win: "", draw: "", lose: "" } },
+  oddsHistory: {
+    had: [],
+    hhad: [
+      { updateDate: "2026-07-17", updateTime: "10:00:00", goalLine: "-2", h: 2.02, d: 4.0, a: 2.65 },
+      { updateDate: "2026-07-17", updateTime: "11:00:00", goalLine: "-2", h: 1.94, d: 4.05, a: 2.73 },
+    ],
+  },
+}, { lockType: "FINAL_LOCK" });
+assert.equal(hhadOnly.modelLessons.version, "LESSONS_2026-07-17_MARKET_SCOPED_GATES_R15");
+assert.equal(hhadOnly.featureSet.marketAvailability.mode, "HHAD_ONLY");
+assert.equal(hhadOnly.featureSet.marketAvailability.complete, true);
+assert.equal(hhadOnly.featureSet.oddsMovement.market, "HHAD");
+assert.equal(hhadOnly.gateResult.gates.completeOdds, true);
+assert.equal(hhadOnly.gateResult.gates.oddsMovement, true);
+assert.equal(hhadOnly.tenStepResult.steps[0].title, "当前可售让球 SP 复核");
+assert.equal(hhadOnly.featureSet.baselineParts.some((part) => part.label === "sporttery-wdl-calibration"), false);
+assert.equal(hhadOnly.finalDecision.confidenceAdjustments.marketAvailability, -4);
+
+const partialHad = runUnifiedPrediction({
+  ...context,
+  market: { ...context.market, normal: { win: "1.80", draw: "", lose: "4.50" } },
+  oddsHistory: { had: [], hhad: [{ goalLine: "-2", h: 2.02, d: 4.0, a: 2.65 }, { goalLine: "-2", h: 1.94, d: 4.05, a: 2.73 }] },
+}, { lockType: "FINAL_LOCK" });
+assert.equal(partialHad.featureSet.marketAvailability.mode, "DATA_INCOMPLETE");
+assert.equal(partialHad.gateResult.gates.completeOdds, false);
+assert.equal(partialHad.lockType, "PRE_LOCK");
 
 const materialHandicapConflict = handicapDecisionAudit([
   { label: "让胜", probability: 0.552 },
@@ -137,6 +231,128 @@ const runnerUpConditional = selectConditionalHandicapDecision([
   { direction: "HOME", handicapPick: "让平", conditionalProbability: 0.42, scoreProbability: 0.21 },
 ], "HOME", "让胜");
 assert.equal(runnerUpConditional.handicapPick, "让平");
+const oneGoalWinBlocked = oneGoalWinAudit({
+  direction: "HOME",
+  handicapPick: "让胜",
+  handicap: "-1",
+  officialScores: [{ score: "2-1", home: 2, away: 1, probability: 0.15 }],
+  candidates: [
+    { direction: "HOME", handicapPick: "让平", conditionalProbability: 0.44 },
+    { direction: "HOME", handicapPick: "让胜", conditionalProbability: 0.56 },
+  ],
+});
+assert.equal(oneGoalWinBlocked.required, true);
+assert.equal(oneGoalWinBlocked.complete, false);
+assert.equal(oneGoalWinBlocked.action, "BLOCK_FINAL_LOCK_KEEP_HANDICAP_CAUTION");
+
+const highXgOutputConflict = outputConsistencyAudit({
+  scoreRows: [
+    { home: 2, away: 1, probability: 0.32 },
+    { home: 2, away: 0, probability: 0.25 },
+    { home: 3, away: 2, probability: 0.23 },
+    { home: 4, away: 1, probability: 0.2 },
+  ],
+  officialScores: [{ score: "2-1", home: 2, away: 1 }, { score: "2-0", home: 2, away: 0 }],
+  selectedTotalKeys: ["3", "4"],
+  xg: { home: 3.8, away: 1.2 },
+  venueProfile: { homeAttackVariance: 1.4, awayDefenceVariance: 1.6 },
+  leagueProfile: { opennessFactor: 1.16 },
+  directionProbability: 0.79,
+});
+assert.equal(highXgOutputConflict.xgAligned, false);
+assert.equal(highXgOutputConflict.highVarianceTailRequired, true);
+assert.equal(highXgOutputConflict.highVarianceTailCovered, false);
+assert.equal(highXgOutputConflict.complete, false);
+assert.equal(highXgOutputConflict.grade, "D");
+assert.ok(highXgOutputConflict.score < 60);
+assert.equal(highXgOutputConflict.criticalConflict, true);
+assert.ok(highXgOutputConflict.criticalReasons.includes("HIGH_VARIANCE_TAIL_NOT_COVERED"));
+
+const mildOutputConflict = outputConsistencyAudit({
+  scoreRows: [
+    { home: 1, away: 1, probability: 0.5 },
+    { home: 1, away: 0, probability: 0.5 },
+  ],
+  officialScores: [{ score: "1-1", home: 1, away: 1 }, { score: "1-0", home: 1, away: 0 }],
+  selectedTotalKeys: ["2", "1"],
+  xg: { home: 2, away: 1 },
+  venueProfile: { homeAttackVariance: 0.8, awayDefenceVariance: 0.9 },
+  leagueProfile: { opennessFactor: 1 },
+  directionProbability: 0.58,
+});
+assert.equal(mildOutputConflict.complete, false);
+assert.equal(mildOutputConflict.grade, "B");
+assert.ok(mildOutputConflict.score >= 75);
+assert.equal(mildOutputConflict.criticalConflict, false);
+
+const extremeGap = criticalPackageGapAudit({
+  foundationEligible: true,
+  qualifyingVenueSamples: { required: false, complete: true },
+  tieAudit: { required: false, complete: true },
+  stageAudit: { required: false, complete: true },
+  handicapDecision: { materialConflict: true, resolved: false, independentLeader: "让胜", selected: "让负" },
+  outputConsistency: mildOutputConflict,
+});
+assert.equal(extremeGap.blocking, true);
+assert.equal(extremeGap.packageBlocking, false);
+assert.equal(extremeGap.marketBlocking, true);
+assert.equal(extremeGap.extremeHandicapConflict, true);
+assert.ok(extremeGap.reasons.includes("EXTREME_HANDICAP_CONFLICT"));
+assert.deepEqual(extremeGap.blockedMarkets, ["handicap"]);
+assert.equal(overallComponentGradeAudit({
+  winDrawLose: recommendation("A", "主打"),
+  handicap: recommendation("D", "跳过", false),
+  totalGoals: recommendation("C", "谨慎"),
+  scores: recommendation("C", "谨慎"),
+}, true, extremeGap).grade, "C");
+const extremePackageMarkets = packageMarketSelection({
+  winDrawLose: recommendation("A", "主打"),
+  handicap: recommendation("D", "跳过", false),
+  totalGoals: recommendation("C", "谨慎"),
+  scores: recommendation("C", "谨慎"),
+}, extremeGap);
+assert.deepEqual(extremePackageMarkets.observationalMarkets, ["winDrawLose", "totalGoals", "scores"]);
+assert.deepEqual(extremePackageMarkets.formalMarkets, ["winDrawLose"]);
+
+const outputScopedGap = criticalPackageGapAudit({
+  foundationEligible: true,
+  qualifyingVenueSamples: { required: false, complete: true },
+  tieAudit: { required: false, complete: true },
+  stageAudit: { required: false, complete: true },
+  handicapDecision: { materialConflict: false, resolved: true, independentLeader: "让平", selected: "让平" },
+  outputConsistency: highXgOutputConflict,
+});
+assert.equal(outputScopedGap.packageBlocking, false);
+assert.deepEqual(outputScopedGap.blockedMarkets, ["totalGoals", "scores"]);
+const outputScopedMarkets = packageMarketSelection({
+  winDrawLose: recommendation("A", "主打"),
+  handicap: recommendation("B"),
+  totalGoals: recommendation("C", "谨慎"),
+  scores: recommendation("C", "谨慎"),
+}, outputScopedGap);
+assert.deepEqual(outputScopedMarkets.observationalMarkets, ["winDrawLose", "handicap", "totalGoals", "scores"]);
+assert.deepEqual(outputScopedMarkets.formalMarkets, ["winDrawLose", "handicap"]);
+
+const sharedGap = criticalPackageGapAudit({
+  foundationEligible: false,
+  qualifyingVenueSamples: { required: false, complete: true },
+  tieAudit: { required: false, complete: true },
+  stageAudit: { required: false, complete: true },
+  handicapDecision: { materialConflict: false, resolved: true },
+  outputConsistency: mildOutputConflict,
+});
+assert.equal(sharedGap.packageBlocking, true);
+assert.deepEqual(sharedGap.blockedMarkets, []);
+assert.equal(overallComponentGradeAudit({
+  winDrawLose: recommendation("A", "主打"),
+  handicap: recommendation("B"),
+  totalGoals: recommendation("C", "谨慎"),
+  scores: recommendation("C", "谨慎"),
+}, true, sharedGap).grade, "D");
+assert.deepEqual(packageMarketSelection({
+  winDrawLose: recommendation("A", "主打"),
+  handicap: recommendation("B"),
+}, sharedGap).formalMarkets, []);
 const resolvedHandicapConflict = handicapDecisionAudit([
   { label: "让负", probability: 0.497 },
   { label: "让胜", probability: 0.261 },
@@ -311,14 +527,47 @@ const missingTwoLegContext = runUnifiedPrediction({
 assert.equal(missingTwoLegContext.lockType, "PRE_LOCK");
 assert.ok(missingTwoLegContext.gateResult.blockers.includes("twoLegContextComplete"));
 
-const completeTwoLegContext = runUnifiedPrediction({
+const zeroVenueQualification = runUnifiedPrediction({
   ...context,
   match: { ...context.match, league: "欧冠", competitionStage: "QUALIFYING" },
   samples: samples.map((sample) => ({ ...sample, league: "欧冠" })),
   research: twoLegResearch,
   tieContext: { isTwoLeg: true, legNumber: 2, aggregateHomeBeforeMatch: 0, aggregateAwayBeforeMatch: 1 },
 }, { lockType: "FINAL_LOCK" });
+assert.equal(zeroVenueQualification.featureSet.qualifyingVenueSamples.directVenueSamples.away, 0);
+assert.equal(zeroVenueQualification.featureSet.qualifyingVenueSamples.complete, false);
+assert.ok(zeroVenueQualification.gateResult.blockers.includes("qualifyingVenueSamplesComplete"));
+assert.equal(zeroVenueQualification.featureSet.componentFoundationEligible, false);
+assert.deepEqual(zeroVenueQualification.finalDecision.formalMarkets, []);
+assert.equal(zeroVenueQualification.finalDecision.overallGrade, "D");
+assert.equal(zeroVenueQualification.finalDecision.overallGradeAudit.foundationEligible, false);
+assert.equal(zeroVenueQualification.finalDecision.overallGradeAudit.reason, "SHARED_CRITICAL_PACKAGE_GAP");
+assert.ok(zeroVenueQualification.finalDecision.criticalPackageGap.reasons.includes("QUALIFYING_VENUE_SAMPLE_GAP"));
+assert.ok(Object.values(zeroVenueQualification.finalDecision.componentRecommendations).every((item) => item.grade === "D" && item.advice === "跳过"));
+
+const qualificationReplacementResearch = {
+  ...twoLegResearch,
+  teamState: {
+    ...twoLegResearch.teamState,
+    venueSampleReplacements: {
+      away: {
+        status: "VERIFIED",
+        sampleCount: 3,
+        leagueStrengthFactor: 1,
+        sources: [{ title: "Verified same-strength away sample", url: "https://example.com/away-sample" }],
+      },
+    },
+  },
+};
+const completeTwoLegContext = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "欧冠", competitionStage: "QUALIFYING" },
+  samples: samples.map((sample) => ({ ...sample, league: "欧冠" })),
+  research: qualificationReplacementResearch,
+  tieContext: { isTwoLeg: true, legNumber: 2, aggregateHomeBeforeMatch: 0, aggregateAwayBeforeMatch: 1 },
+}, { lockType: "FINAL_LOCK" });
 assert.equal(completeTwoLegContext.lockType, "FINAL_LOCK");
+assert.equal(completeTwoLegContext.featureSet.qualifyingVenueSamples.verifiedSameStrengthReplacement.away, true);
 assert.equal(completeTwoLegContext.featureSet.tieContext.objectives.home, "TRAILING_MUST_CHASE");
 assert.deepEqual(completeTwoLegContext.featureSet.tieContext.resultScopes, ["NINETY_MINUTE_WDL", "MATCH_GOAL_DIFFERENCE", "TIE_ADVANCEMENT"]);
 assert.ok(completeTwoLegContext.featureSet.tieContext.advancementProbabilities.AWAY_ADVANCES > 0);

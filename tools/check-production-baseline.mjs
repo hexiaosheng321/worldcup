@@ -271,7 +271,24 @@ const unifiedPredictionMarkers = [
   "model-runs",
   "tenStepResult",
   "backtestContract",
-  "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10",
+  "LESSONS_2026-07-17_MARKET_SCOPED_GATES_R15",
+  "HHAD_ONLY",
+  "marketAvailability",
+  "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED",
+  "componentFoundationEligible",
+  "SHARED_FOUNDATION_WITH_MARKET_SCOPED_CRITICAL_GATES",
+  "GRADE_A_B_ONLY_C_OBSERVATION",
+  "overallGrade",
+  "overallGradeAudit",
+  "SHARED_FOUNDATION_FIRST_THEN_MARKET_SCOPED_BLOCKS_AND_COMPONENT_STRENGTH",
+  "sharedPackageGapFree",
+  "criticalPackageGapFree",
+  "SHARED_GAPS_FORCE_PACKAGE_D_MARKET_GAPS_BLOCK_ONLY_AFFECTED_MARKETS",
+  "outputConsistencyScore",
+  "qualifyingVenueSamplesComplete",
+  "outputConsistencyComplete",
+  "oneGoalWinProtected",
+  "OFFICIAL_SCORE_TOTALS_THEN_HIGHEST_REMAINING_BUCKET",
   "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
   "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
   "LEAGUE_LEARNING_PROFILES",
@@ -312,7 +329,7 @@ const missingUnifiedPredictionMarkers = unifiedPredictionMarkers.filter((marker)
 if (missingUnifiedPredictionMarkers.length) {
   throw new Error(`Production baseline missing unified prediction contract: ${missingUnifiedPredictionMarkers.join(", ")}`);
 }
-for (const marker of ["PRE_LOCK", "conditionalHandicapChallenger", "complete unified prediction package", "must publish its"]) {
+for (const marker of ["PRE_LOCK", "conditionalHandicapChallenger", "complete unified prediction package", "must publish its", "candidateSelections", "formalSelections", "blocked market leaked into formal markets"]) {
   if (!unifiedPublisher.includes(marker)) throw new Error(`Production baseline missing PRE_LOCK shadow publishing contract: ${marker}`);
 }
 for (const marker of ["replaySamples", "replaySampleCount", "input: { ...modelInput, samples: replaySamples }"]) {
