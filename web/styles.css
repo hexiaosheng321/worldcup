@@ -1967,6 +1967,41 @@ h2 {
   font-size: 30px;
 }
 
+.confidence-backtest-metric {
+  --confidence-accent: var(--blue);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--confidence-accent) 7%, #ffffff), #ffffff 58%);
+}
+
+.confidence-backtest-metric::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--confidence-accent);
+}
+
+.confidence-backtest-metric span {
+  color: var(--confidence-accent);
+}
+
+.confidence-backtest-metric.grade-a {
+  --confidence-accent: #008b5c;
+}
+
+.confidence-backtest-metric.grade-b {
+  --confidence-accent: #1768b5;
+}
+
+.confidence-backtest-metric.grade-c {
+  --confidence-accent: #c47f00;
+}
+
+.confidence-backtest-metric.grade-d {
+  --confidence-accent: #c23a49;
+}
+
 .match-drawer {
   position: fixed;
   inset: 0;

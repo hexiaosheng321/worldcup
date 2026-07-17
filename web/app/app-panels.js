@@ -938,6 +938,19 @@ function hitRate(hits, total) {
   return `${((hits / total) * 100).toFixed(1)}%`;
 }
 
+function confidenceDirectionBacktests(verifiedRows) {
+  return ["A", "B", "C", "D"].map((grade) => {
+    const gradeRows = verifiedRows.filter((row) => row.confidence === grade);
+    const hits = gradeRows.filter((row) => row.directionHit === true).length;
+    return {
+      grade,
+      hits,
+      total: gradeRows.length,
+      rate: gradeRows.length ? hitRate(hits, gradeRows.length) : "暂无验证样本",
+    };
+  });
+}
+
 function statsLeagueName(match = {}, pred = {}) {
   const text = [match.league, match.competition, match.group, pred.competition, pred.competitionModel, pred.type].filter(Boolean).join(" ");
   if (/世界杯|World Cup/i.test(text)) return "世界杯";
@@ -1058,6 +1071,7 @@ function renderGlobalStats() {
   const scoreHits = verifiedRows.filter((row) => row.scoreHit).length;
   const adviceRows = verifiedRows.filter((row) => ["A", "A-", "B", "B-"].includes(row.confidence));
   const adviceHits = adviceRows.filter((row) => row.directionHit).length;
+  const confidenceBacktests = confidenceDirectionBacktests(verifiedRows);
   const gateRows = rows.map((row) => ({ ...row, gate: autoDecisionGate(row.match.no, row.pred) }));
   const mainGateRows = gateRows.filter((row) => row.gate.level === "A");
   const attributionRows = verifiedRows.map((row) => ({ ...row, attribution: reviewAttribution(row.pred, row.match, row) }));
@@ -1073,6 +1087,13 @@ function renderGlobalStats() {
       <article class="review-metric"><span>比分覆盖</span><strong>${scoreHits}/${verifiedRows.length || 0}</strong><em>${hitRate(scoreHits, verifiedRows.length)}</em></article>
       <article class="review-metric"><span>A/B方向</span><strong>${adviceHits}/${adviceRows.length || 0}</strong><em>${hitRate(adviceHits, adviceRows.length)}</em></article>
       <article class="review-metric"><span>A级证据</span><strong>${mainGateRows.length}</strong><em>证据完整，不代表自动主推</em></article>
+      ${confidenceBacktests.map(({ grade, hits, total, rate }) => `
+        <article class="review-metric confidence-backtest-metric grade-${grade.toLowerCase()}">
+          <span>${grade}级方向命中率</span>
+          <strong>${hits}/${total}</strong>
+          <em>${rate}</em>
+        </article>
+      `).join("")}
       <article class="review-metric"><span>错因样本</span><strong>${missAttributions.length}</strong><em>用于迭代模型</em></article>
     </div>
   `;

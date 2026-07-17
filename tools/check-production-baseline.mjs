@@ -46,7 +46,7 @@ const missingRequired = requiredMarkers.filter((marker) => !index.includes(marke
 if (missingRequired.length) {
   throw new Error(`Production baseline missing required World Cup behavior: ${missingRequired.join(", ")}`);
 }
-for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260716_canonical_match_routes_v1"]) {
+for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260717_confidence_backtest_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing language selector marker: ${marker}`);
 }
 if (!index.includes("lib/similarCaseEngine.js?v=20260716_brazil_league_fix_r1")) {
@@ -63,6 +63,12 @@ for (const marker of ["Mobile reading system", "font-size: 15px", "min-height: 4
 }
 for (const marker of ["activeRoots", "requestAnimationFrame", "loadDictionary", "ticai:localechange"]) {
   if (!i18n.includes(marker)) throw new Error(`Production baseline missing safe i18n runtime marker: ${marker}`);
+}
+for (const localeFile of ["web/i18n/en.json", "web/i18n/ja.json"]) {
+  const locale = fs.readFileSync(localeFile, "utf8");
+  for (const marker of ["A级方向命中率", "B级方向命中率", "C级方向命中率", "D级方向命中率", "暂无验证样本"]) {
+    if (!locale.includes(marker)) throw new Error(`Production baseline missing confidence backtest translation in ${localeFile}: ${marker}`);
+  }
 }
 if (i18n.includes("MutationObserver") || i18n.includes("observer.observe")) {
   throw new Error("Production baseline rejects DOM-observer localization because it caused repeated full-page work.");
@@ -288,6 +294,19 @@ for (const marker of ['score >= 70', 'score >= 60', 'score >= 50']) {
 }
 if (/return "[ABC][+-]"/.test(confidenceGradeBlock)) {
   throw new Error("Production baseline rejects plus/minus confidence grades.");
+}
+for (const marker of [
+  "function confidenceDirectionBacktests",
+  '["A", "B", "C", "D"].map',
+  "row.confidence === grade",
+  "row.directionHit === true",
+  "暂无验证样本",
+  "${grade}级方向命中率",
+]) {
+  if (!panels.includes(marker)) throw new Error(`Production baseline missing confidence-grade direction backtest marker: ${marker}`);
+}
+for (const marker of [".confidence-backtest-metric", ".grade-a", ".grade-b", ".grade-c", ".grade-d"]) {
+  if (!styles.includes(marker)) throw new Error(`Production baseline missing confidence-grade metric style: ${marker}`);
 }
 for (const marker of ["renderJudgementRiskPanel", 'data-fixed-detail-panel="judgement-risk"']) {
   if (!detailApp.includes(marker)) throw new Error(`Production baseline requires persistent judgement risk panel: ${marker}`);
