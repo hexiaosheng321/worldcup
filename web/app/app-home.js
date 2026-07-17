@@ -187,13 +187,7 @@ function itemMatchesDateSet(item = {}, dateSet = new Set()) {
 }
 
 function uniqueSportteryRows(rows = []) {
-  const seen = new Set();
-  return rows.filter((row) => {
-    const key = sportteryItemKey(row);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return dedupeSportteryPoolRows(rows);
 }
 
 function homeReferenceDate() {
@@ -858,7 +852,7 @@ function sportteryPoolItems() {
   const recentPoolDates = recentSportteryDateSet(currentCalendarDate, currentSportteryDate);
   const now = Date.now();
   /* 赛事池：优先 oddsData（实时云数据），其次 spHistoryData（含池补全），最后空 */
-  const poolMatches = oddsData.matches?.length ? oddsData.matches : (spHistoryData.matches || []);
+  const poolMatches = dedupeSportteryPoolRows(oddsData.matches?.length ? oddsData.matches : (spHistoryData.matches || []));
   const openItems = (poolMatches)
     .map((item) => {
       const linkedMatch = matchFromOddsItem(item);

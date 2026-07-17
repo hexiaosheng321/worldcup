@@ -684,9 +684,10 @@ function sportteryScoreIsUsable(row = {}) {
 }
 
 function sportteryItemKey(item = {}) {
-  if (item.matchId) return `id-${item.matchId}`;
+  const matchId = String(item.matchId || "").replace(/^sporttery-/, "").trim();
+  if (matchId && !/^0+$/.test(matchId)) return `id-${matchId}`;
   const cloudMatchId = String(item.cloudMatchId || "").replace(/^sporttery-/, "");
-  if (cloudMatchId) return `id-${cloudMatchId}`;
+  if (cloudMatchId && !/^0+$/.test(cloudMatchId)) return `id-${cloudMatchId}`;
   return `issue-${item.issue || item.no || item.orderId || ""}-${item.ticaiDate || item.matchDate || ""}`;
 }
 
@@ -850,6 +851,36 @@ function sportteryNoDateTeamMatch(left = {}, right = {}) {
     return looseTeamMatch(left.home, right.home) && looseTeamMatch(left.away, right.away);
   }
   return Boolean(leftIssue && rightIssue && leftIssue === rightIssue);
+}
+
+function usableSportteryPoolMatchId(item = {}) {
+  const compactId = String(item.matchId || item.cloudMatchId || "").replace(/^sporttery-/, "").trim();
+  return Boolean(compactId && !/^0+$/.test(compactId));
+}
+
+function authoritativeSportteryPoolMatchId(item = {}) {
+  const compactId = String(item.matchId || item.cloudMatchId || "").replace(/^sporttery-/, "").trim();
+  return /^\d+$/.test(compactId) && Number(compactId) > 0;
+}
+
+function sportteryPoolRowQuality(item = {}) {
+  const oddsCount = [item.normal?.win, item.normal?.draw, item.normal?.lose].filter((value) => Number(value) > 0).length;
+  return (authoritativeSportteryPoolMatchId(item) ? 100 : usableSportteryPoolMatchId(item) ? 10 : 0) + oddsCount;
+}
+
+function dedupeSportteryPoolRows(rows = []) {
+  const output = [];
+  for (const row of rows) {
+    const existingIndex = output.findIndex((existing) => sportteryNoDateTeamMatch(existing, row));
+    if (existingIndex < 0) {
+      output.push(row);
+      continue;
+    }
+    if (sportteryPoolRowQuality(row) > sportteryPoolRowQuality(output[existingIndex])) {
+      output[existingIndex] = row;
+    }
+  }
+  return output;
 }
 
 function sportteryPredictionForItem(item = {}) {

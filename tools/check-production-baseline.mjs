@@ -156,23 +156,28 @@ if (!dataApp.includes("if (!force || !window.WC_CLOUD_STORE?.syncSportteryResult
 for (const marker of ["WC_FIRECRAWL_OBJECTIVE_CONTEXT", "firecrawl-objective-context-placeholder", "matches: []"]) {
   if (!firecrawlContext.includes(marker)) throw new Error(`Production baseline missing safe Firecrawl placeholder marker: ${marker}`);
 }
-for (const marker of ["20260717_online_stability_v1", "app/app-data.js?v=20260717_online_stability_v1"]) {
-  if (!index.includes(marker)) throw new Error(`Production baseline missing online-stability cache namespace: ${marker}`);
-}
 for (const marker of ["liveFallbackRowHasScheduledStatus", "liveFallbackRowHasMatchStatus", "liveFallbackRowMatchesSportteryMatch", "scheduled", "sourceState"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing scheduled live-score matching marker: ${marker}`);
 }
 for (const marker of ["liveScoreIsScheduled", "实时源已匹配", '"WAIT"']) {
   if (!appCore.includes(marker) && !homeApp.includes(marker)) throw new Error(`Production baseline missing matched scheduled-fixture UI marker: ${marker}`);
 }
-for (const marker of ["20260717_live_match_status_v2", "app/app-core.js?v=20260717_live_match_status_v2"]) {
-  if (!index.includes(marker)) throw new Error(`Production baseline missing scheduled-fixture cache namespace: ${marker}`);
-}
 for (const marker of ["liveFallbackRowsFromSyncLogs", "d1RecentLiveFallbackRows", "staleSnapshotCount", "isStaleSnapshot"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing resilient live-score snapshot marker: ${marker}`);
 }
-for (const marker of ["20260717_live_score_resilience_v1", "app/app-home.js?v=20260717_live_score_resilience_v1"]) {
-  if (!index.includes(marker)) throw new Error(`Production baseline missing live-score resilience cache namespace: ${marker}`);
+for (const marker of [
+  "20260717_sporttery_dedupe_v1",
+  "app/app-core.js?v=20260717_sporttery_dedupe_v1",
+  "app/app-data.js?v=20260717_sporttery_dedupe_v1",
+  "app/app-home.js?v=20260717_sporttery_dedupe_v1",
+]) {
+  if (!index.includes(marker)) throw new Error(`Production baseline missing Sporttery dedupe cache namespace: ${marker}`);
+}
+for (const marker of ["dedupeSportteryMatchRows", "authoritativeSportteryMatchId", "sporttery-okooo-"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing authoritative Sporttery fixture dedupe marker: ${marker}`);
+}
+for (const marker of ["dedupeSportteryPoolRows", "sportteryPoolRowQuality", "sportteryNoDateTeamMatch"]) {
+  if (!appCore.includes(marker) && !homeApp.includes(marker)) throw new Error(`Production baseline missing client Sporttery fixture dedupe marker: ${marker}`);
 }
 if (!fs.readFileSync("web/robots.txt", "utf8").includes("https://ticai-model.com/api/sitemap.xml")) {
   throw new Error("Production baseline requires the canonical sporttery sitemap in robots.txt.");

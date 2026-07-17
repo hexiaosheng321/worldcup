@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import {
+  dedupeSportteryMatchRows,
   liveFallbackRowMatchesSportteryMatch,
   liveFallbackRowsFromSyncLogs,
   lockRowToSportteryMatch,
   mergeLiveTargetMatches,
   parseOkoooLiveCenterScores,
+  sportteryKey,
 } from "../web/functions/api/[[path]].js";
 
 const matchRows = [{
@@ -189,4 +191,48 @@ assert.equal(recoveredRows[0].live, true);
 assert.equal(recoveredRows[0].isStaleSnapshot, true);
 assert.equal(recoveredRows[0].observedAt, "2026-07-17T03:16:02.304Z");
 
-console.log("Live-score target tests passed: authoritative ids and recent successful snapshots survive transient upstream failures.");
+const duplicateFixtureRows = [
+  {
+    match_id: "sporttery-0",
+    match_code: "五204",
+    league: "巴甲",
+    home_team: "巴伊亚",
+    away_team: "沙佩科",
+    kickoff_time: "2026-07-18 06:30",
+    payload_json: JSON.stringify({
+      matchId: "0",
+      orderId: "5204",
+      issue: "五204",
+      ticaiDate: "2026-07-17",
+      matchDate: "2026-07-18",
+      home: "巴伊亚",
+      away: "沙佩科",
+      normal: { win: "", draw: "", lose: "" },
+    }),
+  },
+  {
+    match_id: "sporttery-1334804",
+    match_code: "五204",
+    league: "巴西甲",
+    home_team: "巴伊亚",
+    away_team: "沙佩科",
+    kickoff_time: "2026-07-18 06:30",
+    payload_json: JSON.stringify({
+      matchId: "1334804",
+      orderId: "5204",
+      issue: "五204",
+      ticaiDate: "2026-07-17",
+      matchDate: "2026-07-18",
+      home: "巴伊亚",
+      away: "沙佩科",
+      normal: { win: "1.30", draw: "4.55", lose: "7.10" },
+    }),
+  },
+];
+const dedupedFixtureRows = dedupeSportteryMatchRows(duplicateFixtureRows);
+assert.equal(dedupedFixtureRows.length, 1, "the placeholder and authoritative copy of one fixture must collapse to one row");
+assert.equal(dedupedFixtureRows[0].match_id, "sporttery-1334804", "the authoritative id with complete odds must win");
+assert.equal(sportteryKey({ matchId: "0", orderId: "5204" }), "okooo-5204", "zero must never become a shared Sporttery match id");
+assert.equal(sportteryKey({ matchId: "1334804", orderId: "5204" }), "1334804");
+
+console.log("Live-score target tests passed: live snapshots and Sporttery fixtures remain stable and deduplicated.");

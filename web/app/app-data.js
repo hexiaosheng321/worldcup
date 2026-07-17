@@ -260,7 +260,7 @@ function parseCloudJson(text, fallback = null) {
 }
 
 function cloudMatchRowsToOddsData(rows = [], capturedAt = new Date().toISOString()) {
-  const matchesFromRows = rows
+  const matchesFromRows = dedupeSportteryPoolRows(rows
     .map((row) => {
       const payload = parseCloudJson(row.payload_json, null);
       const base = payload?.home && payload?.away
@@ -294,7 +294,7 @@ function cloudMatchRowsToOddsData(rows = [], capturedAt = new Date().toISOString
         away: base.away || fallback.away || row.away_team || "",
       };
     })
-    .filter((item) => item.home && item.away);
+    .filter((item) => item.home && item.away));
   return {
     source: "Cloudflare D1 + 中国体育彩票官方接口",
     apiEndpoint: "/api/bootstrap",
@@ -370,10 +370,12 @@ function applyCloudBootstrapPayload(payload, { rerender = false, cached = false 
     oddsData = cloudMatchRowsToOddsData(payload.matches, capturedAt);
     const newKeys = new Set((oddsData.matches || []).map((m) => `${m.ticaiDate || ""}|${m.matchId || m.no || ""}`));
     const missingFromOld = oldMatches.filter(
-      (m) => !newKeys.has(`${m.ticaiDate || ""}|${m.matchId || m.no || ""}`)
+      (m) =>
+        !newKeys.has(`${m.ticaiDate || ""}|${m.matchId || m.no || ""}`) &&
+        !(oddsData.matches || []).some((next) => sportteryNoDateTeamMatch(m, next))
     );
     if (missingFromOld.length) {
-      oddsData.matches = [...(oddsData.matches || []), ...missingFromOld];
+      oddsData.matches = dedupeSportteryPoolRows([...(oddsData.matches || []), ...missingFromOld]);
       oddsData.matchDates = [...new Set([...(oddsData.matchDates || []), ...missingFromOld.map((m) => m.ticaiDate || m.matchDate).filter(Boolean)])].sort();
     }
     if (cached) oddsData.isCachedSnapshot = true;

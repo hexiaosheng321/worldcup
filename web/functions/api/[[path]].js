@@ -1569,8 +1569,12 @@ function sportteryLatestUpdate(match) {
     .at(-1) || "";
 }
 
-function sportteryKey(item) {
-  return String(item.matchId || item.orderId || `${item.ticaiDate || item.matchDate}-${item.issue || item.no}-${item.home}-${item.away}`);
+export function sportteryKey(item) {
+  const matchId = String(item.matchId || "").replace(/^sporttery-/, "").trim();
+  if (usableSportteryMatchId(matchId)) return matchId;
+  const orderId = String(item.orderId || "").trim();
+  if (orderId) return `okooo-${orderId}`;
+  return `${item.ticaiDate || item.matchDate}-${item.issue || item.no}-${item.home}-${item.away}`;
 }
 
 function sportteryDbMatchId(item) {
@@ -1581,6 +1585,59 @@ function normalizeTeamName(value = "") {
   return String(value || "")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function usableSportteryMatchId(value = "") {
+  const compactId = String(value || "").replace(/^sporttery-/, "").trim();
+  return Boolean(compactId && !/^0+$/.test(compactId));
+}
+
+function authoritativeSportteryMatchId(value = "") {
+  const compactId = String(value || "").replace(/^sporttery-/, "").trim();
+  return /^\d+$/.test(compactId) && Number(compactId) > 0;
+}
+
+function d1SportteryFixturePayload(row = {}) {
+  return parseObject(row.payload_json);
+}
+
+function d1SportteryFixtureKey(row = {}) {
+  const payload = d1SportteryFixturePayload(row);
+  const issue = String(payload.issue || payload.no || row.match_code || "").match(/(\d{3})$/)?.[1] || "";
+  const date = String(payload.matchDate || payload.ticaiDate || row.kickoff_time || "").slice(0, 10);
+  const home = normalizeTeamName(payload.home || row.home_team || "");
+  const away = normalizeTeamName(payload.away || row.away_team || "");
+  return issue && date && home && away ? `${issue}|${date}|${home}|${away}` : "";
+}
+
+function d1SportteryRowQuality(row = {}) {
+  const payload = d1SportteryFixturePayload(row);
+  const matchId = payload.matchId || row.match_id || "";
+  const normal = parseObject(payload.normal);
+  const oddsCount = [normal.win, normal.draw, normal.lose].filter((value) => Number(value) > 0).length;
+  return (authoritativeSportteryMatchId(matchId) ? 100 : usableSportteryMatchId(matchId) ? 10 : 0) + oddsCount;
+}
+
+export function dedupeSportteryMatchRows(rows = []) {
+  const output = [];
+  const indexByFixture = new Map();
+  for (const row of rows) {
+    const fixtureKey = d1SportteryFixtureKey(row);
+    if (!fixtureKey) {
+      output.push(row);
+      continue;
+    }
+    const existingIndex = indexByFixture.get(fixtureKey);
+    if (existingIndex === undefined) {
+      indexByFixture.set(fixtureKey, output.length);
+      output.push(row);
+      continue;
+    }
+    if (d1SportteryRowQuality(row) > d1SportteryRowQuality(output[existingIndex])) {
+      output[existingIndex] = row;
+    }
+  }
+  return output;
 }
 
 function sameTeam(left = "", right = "") {
@@ -3604,14 +3661,17 @@ async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
   const matches = okoooMatches.map((match) => {
     const official = officialByOrderId.get(match.orderId);
     const fiveHundred = fiveHundredByOrderId.get(match.orderId);
+    const officialMatchId = usableSportteryMatchId(official?.matchId) ? String(official.matchId) : "";
+    const sourceMatchId = usableSportteryMatchId(match.matchId) ? String(match.matchId) : "";
     return {
       ...match,
+      matchId: officialMatchId || sourceMatchId || `okooo-${match.orderId}`,
       matchDate: official?.matchDate || fiveHundred?.matchDate || "",
       kickoffTime: official?.kickoffTime || fiveHundred?.kickoffTime || "",
       kickoffSource: official ? "sporttery-official" : fiveHundred ? "500-jczq-matchtime" : "pending-official-schedule",
       fiveHundredFixtureId: fiveHundred?.fixtureId || "",
       salesCloseAt: fiveHundred?.salesCloseAt || match.salesCloseTime || "",
-      officialMatchId: official?.matchId || "",
+      officialMatchId,
     };
   });
 
@@ -3619,6 +3679,20 @@ async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
 
   for (const match of matches) {
     const matchId = sportteryDbMatchId(match);
+    const fixtureDate = match.matchDate || match.ticaiDate || "";
+    if (authoritativeSportteryMatchId(match.matchId) && fixtureDate && match.issue && match.home && match.away) {
+      const placeholderWhere = `
+        match_id <> ? AND match_code = ? AND home_team = ? AND away_team = ?
+        AND substr(kickoff_time, 1, 10) = ?
+        AND (match_id = 'sporttery-0' OR match_id LIKE 'sporttery-okooo-%' OR json_extract(payload_json, '$.matchId') = '0')
+      `;
+      await db.prepare(`DELETE FROM odds_snapshots WHERE match_id IN (SELECT match_id FROM matches WHERE ${placeholderWhere})`)
+        .bind(matchId, match.issue, match.home, match.away, fixtureDate)
+        .run();
+      await db.prepare(`DELETE FROM matches WHERE ${placeholderWhere}`)
+        .bind(matchId, match.issue, match.home, match.away, fixtureDate)
+        .run();
+    }
     const existing = await db.prepare("SELECT kickoff_time, payload_json FROM matches WHERE match_id = ?").bind(matchId).first();
     const existingPayload = parseObject(existing?.payload_json);
     if (!match.kickoffTime) {
@@ -4107,12 +4181,13 @@ async function listAutoPredictions(db, limit = 300) {
 
 async function d1OddsScript(db) {
   const rows = await db.prepare("SELECT * FROM matches ORDER BY kickoff_time ASC LIMIT 300").all();
-  const updatedTimes = (rows.results || [])
+  const visibleRows = dedupeSportteryMatchRows(rows.results || []);
+  const updatedTimes = visibleRows
     .map((row) => row.updated_at)
     .filter(Boolean)
     .sort();
   const latestUpdatedAt = updatedTimes.at(-1) || new Date().toISOString();
-  const matches = (rows.results || [])
+  const matches = visibleRows
     .map((row) => {
       const payload = parseObject(row.payload_json, null);
       if (payload?.home && payload?.away) return payload;
@@ -4663,9 +4738,10 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         includeCases ? listCases(db) : Promise.resolve([]),
         d1SportterySpHistoryScript(db, env, true),
       ]);
+      const visibleMatches = dedupeSportteryMatchRows(matches.results || []);
       const resultsById = new Map((recentResults.results || []).map((row) => [row.match_id, row]));
       const matchIds = [
-        ...(matches.results || []).map((row) => row.match_id),
+        ...visibleMatches.map((row) => row.match_id),
         ...(locks.results || []).map((row) => row.match_id),
       ].filter(Boolean).filter((value, index, values) => values.indexOf(value) === index);
       if (matchIds.length) {
@@ -4678,7 +4754,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       }
       const results = [...resultsById.values()].sort((a, b) => String(b.reviewed_at || "").localeCompare(String(a.reviewed_at || "")));
       
-      return json({ ok: true, matches: matches.results, locks: (locks.results || []).map(enrichLockRow), results, cases, autoPredictions: [], spHistory: spHistoryData });
+      return json({ ok: true, matches: visibleMatches, locks: (locks.results || []).map(enrichLockRow), results, cases, autoPredictions: [], spHistory: spHistoryData });
       });
     }
 
