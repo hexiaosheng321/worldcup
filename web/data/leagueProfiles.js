@@ -1,5 +1,5 @@
 window.WC_LEAGUE_PROFILES = {
-  "generatedAt": "2026-07-17T05:42:56.498Z",
+  "generatedAt": "2026-07-17T05:50:04.442Z",
   "source": [
     "web/data/externalHistoricalSamples.js",
     "web/data/externalHistoricalSamplesBig5England.js",
@@ -12,7 +12,7 @@ window.WC_LEAGUE_PROFILES = {
   "profiles": [
     {
       "league": "世界杯",
-      "generatedAt": "2026-07-17T05:42:56.496Z",
+      "generatedAt": "2026-07-17T05:50:04.441Z",
       "sampleCount": 855,
       "completedSampleCount": 855,
       "usableSampleCount": 741,
@@ -126,7 +126,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "欧冠",
-      "generatedAt": "2026-07-17T05:42:56.495Z",
+      "generatedAt": "2026-07-17T05:50:04.439Z",
       "sampleCount": 282,
       "completedSampleCount": 282,
       "usableSampleCount": 282,
@@ -238,7 +238,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "韩职",
-      "generatedAt": "2026-07-17T05:42:56.495Z",
+      "generatedAt": "2026-07-17T05:50:04.441Z",
       "sampleCount": 189,
       "completedSampleCount": 189,
       "usableSampleCount": 189,
@@ -359,7 +359,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "美职",
-      "generatedAt": "2026-07-17T05:42:56.497Z",
+      "generatedAt": "2026-07-17T05:50:04.442Z",
       "sampleCount": 106,
       "completedSampleCount": 106,
       "usableSampleCount": 106,
@@ -470,7 +470,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "瑞超",
-      "generatedAt": "2026-07-17T05:42:56.496Z",
+      "generatedAt": "2026-07-17T05:50:04.442Z",
       "sampleCount": 101,
       "completedSampleCount": 101,
       "usableSampleCount": 101,
@@ -583,7 +583,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "澳超",
-      "generatedAt": "2026-07-17T05:42:56.495Z",
+      "generatedAt": "2026-07-17T05:50:04.440Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -696,7 +696,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "巴西甲",
-      "generatedAt": "2026-07-17T05:42:56.497Z",
+      "generatedAt": "2026-07-17T05:50:04.442Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -801,7 +801,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "丹超",
-      "generatedAt": "2026-07-17T05:42:56.495Z",
+      "generatedAt": "2026-07-17T05:50:04.440Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -913,7 +913,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "德甲",
-      "generatedAt": "2026-07-17T05:42:56.497Z",
+      "generatedAt": "2026-07-17T05:50:04.442Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1024,7 +1024,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "法甲",
-      "generatedAt": "2026-07-17T05:42:56.497Z",
+      "generatedAt": "2026-07-17T05:50:04.442Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1143,7 +1143,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "芬超",
-      "generatedAt": "2026-07-17T05:42:56.494Z",
+      "generatedAt": "2026-07-17T05:50:04.439Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1266,7 +1266,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "荷甲",
-      "generatedAt": "2026-07-17T05:42:56.495Z",
+      "generatedAt": "2026-07-17T05:50:04.440Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1377,7 +1377,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "挪超",
-      "generatedAt": "2026-07-17T05:42:56.496Z",
+      "generatedAt": "2026-07-17T05:50:04.441Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1489,7 +1489,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "欧联",
-      "generatedAt": "2026-07-17T05:42:56.495Z",
+      "generatedAt": "2026-07-17T05:50:04.440Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1599,7 +1599,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "葡超",
-      "generatedAt": "2026-07-17T05:42:56.496Z",
+      "generatedAt": "2026-07-17T05:50:04.441Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1703,7 +1703,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "西甲",
-      "generatedAt": "2026-07-17T05:42:56.497Z",
+      "generatedAt": "2026-07-17T05:50:04.442Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1813,7 +1813,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "意甲",
-      "generatedAt": "2026-07-17T05:42:56.497Z",
+      "generatedAt": "2026-07-17T05:50:04.442Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -1923,7 +1923,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "英超",
-      "generatedAt": "2026-07-17T05:42:56.497Z",
+      "generatedAt": "2026-07-17T05:50:04.442Z",
       "sampleCount": 100,
       "completedSampleCount": 100,
       "usableSampleCount": 100,
@@ -2034,7 +2034,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "中超",
-      "generatedAt": "2026-07-17T05:42:56.488Z",
+      "generatedAt": "2026-07-17T05:50:04.426Z",
       "sampleCount": 8,
       "completedSampleCount": 8,
       "usableSampleCount": 8,
@@ -2131,7 +2131,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "冰岛超",
-      "generatedAt": "2026-07-17T05:42:56.495Z",
+      "generatedAt": "2026-07-17T05:50:04.440Z",
       "sampleCount": 6,
       "completedSampleCount": 6,
       "usableSampleCount": 6,
@@ -2217,7 +2217,7 @@ window.WC_LEAGUE_PROFILES = {
     },
     {
       "league": "冰岛杯",
-      "generatedAt": "2026-07-17T05:42:56.495Z",
+      "generatedAt": "2026-07-17T05:50:04.440Z",
       "sampleCount": 1,
       "completedSampleCount": 1,
       "usableSampleCount": 1,

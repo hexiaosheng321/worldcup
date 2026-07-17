@@ -173,6 +173,9 @@ for (const group of groups) {
         && (storedHome !== row.actualHomeGoals || storedAway !== row.actualAwayGoals)) {
         throw new Error(`score conflict for 500-${row.fixtureId}: ${storedHome}-${storedAway} vs ${row.score}`);
       }
+      sample.homeTeam = row.homeTeam;
+      sample.awayTeam = row.awayTeam;
+      sample.sourceUrl = row.sourceUrl;
       reused += 1;
     } else {
       sample = {
