@@ -165,8 +165,14 @@ for (const marker of ["liveFallbackRowHasScheduledStatus", "liveFallbackRowHasMa
 for (const marker of ["liveScoreIsScheduled", "实时源已匹配", '"WAIT"']) {
   if (!appCore.includes(marker) && !homeApp.includes(marker)) throw new Error(`Production baseline missing matched scheduled-fixture UI marker: ${marker}`);
 }
-for (const marker of ["20260717_live_match_status_v2", "app/app-core.js?v=20260717_live_match_status_v2", "app/app-home.js?v=20260717_live_match_status_v2"]) {
+for (const marker of ["20260717_live_match_status_v2", "app/app-core.js?v=20260717_live_match_status_v2"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing scheduled-fixture cache namespace: ${marker}`);
+}
+for (const marker of ["liveFallbackRowsFromSyncLogs", "d1RecentLiveFallbackRows", "staleSnapshotCount", "isStaleSnapshot"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing resilient live-score snapshot marker: ${marker}`);
+}
+for (const marker of ["20260717_live_score_resilience_v1", "app/app-home.js?v=20260717_live_score_resilience_v1"]) {
+  if (!index.includes(marker)) throw new Error(`Production baseline missing live-score resilience cache namespace: ${marker}`);
 }
 if (!fs.readFileSync("web/robots.txt", "utf8").includes("https://ticai-model.com/api/sitemap.xml")) {
   throw new Error("Production baseline requires the canonical sporttery sitemap in robots.txt.");

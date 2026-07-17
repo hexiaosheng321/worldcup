@@ -2149,6 +2149,82 @@ function liveFallbackRowHasMatchStatus(row = {}) {
   return liveFallbackRowIsDisplayable(row) || liveFallbackRowHasScheduledStatus(row);
 }
 
+export function liveFallbackRowsFromSyncLogs(logRows = [], sportteryMatches = []) {
+  const matchesById = new Map(
+    sportteryMatches
+      .map((match) => [String(match.matchId || match.cloudMatchId || "").replace(/^sporttery-/, ""), match])
+      .filter(([matchId]) => matchId)
+  );
+  const seenMatchIds = new Set();
+  const recoveredRows = [];
+  for (const logRow of logRows) {
+    const payload = parseObject(logRow.payload_json);
+    const candidates = Array.isArray(payload.liveFallbackCandidates)
+      ? payload.liveFallbackCandidates
+      : parseArray(payload.liveFallbackCandidates);
+    for (const candidate of candidates) {
+      const matchId = String(candidate.matchId || "").replace(/^sporttery-/, "");
+      const match = matchesById.get(matchId);
+      const live = parseObject(candidate.live);
+      if (!match || !live.source || seenMatchIds.has(matchId)) continue;
+      const status = String(live.status || live.statusName || live.statusLabel || "").trim();
+      const score = parseDashScore(live.score)?.text || "";
+      const isFinished = Boolean(live.isFinished);
+      const unavailable = /\bpostpon(?:ed|ement)?\b|\bcancel(?:led|ed)?\b|\babandon(?:ed)?\b|\bsuspend(?:ed)?\b|延期|推迟|取消|腰斩|中止/i.test(status);
+      const scheduled = !isFinished && !score && !unavailable && /\bscheduled\b|not\s*started|未开赛|待开赛|等待开赛|^\s*未\s*$/i.test(status);
+      const row = {
+        source: live.source,
+        externalId: String(live.externalId || matchId),
+        date: live.date || "",
+        time: live.time || "",
+        league: live.league || match.league || "",
+        home: live.home || match.home || "",
+        away: live.away || match.away || "",
+        homeZh: live.homeZh || live.home || match.home || "",
+        awayZh: live.awayZh || live.away || match.away || "",
+        score,
+        halfScore: live.halfScore || "",
+        status: status || (scheduled ? "SCHEDULED" : ""),
+        statusName: live.statusName || status || (scheduled ? "未开赛" : ""),
+        statusLabel: live.statusLabel || status || (scheduled ? "未开赛" : ""),
+        minute: live.minute || status,
+        isFinished,
+        live: !isFinished && !scheduled && !unavailable && Boolean(score),
+        unavailable,
+        scheduled,
+        rawStatus: live.rawStatus || status,
+        sourceState: live.sourceState || "Cached",
+        scoreDuration: live.scoreDuration || "REGULAR",
+        scoreMode: live.scoreMode || (score && !isFinished ? "liveRegularTime" : ""),
+        isStaleSnapshot: true,
+        observedAt: logRow.created_at || "",
+      };
+      if (!liveFallbackRowHasMatchStatus(row) || !liveFallbackRowMatchesSportteryMatch(match, row)) continue;
+      seenMatchIds.add(matchId);
+      recoveredRows.push(row);
+    }
+  }
+  return recoveredRows;
+}
+
+async function d1RecentLiveFallbackRows(db, sportteryMatches = []) {
+  try {
+    const rows = await db.prepare(`
+      SELECT payload_json, created_at
+      FROM sync_logs
+      WHERE source = 'live-fallback-api'
+        AND status = 'OK'
+        AND datetime(created_at) >= datetime('now', '-6 hours')
+      ORDER BY created_at DESC
+      LIMIT 24
+    `).all();
+    return liveFallbackRowsFromSyncLogs(rows.results || [], sportteryMatches);
+  } catch (error) {
+    console.warn("recent live fallback snapshot read failed", error);
+    return [];
+  }
+}
+
 function liveFallbackRowUsesRegularTime(row = {}) {
   const source = String(row.source || "");
   const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.scoreDuration || ""}`;
@@ -3796,15 +3872,9 @@ async function syncLiveFallbackToD1(db, env) {
           away: match.away,
           skipped: "not-finished-or-not-regular",
           live: {
-            source: nearLive.source,
-            date: nearLive.date,
+            ...nearLive,
             home: nearLive.homeZh || nearLive.home,
             away: nearLive.awayZh || nearLive.away,
-            score: nearLive.score,
-            status: nearLive.status,
-            isFinished: nearLive.isFinished,
-            scoreDuration: nearLive.scoreDuration,
-            scoreMode: nearLive.scoreMode,
           },
         });
       }
@@ -4131,7 +4201,14 @@ async function d1LiveFootballScoresScript(db, env) {
     liveFallbackRowHasMatchStatus(row) &&
     sportteryMatches.some((match) => liveFallbackRowMatchesSportteryMatch(match, row))
   );
-  const dedupedRows = dedupeLiveRows(matchedRows);
+  const recentRows = await d1RecentLiveFallbackRows(db, sportteryMatches);
+  const recoveredRows = recentRows.filter((recentRow) =>
+    !sportteryMatches.some((match) =>
+      liveFallbackRowMatchesSportteryMatch(match, recentRow) &&
+      matchedRows.some((currentRow) => liveFallbackRowMatchesSportteryMatch(match, currentRow))
+    )
+  );
+  const dedupedRows = dedupeLiveRows([...matchedRows, ...recoveredRows]);
   const data = {
     source: "Cloudflare Pages live football fallback",
     apiEndpoint: "/api/live-football-scores.js",
@@ -4140,6 +4217,8 @@ async function d1LiveFootballScoresScript(db, env) {
     isCloudSnapshot: true,
     scope: "current_window_matched_status_live_and_finished_regular_time",
     totalCount: dedupedRows.length,
+    staleSnapshotCount: recoveredRows.length,
+    degraded: Boolean(recoveredRows.length || liveRows.errors.length),
     errors: liveRows.errors,
     matches: dedupedRows,
   };

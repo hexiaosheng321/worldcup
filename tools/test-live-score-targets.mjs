@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   liveFallbackRowMatchesSportteryMatch,
+  liveFallbackRowsFromSyncLogs,
   lockRowToSportteryMatch,
   mergeLiveTargetMatches,
   parseOkoooLiveCenterScores,
@@ -156,4 +157,36 @@ assert.equal(
   "OKOOO fixture ids must remain authoritative when upstream team labels differ",
 );
 
-console.log("Live-score target tests passed: scheduled fixtures remain matched by authoritative id and visible to the UI.");
+const recoveredRows = liveFallbackRowsFromSyncLogs([
+  {
+    created_at: "2026-07-17T03:16:02.304Z",
+    payload_json: JSON.stringify({
+      liveFallbackCandidates: [{
+        matchId: "sporttery-1324067",
+        issue: "四210",
+        home: "西雅图",
+        away: "波特兰",
+        skipped: "not-finished-or-not-regular",
+        live: {
+          source: "OKOOO-live",
+          date: "",
+          home: "西雅图海湾人",
+          away: "波特兰伐木工",
+          score: "0-1",
+          status: "30'",
+          isFinished: false,
+          scoreDuration: "REGULAR",
+          scoreMode: "liveRegularTime",
+        },
+      }],
+    }),
+  },
+], [{ matchId: "1324067", league: "美职", home: "西雅图", away: "波特兰" }]);
+assert.equal(recoveredRows.length, 1, "a transient empty upstream response must recover the last successful matched row");
+assert.equal(recoveredRows[0].externalId, "1324067");
+assert.equal(recoveredRows[0].score, "0-1");
+assert.equal(recoveredRows[0].live, true);
+assert.equal(recoveredRows[0].isStaleSnapshot, true);
+assert.equal(recoveredRows[0].observedAt, "2026-07-17T03:16:02.304Z");
+
+console.log("Live-score target tests passed: authoritative ids and recent successful snapshots survive transient upstream failures.");

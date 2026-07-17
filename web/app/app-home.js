@@ -890,7 +890,9 @@ function sportteryPoolItems() {
         displayScore,
         liveStatus: liveScoreStatusText(liveScore),
         liveHalfScore: liveScore?.halfScore || "",
-        liveSource: liveScore?.source || "",
+        liveSource: liveScore?.source
+          ? `${liveScore.source}${liveScore.isStaleSnapshot ? " · 最近成功快照" : ""}`
+          : "",
         liveScheduled: awaitingAuthoritativeStart,
         liveMatched: Boolean(liveScore),
         liveNote: awaitingAuthoritativeStart ? `实时源已匹配 · ${liveScore?.source || "官方实时源"}` : "",
