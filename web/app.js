@@ -637,6 +637,16 @@ function sportteryReviewLifecycle(item = {}, pred = {}, liveScore = null, actual
   return { code: "PENDING", label: "待赛果", scoreLabel: "", severity: "pending", note: "比赛未结束，暂不归因。" };
 }
 
+function sportteryPoolShouldHide(item = {}, liveScore = null, actualScore = "") {
+  if (normalizeResultScore(actualScore)) return false;
+  const result = resultForSportteryItem(item);
+  return Boolean(
+    exceptionalLiveStatusText(liveScore || liveScoreForSportteryItem(item))
+    || exceptionalLiveStatusText(result)
+    || exceptionalLiveStatusText(item)
+  );
+}
+
 function liveScoreStatusText(row) {
   if (!row) return "";
   if (liveScoreIsScheduled(row)) return "等待开赛";
@@ -2141,6 +2151,7 @@ function sportteryPoolItems() {
       const resultScore = verifiedSportteryScore(item);
       const liveScoreText = normalizeResultScore(liveScore?.score);
       const score = resultScore || (liveScore?.isFinished ? liveScoreText : "");
+      const hiddenByExceptionalStatus = sportteryPoolShouldHide(item, liveScore, score);
       const liveScheduled = liveScoreIsScheduled(liveScore);
       const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
       const elapsed = kickoffElapsedMinutes(kickoffAt);
@@ -2182,8 +2193,10 @@ function sportteryPoolItems() {
                 ? liveScoreStatusText(liveScore) || "进行中"
                 : modelPred ? "已有推演" : "已开盘",
         pendingResultNote: likelyPastLiveWindow ? inferredLiveNote(item.statusName, kickoffAt) : "",
+        hiddenByExceptionalStatus,
       };
     })
+    .filter((item) => !item.hiddenByExceptionalStatus)
     .sort((a, b) => a.displayDate.localeCompare(b.displayDate) || String(a.issue).localeCompare(String(b.issue)));
   const visibleOpenItems = openItems.filter((item) => {
     if (item.poolTone !== "open") return false;
@@ -2289,6 +2302,7 @@ function sportteryPoolItems() {
 
   const liveResultItems = resultRows
     .filter((item) => !normalizeResultScore(item.score))
+    .filter((item) => !sportteryPoolShouldHide(item, liveScoreForSportteryItem(item), item.score))
     .filter((item) => itemMatchesDateSet(item, recentPoolDates))
     .filter((item) => {
       const status = `${item.statusCode || ""} ${item.statusName || ""}`;

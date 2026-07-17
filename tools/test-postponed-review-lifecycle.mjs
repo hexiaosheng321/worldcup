@@ -35,10 +35,13 @@ const context = vm.createContext({
 vm.runInContext(`
 ${functionSource("exceptionalLiveStatusText")}
 ${functionSource("sportteryReviewLifecycle")}
+${functionSource("sportteryPoolShouldHide")}
 this.classify = sportteryReviewLifecycle;
+this.shouldHideFromPool = sportteryPoolShouldHide;
 `, context);
 
 const classify = (...args) => JSON.parse(JSON.stringify(context.classify(...args)));
+const shouldHideFromPool = (...args) => context.shouldHideFromPool(...args);
 
 assert.deepEqual(classify(
   { matchDate: "2026-07-17", liveScore: { status: "延期", statusName: "延期", minute: "延期" } },
@@ -56,5 +59,10 @@ assert.equal(classify({ liveScore: { status: "腰斩" } }, {}).code, "SUSPENDED"
 assert.equal(classify({ matchDate: "2026-07-20" }, { matchDate: "2026-07-17" }).code, "RESCHEDULED");
 assert.equal(classify({ matchDate: "2026-07-17" }, { matchDate: "2026-07-17" }).code, "PENDING");
 assert.equal(classify({ liveScore: { status: "延期" } }, {}, null, "2-1").code, "VERIFIED");
+
+assert.equal(shouldHideFromPool({ liveScore: { status: "延期" } }), true, "confirmed postponements must leave every current pool view");
+assert.equal(shouldHideFromPool({ liveScore: { status: "Cancelled" } }), true, "cancelled matches must leave every current pool view");
+assert.equal(shouldHideFromPool({ liveScore: { status: "Scheduled", scheduled: true } }), false, "a rescheduled match must return after the live source restores its scheduled state");
+assert.equal(shouldHideFromPool({ liveScore: { status: "延期" } }, null, "2-1"), false, "a later official final score must close the match in the finished pool");
 
 console.log("Postponed review lifecycle tests passed: delayed fixtures pause validation, reschedules resume tracking, cancellations stay outside backtests, and final scores close the loop.");

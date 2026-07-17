@@ -168,7 +168,6 @@ for (const marker of ["liveFallbackRowsFromSyncLogs", "d1RecentLiveFallbackRows"
 for (const marker of [
   "20260717_sporttery_dedupe_v1",
   "app/app-data.js?v=20260717_sporttery_dedupe_v1",
-  "app/app-home.js?v=20260717_sporttery_dedupe_v1",
 ]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing Sporttery dedupe cache namespace: ${marker}`);
 }
@@ -181,13 +180,22 @@ for (const marker of ["dedupeSportteryPoolRows", "sportteryPoolRowQuality", "spo
 for (const marker of [
   "20260717_postponed_lifecycle_v1",
   "styles.css?v=20260717_postponed_lifecycle_v1",
-  "app/app-core.js?v=20260717_postponed_lifecycle_v1",
   "app/app-panels.js?v=20260717_postponed_lifecycle_v1",
 ]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing postponed lifecycle cache namespace: ${marker}`);
 }
 for (const marker of ["sportteryReviewLifecycle", "POSTPONED", "RESCHEDULED", "无效样本"]) {
   if (!appCore.includes(marker) && !panels.includes(marker)) throw new Error(`Production baseline missing postponed review lifecycle marker: ${marker}`);
+}
+for (const marker of [
+  "20260717_postponed_pool_filter_v1",
+  "app/app-core.js?v=20260717_postponed_pool_filter_v1",
+  "app/app-home.js?v=20260717_postponed_pool_filter_v1",
+]) {
+  if (!index.includes(marker)) throw new Error(`Production baseline missing postponed pool filter cache namespace: ${marker}`);
+}
+for (const marker of ["sportteryPoolShouldHide", "hiddenByExceptionalStatus", "!item.hiddenByExceptionalStatus"]) {
+  if (!appCore.includes(marker) && !homeApp.includes(marker)) throw new Error(`Production baseline missing postponed pool visibility marker: ${marker}`);
 }
 if (!fs.readFileSync("web/robots.txt", "utf8").includes("https://ticai-model.com/api/sitemap.xml")) {
   throw new Error("Production baseline requires the canonical sporttery sitemap in robots.txt.");

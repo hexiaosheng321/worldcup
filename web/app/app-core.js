@@ -683,6 +683,16 @@ function sportteryReviewLifecycle(item = {}, pred = {}, liveScore = null, actual
   return { code: "PENDING", label: "待赛果", scoreLabel: "", severity: "pending", note: "比赛未结束，暂不归因。" };
 }
 
+function sportteryPoolShouldHide(item = {}, liveScore = null, actualScore = "") {
+  if (normalizeResultScore(actualScore)) return false;
+  const result = resultForSportteryItem(item);
+  return Boolean(
+    exceptionalLiveStatusText(liveScore || liveScoreForSportteryItem(item))
+    || exceptionalLiveStatusText(result)
+    || exceptionalLiveStatusText(item)
+  );
+}
+
 function liveScoreIsScheduled(row = {}) {
   const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.rawStatus || ""}`;
   return Boolean(
