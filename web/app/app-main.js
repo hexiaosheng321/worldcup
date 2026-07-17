@@ -213,6 +213,11 @@ document.querySelector("#odds-map")?.addEventListener("click", (event) => {
 });
 
 document.body.addEventListener("click", (event) => {
+  const r15BacktestOpen = event.target.closest("[data-r15-backtest-open]");
+  if (r15BacktestOpen) {
+    openR15BacktestModal();
+    return;
+  }
   const globalStatsModal = event.target.closest(".global-stats-modal");
   const globalStatsClose = event.target.closest("[data-global-stats-close]");
   const globalStatsBackdrop = event.target.classList?.contains("global-stats-modal") ? event.target : null;

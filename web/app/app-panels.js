@@ -961,6 +961,192 @@ function confidenceDirectionBacktests(verifiedRows) {
   });
 }
 
+function r15BacktestRows(sourceRows = modelAuditRows()) {
+  const engine = window.WC_R15_BACKTEST;
+  if (!engine) return [];
+  return sourceRows
+    .filter(({ pred }) => engine.isR15Prediction(pred))
+    .map((row) => {
+      const score = officialScoreForMatch(row.match);
+      const parsed = parseScore(score);
+      const evaluation = engine.evaluatePrediction(row.pred, {
+        score,
+        direction: direction(score),
+        handicap: handicapDirection(score, reviewHandicapLine(row.pred)),
+        total: parsed?.total,
+      });
+      return { ...row, score, evaluation };
+    })
+    .sort((a, b) => {
+      const dateCompare = String(b.match.date || "").localeCompare(String(a.match.date || ""));
+      if (dateCompare !== 0) return dateCompare;
+      return Number(b.match.no || 0) - Number(a.match.no || 0);
+    });
+}
+
+function r15BacktestSummary(rows = r15BacktestRows()) {
+  return window.WC_R15_BACKTEST?.summarize(rows.map((row) => row.evaluation)) || {
+    totalRows: 0,
+    verifiedMatches: 0,
+    pendingMatches: 0,
+    observationOnly: 0,
+    metrics: {},
+  };
+}
+
+function renderR15BacktestEntry(sourceRows = modelAuditRows()) {
+  const target = document.querySelector("#r15-backtest-entry");
+  if (!target) return;
+  const rows = r15BacktestRows(sourceRows);
+  const summary = r15BacktestSummary(rows);
+  const progress = Math.min(100, (summary.verifiedMatches / 30) * 100);
+  const remaining = Math.max(0, 30 - summary.verifiedMatches);
+  target.innerHTML = `
+    <button type="button" class="r15-backtest-launch" data-r15-backtest-open>
+      <span class="r15-launch-index">R15</span>
+      <span class="r15-launch-copy">
+        <b>专项回测窗口</b>
+        <strong>${summary.verifiedMatches}<small>/30 场首轮样本</small></strong>
+        <em>${summary.pendingMatches} 场待验票 · ${remaining ? `还差 ${remaining} 场进入首轮复盘` : "已达到首轮复盘样本线"}</em>
+      </span>
+      <span class="r15-launch-progress" aria-label="R15首轮样本进度 ${progress.toFixed(0)}%">
+        <i style="--r15-progress:${progress}%"></i>
+      </span>
+      <span class="r15-launch-action">打开专项窗口 <b aria-hidden="true">↗</b></span>
+    </button>
+  `;
+}
+
+function r15GradeBreakdown(metric = {}) {
+  const values = ["A", "B", "C", "D"]
+    .map((grade) => ({ grade, ...(metric.grades?.[grade] || { hits: 0, total: 0 }) }))
+    .filter((item) => item.total > 0);
+  return values.length ? values.map((item) => `${item.grade}级 ${item.hits}/${item.total}`).join(" · ") : "等待正式样本";
+}
+
+function r15SelectionText(market = {}) {
+  if (!market.available) return "未开售";
+  if (!market.qualified) return "未放行";
+  return Array.isArray(market.selection) ? market.selection.join(" / ") : market.selection;
+}
+
+function r15MarketCell(market = {}, verified = false) {
+  const status = !market.available
+    ? "未开售"
+    : !market.qualified
+      ? "不计入"
+      : !verified
+        ? "待验票"
+        : market.hit
+          ? "命中"
+          : "未中";
+  const tone = !market.qualified || !verified ? "pending" : market.hit ? "hit" : "miss";
+  return `
+    <div class="r15-market-result ${tone}">
+      <b>${dash(r15SelectionText(market))}</b>
+      ${market.qualified ? `<span>${dash(market.grade)}级</span>` : ""}
+      <em>${status}</em>
+    </div>
+  `;
+}
+
+function r15SampleStatus(evaluation = {}) {
+  if (!evaluation.hasFormal) return { label: "观察", tone: "observe", note: "无正式玩法" };
+  if (!evaluation.verified) return { label: "待验票", tone: "pending", note: "不进入分母" };
+  return { label: "已计入", tone: "counted", note: "正式样本" };
+}
+
+function openR15BacktestModal() {
+  const rows = r15BacktestRows();
+  const summary = r15BacktestSummary(rows);
+  const progress = Math.min(100, (summary.verifiedMatches / 30) * 100);
+  const marketMeta = [
+    ["winDrawLose", "胜平负单选", "01"],
+    ["handicap", "让球单选", "02"],
+    ["totalGoals", "总进球双选", "03"],
+    ["scores", "比分双选", "04"],
+  ];
+  const metricCards = marketMeta.map(([key, label, index]) => {
+    const metric = summary.metrics[key] || { hits: 0, total: 0, grades: {} };
+    return `
+      <article class="r15-audit-metric">
+        <span>${index} / ${label}</span>
+        <strong>${metric.hits}<small>/${metric.total}</small></strong>
+        <b>${metric.total ? hitRate(metric.hits, metric.total) : "暂无验证样本"}</b>
+        <em>${r15GradeBreakdown(metric)}</em>
+      </article>
+    `;
+  }).join("");
+  const tableRows = rows.map(({ match, pred, score, evaluation, league }) => {
+    const status = r15SampleStatus(evaluation);
+    return `
+      <tr>
+        <td>${dash(pred.date || match.date)}</td>
+        <td>${dash(league)}</td>
+        <td><span class="version-badge">${evaluation.revision}</span><br><small>整包 ${dash(evaluation.overallGrade)}级</small></td>
+        <td class="text-cell match-name-cell">${reviewMatchButton(match)}</td>
+        <td>${dash(score || "待赛果")}</td>
+        <td>${r15MarketCell(evaluation.markets.winDrawLose, evaluation.verified)}</td>
+        <td>${r15MarketCell(evaluation.markets.handicap, evaluation.verified)}</td>
+        <td>${r15MarketCell(evaluation.markets.totalGoals, evaluation.verified)}</td>
+        <td>${r15MarketCell(evaluation.markets.scores, evaluation.verified)}</td>
+        <td><span class="r15-sample-status ${status.tone}">${status.label}</span><small>${status.note}</small></td>
+      </tr>
+    `;
+  }).join("") || `<tr><td colspan="10" class="empty-cell">尚未读取到R15锁版记录</td></tr>`;
+
+  document.querySelector(".global-stats-modal")?.remove();
+  const modal = document.createElement("div");
+  modal.className = "global-stats-modal r15-backtest-modal";
+  modal.innerHTML = `
+    <div class="global-stats-dialog r15-backtest-dialog" role="dialog" aria-modal="true" aria-label="R15专项回测">
+      <header>
+        <div>
+          <span>R15 PERFORMANCE LEDGER</span>
+          <strong>R15专项回测</strong>
+          <em>只验正式放行玩法；未开售、候选结论和观察项不进入分母。</em>
+        </div>
+        <button type="button" data-global-stats-close aria-label="关闭R15专项回测">×</button>
+      </header>
+      <div class="global-stats-dialog-body r15-backtest-body">
+        <section class="r15-sample-ledger">
+          <div>
+            <span>首轮复盘进度</span>
+            <strong>${summary.verifiedMatches}<small>/30</small></strong>
+            <em>目标区间 30–50 场 · 以至少一个正式玩法完成验票为一场有效样本</em>
+          </div>
+          <div class="r15-ledger-track"><i style="--r15-progress:${progress}%"></i></div>
+          <dl>
+            <div><dt>待验票</dt><dd>${summary.pendingMatches}</dd></div>
+            <div><dt>观察/跳过</dt><dd>${summary.observationOnly}</dd></div>
+            <div><dt>R15记录</dt><dd>${summary.totalRows}</dd></div>
+          </dl>
+        </section>
+        <section class="r15-audit-grid">${metricCards}</section>
+        <section class="r15-scope-note">
+          <b>统计口径</b>
+          <span>官方90分钟赛果</span>
+          <span>逐玩法独立分母</span>
+          <span>仅 formalSelections</span>
+          <span>R15a并入R15、版本单列</span>
+        </section>
+        <section class="r15-ledger-table-wrap">
+          <div class="global-stats-table-toolbar r15-ledger-toolbar">
+            <div><span>逐场审计账本</span><strong>${summary.totalRows} 场R15记录 · ${summary.verifiedMatches} 场已进入有效样本</strong></div>
+          </div>
+          <div class="review-record-wrap compact r15-ledger-scroll">
+            <table class="review-record-table r15-backtest-table">
+              <thead><tr><th>日期</th><th>联赛</th><th>版本/整包</th><th>比赛</th><th>赛果</th><th>胜平负</th><th>让球</th><th>总进球</th><th>比分</th><th>样本状态</th></tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
 function statsLeagueName(match = {}, pred = {}) {
   const text = [match.league, match.competition, match.group, pred.competition, pred.competitionModel, pred.type].filter(Boolean).join(" ");
   if (/世界杯|World Cup/i.test(text)) return "世界杯";
@@ -1056,6 +1242,7 @@ function renderGlobalStats() {
   if (!cards || !table) return;
 
   const allRows = modelAuditRows();
+  renderR15BacktestEntry(allRows);
   const dates = [...new Set(allRows.map(({ match }) => match.date))];
   const latestDate = dates.at(-1) || "";
   const months = [...new Set(dates.map((date) => String(date).slice(0, 7)))].filter(Boolean).sort().reverse();

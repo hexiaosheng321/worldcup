@@ -10,6 +10,7 @@
     "competition:test": "node tools/test-competition-normalization.mjs",
     "venue-samples:test": "node tools/test-direct-venue-samples.mjs",
     "review:test": "node tools/test-review-learning.mjs",
+    "r15-backtest:test": "node tools/test-r15-backtest.mjs",
     "sync:test": "node tools/test-sync-health.mjs",
     "history:import-api": "node tools/import-free-history-api.mjs",
     "history:import-api-football": "node tools/import-api-football-history.mjs",
