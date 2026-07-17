@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { lockRowToSportteryMatch, mergeLiveTargetMatches } from "../web/functions/api/[[path]].js";
+import { lockRowToSportteryMatch, mergeLiveTargetMatches, parseOkoooLiveCenterScores } from "../web/functions/api/[[path]].js";
 
 const matchRows = [{
   match_id: "sporttery-1324067",
@@ -61,4 +61,48 @@ assert.equal(targets.find((row) => row.matchId === "1324066")?.liveTargetSource,
 assert.equal(targets.find((row) => row.matchId === "1324067")?.home, "洛杉矶FC", "official match rows must remain authoritative");
 assert.equal(targets.find((row) => row.matchId === "1324067")?.liveTargetSource, "matches");
 
-console.log("Live-score target union tests passed: lock-only matches are always eligible for score matching.");
+const liveCenterRows = parseOkoooLiveCenterScores(`
+  <tr id="match_detail_1324065" state="Not" matchid="1324065">
+    <td class="match_league"><a>美职</a></td>
+    <td><span class="ctrl_time">延期</span></td>
+    <td><a class="ctrl_homename">芝加哥火焰</a></td>
+    <td class="show_score" val="1324065"><b class="font_blue ctrl_homescore"></b>-<b class="font_blue ctrl_awayscore"></b></td>
+    <td><a class="ctrl_awayname">温哥华白帽</a></td>
+  </tr>
+  <tr id="match_detail_1324066" state="On" matchid="1324066">
+    <td class="match_league"><a>美职</a></td>
+    <td><span class="ctrl_time">4'</span></td>
+    <td><a class="ctrl_homename">圣路易斯市</a></td>
+    <td class="show_score" val="1324066"><b class="font_red ctrl_homescore">0</b>-<b class="font_red ctrl_awayscore">0</b></td>
+    <td><a class="ctrl_awayname">堪萨斯城</a></td>
+  </tr>
+`);
+assert.equal(liveCenterRows.length, 2, "scoreless authoritative statuses must survive live-center parsing");
+assert.deepEqual(
+  liveCenterRows.find((row) => row.externalId === "1324065"),
+  {
+    source: "OKOOO-live",
+    externalId: "1324065",
+    date: "",
+    time: "",
+    league: "美职",
+    home: "芝加哥火焰",
+    away: "温哥华白帽",
+    homeZh: "芝加哥火焰",
+    awayZh: "温哥华白帽",
+    score: "",
+    halfScore: "",
+    status: "延期",
+    statusName: "延期",
+    statusLabel: "延期",
+    minute: "延期",
+    isFinished: false,
+    live: false,
+    unavailable: true,
+    scoreDuration: "REGULAR",
+    scoreMode: "",
+  },
+);
+assert.equal(liveCenterRows.find((row) => row.externalId === "1324066")?.score, "0-0");
+
+console.log("Live-score target tests passed: lock-only fixtures and scoreless authoritative statuses remain visible.");

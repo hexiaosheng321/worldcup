@@ -2123,6 +2123,15 @@ function liveFallbackRowHasUsableScore(row = {}) {
     Boolean(parseDashScore(row.score) && /^\s*(\d+(\+\d+)?'?|half|半场|中场|paused|in[_\s-]?play|live)/i.test(status));
 }
 
+function liveFallbackRowHasAuthoritativeStatus(row = {}) {
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.minute || ""}`;
+  return /\bpostpon(?:ed|ement)?\b|\bcancel(?:led|ed)?\b|\babandon(?:ed)?\b|\bsuspend(?:ed)?\b|延期|推迟|取消|腰斩|中止/i.test(status);
+}
+
+function liveFallbackRowIsDisplayable(row = {}) {
+  return liveFallbackRowHasUsableScore(row) || liveFallbackRowHasAuthoritativeStatus(row);
+}
+
 function liveFallbackRowUsesRegularTime(row = {}) {
   const source = String(row.source || "");
   const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.scoreDuration || ""}`;
@@ -3127,10 +3136,7 @@ function parseOkoooJczqLiveScores(html = "") {
   return rows;
 }
 
-async function fetchOkoooJczqLiveScores(env) {
-  const response = await fetch(env.OKOOO_LIVE_CENTER_URL || okoooLiveCenterUrl, { headers: okoooHeaders });
-  const text = decodeTextBody(await response.arrayBuffer());
-  if (!response.ok) throw new Error(`OKOOO live ${response.status}: ${text.slice(0, 200)}`);
+export function parseOkoooLiveCenterScores(text = "") {
   const rows = [];
   const rowPattern = /<tr\b[^>]*>[\s\S]*?<td[^>]*class="show_score"[^>]*val="(\d+)"[\s\S]*?<\/tr>/gi;
   let matched;
@@ -3140,13 +3146,17 @@ async function fetchOkoooJczqLiveScores(env) {
     const externalId = matched[1];
     const home = capture(/class="ctrl_homename[^\"]*"[^>]*>([\s\S]*?)<\/a>/i);
     const away = capture(/class="ctrl_awayname[^\"]*"[^>]*>([\s\S]*?)<\/a>/i);
-    const homeScore = Number(capture(/class="[^\"]*ctrl_homescore[^\"]*"[^>]*>([\s\S]*?)<\/b>/i));
-    const awayScore = Number(capture(/class="[^\"]*ctrl_awayscore[^\"]*"[^>]*>([\s\S]*?)<\/b>/i));
+    const homeScoreText = capture(/class="[^\"]*ctrl_homescore[^\"]*"[^>]*>([\s\S]*?)<\/b>/i);
+    const awayScoreText = capture(/class="[^\"]*ctrl_awayscore[^\"]*"[^>]*>([\s\S]*?)<\/b>/i);
+    const homeScore = homeScoreText === "" ? NaN : Number(homeScoreText);
+    const awayScore = awayScoreText === "" ? NaN : Number(awayScoreText);
     const status = capture(/class="ctrl_time"[^>]*>([\s\S]*?)<\/span>/i);
-    if (!home || !away || !Number.isFinite(homeScore) || !Number.isFinite(awayScore)) continue;
+    const hasScore = Number.isFinite(homeScore) && Number.isFinite(awayScore);
+    const unavailable = liveFallbackRowHasAuthoritativeStatus({ status });
+    if (!home || !away || (!hasScore && !unavailable)) continue;
     const isFinished = /完|finish|after|ft/i.test(status);
     const live = !isFinished && /\d|半|中|live|in.?play/i.test(status);
-    if (!isFinished && !live) continue;
+    if (!isFinished && !live && !unavailable) continue;
     rows.push({
       source: "OKOOO-live",
       externalId,
@@ -3157,18 +3167,28 @@ async function fetchOkoooJczqLiveScores(env) {
       away,
       homeZh: home,
       awayZh: away,
-      score: `${homeScore}-${awayScore}`,
+      score: hasScore ? `${homeScore}-${awayScore}` : "",
       halfScore: capture(/<span class="font_(?:red|blue)">\s*(\d+\s*-\s*\d+)\s*<\/span>/i).replace(/\s/g, ""),
       status: isFinished ? "FINISHED" : status || "LIVE",
       statusName: isFinished ? "已完赛" : status || "进行中",
+      statusLabel: isFinished ? "已完赛" : status || "进行中",
       minute: status,
       isFinished,
       live,
+      unavailable,
       scoreDuration: "REGULAR",
-      scoreMode: isFinished ? "fullTime" : "liveRegularTime",
+      scoreMode: isFinished ? "fullTime" : live ? "liveRegularTime" : "",
     });
   }
-  if (!rows.length) throw new Error("OKOOO live center returned no scored live/finished rows");
+  return rows;
+}
+
+async function fetchOkoooJczqLiveScores(env) {
+  const response = await fetch(env.OKOOO_LIVE_CENTER_URL || okoooLiveCenterUrl, { headers: okoooHeaders });
+  const text = decodeTextBody(await response.arrayBuffer());
+  if (!response.ok) throw new Error(`OKOOO live ${response.status}: ${text.slice(0, 200)}`);
+  const rows = parseOkoooLiveCenterScores(text);
+  if (!rows.length) throw new Error("OKOOO live center returned no scored live/finished/status rows");
   return rows;
 }
 
@@ -3836,7 +3856,7 @@ async function syncLiveFallbackToD1(db, env) {
 
 function liveFallbackSourceSummary(sportteryMatches = [], liveRows = []) {
   const matchedRows = liveRows.filter((row) =>
-    liveFallbackRowHasUsableScore(row) &&
+    liveFallbackRowIsDisplayable(row) &&
     sportteryMatches.some((match) =>
       liveDateMatchesSporttery(match, row) &&
       liveTeamMatches(match.home, row.home) &&
@@ -3849,13 +3869,13 @@ function liveFallbackSourceSummary(sportteryMatches = [], liveRows = []) {
     const source = row.source || "unknown";
     bySource[source] ||= { raw: 0, usableRegular: 0, matched: 0, nonRegularExcluded: 0 };
     bySource[source].raw += 1;
-    if (liveFallbackRowHasUsableScore(row)) bySource[source].usableRegular += 1;
+    if (liveFallbackRowIsDisplayable(row)) bySource[source].usableRegular += 1;
     if (matchedRows.includes(row)) bySource[source].matched += 1;
     if (nonRegularRows.includes(row)) bySource[source].nonRegularExcluded += 1;
   }
   return {
     rawCount: liveRows.length,
-    usableRegularCount: liveRows.filter(liveFallbackRowHasUsableScore).length,
+    usableRegularCount: liveRows.filter(liveFallbackRowIsDisplayable).length,
     matchedCount: matchedRows.length,
     dedupedMatchedCount: dedupeLiveRows(matchedRows).length,
     nonRegularExcludedCount: nonRegularRows.length,
@@ -3873,7 +3893,7 @@ async function liveScoreHealth(db, env) {
     liveRows = { matches: [], errors: [{ source: "all", date: "all", message: error.message || "live health failed" }] };
   }
   const matchedRows = liveRows.matches.filter((row) =>
-    liveFallbackRowHasUsableScore(row) &&
+    liveFallbackRowIsDisplayable(row) &&
     sportteryMatches.some((match) =>
       liveDateMatchesSporttery(match, row) &&
       liveTeamMatches(match.home, row.home) &&
@@ -4065,7 +4085,7 @@ async function d1LiveFootballScoresScript(db, env) {
     liveRows = { matches: [], errors: [{ date: "all", message: error.message || "live score fetch failed" }] };
   }
   const matchedRows = liveRows.matches.filter((row) =>
-    liveFallbackRowHasUsableScore(row) &&
+    liveFallbackRowIsDisplayable(row) &&
     sportteryMatches.some((match) => liveDateMatchesSporttery(match, row) &&
       liveTeamMatches(match.home, row.home) &&
       liveTeamMatches(match.away, row.away))

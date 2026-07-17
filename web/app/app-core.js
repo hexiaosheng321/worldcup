@@ -644,8 +644,20 @@ function firecrawlContextForSportteryItem(item = {}) {
   };
 }
 
+function exceptionalLiveStatusText(row = {}) {
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.minute || ""}`;
+  const matched = status.match(/(postponed?|cancelled?|canceled?|abandoned?|suspended?|延期|推迟|取消|腰斩|中止)/i)?.[1] || "";
+  if (!matched) return "";
+  if (/postpon|延期|推迟/i.test(matched)) return "延期";
+  if (/cancel|取消/i.test(matched)) return "取消";
+  if (/abandon|腰斩/i.test(matched)) return "腰斩";
+  return "中止";
+}
+
 function liveScoreStatusText(row) {
   if (!row) return "";
+  const exceptionalStatus = exceptionalLiveStatusText(row);
+  if (exceptionalStatus) return exceptionalStatus;
   if (row.isFinished) return "已完赛";
   if (row.minute) return `进行中 ${row.minute}`;
   if (row.statusLabel) return row.statusLabel;

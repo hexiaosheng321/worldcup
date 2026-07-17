@@ -447,6 +447,16 @@ function liveStatusForMatch(match) {
       kickoffAt,
     };
   }
+  const exceptionalStatus = exceptionalLiveStatusText(liveRow);
+  if (exceptionalStatus) {
+    return {
+      tone: "unavailable",
+      label: exceptionalStatus,
+      value: exceptionalStatus,
+      note: liveRow?.source ? `赛况状态 · ${liveRow.source}` : "赛况状态已更新",
+      kickoffAt,
+    };
+  }
   if (liveScore) {
     return {
       tone: "live",
@@ -517,6 +527,16 @@ function homeSportteryStatus(item = {}) {
       label: "已完赛",
       value: resultScore,
       note: result?.statusName || item.statusName || "赛果已回填",
+      kickoffAt,
+    };
+  }
+  const exceptionalStatus = exceptionalLiveStatusText(liveScore);
+  if (exceptionalStatus) {
+    return {
+      tone: "unavailable",
+      label: exceptionalStatus,
+      value: exceptionalStatus,
+      note: liveScore?.source ? `赛况状态 · ${liveScore.source}` : "赛况状态已更新",
       kickoffAt,
     };
   }
@@ -682,7 +702,7 @@ function renderHome() {
       const countdownLabel = liveStatus.tone === "countdown" ? "距离开赛" : liveStatus.label;
       const countdownNote = liveStatus.tone === "countdown" ? `${kickoffLabel} 北京时间` : liveStatus.note;
       return `
-        <button type="button" class="home-match-card ${liveStatus.tone === "live" ? "is-live" : ""} ${liveStatus.tone === "pending-result" ? "pending-result" : ""} ${liveStatus.tone === "finished" ? "finished" : ""}" data-live-score-active="${liveStatus.tone === "live" && normalizeResultScore(liveStatus.value) ? "1" : "0"}" ${cardTarget}>
+        <button type="button" class="home-match-card ${liveStatus.tone === "live" ? "is-live" : ""} ${["pending-result", "unavailable"].includes(liveStatus.tone) ? "pending-result" : ""} ${liveStatus.tone === "finished" ? "finished" : ""}" data-live-score-active="${(liveStatus.tone === "live" && normalizeResultScore(liveStatus.value)) || liveStatus.tone === "unavailable" ? "1" : "0"}" ${cardTarget}>
           <span>${groupLabel}</span>
           <em>${formatDate(match.date)}</em>
           <strong>${match.home}<small>vs</small>${match.away}</strong>
