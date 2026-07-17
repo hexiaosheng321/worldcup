@@ -2877,6 +2877,34 @@ body::before {
   line-height: 1.6;
 }
 
+@media (min-width: 901px) {
+  .final-decision-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 4px 2px 16px;
+  }
+
+  .final-decision-head span {
+    grid-column: auto;
+  }
+
+  .final-decision-head strong {
+    max-width: 34em;
+    font-size: clamp(30px, 2.35vw, 44px);
+    line-height: 1.16;
+    text-wrap: balance;
+  }
+
+  .final-decision-head em {
+    max-width: 76em;
+    padding-left: 12px;
+    border-left: 3px solid var(--gold);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+}
+
 .final-decision-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
