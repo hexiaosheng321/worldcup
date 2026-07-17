@@ -325,7 +325,20 @@ function recentTeamForm(samples, team, beforeDate, targetLeague, limit = 8) {
     .filter((item) => item.score)
     .sort((a, b) => String(b.sample.kickoffTime || b.sample.matchDate || "").localeCompare(String(a.sample.kickoffTime || a.sample.matchDate || "")))
     .filter(({ sample, score }) => {
-      const key = [dateKey(sample.kickoffTime || sample.matchDate), teamKey(sample.homeTeam), teamKey(sample.awayTeam), score.home, score.away].join("|");
+      // The same settled match can arrive through both the historical feed and
+      // D1 Base Cases with different opponent abbreviations.  De-duplicate from
+      // the target team's perspective so aliases on the other side cannot
+      // double-weight recent form.
+      const isHome = sameTeam(team, sample.homeTeam);
+      const goalsFor = isHome ? score.home : score.away;
+      const goalsAgainst = isHome ? score.away : score.home;
+      const key = [
+        dateKey(sample.kickoffTime || sample.matchDate),
+        teamKey(team),
+        isHome ? "HOME" : "AWAY",
+        goalsFor,
+        goalsAgainst,
+      ].join("|");
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

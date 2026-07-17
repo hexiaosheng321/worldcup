@@ -224,6 +224,23 @@ const swedishAlias = runUnifiedPrediction({
 }, { lockType: "FINAL_LOCK" });
 assert.equal(swedishAlias.featureSet.leagueLearning.version, "ALLSVENSKAN_2026-07-14_R2");
 
+const opponentAliasDuplicate = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "瑞超", home: "主队", away: "韦斯特" },
+  samples: [
+    ...samples.map((sample) => ({ ...sample, league: "瑞超" })),
+    { league: "瑞超", kickoffTime: "2026-07-04 21:00", homeTeam: "哈姆斯塔德", awayTeam: "瓦斯特拉斯", actualHomeGoals: 1, actualAwayGoals: 3, source: "historical-feed" },
+    { league: "瑞超", kickoffTime: "2026-07-04 21:00", homeTeam: "哈尔姆斯", awayTeam: "韦斯特罗", actualHomeGoals: 1, actualAwayGoals: 3, source: "d1-base-case" },
+    { league: "瑞超", kickoffTime: "2026-07-03 21:00", homeTeam: "韦斯特", awayTeam: "对手丙", actualHomeGoals: 2, actualAwayGoals: 0 },
+    { league: "瑞超", kickoffTime: "2026-07-02 21:00", homeTeam: "对手丁", awayTeam: "韦斯特", actualHomeGoals: 0, actualAwayGoals: 1 },
+    { league: "瑞超", kickoffTime: "2026-07-01 21:00", homeTeam: "韦斯特", awayTeam: "对手戊", actualHomeGoals: 1, actualAwayGoals: 1 },
+    { league: "瑞超", kickoffTime: "2026-06-30 21:00", homeTeam: "对手己", awayTeam: "韦斯特", actualHomeGoals: 2, actualAwayGoals: 2 },
+  ],
+}, { lockType: "PRE_LOCK" });
+const duplicatePerspectiveKeys = opponentAliasDuplicate.featureSet.recentForm.away.map((row) => [row.date, row.venue, row.rawGf, row.rawGa].join("|"));
+assert.equal(duplicatePerspectiveKeys.filter((key) => key === "2026-07-04|AWAY|3|1").length, 1);
+assert.equal(new Set(duplicatePerspectiveKeys).size, duplicatePerspectiveKeys.length);
+
 const swedishStrongFavourite = runUnifiedPrediction({
   ...context,
   match: { ...context.match, league: "瑞超" },
