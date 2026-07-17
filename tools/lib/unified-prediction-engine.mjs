@@ -257,8 +257,11 @@ function teamKey(value = "") {
     [/克里斯|Kristiansund/i, "kristiansund"], [/桑纳菲|Sandefjord/i, "sandefjord"],
     [/^(?:杰尔|吉奥里|Gy[oő]r)$/i, "gyor"], [/^(?:维京人|维京古尔|维京古|V[ií]kingur(?: Reykjav[ií]k)?)$/i, "vikingur-reykjavik"],
     [/^(?:新圣徒|The New Saints|TNS)$/i, "the-new-saints"], [/^(?:沙巴巴|沙巴巴库|萨巴赫|Sabah(?: Baku)?)$/i, "sabah-baku"],
-    [/韦斯特|V[aä]ster[aå]s/i, "vasteras"], [/代格福|Degerfors/i, "degerfors"],
+    [/韦斯特|瓦斯特拉斯|V[aä]ster[aå]s/i, "vasteras"], [/代格福|Degerfors/i, "degerfors"],
     [/米亚尔(?:比)?/i, "mjallby"], [/(?:AIK)?索尔纳/i, "aik"], [/厄尔格|奥尔格里特/i, "orgryte"], [/赫根/i, "hacken"],
+    [/布鲁马|布洛马波卡纳|布鲁马波卡纳|Brommapojkarna/i, "brommapojkarna"],
+    [/布拉干|巴甘蒂诺|Bragantino/i, "bragantino"], [/迈拉索|米拉索尔|Mirassol/i, "mirassol"],
+    [/洛城银河|洛杉矶银河|LA Galaxy/i, "la-galaxy"], [/洛杉矶FC|Los Angeles FC|LAFC/i, "lafc"],
     [/拉赫蒂|Lahti/i, "lahti"], [/HIFK|Helsinki IFK/i, "hifk"], [/赫尔火|赫尔辛基火花|IF Gnistan/i, "gnistan"], [/赫尔辛(?:基)?|HJK(?: Helsinki)?/i, "hjk"], [/玛丽港|Mariehamn/i, "mariehamn"],
     [/AC\s*奥(?:卢)?|AC\s*Oulu/i, "acoulu"], [/TPS|Turku\s*PS/i, "tps"],
   ];

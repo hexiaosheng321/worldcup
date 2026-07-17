@@ -3619,7 +3619,14 @@ function parseFiveHundredKickoffs(html = "") {
     const kickoffTime = attr("data-matchtime").slice(0, 5);
     const salesCloseAt = attr("data-buyendtime");
     if (!orderId || !/^\d{4}-\d{2}-\d{2}$/.test(matchDate) || !/^\d{2}:\d{2}$/.test(kickoffTime)) continue;
-    rows.set(orderId, { matchDate, kickoffTime, salesCloseAt, fixtureId: attr("data-fixtureid") });
+    rows.set(orderId, {
+      matchDate,
+      kickoffTime,
+      salesCloseAt,
+      fixtureId: attr("data-fixtureid"),
+      home: attr("data-homesxname"),
+      away: attr("data-awaysxname"),
+    });
   }
   return rows;
 }
@@ -3665,6 +3672,8 @@ async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
     const sourceMatchId = usableSportteryMatchId(match.matchId) ? String(match.matchId) : "";
     return {
       ...match,
+      home: match.home === match.away && fiveHundred?.home ? fiveHundred.home : match.home,
+      away: match.home === match.away && fiveHundred?.away ? fiveHundred.away : match.away,
       matchId: officialMatchId || sourceMatchId || `okooo-${match.orderId}`,
       matchDate: official?.matchDate || fiveHundred?.matchDate || "",
       kickoffTime: official?.kickoffTime || fiveHundred?.kickoffTime || "",

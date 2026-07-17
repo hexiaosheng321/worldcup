@@ -16,6 +16,11 @@ const TEAM_ALIASES = {
   "赫根": ["BK Hacken", "BK Häcken", "Hacken", "Häcken"],
   "佐加顿斯": ["Djurgardens IF", "Djurgårdens IF", "Djurgarden", "Djurgården"],
   "布鲁马波": ["IF Brommapojkarna", "Brommapojkarna"],
+  "布鲁马": ["布洛马波卡纳", "布鲁马波卡纳", "IF Brommapojkarna", "Brommapojkarna"],
+  "布拉干": ["巴甘蒂诺", "Red Bull Bragantino", "Bragantino"],
+  "迈拉索": ["米拉索尔", "Mirassol"],
+  "洛城银河": ["洛杉矶银河", "LA Galaxy"],
+  "洛杉矶FC": ["Los Angeles FC", "LAFC"],
   "盖斯": ["Gais", "GAIS"],
 };
 
