@@ -137,6 +137,9 @@ for (const marker of ['window.addEventListener("popstate"', "canonicalSportteryM
 for (const marker of ["canonicalAnalyticsPagePath", "analyticsCanonicalPagePathSql", "sportterySitemap"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing canonical analytics or sitemap marker: ${marker}`);
 }
+for (const marker of ["lockRowToSportteryMatch", "mergeLiveTargetMatches", "d1LiveTargetMatches", "insertMissingLiveTargetMatch", "lockedPredictionOnlyCount"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing lock-backed live-score target marker: ${marker}`);
+}
 if (!fs.readFileSync("web/robots.txt", "utf8").includes("https://ticai-model.com/api/sitemap.xml")) {
   throw new Error("Production baseline requires the canonical sporttery sitemap in robots.txt.");
 }
@@ -384,7 +387,7 @@ for (const marker of ["sportteryDetailNavigationPending", "previousScrollY", 'be
   }
 }
 
-for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs"]) {
+for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-live-score-targets.mjs"]) {
   execFileSync(process.execPath, [testFile], { stdio: "inherit" });
 }
 

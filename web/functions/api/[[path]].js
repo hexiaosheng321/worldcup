@@ -2922,6 +2922,100 @@ function d1RowToSportteryMatch(row) {
   };
 }
 
+export function lockRowToSportteryMatch(row = {}) {
+  const payload = parseObject(row.payload_json);
+  const prediction = parseObject(payload.sportteryPrediction);
+  const kickoffText = firstText(
+    row.kickoff_time,
+    payload.kickoffTime,
+    [prediction.matchDate || prediction.ticaiDate, prediction.kickoffTime].filter(Boolean).join(" ")
+  );
+  const [kickoffDate = "", kickoffTime = ""] = String(kickoffText || "").trim().split(/\s+/);
+  const compactMatchId = String(row.match_id || payload.matchId || prediction.matchId || "").replace(/^sporttery-/, "");
+  return {
+    ...prediction,
+    matchId: compactMatchId,
+    issue: prediction.issue || payload.matchCode || row.match_code || "",
+    no: prediction.no || compactSportteryNo(payload.matchCode || row.match_code || ""),
+    ticaiDate: prediction.ticaiDate || prediction.matchDate || kickoffDate,
+    matchDate: prediction.matchDate || kickoffDate,
+    kickoffTime: prediction.kickoffTime || kickoffTime.slice(0, 5),
+    league: prediction.competition || payload.league || row.league || "",
+    home: prediction.home || payload.homeTeam || row.home_team || "",
+    away: prediction.away || payload.awayTeam || row.away_team || "",
+    cloudMatchId: String(row.match_id || payload.matchId || (compactMatchId ? `sporttery-${compactMatchId}` : "")),
+    liveTargetSource: "locked_predictions",
+  };
+}
+
+export function mergeLiveTargetMatches(matchRows = [], lockRows = []) {
+  const byId = new Map();
+  const add = (match = {}) => {
+    const compactId = String(match.cloudMatchId || match.matchId || "").replace(/^sporttery-/, "");
+    if (!compactId || !match.home || !match.away) return;
+    const existing = byId.get(compactId);
+    if (!existing) {
+      byId.set(compactId, { ...match, matchId: compactId, cloudMatchId: `sporttery-${compactId}` });
+      return;
+    }
+    const merged = { ...existing };
+    for (const [key, value] of Object.entries(match)) {
+      if ((merged[key] === undefined || merged[key] === null || merged[key] === "") && value !== undefined && value !== null && value !== "") {
+        merged[key] = value;
+      }
+    }
+    byId.set(compactId, merged);
+  };
+  matchRows.map(d1RowToSportteryMatch).forEach((match) => add({ ...match, liveTargetSource: "matches" }));
+  lockRows.map(lockRowToSportteryMatch).forEach(add);
+  return [...byId.values()];
+}
+
+function liveTargetWithinWindow(match = {}, now = Date.now(), pastDays = 2, futureDays = 2) {
+  const kickoffAt = bjtAt(match.matchDate || match.ticaiDate, match.kickoffTime || "00:00");
+  if (!Number.isFinite(kickoffAt)) return true;
+  return kickoffAt >= now - pastDays * 86400000 && kickoffAt <= now + futureDays * 86400000;
+}
+
+async function d1LiveTargetMatches(db, { pastDays = 2, futureDays = 2, matchLimit = 300, lockLimit = 500 } = {}) {
+  const [matchRows, lockRows] = await Promise.all([
+    db.prepare("SELECT * FROM matches ORDER BY kickoff_time DESC LIMIT ?").bind(matchLimit).all(),
+    db.prepare(`
+      SELECT * FROM locked_predictions
+      WHERE kickoff_time IS NOT NULL AND kickoff_time != ''
+      ORDER BY locked_at DESC
+      LIMIT ?
+    `).bind(lockLimit).all(),
+  ]);
+  const now = Date.now();
+  return mergeLiveTargetMatches(matchRows.results || [], lockRows.results || [])
+    .filter((match) => liveTargetWithinWindow(match, now, pastDays, futureDays));
+}
+
+async function insertMissingLiveTargetMatch(db, match = {}, capturedAt = new Date().toISOString()) {
+  const compactId = String(match.cloudMatchId || match.matchId || "").replace(/^sporttery-/, "");
+  if (!compactId || !match.home || !match.away) return false;
+  const cloudMatchId = `sporttery-${compactId}`;
+  const payload = { ...match, matchId: compactId, cloudMatchId, sourcePriority: match.sourcePriority || "locked-prediction-parent" };
+  delete payload.liveTargetSource;
+  const result = await db.prepare(`
+    INSERT INTO matches (match_id, match_code, league, home_team, away_team, kickoff_time, status, payload_json, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(match_id) DO NOTHING
+  `).bind(
+    cloudMatchId,
+    match.issue || match.no || "",
+    match.league || "竞彩",
+    match.home,
+    match.away,
+    `${match.matchDate || match.ticaiDate || ""} ${match.kickoffTime || ""}`.trim(),
+    match.statusCode || "LOCKED_PREDICTION",
+    JSON.stringify(payload),
+    capturedAt
+  ).run();
+  return Number(result.meta?.changes || 0) > 0;
+}
+
 function decodeTextBody(bytes) {
   for (const encoding of ["gbk", "gb18030", "utf-8"]) {
     try {
@@ -3575,19 +3669,11 @@ async function syncSnapshotMatchesToD1(db, request) {
 
 async function syncLiveFallbackToD1(db, env) {
   const capturedAt = new Date().toISOString();
-  const rows = await db.prepare(`
-    SELECT * FROM matches
-    ORDER BY updated_at DESC
-    LIMIT 300
-  `).all();
-  const now = Date.now();
-  const matches = (rows.results || [])
-    .map(d1RowToSportteryMatch)
-    .filter((match) => {
-      const kickoffAt = bjtAt(match.matchDate || match.ticaiDate, match.kickoffTime || "00:00");
-      if (!Number.isFinite(kickoffAt)) return true;
-      return kickoffAt >= now - 14 * 86400000 && kickoffAt <= now + 2 * 86400000;
-    });
+  const matches = await d1LiveTargetMatches(db, { pastDays: 14, futureDays: 2 });
+  let lockParentsInserted = 0;
+  for (const match of matches.filter((item) => item.liveTargetSource === "locked_predictions")) {
+    if (await insertMissingLiveTargetMatch(db, match, capturedAt)) lockParentsInserted += 1;
+  }
 
   let liveRows = { matches: [], errors: [] };
   try {
@@ -3733,6 +3819,7 @@ async function syncLiveFallbackToD1(db, env) {
     JSON.stringify({
       matchCount: matches.length,
       liveFallbackCount,
+      lockParentsInserted,
       kickoffUpdated,
       reviewed,
       cases,
@@ -3744,7 +3831,7 @@ async function syncLiveFallbackToD1(db, env) {
     capturedAt
   ).run();
 
-  return { ok: true, capturedAt, matchCount: matches.length, liveFallbackCount, kickoffUpdated, reviewed, cases, liveFallbackErrors: liveRows.errors, liveFallbackCandidates: liveFallbackCandidates.slice(0, 30), sourceSummary };
+  return { ok: true, capturedAt, matchCount: matches.length, liveFallbackCount, lockParentsInserted, kickoffUpdated, reviewed, cases, liveFallbackErrors: liveRows.errors, liveFallbackCandidates: liveFallbackCandidates.slice(0, 30), sourceSummary };
 }
 
 function liveFallbackSourceSummary(sportteryMatches = [], liveRows = []) {
@@ -3778,19 +3865,7 @@ function liveFallbackSourceSummary(sportteryMatches = [], liveRows = []) {
 
 async function liveScoreHealth(db, env) {
   const capturedAt = new Date().toISOString();
-  const rows = await db.prepare(`
-    SELECT * FROM matches
-    ORDER BY kickoff_time DESC
-    LIMIT 300
-  `).all();
-  const now = Date.now();
-  const sportteryMatches = (rows.results || [])
-    .map(d1RowToSportteryMatch)
-    .filter((match) => {
-      const kickoffAt = bjtAt(match.matchDate || match.ticaiDate, match.kickoffTime || "00:00");
-      if (!Number.isFinite(kickoffAt)) return true;
-      return kickoffAt >= now - 2 * 86400000 && kickoffAt <= now + 2 * 86400000;
-    });
+  const sportteryMatches = await d1LiveTargetMatches(db);
   let liveRows = { matches: [], errors: [] };
   try {
     liveRows = await fetchLiveFallbackMatches(env, sportteryMatches);
@@ -3829,6 +3904,8 @@ async function liveScoreHealth(db, env) {
     },
     d1Window: {
       matchCount: sportteryMatches.length,
+      matchTableCount: sportteryMatches.filter((match) => match.liveTargetSource === "matches").length,
+      lockedPredictionOnlyCount: sportteryMatches.filter((match) => match.liveTargetSource === "locked_predictions").length,
       dates: sportteryMatchDates(sportteryMatches),
     },
     liveFallback: {
@@ -3980,19 +4057,7 @@ async function d1ResultsScript(db) {
 }
 
 async function d1LiveFootballScoresScript(db, env) {
-  const rows = await db.prepare(`
-    SELECT * FROM matches
-    ORDER BY kickoff_time DESC
-    LIMIT 300
-  `).all();
-  const now = Date.now();
-  const sportteryMatches = (rows.results || [])
-    .map(d1RowToSportteryMatch)
-    .filter((match) => {
-      const kickoffAt = bjtAt(match.matchDate || match.ticaiDate, match.kickoffTime || "00:00");
-      if (!Number.isFinite(kickoffAt)) return true;
-      return kickoffAt >= now - 2 * 86400000 && kickoffAt <= now + 2 * 86400000;
-    });
+  const sportteryMatches = await d1LiveTargetMatches(db);
   let liveRows = { matches: [], errors: [] };
   try {
     liveRows = await fetchLiveFallbackMatches(env, sportteryMatches);
@@ -4559,7 +4624,9 @@ if (path === "sync/okooo-live" && request.method === "POST") {
 
     if (path === "locks" && request.method === "POST") {
       const body = await readJson(request);
-      const lockId = body.lockId || body.lock_id || `${body.matchId || body.match_id}-${body.lockType || "FINAL_LOCK"}-${Date.now()}`;
+      const submittedMatchId = String(body.matchId || body.match_id || "").trim();
+      if (!submittedMatchId) return json({ ok: false, error: "matchId required" }, 400);
+      const lockId = body.lockId || body.lock_id || `${submittedMatchId}-${body.lockType || "FINAL_LOCK"}-${Date.now()}`;
       const lockType = body.lockType || body.lock_type || "FINAL_LOCK";
       const league = body.league || "世界杯";
       if (lockType === "FINAL_LOCK") {
@@ -4626,6 +4693,15 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       }
       const exists = await db.prepare("SELECT lock_id FROM locked_predictions WHERE lock_id = ?").bind(lockId).first();
       if (exists) return json({ ok: false, error: "lockId already exists; locked records cannot be overwritten" }, 409);
+      await insertMissingLiveTargetMatch(db, lockRowToSportteryMatch({
+        match_id: submittedMatchId,
+        match_code: body.matchCode || body.match_code || "",
+        home_team: body.homeTeam || body.home_team || "",
+        away_team: body.awayTeam || body.away_team || "",
+        league,
+        kickoff_time: body.kickoffTime || body.kickoff_time || "",
+        payload_json: JSON.stringify(body),
+      }), body.lockedAt || body.locked_at || new Date().toISOString());
       await db.prepare(`
         INSERT INTO locked_predictions (
           lock_id, match_id, match_code, home_team, away_team, league, kickoff_time, locked_at, lock_type, model_version,
