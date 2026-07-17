@@ -3689,6 +3689,18 @@ async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
   for (const match of matches) {
     const matchId = sportteryDbMatchId(match);
     const fixtureDate = match.matchDate || match.ticaiDate || "";
+    if (match.fiveHundredFixtureId && fixtureDate && match.issue) {
+      const sameFixtureWhere = `
+        match_id <> ? AND match_code = ? AND substr(kickoff_time, 1, 10) = ?
+        AND json_extract(payload_json, '$.fiveHundredFixtureId') = ?
+      `;
+      await db.prepare(`DELETE FROM odds_snapshots WHERE match_id IN (SELECT match_id FROM matches WHERE ${sameFixtureWhere})`)
+        .bind(matchId, match.issue, fixtureDate, match.fiveHundredFixtureId)
+        .run();
+      await db.prepare(`DELETE FROM matches WHERE ${sameFixtureWhere}`)
+        .bind(matchId, match.issue, fixtureDate, match.fiveHundredFixtureId)
+        .run();
+    }
     if (authoritativeSportteryMatchId(match.matchId) && fixtureDate && match.issue && match.home && match.away) {
       const placeholderWhere = `
         match_id <> ? AND match_code = ? AND home_team = ? AND away_team = ?
