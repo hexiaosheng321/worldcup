@@ -654,10 +654,22 @@ function exceptionalLiveStatusText(row = {}) {
   return "中止";
 }
 
+function liveScoreIsScheduled(row = {}) {
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.rawStatus || ""}`;
+  return Boolean(
+    row &&
+    !row.live &&
+    !row.isFinished &&
+    !normalizeResultScore(row.score) &&
+    (row.scheduled === true || /\bscheduled\b|not\s*started|未开赛|待开赛|等待开赛|^\s*未\s*$/i.test(status))
+  );
+}
+
 function liveScoreStatusText(row) {
   if (!row) return "";
   const exceptionalStatus = exceptionalLiveStatusText(row);
   if (exceptionalStatus) return exceptionalStatus;
+  if (liveScoreIsScheduled(row)) return "等待开赛";
   if (row.isFinished) return "已完赛";
   if (row.minute) return `进行中 ${row.minute}`;
   if (row.statusLabel) return row.statusLabel;

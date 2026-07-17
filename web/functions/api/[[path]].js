@@ -2128,8 +2128,22 @@ function liveFallbackRowHasAuthoritativeStatus(row = {}) {
   return /\bpostpon(?:ed|ement)?\b|\bcancel(?:led|ed)?\b|\babandon(?:ed)?\b|\bsuspend(?:ed)?\b|延期|推迟|取消|腰斩|中止/i.test(status);
 }
 
+function liveFallbackRowHasScheduledStatus(row = {}) {
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.rawStatus || ""}`;
+  return Boolean(
+    !row.live &&
+    !row.isFinished &&
+    !parseDashScore(row.score) &&
+    (row.scheduled === true || /\bscheduled\b|not\s*started|未开赛|待开赛|等待开赛|^\s*未\s*$/i.test(status))
+  );
+}
+
 function liveFallbackRowIsDisplayable(row = {}) {
   return liveFallbackRowHasUsableScore(row) || liveFallbackRowHasAuthoritativeStatus(row);
+}
+
+function liveFallbackRowHasMatchStatus(row = {}) {
+  return liveFallbackRowIsDisplayable(row) || liveFallbackRowHasScheduledStatus(row);
 }
 
 function liveFallbackRowUsesRegularTime(row = {}) {
@@ -2139,15 +2153,23 @@ function liveFallbackRowUsesRegularTime(row = {}) {
   return !/extra|after|penalt|shootout|aet|加时|点球/i.test(status);
 }
 
+export function liveFallbackRowMatchesSportteryMatch(match = {}, row = {}) {
+  const matchId = String(match.matchId || match.sportteryKey || match.cloudMatchId || "").replace(/^sporttery-/, "");
+  const externalId = String(row.externalId || row.orderId || "").replace(/^sporttery-/, "");
+  if (row.source === "OKOOO-live" && matchId && externalId && matchId === externalId) return true;
+  return Boolean(
+    liveDateMatchesSporttery(match, row) &&
+    liveTeamMatches(match.home, row.homeZh || row.home) &&
+    liveTeamMatches(match.away, row.awayZh || row.away)
+  );
+}
+
 function liveResultForSportteryMatch(match, liveRows = []) {
   return liveRows.find(
     (row) =>
       row.isFinished &&
       liveFallbackRowUsesRegularTime(row) &&
-      (
-        (row.source === "OKOOO-live" && String(row.externalId || "").replace(/^sporttery-/, "") === String(match.matchId || match.sportteryKey || "").replace(/^sporttery-/, "")) ||
-        (liveDateMatchesSporttery(match, row) && liveTeamMatches(match.home, row.home) && liveTeamMatches(match.away, row.away))
-      ) &&
+      liveFallbackRowMatchesSportteryMatch(match, row) &&
       parseDashScore(row.score)
   );
 }
@@ -3151,12 +3173,14 @@ export function parseOkoooLiveCenterScores(text = "") {
     const homeScore = homeScoreText === "" ? NaN : Number(homeScoreText);
     const awayScore = awayScoreText === "" ? NaN : Number(awayScoreText);
     const status = capture(/class="ctrl_time"[^>]*>([\s\S]*?)<\/span>/i);
+    const sourceState = block.match(/\bstate=["']([^"']*)["']/i)?.[1] || "";
     const hasScore = Number.isFinite(homeScore) && Number.isFinite(awayScore);
     const unavailable = liveFallbackRowHasAuthoritativeStatus({ status });
-    if (!home || !away || (!hasScore && !unavailable)) continue;
+    const scheduled = !hasScore && !unavailable && (/^not$/i.test(sourceState) || /未开赛|待开赛|^\s*未\s*$/i.test(status));
+    if (!home || !away || (!hasScore && !unavailable && !scheduled)) continue;
     const isFinished = /完|finish|after|ft/i.test(status);
     const live = !isFinished && /\d|半|中|live|in.?play/i.test(status);
-    if (!isFinished && !live && !unavailable) continue;
+    if (!isFinished && !live && !unavailable && !scheduled) continue;
     rows.push({
       source: "OKOOO-live",
       externalId,
@@ -3169,13 +3193,16 @@ export function parseOkoooLiveCenterScores(text = "") {
       awayZh: away,
       score: hasScore ? `${homeScore}-${awayScore}` : "",
       halfScore: capture(/<span class="font_(?:red|blue)">\s*(\d+\s*-\s*\d+)\s*<\/span>/i).replace(/\s/g, ""),
-      status: isFinished ? "FINISHED" : status || "LIVE",
-      statusName: isFinished ? "已完赛" : status || "进行中",
-      statusLabel: isFinished ? "已完赛" : status || "进行中",
-      minute: status,
+      status: isFinished ? "FINISHED" : scheduled ? "SCHEDULED" : status || "LIVE",
+      statusName: isFinished ? "已完赛" : scheduled ? "未开赛" : status || "进行中",
+      statusLabel: isFinished ? "已完赛" : scheduled ? "未开赛" : status || "进行中",
+      minute: scheduled ? "" : status,
       isFinished,
       live,
       unavailable,
+      scheduled,
+      rawStatus: status,
+      sourceState,
       scoreDuration: "REGULAR",
       scoreMode: isFinished ? "fullTime" : live ? "liveRegularTime" : "",
     });
@@ -3711,10 +3738,7 @@ async function syncLiveFallbackToD1(db, env) {
   for (const match of matches) {
     const matchId = match.cloudMatchId || sportteryDbMatchId(match);
     const scheduleRow = liveRows.matches.find((row) =>
-      row.time &&
-      liveDateMatchesSporttery(match, row) &&
-      liveTeamMatches(match.home, row.home) &&
-      liveTeamMatches(match.away, row.away)
+      row.time && liveFallbackRowMatchesSportteryMatch(match, row)
     );
     if (!match.kickoffTime && scheduleRow) {
       match.matchDate = scheduleRow.date || match.matchDate || match.ticaiDate;
@@ -3734,11 +3758,7 @@ async function syncLiveFallbackToD1(db, env) {
     }
     const live = liveResultForSportteryMatch(match, liveRows.matches);
     if (!live) {
-      const nearLive = liveRows.matches.find((row) =>
-        liveDateMatchesSporttery(match, row) &&
-        liveTeamMatches(match.home, row.home) &&
-        liveTeamMatches(match.away, row.away)
-      );
+      const nearLive = liveRows.matches.find((row) => liveFallbackRowMatchesSportteryMatch(match, row));
       if (nearLive) {
         liveFallbackCandidates.push({
           matchId,
@@ -3856,26 +3876,24 @@ async function syncLiveFallbackToD1(db, env) {
 
 function liveFallbackSourceSummary(sportteryMatches = [], liveRows = []) {
   const matchedRows = liveRows.filter((row) =>
-    liveFallbackRowIsDisplayable(row) &&
-    sportteryMatches.some((match) =>
-      liveDateMatchesSporttery(match, row) &&
-      liveTeamMatches(match.home, row.home) &&
-      liveTeamMatches(match.away, row.away)
-    )
+    liveFallbackRowHasMatchStatus(row) &&
+    sportteryMatches.some((match) => liveFallbackRowMatchesSportteryMatch(match, row))
   );
   const nonRegularRows = liveRows.filter((row) => parseDashScore(row.score) && !liveFallbackRowUsesRegularTime(row));
   const bySource = {};
   for (const row of liveRows) {
     const source = row.source || "unknown";
-    bySource[source] ||= { raw: 0, usableRegular: 0, matched: 0, nonRegularExcluded: 0 };
+    bySource[source] ||= { raw: 0, usableRegular: 0, scheduledMatched: 0, matched: 0, nonRegularExcluded: 0 };
     bySource[source].raw += 1;
     if (liveFallbackRowIsDisplayable(row)) bySource[source].usableRegular += 1;
+    if (liveFallbackRowHasScheduledStatus(row) && matchedRows.includes(row)) bySource[source].scheduledMatched += 1;
     if (matchedRows.includes(row)) bySource[source].matched += 1;
     if (nonRegularRows.includes(row)) bySource[source].nonRegularExcluded += 1;
   }
   return {
     rawCount: liveRows.length,
     usableRegularCount: liveRows.filter(liveFallbackRowIsDisplayable).length,
+    scheduledMatchedCount: matchedRows.filter(liveFallbackRowHasScheduledStatus).length,
     matchedCount: matchedRows.length,
     dedupedMatchedCount: dedupeLiveRows(matchedRows).length,
     nonRegularExcludedCount: nonRegularRows.length,
@@ -3893,12 +3911,8 @@ async function liveScoreHealth(db, env) {
     liveRows = { matches: [], errors: [{ source: "all", date: "all", message: error.message || "live health failed" }] };
   }
   const matchedRows = liveRows.matches.filter((row) =>
-    liveFallbackRowIsDisplayable(row) &&
-    sportteryMatches.some((match) =>
-      liveDateMatchesSporttery(match, row) &&
-      liveTeamMatches(match.home, row.home) &&
-      liveTeamMatches(match.away, row.away)
-    )
+    liveFallbackRowHasMatchStatus(row) &&
+    sportteryMatches.some((match) => liveFallbackRowMatchesSportteryMatch(match, row))
   );
   const resultRows = await db.prepare(`
     SELECT mr.*, m.match_code, m.league, m.home_team, m.away_team, m.kickoff_time
@@ -4085,10 +4099,8 @@ async function d1LiveFootballScoresScript(db, env) {
     liveRows = { matches: [], errors: [{ date: "all", message: error.message || "live score fetch failed" }] };
   }
   const matchedRows = liveRows.matches.filter((row) =>
-    liveFallbackRowIsDisplayable(row) &&
-    sportteryMatches.some((match) => liveDateMatchesSporttery(match, row) &&
-      liveTeamMatches(match.home, row.home) &&
-      liveTeamMatches(match.away, row.away))
+    liveFallbackRowHasMatchStatus(row) &&
+    sportteryMatches.some((match) => liveFallbackRowMatchesSportteryMatch(match, row))
   );
   const dedupedRows = dedupeLiveRows(matchedRows);
   const data = {
@@ -4097,7 +4109,7 @@ async function d1LiveFootballScoresScript(db, env) {
     importedAt: new Date().toISOString(),
     isLiveSnapshot: true,
     isCloudSnapshot: true,
-    scope: "current_window_live_and_finished_regular_time",
+    scope: "current_window_matched_status_live_and_finished_regular_time",
     totalCount: dedupedRows.length,
     errors: liveRows.errors,
     matches: dedupedRows,

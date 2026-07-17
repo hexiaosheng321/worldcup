@@ -587,8 +587,20 @@ function footballDataContextForSportteryItem(item = {}) {
   )?.context || item.footballDataContext || {};
 }
 
+function liveScoreIsScheduled(row = {}) {
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.rawStatus || ""}`;
+  return Boolean(
+    row &&
+    !row.live &&
+    !row.isFinished &&
+    !normalizeResultScore(row.score) &&
+    (row.scheduled === true || /\bscheduled\b|not\s*started|未开赛|待开赛|等待开赛|^\s*未\s*$/i.test(status))
+  );
+}
+
 function liveScoreStatusText(row) {
   if (!row) return "";
+  if (liveScoreIsScheduled(row)) return "等待开赛";
   if (row.isFinished) return "已完赛";
   if (row.minute) return `进行中 ${row.minute}`;
   if (row.statusLabel) return row.statusLabel;
@@ -2065,12 +2077,14 @@ function sportteryPoolItems() {
       const resultScore = verifiedSportteryScore(item);
       const liveScoreText = normalizeResultScore(liveScore?.score);
       const score = resultScore || (liveScore?.isFinished ? liveScoreText : "");
+      const liveScheduled = liveScoreIsScheduled(liveScore);
       const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
       const elapsed = kickoffElapsedMinutes(kickoffAt);
-      const likelyPastLiveWindow = !score && elapsed !== null && elapsed > SPORTTERY_RESULT_PENDING_WINDOW_MINUTES && !liveScoreText;
+      const likelyPastLiveWindow = !score && !liveScheduled && elapsed !== null && elapsed > SPORTTERY_RESULT_PENDING_WINDOW_MINUTES && !liveScoreText;
       const liveSignal = Boolean(liveScore?.live || liveScoreStatusText(liveScore));
       const kickoffStarted = Number.isFinite(kickoffAt) && now >= kickoffAt;
-      const isLive = !score && !likelyPastLiveWindow && ((Boolean(liveScoreText) && liveSignal) || kickoffStarted);
+      const isLive = !score && !liveScheduled && !likelyPastLiveWindow && ((Boolean(liveScoreText) && liveSignal) || kickoffStarted);
+      const awaitingAuthoritativeStart = !score && kickoffStarted && liveScheduled;
       const displayScore = score || (isLive ? liveScoreText : "");
       const modelPred = sportteryPredictionForItem(item);
       return {
@@ -2087,15 +2101,20 @@ function sportteryPoolItems() {
         liveStatus: liveScoreStatusText(liveScore),
         liveHalfScore: liveScore?.halfScore || "",
         liveSource: liveScore?.source || "",
+        liveScheduled: awaitingAuthoritativeStart,
+        liveMatched: Boolean(liveScore),
+        liveNote: awaitingAuthoritativeStart ? `实时源已匹配 · ${liveScore?.source || "官方实时源"}` : "",
         sourceType: "open",
-        poolTone: score ? "finished" : isLive ? "live" : "open",
+        poolTone: score ? "finished" : (isLive || awaitingAuthoritativeStart) ? "live" : "open",
         status: score
           ? "已完赛"
           : likelyPastLiveWindow
             ? "待回填"
-            : isLive
-              ? liveScoreStatusText(liveScore) || "进行中"
-              : modelPred ? "已有推演" : "已开盘",
+            : awaitingAuthoritativeStart
+              ? "等待开赛"
+              : isLive
+                ? liveScoreStatusText(liveScore) || "进行中"
+                : modelPred ? "已有推演" : "已开盘",
         pendingResultNote: likelyPastLiveWindow ? inferredLiveNote(item.statusName, kickoffAt) : "",
       };
     })
@@ -2214,8 +2233,9 @@ function sportteryPoolItems() {
     .map((item) => {
       const linkedMatch = matchFromResultItem(item);
       const kickoffAt = parseKickoffAt(item.matchDate || item.ticaiDate, item.kickoffTime);
-      const pendingResult = isPastResultWindow(kickoffAt);
       const liveScore = liveScoreForSportteryItem(item);
+      const liveScheduled = liveScoreIsScheduled(liveScore);
+      const pendingResult = !liveScheduled && isPastResultWindow(kickoffAt);
       const score = liveScore?.isFinished ? normalizeResultScore(liveScore.score) : "";
       return {
         ...item,
@@ -2229,10 +2249,12 @@ function sportteryPoolItems() {
         displayScore: score,
         liveHalfScore: liveScore?.halfScore || "",
         liveSource: liveScore?.source || "",
+        liveScheduled,
+        liveMatched: Boolean(liveScore),
         sourceType: score ? "finished" : "live",
         poolTone: score ? "finished" : pendingResult ? "open" : "live",
-        status: score ? "已完赛" : inferredLiveText(item.statusName, kickoffAt),
-        liveNote: score ? "" : inferredLiveNote(item.statusName, kickoffAt),
+        status: score ? "已完赛" : liveScheduled ? "等待开赛" : inferredLiveText(item.statusName, kickoffAt),
+        liveNote: score ? "" : liveScheduled ? `实时源已匹配 · ${liveScore?.source || "官方实时源"}` : inferredLiveNote(item.statusName, kickoffAt),
         pendingResultNote: pendingResult ? inferredLiveNote(item.statusName, kickoffAt) : "",
       };
     })
@@ -2256,6 +2278,7 @@ function sportteryPoolCard(item) {
   const score = normalizeResultScore(item.score);
   const displayScore = normalizeResultScore(item.displayScore) || score;
   const isLive = item.poolTone === "live";
+  const isAwaitingStart = Boolean(isLive && item.liveScheduled);
   const statusLine = isLive ? item.status || "进行中" : item.status;
   const marketText = item.sourceType === "finished"
     ? `半场 ${item.halfScore || "-"} · ${item.result || direction(score) || "-"}`
@@ -2266,7 +2289,7 @@ function sportteryPoolCard(item) {
       : isLive
         ? item.liveScore
           ? `半场 ${item.liveHalfScore || "-"} · ${item.liveSource || "实时比分源"}`
-          : "实时源未匹配，等待官方比分回填"
+          : item.liveNote || "实时源未匹配，等待官方比分回填"
         : item.pendingResultNote || normalText;
   return `
     <article class="match-card sporttery-card ${score ? "finished" : ""} ${isLive ? "is-live" : ""}" data-sporttery-match-key="${cardKey}" ${linked ? `data-pool-match-no="${item.linkedNo}"` : ""}>
@@ -2276,7 +2299,7 @@ function sportteryPoolCard(item) {
       </div>
       <div class="teams">
         <strong>${item.displayHome}</strong>
-        <b>${displayScore || (isLive ? "LIVE" : "vs")}</b>
+        <b>${displayScore || (isAwaitingStart ? "WAIT" : isLive ? "LIVE" : "vs")}</b>
         <strong>${item.displayAway}</strong>
       </div>
       <div class="match-card-insight">

@@ -146,6 +146,15 @@ for (const marker of ["canonicalAnalyticsPagePath", "analyticsCanonicalPagePathS
 for (const marker of ["lockRowToSportteryMatch", "mergeLiveTargetMatches", "d1LiveTargetMatches", "insertMissingLiveTargetMatch", "lockedPredictionOnlyCount"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing lock-backed live-score target marker: ${marker}`);
 }
+for (const marker of ["liveFallbackRowHasScheduledStatus", "liveFallbackRowHasMatchStatus", "liveFallbackRowMatchesSportteryMatch", "scheduled", "sourceState"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing scheduled live-score matching marker: ${marker}`);
+}
+for (const marker of ["liveScoreIsScheduled", "实时源已匹配", '"WAIT"']) {
+  if (!appCore.includes(marker) && !homeApp.includes(marker)) throw new Error(`Production baseline missing matched scheduled-fixture UI marker: ${marker}`);
+}
+for (const marker of ["20260717_live_match_status_v2", "app/app-core.js?v=20260717_live_match_status_v2", "app/app-home.js?v=20260717_live_match_status_v2"]) {
+  if (!index.includes(marker)) throw new Error(`Production baseline missing scheduled-fixture cache namespace: ${marker}`);
+}
 if (!fs.readFileSync("web/robots.txt", "utf8").includes("https://ticai-model.com/api/sitemap.xml")) {
   throw new Error("Production baseline requires the canonical sporttery sitemap in robots.txt.");
 }

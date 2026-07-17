@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
-import { lockRowToSportteryMatch, mergeLiveTargetMatches, parseOkoooLiveCenterScores } from "../web/functions/api/[[path]].js";
+import {
+  liveFallbackRowMatchesSportteryMatch,
+  lockRowToSportteryMatch,
+  mergeLiveTargetMatches,
+  parseOkoooLiveCenterScores,
+} from "../web/functions/api/[[path]].js";
 
 const matchRows = [{
   match_id: "sporttery-1324067",
@@ -76,8 +81,15 @@ const liveCenterRows = parseOkoooLiveCenterScores(`
     <td class="show_score" val="1324066"><b class="font_red ctrl_homescore">0</b>-<b class="font_red ctrl_awayscore">0</b></td>
     <td><a class="ctrl_awayname">堪萨斯城</a></td>
   </tr>
+  <tr id="match_detail_1324067" state="Not" matchid="1324067">
+    <td class="match_league"><a>美职</a></td>
+    <td><span class="ctrl_time">未</span></td>
+    <td><a class="ctrl_homename">西雅图海湾人</a></td>
+    <td class="show_score" val="1324067"><b class="font_blue ctrl_homescore"></b>-<b class="font_blue ctrl_awayscore"></b></td>
+    <td><a class="ctrl_awayname">波特兰伐木工</a></td>
+  </tr>
 `);
-assert.equal(liveCenterRows.length, 2, "scoreless authoritative statuses must survive live-center parsing");
+assert.equal(liveCenterRows.length, 3, "scoreless authoritative and scheduled statuses must survive live-center parsing");
 assert.deepEqual(
   liveCenterRows.find((row) => row.externalId === "1324065"),
   {
@@ -99,10 +111,49 @@ assert.deepEqual(
     isFinished: false,
     live: false,
     unavailable: true,
+    scheduled: false,
+    rawStatus: "延期",
+    sourceState: "Not",
     scoreDuration: "REGULAR",
     scoreMode: "",
   },
 );
 assert.equal(liveCenterRows.find((row) => row.externalId === "1324066")?.score, "0-0");
+assert.deepEqual(
+  liveCenterRows.find((row) => row.externalId === "1324067"),
+  {
+    source: "OKOOO-live",
+    externalId: "1324067",
+    date: "",
+    time: "",
+    league: "美职",
+    home: "西雅图海湾人",
+    away: "波特兰伐木工",
+    homeZh: "西雅图海湾人",
+    awayZh: "波特兰伐木工",
+    score: "",
+    halfScore: "",
+    status: "SCHEDULED",
+    statusName: "未开赛",
+    statusLabel: "未开赛",
+    minute: "",
+    isFinished: false,
+    live: false,
+    unavailable: false,
+    scheduled: true,
+    rawStatus: "未",
+    sourceState: "Not",
+    scoreDuration: "REGULAR",
+    scoreMode: "",
+  },
+);
+assert.equal(
+  liveFallbackRowMatchesSportteryMatch(
+    { matchId: "sporttery-1324067", home: "旧主队名", away: "旧客队名" },
+    liveCenterRows.find((row) => row.externalId === "1324067"),
+  ),
+  true,
+  "OKOOO fixture ids must remain authoritative when upstream team labels differ",
+);
 
-console.log("Live-score target tests passed: lock-only fixtures and scoreless authoritative statuses remain visible.");
+console.log("Live-score target tests passed: scheduled fixtures remain matched by authoritative id and visible to the UI.");
