@@ -2244,10 +2244,14 @@ async function persistLiveFixtureStatus(db, match = {}, row = {}, capturedAt = n
     UPDATE locked_predictions
     SET result_status = CASE
       WHEN result_status IN ('WIN', 'LOSS', 'VOID') THEN result_status
+      WHEN ? = 'SCHEDULED'
+        AND result_status IN ('POSTPONED', 'EXPIRED_POSTPONED')
+        AND datetime(kickoff_time) <= datetime(?, '-7 days') THEN 'EXPIRED_POSTPONED'
+      WHEN ? = 'SCHEDULED' THEN 'PENDING'
       ELSE ?
     END
     WHERE match_id = ?
-  `).bind(persistedStatus === "SCHEDULED" ? "PENDING" : persistedStatus, matchId).run();
+  `).bind(persistedStatus, capturedAt, persistedStatus, persistedStatus, matchId).run();
   Object.assign(match, payload);
   return Number(result.meta?.changes || 0) > 0;
 }

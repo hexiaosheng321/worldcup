@@ -203,7 +203,7 @@ for (const marker of ["sportteryPoolShouldHide", "sportteryPostponedLockExpired"
 for (const marker of ["sportteryPostponedLockExpired(item || pred, pred)", "POSTPONED", "RESCHEDULED"]) {
   if (!panels.includes(marker) && !appCore.includes(marker)) throw new Error(`Production baseline missing expired postponed-lock marker: ${marker}`);
 }
-for (const marker of ["liveFallbackPersistedStatus", "persistLiveFixtureStatus", "statusObservedAt", "UPDATE locked_predictions", "matches.status IN ('POSTPONED', 'CANCELLED', 'ABANDONED', 'SUSPENDED')"]) {
+for (const marker of ["liveFallbackPersistedStatus", "persistLiveFixtureStatus", "statusObservedAt", "UPDATE locked_predictions", "EXPIRED_POSTPONED", "datetime(kickoff_time) <= datetime(?, '-7 days')", "matches.status IN ('POSTPONED', 'CANCELLED', 'ABANDONED', 'SUSPENDED')"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing persistent exceptional-fixture status marker: ${marker}`);
 }
 if (!fs.readFileSync("web/robots.txt", "utf8").includes("https://ticai-model.com/api/sitemap.xml")) {

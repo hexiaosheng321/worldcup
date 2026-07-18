@@ -80,6 +80,7 @@ assert.equal(postponedLockExpired({ liveScore: { status: "延期" } }, originalL
 assert.equal(postponedLockExpired({ liveScore: { status: "Scheduled", scheduled: true } }, originalLock, Date.parse("2026-07-20T08:30:00+08:00")), false, "a fixture restored to scheduled state must not expire as postponed");
 assert.equal(postponedLockExpired({ liveScore: { status: "延期" }, score: "2-1" }, originalLock, Date.parse("2026-07-20T08:30:00+08:00")), false, "a final score must keep the completed review record");
 assert.equal(postponedLockExpired({}, { ...originalLock, resultStatus: "POSTPONED" }, Date.parse("2026-07-08T08:30:00+08:00")), true, "the persisted lock status must expire even after the old fixture leaves the bootstrap window");
+assert.equal(postponedLockExpired({}, { ...originalLock, resultStatus: "EXPIRED_POSTPONED" }, Date.parse("2026-07-20T08:30:00+08:00")), true, "a fixture rescheduled after seven days must not reactivate its old lock");
 
 assert.match(homeSource, /homeUpcomingMatches[\s\S]*sportteryPoolShouldHide/, "homepage schedules must use the same exceptional-fixture visibility rule");
 assert.match(homeSource, /sportteryWorldCupFlowMatches[\s\S]*sportteryPoolShouldHide/, "World Cup schedules must use the same exceptional-fixture visibility rule");
