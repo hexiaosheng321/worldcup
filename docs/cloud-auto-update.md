@@ -45,9 +45,11 @@ finalLockAt = min(matchDate + kickoffTime - 60分钟, ticaiDate 19:50)
 
 Cloudflare `worldcup-sync-worker` 每 5 分钟执行一次自动同步：
 
-1. 调用 Pages `/api/sync/sporttery`，同步体彩赛事池、官方赛果和赔率快照。
-2. 无论官方同步是否成功，都继续调用 `/api/sync/live-results`，用备用源补回官方延迟的常规时间比分。
-3. 如果 Pages API 不可用，worker 会退回本地体彩同步，避免整条定时任务空转。
+1. 优先调用 Pages `/api/sync/okooo-live` 写入赔率快照；写入端使用 D1 batch，避免逐场串行查询触发 Worker 资源上限。
+2. 5 分钟赔率链路不再调用体彩官方赛程/赔率或直接 IP 缓存。Okooo 负责 SP，500.com 只负责开球时间、停售时间和队名校正；Okooo 失败时保留上一快照并告警，不把赛程数据伪装为赔率。
+3. 开盘前两条快照必存，之后只保存赔率变化或每 30 分钟心跳；每场最多 128 条，首页只取开盘首条和最近 24 条。
+4. 无论官方赛果是否成功，都继续调用 `/api/sync/live-results`，用备用源补回官方延迟的常规时间比分。
+5. 官方赛果只作为非阻断的赛后权威校验；赛果或复盘步骤失败只标记为降级，不会抹掉已经成功写入的赔率快照，也不会回退到官方赔率接口。
 
 `/api/sync/live-results` 不重新抓体彩赛程，只读取 D1 中已有赛程，再用备用比分源回填赛果。
 

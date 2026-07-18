@@ -2,7 +2,7 @@ const CALCULATOR_API = "https://webapi.sporttery.cn/gateway/uniform/football/get
 const RESULTS_API =
   "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
 const DEFAULT_PAGES_API_BASE = "https://worldcup-dashboard-4hr.pages.dev";
-const DEFAULT_SPORTTERY_CACHE_BASE = "http://114.55.11.209:8787";
+const DEFAULT_PAGES_REQUEST_TIMEOUT_MS = 25000;
 
 const SPORTTERY_HEADERS = {
   accept: "application/json, text/plain, */*",
@@ -430,32 +430,6 @@ function pagesApiBase(env) {
   return String(env.PAGES_API_BASE || DEFAULT_PAGES_API_BASE).replace(/\/+$/, "");
 }
 
-function sportteryCacheBase(env) {
-  return String(env.SPORTTERY_CACHE_BASE || DEFAULT_SPORTTERY_CACHE_BASE).replace(/\/+$/, "");
-}
-
-async function fetchJson(url) {
-  const response = await fetch(url, { headers: { accept: "application/json" } });
-  const text = await response.text();
-  if (!response.ok) throw new Error(`${url} ${response.status}: ${text.slice(0, 160)}`);
-  const data = JSON.parse(text);
-  if (data?.ok === false) throw new Error(`${url}: ${data.error || "upstream returned ok=false"}`);
-  return data;
-}
-
-async function sportteryCachePayload(env) {
-  const base = sportteryCacheBase(env);
-  const [calculatorRaw, ...resultPages] = await Promise.all([
-    fetchJson(`${base}/sporttery/calculator.json`),
-    fetchJson(`${base}/sporttery/results-page-1.json`),
-    fetchJson(`${base}/sporttery/results-page-2.json`),
-    fetchJson(`${base}/sporttery/results-page-3.json`),
-    fetchJson(`${base}/sporttery/results-page-4.json`),
-    fetchJson(`${base}/sporttery/results-page-5.json`),
-  ]);
-  return { calculatorRaw, resultPages };
-}
-
 async function postPagesApi(env, path, body = null) {
   const url = `${pagesApiBase(env)}${path}`;
   const headers = {};
@@ -468,7 +442,12 @@ async function postPagesApi(env, path, body = null) {
   if (env.FOOTBALL_DATA_API_KEY) headers["x-football-data-api-key"] = env.FOOTBALL_DATA_API_KEY;
   if (env.THESPORTSDB_API_KEY) headers["x-thesportsdb-api-key"] = env.THESPORTSDB_API_KEY;
   if (env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY) headers["x-sporttery-upstream-proxy"] = env.SPORTTERY_UPSTREAM_PROXY || env.UPSTREAM_PROXY;
-  const response = await fetch(url, { method: "POST", headers, body: requestBody });
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: requestBody,
+    signal: AbortSignal.timeout(Number(env.PAGES_REQUEST_TIMEOUT_MS || DEFAULT_PAGES_REQUEST_TIMEOUT_MS)),
+  });
   const text = await response.text();
   let payload = {};
   try {
@@ -485,20 +464,12 @@ async function postPagesApi(env, path, body = null) {
 async function syncViaPagesApi(env) {
   const capturedAt = new Date().toISOString();
   const steps = [];
-  let cachePayload = null;
+  let okoooLivePayload = null;
   try {
-    cachePayload = await postPagesApi(env, "/api/sync/sporttery-cache", await sportteryCachePayload(env));
-    steps.push({ step: "sporttery-cache", ok: true, payload: cachePayload });
+    okoooLivePayload = await postPagesApi(env, "/api/sync/okooo-live", {});
+    steps.push({ step: "okooo-live", ok: true, payload: okoooLivePayload });
   } catch (error) {
-    steps.push({ step: "sporttery-cache", ok: false, error: error.message });
-  }
-
-  let sportteryPayload = null;
-  try {
-    sportteryPayload = await postPagesApi(env, "/api/sync/sporttery");
-    steps.push({ step: "sporttery", ok: true, payload: sportteryPayload });
-  } catch (error) {
-    steps.push({ step: "sporttery", ok: false, error: error.message });
+    steps.push({ step: "okooo-live", ok: false, error: error.message });
   }
 
   let officialResultsPayload = null;
@@ -507,14 +478,6 @@ async function syncViaPagesApi(env) {
     steps.push({ step: "sporttery-results", ok: true, payload: officialResultsPayload });
   } catch (error) {
     steps.push({ step: "sporttery-results", ok: false, error: error.message });
-  }
-
-  let okoooLivePayload = null;
-  try {
-    okoooLivePayload = await postPagesApi(env, "/api/sync/okooo-live", {});
-    steps.push({ step: "okooo-live", ok: true, payload: okoooLivePayload });
-  } catch (error) {
-    steps.push({ step: "okooo-live", ok: false, error: error.message });
   }
 
   let okoooPayload = null;
@@ -541,15 +504,15 @@ async function syncViaPagesApi(env) {
     steps.push({ step: "reconcile-completed-samples", ok: false, error: error.message });
   }
 
-  const ok = Boolean(okoooLivePayload) && Boolean(reconcilePayload);
+  const ok = Boolean(okoooLivePayload);
+  const degraded = steps.some((step) => step.ok === false);
   const payload = {
     ok,
+    degraded,
     capturedAt,
     pagesApiBase: pagesApiBase(env),
-    sportteryCacheBase: sportteryCacheBase(env),
+    oddsSourcePolicy: "okooo-primary-500-schedule-official-results-optional",
     steps,
-    cache: cachePayload,
-    sporttery: sportteryPayload,
     officialResults: officialResultsPayload,
     okooo: okoooPayload,
     liveFallback: fallbackPayload,
@@ -557,20 +520,16 @@ async function syncViaPagesApi(env) {
     reconciled: reconcilePayload,
   };
   if (env.DB) {
-    await insertLog(env.DB, "pages-api-cron", ok ? "OK" : "ERROR", ok ? "pages sync completed" : "pages sync failed", payload);
+    const status = ok ? (degraded ? "WARN" : "OK") : "ERROR";
+    const message = ok ? (degraded ? "odds sync completed with non-critical failures" : "pages sync completed") : "pages odds sync failed";
+    await insertLog(env.DB, "pages-api-cron", status, message, payload);
   }
-  if (!ok) throw new Error(steps.map((step) => `${step.step}: ${step.error}`).join("; "));
+  if (!ok) throw new Error(steps.filter((step) => step.ok === false).map((step) => `${step.step}: ${step.error}`).join("; "));
   return payload;
 }
 
 async function runAutomatedSync(env) {
-  if (env.PREFER_LOCAL_SYNC === "1") return syncAll(env);
-  try {
-    return await syncViaPagesApi(env);
-  } catch (error) {
-    if (env.DB) await insertLog(env.DB, "pages-api-cron", "WARN", "falling back to local sporttery sync", { error: error.message });
-    return syncAll(env);
-  }
+  return syncViaPagesApi(env);
 }
 
 export default {
@@ -598,3 +557,5 @@ export default {
     return json({ ok: false, error: "not found" }, 404);
   },
 };
+
+export { runAutomatedSync, syncViaPagesApi };

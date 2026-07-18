@@ -3854,95 +3854,111 @@ async function fetchFiveHundredKickoffs(env) {
   if (!response.ok) throw new Error(`500.com ${response.status}: ${text.slice(0, 160)}`);
   return parseFiveHundredKickoffs(text);
 }
-async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
-  const capturedAt = new Date().toISOString();
-  const okoooMatches = await fetchOkoooJczqMatches(env);
-  let fiveHundredByOrderId = new Map();
-  try {
-    fiveHundredByOrderId = await fetchFiveHundredKickoffs(env);
-  } catch {
-    fiveHundredByOrderId = new Map();
-  }
-  let calculatorRaw = suppliedCalculatorRaw;
-  if (!calculatorRaw) {
-    try {
-      calculatorRaw = await fetchSportteryJson(env, sportteryApis.calculator);
-    } catch {
-      calculatorRaw = null;
+export async function persistOkoooMatchesToD1(db, matches, capturedAt = new Date().toISOString()) {
+  const existingRows = await db.prepare(`
+    SELECT match_id, match_code, home_team, away_team, kickoff_time, payload_json
+    FROM matches
+    ORDER BY updated_at DESC
+    LIMIT 500
+  `).all();
+  const existingMatches = existingRows.results || [];
+  const existingById = new Map(existingMatches.map((row) => [String(row.match_id || ""), row]));
+  const byFixture = new Map();
+  const byPlaceholder = new Map();
+
+  for (const row of existingMatches) {
+    const payload = parseObject(row.payload_json);
+    const fixtureDate = String(row.kickoff_time || "").slice(0, 10);
+    const fixtureId = String(payload.fiveHundredFixtureId || "");
+    if (row.match_code && fixtureDate && fixtureId) {
+      const key = [row.match_code, fixtureDate, fixtureId].join("|");
+      if (!byFixture.has(key)) byFixture.set(key, []);
+      byFixture.get(key).push(row);
+    }
+    const placeholder = row.match_id === "sporttery-0"
+      || String(row.match_id || "").startsWith("sporttery-okooo-")
+      || String(payload.matchId || "") === "0";
+    if (placeholder && row.match_code && row.home_team && row.away_team && fixtureDate) {
+      const key = [row.match_code, row.home_team, row.away_team, fixtureDate].join("|");
+      if (!byPlaceholder.has(key)) byPlaceholder.set(key, []);
+      byPlaceholder.get(key).push(row);
     }
   }
-  const officialByOrderId = new Map(
-    (calculatorRaw?.value?.matchInfoList || []).flatMap((day) =>
-      (day.subMatchList || []).map((match) => {
-        const normalized = normalizeSportteryMatch(match, day.businessDate);
-        return [normalized.orderId, normalized];
-      })
-    )
-  );
-  const matches = okoooMatches.map((match) => {
-    const official = officialByOrderId.get(match.orderId);
-    const fiveHundred = fiveHundredByOrderId.get(match.orderId);
-    const officialMatchId = usableSportteryMatchId(official?.matchId) ? String(official.matchId) : "";
-    const sourceMatchId = usableSportteryMatchId(match.matchId) ? String(match.matchId) : "";
-    return {
-      ...match,
-      home: match.home === match.away && fiveHundred?.home ? fiveHundred.home : match.home,
-      away: match.home === match.away && fiveHundred?.away ? fiveHundred.away : match.away,
-      matchId: officialMatchId || sourceMatchId || `okooo-${match.orderId}`,
-      matchDate: official?.matchDate || fiveHundred?.matchDate || "",
-      kickoffTime: official?.kickoffTime || fiveHundred?.kickoffTime || "",
-      kickoffSource: official ? "sporttery-official" : fiveHundred ? "500-jczq-matchtime" : "pending-official-schedule",
-      fiveHundredFixtureId: fiveHundred?.fixtureId || "",
-      salesCloseAt: fiveHundred?.salesCloseAt || match.salesCloseTime || "",
-      officialMatchId,
-    };
-  });
 
-  let matchCount = 0;
-
-  for (const match of matches) {
+  const duplicateMatchIds = new Set();
+  const preparedMatches = [];
+  for (const sourceMatch of matches) {
+    const match = { ...sourceMatch };
     const matchId = sportteryDbMatchId(match);
     const fixtureDate = match.matchDate || match.ticaiDate || "";
     if (match.fiveHundredFixtureId && fixtureDate && match.issue) {
-      const sameFixtureWhere = `
-        match_id <> ? AND match_code = ? AND substr(kickoff_time, 1, 10) = ?
-        AND json_extract(payload_json, '$.fiveHundredFixtureId') = ?
-      `;
-      await db.prepare(`DELETE FROM odds_snapshots WHERE match_id IN (SELECT match_id FROM matches WHERE ${sameFixtureWhere})`)
-        .bind(matchId, match.issue, fixtureDate, match.fiveHundredFixtureId)
-        .run();
-      await db.prepare(`DELETE FROM matches WHERE ${sameFixtureWhere}`)
-        .bind(matchId, match.issue, fixtureDate, match.fiveHundredFixtureId)
-        .run();
+      const key = [match.issue, fixtureDate, match.fiveHundredFixtureId].join("|");
+      for (const row of byFixture.get(key) || []) {
+        if (String(row.match_id) !== matchId) duplicateMatchIds.add(String(row.match_id));
+      }
     }
     if (authoritativeSportteryMatchId(match.matchId) && fixtureDate && match.issue && match.home && match.away) {
-      const placeholderWhere = `
-        match_id <> ? AND match_code = ? AND home_team = ? AND away_team = ?
-        AND substr(kickoff_time, 1, 10) = ?
-        AND (match_id = 'sporttery-0' OR match_id LIKE 'sporttery-okooo-%' OR json_extract(payload_json, '$.matchId') = '0')
-      `;
-      await db.prepare(`DELETE FROM odds_snapshots WHERE match_id IN (SELECT match_id FROM matches WHERE ${placeholderWhere})`)
-        .bind(matchId, match.issue, match.home, match.away, fixtureDate)
-        .run();
-      await db.prepare(`DELETE FROM matches WHERE ${placeholderWhere}`)
-        .bind(matchId, match.issue, match.home, match.away, fixtureDate)
-        .run();
-    }
-    const existing = await db.prepare("SELECT kickoff_time, payload_json FROM matches WHERE match_id = ?").bind(matchId).first();
-    const existingPayload = parseObject(existing?.payload_json);
-    if (!match.kickoffTime) {
-      if (existingPayload.kickoffTime) {
-        match.matchDate = existingPayload.matchDate || String(existing.kickoff_time || "").slice(0, 10) || match.ticaiDate;
-        match.kickoffTime = existingPayload.kickoffTime;
-        match.kickoffSource = existingPayload.kickoffSource || "existing-reliable-schedule";
+      const key = [match.issue, match.home, match.away, fixtureDate].join("|");
+      for (const row of byPlaceholder.get(key) || []) {
+        if (String(row.match_id) !== matchId) duplicateMatchIds.add(String(row.match_id));
       }
+    }
+    const existing = existingById.get(matchId);
+    const existingPayload = parseObject(existing?.payload_json);
+    if (!match.kickoffTime && existingPayload.kickoffTime) {
+      match.matchDate = existingPayload.matchDate || String(existing?.kickoff_time || "").slice(0, 10) || match.ticaiDate;
+      match.kickoffTime = existingPayload.kickoffTime;
+      match.kickoffSource = existingPayload.kickoffSource || "existing-reliable-schedule";
     }
     if (!match.competitionStage && existingPayload.competitionStage) {
       match.competitionStage = existingPayload.competitionStage;
       match.competitionStageSource = existingPayload.competitionStageSource || "existing-verified-stage";
     }
+    preparedMatches.push({ match, matchId });
+  }
 
-    await db.prepare(`
+  const latestSnapshotByMatch = new Map();
+  const preparedMatchIds = preparedMatches.map((item) => item.matchId);
+  for (let offset = 0; offset < preparedMatchIds.length; offset += 80) {
+    const chunk = preparedMatchIds.slice(offset, offset + 80);
+    const placeholders = chunk.map(() => "?").join(",");
+    const latestRows = await db.prepare(`
+      SELECT match_id, captured_at, payload_json, snapshot_count
+      FROM (
+        SELECT
+          match_id,
+          captured_at,
+          payload_json,
+          COUNT(*) OVER (PARTITION BY match_id) AS snapshot_count,
+          ROW_NUMBER() OVER (PARTITION BY match_id ORDER BY captured_at DESC) AS row_no
+        FROM odds_snapshots
+        WHERE match_id IN (${placeholders})
+      )
+      WHERE row_no = 1
+    `).bind(...chunk).all();
+    for (const row of latestRows.results || []) latestSnapshotByMatch.set(String(row.match_id), row);
+  }
+
+  const oddsFingerprint = (payload = {}) => JSON.stringify({
+    normal: payload.normal || {},
+    handicap: String(payload.handicap || "0"),
+    handicapOdds: payload.handicapOdds || {},
+    scoreOdds: payload.scoreOdds || [],
+    totalGoalsOdds: payload.totalGoalsOdds || [],
+    halfFullOdds: payload.halfFullOdds || [],
+  });
+  const heartbeatMs = 30 * 60 * 1000;
+  const maxSnapshotsPerMatch = 128;
+  let snapshotsWritten = 0;
+  let unchangedSnapshotsSkipped = 0;
+
+  const statements = [];
+  for (const duplicateMatchId of duplicateMatchIds) {
+    statements.push(db.prepare("DELETE FROM odds_snapshots WHERE match_id = ?").bind(duplicateMatchId));
+    statements.push(db.prepare("DELETE FROM matches WHERE match_id = ?").bind(duplicateMatchId));
+  }
+  for (const { match, matchId } of preparedMatches) {
+    statements.push(db.prepare(`
       INSERT INTO matches (match_id, match_code, league, home_team, away_team, kickoff_time, status, payload_json, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(match_id) DO UPDATE SET
@@ -3972,43 +3988,134 @@ async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
       "SCHEDULED",
       JSON.stringify({ ...match, cloudMatchId: matchId }),
       capturedAt
-    ).run();
-
-    await db.prepare(`
-      INSERT INTO odds_snapshots (
-        snapshot_id, match_id, source, captured_at,
-        sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp,
-        handicap, payload_json
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      `odds-${matchId}-${capturedAt}`,
-      matchId,
-      "okooo-jczq",
-      capturedAt,
-      n(match.normal?.win, null),
-      n(match.normal?.draw, null),
-      n(match.normal?.lose, null),
-      n(String(match.handicap || "0").replace("+", ""), null),
-      JSON.stringify(match)
-    ).run();
-
-    matchCount += 1;
+    ));
+    const latestSnapshot = latestSnapshotByMatch.get(matchId);
+    const snapshotCount = Number(latestSnapshot?.snapshot_count || 0);
+    const latestCapturedAt = Date.parse(latestSnapshot?.captured_at || "");
+    const heartbeatDue = !Number.isFinite(latestCapturedAt) || Date.parse(capturedAt) - latestCapturedAt >= heartbeatMs;
+    const oddsChanged = oddsFingerprint(parseObject(latestSnapshot?.payload_json)) !== oddsFingerprint(match);
+    const shouldStoreSnapshot = snapshotCount < 2 || heartbeatDue || oddsChanged;
+    if (shouldStoreSnapshot) {
+      const snapshotPayload = {
+        ...match,
+        snapshotMeta: {
+          retentionClass: "HOT_PREMATCH",
+          storagePolicy: "opening-plus-changes-plus-30m-heartbeat",
+          league: match.league || "竞彩",
+          ticaiDate: match.ticaiDate || match.matchDate || "",
+        },
+      };
+      statements.push(db.prepare(`
+        INSERT INTO odds_snapshots (
+          snapshot_id, match_id, source, captured_at,
+          sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp,
+          handicap, payload_json
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        `odds-${matchId}-${capturedAt}`,
+        matchId,
+        "okooo-jczq",
+        capturedAt,
+        n(match.normal?.win, null),
+        n(match.normal?.draw, null),
+        n(match.normal?.lose, null),
+        n(String(match.handicap || "0").replace("+", ""), null),
+        JSON.stringify(snapshotPayload)
+      ));
+      snapshotsWritten += 1;
+      if (snapshotCount + 1 > maxSnapshotsPerMatch) {
+        statements.push(db.prepare(`
+          DELETE FROM odds_snapshots
+          WHERE match_id = ?
+            AND snapshot_id NOT IN (
+              SELECT snapshot_id FROM odds_snapshots
+              WHERE match_id = ?
+              ORDER BY captured_at DESC
+              LIMIT 127
+            )
+            AND snapshot_id <> (
+              SELECT snapshot_id FROM odds_snapshots
+              WHERE match_id = ?
+              ORDER BY captured_at ASC
+              LIMIT 1
+            )
+        `).bind(matchId, matchId, matchId));
+      }
+    } else {
+      unchangedSnapshotsSkipped += 1;
+    }
   }
-
-  await db.prepare(`
+  const cleanupClock = new Date(capturedAt);
+  const dailyCleanupDue = cleanupClock.getUTCHours() === 18 && cleanupClock.getUTCMinutes() < 5;
+  if (dailyCleanupDue) {
+    const snapshotCutoff = new Date(cleanupClock.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const syncLogCutoff = new Date(cleanupClock.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    statements.push(db.prepare("DELETE FROM odds_snapshots WHERE captured_at < ?").bind(snapshotCutoff));
+    statements.push(db.prepare("DELETE FROM sync_logs WHERE created_at < ?").bind(syncLogCutoff));
+  }
+  statements.push(db.prepare(`
     INSERT INTO sync_logs (sync_id, source, status, message, payload_json, created_at)
     VALUES (?, 'okooo-jczq-live', 'OK', 'okooo live matches sync completed', ?, ?)
   `).bind(
     `okooo-live-${Date.now()}-${crypto.randomUUID()}`,
-    JSON.stringify({ matchCount }),
+    JSON.stringify({
+      matchCount: preparedMatches.length,
+      snapshotsWritten,
+      unchangedSnapshotsSkipped,
+      removedDuplicates: duplicateMatchIds.size,
+      dailyCleanupDue,
+      statementCount: statements.length + 1,
+    }),
     capturedAt
-  ).run();
+  ));
+
+  const batchSize = 100;
+  let batchCount = 0;
+  for (let index = 0; index < statements.length; index += batchSize) {
+    await db.batch(statements.slice(index, index + batchSize));
+    batchCount += 1;
+  }
+  return {
+    matchCount: preparedMatches.length,
+    snapshotsWritten,
+    unchangedSnapshotsSkipped,
+    removedDuplicates: duplicateMatchIds.size,
+    dailyCleanupDue,
+    statementCount: statements.length,
+    batchCount,
+  };
+}
+
+async function syncOkoooMatchesToD1(db, env) {
+  const capturedAt = new Date().toISOString();
+  const [okoooMatches, fiveHundredByOrderId] = await Promise.all([
+    fetchOkoooJczqMatches(env),
+    fetchFiveHundredKickoffs(env).catch(() => new Map()),
+  ]);
+  const matches = okoooMatches.map((match) => {
+    const fiveHundred = fiveHundredByOrderId.get(match.orderId);
+    const sourceMatchId = usableSportteryMatchId(match.matchId) ? String(match.matchId) : "";
+    return {
+      ...match,
+      home: match.home === match.away && fiveHundred?.home ? fiveHundred.home : match.home,
+      away: match.home === match.away && fiveHundred?.away ? fiveHundred.away : match.away,
+      matchId: sourceMatchId || `okooo-${match.orderId}`,
+      matchDate: fiveHundred?.matchDate || "",
+      kickoffTime: fiveHundred?.kickoffTime || "",
+      kickoffSource: fiveHundred ? "500-jczq-matchtime" : "pending-verified-schedule",
+      fiveHundredFixtureId: fiveHundred?.fixtureId || "",
+      salesCloseAt: fiveHundred?.salesCloseAt || match.salesCloseTime || "",
+      officialMatchId: sourceMatchId,
+    };
+  });
+
+  const persisted = await persistOkoooMatchesToD1(db, matches, capturedAt);
 
   return {
     ok: true,
     capturedAt,
-    matchCount,
+    ...persisted,
   };
 }
 async function syncOkoooResultsToD1(db, env) {
@@ -4596,16 +4703,32 @@ function sportterySnapshotStamp(value = "") {
   };
 }
 
-async function d1SportterySpHistoryScript(db, env, raw = false) {
+async function d1SportterySpHistoryScript(db, env, raw = false, matchLimit = 60) {
   const rows = await db.prepare(`
+    WITH visible_matches AS (
+      SELECT match_id
+      FROM matches
+      ORDER BY kickoff_time DESC
+      LIMIT ?
+    ), ranked_snapshots AS (
+      SELECT
+        s.match_id,
+        s.captured_at,
+        s.payload_json,
+        ROW_NUMBER() OVER (PARTITION BY s.match_id ORDER BY s.captured_at DESC) AS newest_rank,
+        ROW_NUMBER() OVER (PARTITION BY s.match_id ORDER BY s.captured_at ASC) AS opening_rank
+      FROM odds_snapshots s
+      INNER JOIN visible_matches visible ON visible.match_id = s.match_id
+    )
     SELECT
       s.match_id, s.captured_at, s.payload_json AS snapshot_payload,
       m.match_code, m.league, m.home_team, m.away_team, m.kickoff_time, m.payload_json AS match_payload
-    FROM odds_snapshots s
+    FROM ranked_snapshots s
     LEFT JOIN matches m ON m.match_id = s.match_id
+    WHERE s.newest_rank <= 24 OR s.opening_rank = 1
     ORDER BY s.captured_at DESC
     LIMIT 1200
-  `).all();
+  `).bind(Math.min(Math.max(Number(matchLimit || 60), 1), 200)).all();
   const snapshotRows = [...(rows.results || [])].sort((a, b) =>
     String(a.captured_at || "").localeCompare(String(b.captured_at || ""))
   );
@@ -4929,8 +5052,7 @@ export async function onRequest(context) {
   return json(await debugOkoooJczq(env));
 }
 if (path === "sync/okooo-live" && request.method === "POST") {
-  const body = await readJson(request);
-  return json(await syncOkoooMatchesToD1(db, env, body.calculatorRaw || body.calculator || null));
+  return json(await syncOkoooMatchesToD1(db, env));
 }
     if (path === "sync/okooo-results" && request.method === "POST") {
       return json(await syncOkoooResultsToD1(db, env));
@@ -4983,7 +5105,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         `).all(),
         db.prepare(`SELECT * FROM match_results ORDER BY reviewed_at DESC LIMIT ${resultLimit}`).all(),
         includeCases ? listCases(db) : Promise.resolve([]),
-        d1SportterySpHistoryScript(db, env, true),
+        d1SportterySpHistoryScript(db, env, true, matchLimit),
       ]);
       const visibleMatches = dedupeSportteryMatchRows(matches.results || []);
       const resultsById = new Map((recentResults.results || []).map((row) => [row.match_id, row]));

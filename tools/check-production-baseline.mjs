@@ -443,7 +443,7 @@ if (missingRegularTimeMarkers.length) {
 for (const marker of ["beijingDateTimeFromUtc", 'timezone", "Asia/Shanghai"', "kickoffUpdated", "live-schedule-"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires real kickoff-time hydration: ${marker}`);
 }
-for (const marker of ["parseFiveHundredKickoffs", 'data-matchtime', 'data-buyendtime', 'data-homesxname', 'data-awaysxname', 'match.home === match.away', "sameFixtureWhere", "$.fiveHundredFixtureId", '500-jczq-matchtime', 'existing-reliable-schedule']) {
+for (const marker of ["parseFiveHundredKickoffs", 'data-matchtime', 'data-buyendtime', 'data-homesxname', 'data-awaysxname', 'match.home === match.away', "byFixture", "payload.fiveHundredFixtureId", "duplicateMatchIds", '500-jczq-matchtime', 'existing-reliable-schedule']) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires preferred 500.com kickoff-time ingestion: ${marker}`);
 }
 
@@ -463,9 +463,9 @@ if (missingOkoooDirectionMarkers.length) {
 
 const kickoffSourceMarkers = [
   "salesCloseTime",
-  'fiveHundred ? "500-jczq-matchtime" : "pending-official-schedule"',
-  "officialByOrderId",
-  'body.calculatorRaw || body.calculator || null',
+  'fiveHundred ? "500-jczq-matchtime" : "pending-verified-schedule"',
+  "fiveHundredByOrderId",
+  "sourceMatchId",
 ];
 const missingKickoffSourceMarkers = kickoffSourceMarkers.filter((marker) => !api.includes(marker));
 if (missingKickoffSourceMarkers.length) {
@@ -480,11 +480,20 @@ if (!appCore.includes('row.source === "OKOOO-live"') || !appCore.includes("row.e
 for (const marker of ['data-live-score-active', 'dataset.liveScoreActive === "1"']) {
   if (!homeApp.includes(marker)) throw new Error(`Production baseline requires homepage live-score timer protection: ${marker}`);
 }
-if (!sync.includes('postApi("/api/sync/okooo-live", { calculatorRaw })')) {
-  throw new Error("Production baseline requires the reachable sync runner to supply official kickoff times to OKOOO odds sync.");
+if (!sync.includes('postApi("/api/sync/okooo-live")') || sync.includes("fetchSportteryJson(calculatorUrl)")) {
+  throw new Error("Production baseline requires the reachable sync runner to use OKOOO odds with 500.com schedule correction, without official schedule/odds dependency.");
 }
 for (const marker of ["syncHealthDecision", "retryableStatuses", "payload?.ok !== false", 'health.level === "DEGRADED"', "process.exitCode = health.exitCode"]) {
   if (!sync.includes(marker)) throw new Error(`Production baseline requires retry/degraded-success sync policy: ${marker}`);
+}
+for (const marker of ["persistOkoooMatchesToD1", "db.batch", "opening-plus-changes-plus-30m-heartbeat", "maxSnapshotsPerMatch = 128", "newest_rank <= 24 OR s.opening_rank = 1"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline requires bounded batched SP history: ${marker}`);
+}
+for (const marker of ["odds sync completed with non-critical failures", "okooo-primary-500-schedule-official-results-optional"]) {
+  if (!syncWorker.includes(marker)) throw new Error(`Production baseline requires OKOOO-first odds sync isolation: ${marker}`);
+}
+for (const forbidden of ['postPagesApi(env, "/api/sync/sporttery")', 'postPagesApi(env, "/api/sync/sporttery-cache"', "falling back to local sporttery sync"]) {
+  if (syncWorker.includes(forbidden)) throw new Error(`Production baseline rejects unstable official odds fallback in the 5-minute worker: ${forbidden}`);
 }
 if (index.includes('<script src="./live-sporttery-data.js')) {
   throw new Error("Production baseline rejects stale local sporttery data as a first-paint script.");
