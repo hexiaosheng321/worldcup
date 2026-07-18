@@ -24,6 +24,7 @@ try {
     assert.equal(result.degraded, true);
     assert.ok(calls.includes("/api/sync/okooo-live"));
     assert.ok(!calls.includes("/api/sync/sporttery"), "official odds fallback must not run after OKOOO persisted snapshots");
+    assert.ok(!calls.includes("/api/sync/sporttery-results"), "unstable official results must not run in the scheduled path");
   }
 
   {
@@ -35,9 +36,10 @@ try {
     };
     await assert.rejects(() => syncViaPagesApi({ PAGES_API_BASE: "https://example.test" }), /okooo-live/);
     assert.ok(!calls.includes("/api/sync/sporttery"), "unstable official odds endpoint must not re-enter the scheduled path");
+    assert.ok(!calls.includes("/api/sync/sporttery-results"), "unstable official results endpoint must not re-enter the scheduled path");
   }
 } finally {
   globalThis.fetch = originalFetch;
 }
 
-console.log("Sync worker priority tests passed: OKOOO owns SP, 500.com stays schedule-only, official odds never enter the scheduled path, and non-critical failures do not discard snapshots.");
+console.log("Sync worker priority tests passed: OKOOO owns SP, 500.com stays schedule-only, official odds/results stay out of the scheduled path, and non-critical failures do not discard snapshots.");

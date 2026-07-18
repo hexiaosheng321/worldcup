@@ -497,10 +497,10 @@ for (const marker of ["LAG(odds_key)", "first_rank <> 1", "last_rank <> 1", "hou
 for (const marker of ["sporttery-2040546", "sporttery-2040559", "restored-existing-d1-canonical", "UPDATE odds_snapshots", "UPDATE matches"]) {
   if (!canonicalIdMigration.includes(marker)) throw new Error(`Production baseline requires the July 18 canonical match-id restoration: ${marker}`);
 }
-for (const marker of ["odds sync completed with non-critical failures", "okooo-primary-500-schedule-official-results-optional"]) {
+for (const marker of ["odds sync completed with non-critical failures", "okooo-primary-500-schedule-multi-source-results"]) {
   if (!syncWorker.includes(marker)) throw new Error(`Production baseline requires OKOOO-first odds sync isolation: ${marker}`);
 }
-for (const forbidden of ['postPagesApi(env, "/api/sync/sporttery")', 'postPagesApi(env, "/api/sync/sporttery-cache"', "falling back to local sporttery sync"]) {
+for (const forbidden of ['postPagesApi(env, "/api/sync/sporttery")', 'postPagesApi(env, "/api/sync/sporttery-cache"', 'postPagesApi(env, "/api/sync/sporttery-results', "falling back to local sporttery sync"]) {
   if (syncWorker.includes(forbidden)) throw new Error(`Production baseline rejects unstable official odds fallback in the 5-minute worker: ${forbidden}`);
 }
 if (index.includes('<script src="./live-sporttery-data.js')) {

@@ -472,14 +472,6 @@ async function syncViaPagesApi(env) {
     steps.push({ step: "okooo-live", ok: false, error: error.message });
   }
 
-  let officialResultsPayload = null;
-  try {
-    officialResultsPayload = await postPagesApi(env, "/api/sync/sporttery-results?pages=5");
-    steps.push({ step: "sporttery-results", ok: true, payload: officialResultsPayload });
-  } catch (error) {
-    steps.push({ step: "sporttery-results", ok: false, error: error.message });
-  }
-
   let okoooPayload = null;
   try {
     okoooPayload = await postPagesApi(env, "/api/sync/okooo-results");
@@ -511,9 +503,8 @@ async function syncViaPagesApi(env) {
     degraded,
     capturedAt,
     pagesApiBase: pagesApiBase(env),
-    oddsSourcePolicy: "okooo-primary-500-schedule-official-results-optional",
+    sourcePolicy: "okooo-primary-500-schedule-multi-source-results",
     steps,
-    officialResults: officialResultsPayload,
     okooo: okoooPayload,
     liveFallback: fallbackPayload,
     okoooLive: okoooLivePayload,
