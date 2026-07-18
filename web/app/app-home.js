@@ -6,10 +6,17 @@ function handicapLabel(pred) {
   return home && line ? `${home}${line}` : "";
 }
 
+function activeSportteryPredictions() {
+  return (data.sportteryPredictions || []).filter((pred) => {
+    const item = findSportteryItemForPrediction(pred);
+    return !sportteryPostponedLockExpired(item || pred, pred);
+  });
+}
+
 function uniquePredictionCount() {
   return new Set([
     ...data.predictions.map((item) => `wc-${item.no}`),
-    ...(data.sportteryPredictions || []).map((item) => `sp-${item.sportteryKey || item.no}`),
+    ...activeSportteryPredictions().map((item) => `sp-${item.sportteryKey || item.no}`),
   ]).size;
 }
 
@@ -58,7 +65,7 @@ function sportteryWorldCupGroupedPredictions() {
   const staticKeys = new Set(
     groupedPredictions().map(({ match }) => `${match.no}-${match.date}-${normalizeTeamName(match.home)}-${normalizeTeamName(match.away)}`)
   );
-  return (data.sportteryPredictions || [])
+  return activeSportteryPredictions()
     .map((pred) => {
       const item = findSportteryItemForPrediction(pred);
       const competition = pred.competition || pred.competitionModel || item?.league || "";
@@ -199,9 +206,11 @@ function homeUpcomingMatches() {
   const recentPoolDates = recentSportteryDateSet();
   const future = matches
     .filter((match) => !parseScore(officialScoreForMatch(match)) && match.date >= baseDate)
+    .filter((match) => !sportteryPoolShouldHide(match, liveScoreForSportteryItem(match), officialScoreForMatch(match)))
     .map((match) => ({ ...match, homeDate: match.date }));
   const sportteryOnly = (oddsData.matches || [])
     .filter((item) => !matchFromOddsItem(item))
+    .filter((item) => !sportteryPoolShouldHide(item, liveScoreForSportteryItem(item), verifiedSportteryScore(item)))
     .filter((item) => {
       const score = verifiedSportteryScore(item);
       if (score) return false;
@@ -223,6 +232,7 @@ function homeUpcomingMatches() {
   if (merged.length) return merged;
   return matches
     .filter((match) => !parseScore(officialScoreForMatch(match)))
+    .filter((match) => !sportteryPoolShouldHide(match, liveScoreForSportteryItem(match), officialScoreForMatch(match)))
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date) || Number(a.no) - Number(b.no));
 }
@@ -244,6 +254,7 @@ function sportteryWorldCupFlowMatches(dateSet = new Set()) {
   return (oddsData.matches || [])
     .filter((item) => /世界杯|world\s*cup/i.test(item.league || item.competition || ""))
     .filter((item) => itemMatchesDateSet(item, dateSet))
+    .filter((item) => !sportteryPoolShouldHide(item, liveScoreForSportteryItem(item), verifiedSportteryScore(item)))
     .map((item) => ({
       no: item.no || compactSportteryNo(item.issue, item.matchId),
       date: item.ticaiDate || item.matchDate || dashboardToday(),
@@ -340,7 +351,7 @@ function homeCountdownCandidates() {
         score,
       };
     })
-    .filter((match) => !match.score && Number.isFinite(match.kickoffAt) && match.kickoffAt >= now)
+    .filter((match) => !match.score && !sportteryPoolShouldHide(match, liveScoreForSportteryItem(match), match.score) && Number.isFinite(match.kickoffAt) && match.kickoffAt >= now)
     .sort((a, b) => a.kickoffAt - b.kickoffAt || Number(a.no) - Number(b.no));
 
   if (liveMatches.length) return liveMatches;

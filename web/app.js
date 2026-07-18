@@ -22,6 +22,7 @@ const SPORTTERY_FIXED_BONUS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
 const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v3";
 const SPORTTERY_RESULT_PENDING_WINDOW_MINUTES = 135;
+const POSTPONED_LOCK_RETENTION_DAYS = 7;
 const STATIC_SNAPSHOT_FALLBACKS = [
   "./live-sporttery-data.js?v=13task-20260705-2025",
   "./live-sporttery-results.js?v=13task-20260705-2025",
@@ -597,7 +598,7 @@ function liveScoreIsScheduled(row = {}) {
 }
 
 function exceptionalLiveStatusText(row = {}) {
-  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.minute || ""}`;
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.resultStatus || ""} ${row.minute || ""}`;
   const matched = status.match(/(postponed?|cancelled?|canceled?|abandoned?|suspended?|延期|推迟|取消|腰斩|中止)/i)?.[1] || "";
   if (!matched) return "";
   if (/postpon|延期|推迟/i.test(matched)) return "延期";
@@ -613,7 +614,8 @@ function sportteryReviewLifecycle(item = {}, pred = {}, liveScore = null, actual
   const result = resultForSportteryItem(item);
   const exceptional = exceptionalLiveStatusText(liveScore || liveScoreForSportteryItem(item))
     || exceptionalLiveStatusText(result)
-    || exceptionalLiveStatusText(item);
+    || exceptionalLiveStatusText(item)
+    || exceptionalLiveStatusText(pred);
   if (exceptional === "延期") {
     return { code: "POSTPONED", label: "延期追踪", scoreLabel: "延期", severity: "postponed", note: "暂停验票并保留原锁版，等待官方新开赛时间。" };
   }
@@ -645,6 +647,18 @@ function sportteryPoolShouldHide(item = {}, liveScore = null, actualScore = "") 
     || exceptionalLiveStatusText(result)
     || exceptionalLiveStatusText(item)
   );
+}
+
+function sportteryPostponedLockExpired(item = {}, pred = {}, now = Date.now()) {
+  const actualScore = verifiedSportteryScore(item);
+  const liveScore = liveScoreForSportteryItem(item);
+  const lifecycle = sportteryReviewLifecycle(item, pred, liveScore, actualScore);
+  if (lifecycle.code !== "POSTPONED") return false;
+  const date = pred.matchDate || pred.date || item.matchDate || item.ticaiDate || item.date || "";
+  const rawTime = pred.kickoffTime || item.kickoffTime || "00:00";
+  const time = String(rawTime).match(/(?:^|\s)(\d{2}:\d{2})(?::\d{2})?$/)?.[1] || "00:00";
+  const kickoffAt = Date.parse(`${date}T${time}:00+08:00`);
+  return Number.isFinite(kickoffAt) && now - kickoffAt >= POSTPONED_LOCK_RETENTION_DAYS * 86400000;
 }
 
 function liveScoreStatusText(row) {
@@ -882,7 +896,7 @@ function sportteryPredictionForItem(item = {}) {
         looseTeamMatch(pred.home, item.home) &&
         looseTeamMatch(pred.away, item.away)
     );
-  if (sportteryPred) return sportteryPred;
+  if (sportteryPred) return sportteryPostponedLockExpired(item, sportteryPred) ? null : sportteryPred;
   const worldCupPred = linkedMatch
     ? latestPredictionFor(linkedMatch.no)
     : worldCupRows.find(
@@ -1323,10 +1337,17 @@ function handicapLabel(pred) {
   return home && line ? `${home}${line}` : "";
 }
 
+function activeSportteryPredictions() {
+  return (data.sportteryPredictions || []).filter((pred) => {
+    const item = findSportteryItemForPrediction(pred);
+    return !sportteryPostponedLockExpired(item || pred, pred);
+  });
+}
+
 function uniquePredictionCount() {
   return new Set([
     ...data.predictions.map((item) => `wc-${item.no}`),
-    ...(data.sportteryPredictions || []).map((item) => `sp-${item.sportteryKey || item.no}`),
+    ...activeSportteryPredictions().map((item) => `sp-${item.sportteryKey || item.no}`),
   ]).size;
 }
 
@@ -1375,7 +1396,7 @@ function sportteryWorldCupGroupedPredictions() {
   const staticKeys = new Set(
     groupedPredictions().map(({ match }) => `${match.no}-${match.date}-${normalizeTeamName(match.home)}-${normalizeTeamName(match.away)}`)
   );
-  return (data.sportteryPredictions || [])
+  return activeSportteryPredictions()
     .map((pred) => {
       const item = findSportteryItemForPrediction(pred);
       const competition = pred.competition || pred.competitionModel || item?.league || "";
@@ -1516,9 +1537,11 @@ function homeUpcomingMatches() {
   const recentPoolDates = recentSportteryDateSet();
   const future = matches
     .filter((match) => !parseScore(officialScoreForMatch(match)) && match.date >= baseDate)
+    .filter((match) => !sportteryPoolShouldHide(match, liveScoreForSportteryItem(match), officialScoreForMatch(match)))
     .map((match) => ({ ...match, homeDate: match.date }));
   const sportteryOnly = (oddsData.matches || [])
     .filter((item) => !matchFromOddsItem(item))
+    .filter((item) => !sportteryPoolShouldHide(item, liveScoreForSportteryItem(item), verifiedSportteryScore(item)))
     .filter((item) => {
       const score = verifiedSportteryScore(item);
       if (score) return false;
@@ -1540,6 +1563,7 @@ function homeUpcomingMatches() {
   if (merged.length) return merged;
   return matches
     .filter((match) => !parseScore(officialScoreForMatch(match)))
+    .filter((match) => !sportteryPoolShouldHide(match, liveScoreForSportteryItem(match), officialScoreForMatch(match)))
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date) || Number(a.no) - Number(b.no));
 }
@@ -1561,6 +1585,7 @@ function sportteryWorldCupFlowMatches(dateSet = new Set()) {
   return (oddsData.matches || [])
     .filter((item) => /世界杯|world\s*cup/i.test(item.league || item.competition || ""))
     .filter((item) => itemMatchesDateSet(item, dateSet))
+    .filter((item) => !sportteryPoolShouldHide(item, liveScoreForSportteryItem(item), verifiedSportteryScore(item)))
     .map((item) => ({
       no: item.no || compactSportteryNo(item.issue, item.matchId),
       date: item.ticaiDate || item.matchDate || dashboardToday(),
@@ -1657,7 +1682,7 @@ function homeCountdownCandidates() {
         score,
       };
     })
-    .filter((match) => !match.score && Number.isFinite(match.kickoffAt) && match.kickoffAt >= now)
+    .filter((match) => !match.score && !sportteryPoolShouldHide(match, liveScoreForSportteryItem(match), match.score) && Number.isFinite(match.kickoffAt) && match.kickoffAt >= now)
     .sort((a, b) => a.kickoffAt - b.kickoffAt || Number(a.no) - Number(b.no));
 
   if (liveMatches.length) return liveMatches;
@@ -5711,6 +5736,7 @@ function modelAuditRows() {
   const sportteryRows = (data.sportteryPredictions || []).map((pred) => {
     const item = findSportteryItemForPrediction(pred);
     if (hasOfficialWorldCupLock(pred, item)) return null;
+    if (sportteryPostponedLockExpired(item || pred, pred)) return null;
     const actualScore = item ? verifiedSportteryScore(item) : "";
     const liveScore = item ? liveScoreForSportteryItem(item) : null;
     const reviewLifecycle = sportteryReviewLifecycle(item || pred, pred, liveScore, actualScore);

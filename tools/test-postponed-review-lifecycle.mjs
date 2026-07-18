@@ -3,6 +3,8 @@ import fs from "node:fs";
 import vm from "node:vm";
 
 const source = fs.readFileSync("web/app/app-core.js", "utf8");
+const homeSource = fs.readFileSync("web/app/app-home.js", "utf8");
+const panelsSource = fs.readFileSync("web/app/app-panels.js", "utf8");
 
 function functionSource(name) {
   const start = source.indexOf(`function ${name}(`);
@@ -30,18 +32,25 @@ const context = vm.createContext({
   liveScoreForSportteryItem(item = {}) {
     return item.liveScore || {};
   },
+  verifiedSportteryScore(item = {}) {
+    return item.score || "";
+  },
+  POSTPONED_LOCK_RETENTION_DAYS: 7,
 });
 
 vm.runInContext(`
 ${functionSource("exceptionalLiveStatusText")}
 ${functionSource("sportteryReviewLifecycle")}
 ${functionSource("sportteryPoolShouldHide")}
+${functionSource("sportteryPostponedLockExpired")}
 this.classify = sportteryReviewLifecycle;
 this.shouldHideFromPool = sportteryPoolShouldHide;
+this.postponedLockExpired = sportteryPostponedLockExpired;
 `, context);
 
 const classify = (...args) => JSON.parse(JSON.stringify(context.classify(...args)));
 const shouldHideFromPool = (...args) => context.shouldHideFromPool(...args);
+const postponedLockExpired = (...args) => context.postponedLockExpired(...args);
 
 assert.deepEqual(classify(
   { matchDate: "2026-07-17", liveScore: { status: "延期", statusName: "延期", minute: "延期" } },
@@ -65,4 +74,16 @@ assert.equal(shouldHideFromPool({ liveScore: { status: "Cancelled" } }), true, "
 assert.equal(shouldHideFromPool({ liveScore: { status: "Scheduled", scheduled: true } }), false, "a rescheduled match must return after the live source restores its scheduled state");
 assert.equal(shouldHideFromPool({ liveScore: { status: "延期" } }, null, "2-1"), false, "a later official final score must close the match in the finished pool");
 
-console.log("Postponed review lifecycle tests passed: delayed fixtures pause validation, reschedules resume tracking, cancellations stay outside backtests, and final scores close the loop.");
+const originalLock = { matchDate: "2026-07-01", kickoffTime: "08:30" };
+assert.equal(postponedLockExpired({ liveScore: { status: "延期" } }, originalLock, Date.parse("2026-07-08T08:30:00+08:00")), true, "a confirmed postponement must expire its old lock after seven days");
+assert.equal(postponedLockExpired({ liveScore: { status: "延期" } }, originalLock, Date.parse("2026-07-08T08:29:59+08:00")), false, "the seven-day retention window must remain exact");
+assert.equal(postponedLockExpired({ liveScore: { status: "Scheduled", scheduled: true } }, originalLock, Date.parse("2026-07-20T08:30:00+08:00")), false, "a fixture restored to scheduled state must not expire as postponed");
+assert.equal(postponedLockExpired({ liveScore: { status: "延期" }, score: "2-1" }, originalLock, Date.parse("2026-07-20T08:30:00+08:00")), false, "a final score must keep the completed review record");
+assert.equal(postponedLockExpired({}, { ...originalLock, resultStatus: "POSTPONED" }, Date.parse("2026-07-08T08:30:00+08:00")), true, "the persisted lock status must expire even after the old fixture leaves the bootstrap window");
+
+assert.match(homeSource, /homeUpcomingMatches[\s\S]*sportteryPoolShouldHide/, "homepage schedules must use the same exceptional-fixture visibility rule");
+assert.match(homeSource, /sportteryWorldCupFlowMatches[\s\S]*sportteryPoolShouldHide/, "World Cup schedules must use the same exceptional-fixture visibility rule");
+assert.match(homeSource, /activeSportteryPredictions[\s\S]*sportteryPostponedLockExpired/, "homepage lock totals must exclude expired postponed locks");
+assert.match(panelsSource, /sportteryPostponedLockExpired\(item \|\| pred, pred\)/, "expired postponed locks must leave active lock and backtest views");
+
+console.log("Postponed review lifecycle tests passed: current schedules hide confirmed exceptions, seven-day postponements expire old locks, reschedules resume tracking, and final scores close the loop.");

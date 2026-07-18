@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   dedupeSportteryMatchRows,
   liveFallbackRowMatchesSportteryMatch,
+  liveFallbackPersistedStatus,
   liveFallbackRowsFromSyncLogs,
   lockRowToSportteryMatch,
   mergeLiveTargetMatches,
@@ -122,6 +123,8 @@ assert.deepEqual(
   },
 );
 assert.equal(liveCenterRows.find((row) => row.externalId === "1324066")?.score, "0-0");
+assert.equal(liveFallbackPersistedStatus(liveCenterRows.find((row) => row.externalId === "1324065")), "POSTPONED", "confirmed postponements must persist beyond the short live snapshot window");
+assert.equal(liveFallbackPersistedStatus(liveCenterRows.find((row) => row.externalId === "1324067")), "SCHEDULED", "a later authoritative schedule must clear the persisted postponement");
 assert.deepEqual(
   liveCenterRows.find((row) => row.externalId === "1324067"),
   {

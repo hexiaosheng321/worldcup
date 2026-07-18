@@ -2198,6 +2198,60 @@ function liveFallbackRowHasScheduledStatus(row = {}) {
   );
 }
 
+export function liveFallbackPersistedStatus(row = {}) {
+  if (liveFallbackRowHasScheduledStatus(row)) return "SCHEDULED";
+  const status = `${row.status || ""} ${row.statusName || ""} ${row.statusLabel || ""} ${row.minute || ""}`;
+  if (/\bpostpon(?:ed|ement)?\b|延期|推迟/i.test(status)) return "POSTPONED";
+  if (/\bcancel(?:led|ed)?\b|取消/i.test(status)) return "CANCELLED";
+  if (/\babandon(?:ed)?\b|腰斩/i.test(status)) return "ABANDONED";
+  if (/\bsuspend(?:ed)?\b|中止/i.test(status)) return "SUSPENDED";
+  return "";
+}
+
+async function persistLiveFixtureStatus(db, match = {}, row = {}, capturedAt = new Date().toISOString()) {
+  const persistedStatus = liveFallbackPersistedStatus(row);
+  if (!persistedStatus) return false;
+  const matchId = match.cloudMatchId || sportteryDbMatchId(match);
+  const matchDate = row.date || match.matchDate || match.ticaiDate || "";
+  const kickoffTime = String(row.time || match.kickoffTime || "").slice(0, 5);
+  const statusName = persistedStatus === "SCHEDULED"
+    ? (row.statusName || row.statusLabel || "未开赛")
+    : (row.statusName || row.statusLabel || row.status || persistedStatus);
+  const payload = {
+    ...match,
+    matchDate,
+    kickoffTime,
+    status: persistedStatus,
+    statusCode: persistedStatus,
+    statusName,
+    statusLabel: row.statusLabel || statusName,
+    statusObservedAt: capturedAt,
+    statusSource: row.source || "live-fallback",
+    cloudMatchId: matchId,
+  };
+  const result = await db.prepare(`
+    UPDATE matches
+    SET kickoff_time = ?, status = ?, payload_json = ?, updated_at = ?
+    WHERE match_id = ?
+  `).bind(
+    `${matchDate} ${kickoffTime}`.trim(),
+    persistedStatus,
+    JSON.stringify(payload),
+    capturedAt,
+    matchId
+  ).run();
+  await db.prepare(`
+    UPDATE locked_predictions
+    SET result_status = CASE
+      WHEN result_status IN ('WIN', 'LOSS', 'VOID') THEN result_status
+      ELSE ?
+    END
+    WHERE match_id = ?
+  `).bind(persistedStatus === "SCHEDULED" ? "PENDING" : persistedStatus, matchId).run();
+  Object.assign(match, payload);
+  return Number(result.meta?.changes || 0) > 0;
+}
+
 function liveFallbackRowIsDisplayable(row = {}) {
   return liveFallbackRowHasUsableScore(row) || liveFallbackRowHasAuthoritativeStatus(row);
 }
@@ -2919,7 +2973,18 @@ async function syncSportteryToD1(db, env, supplied = null) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(match_id) DO UPDATE SET
         match_code=excluded.match_code, league=excluded.league, home_team=excluded.home_team, away_team=excluded.away_team,
-        kickoff_time=excluded.kickoff_time, status=excluded.status, payload_json=excluded.payload_json, updated_at=excluded.updated_at
+        kickoff_time=excluded.kickoff_time,
+        status=CASE
+          WHEN matches.status IN ('POSTPONED', 'CANCELLED', 'ABANDONED', 'SUSPENDED')
+            AND matches.kickoff_time = excluded.kickoff_time THEN matches.status
+          ELSE excluded.status
+        END,
+        payload_json=CASE
+          WHEN matches.status IN ('POSTPONED', 'CANCELLED', 'ABANDONED', 'SUSPENDED')
+            AND matches.kickoff_time = excluded.kickoff_time THEN matches.payload_json
+          ELSE excluded.payload_json
+        END,
+        updated_at=excluded.updated_at
     `).bind(
       matchId,
       match.issue || match.no || "",
@@ -3111,6 +3176,10 @@ function d1RowToSportteryMatch(row) {
     league: payload.league || row.league || "",
     home: payload.home || row.home_team || "",
     away: payload.away || row.away_team || "",
+    status: payload.status || row.status || "",
+    statusCode: payload.statusCode || row.status || "",
+    statusName: payload.statusName || "",
+    statusLabel: payload.statusLabel || "",
     cloudMatchId: row.match_id,
   };
 }
@@ -3737,8 +3806,16 @@ async function syncOkoooMatchesToD1(db, env, suppliedCalculatorRaw = null) {
         home_team=excluded.home_team,
         away_team=excluded.away_team,
         kickoff_time=excluded.kickoff_time,
-        status=excluded.status,
-        payload_json=excluded.payload_json,
+        status=CASE
+          WHEN matches.status IN ('POSTPONED', 'CANCELLED', 'ABANDONED', 'SUSPENDED')
+            AND matches.kickoff_time = excluded.kickoff_time THEN matches.status
+          ELSE excluded.status
+        END,
+        payload_json=CASE
+          WHEN matches.status IN ('POSTPONED', 'CANCELLED', 'ABANDONED', 'SUSPENDED')
+            AND matches.kickoff_time = excluded.kickoff_time THEN matches.payload_json
+          ELSE excluded.payload_json
+        END,
         updated_at=excluded.updated_at
     `).bind(
       matchId,
@@ -3956,9 +4033,13 @@ async function syncLiveFallbackToD1(db, env) {
       ).run();
       kickoffUpdated += 1;
     }
+    const matchedStatusRow = liveRows.matches.find((row) =>
+      liveFallbackRowHasMatchStatus(row) && liveFallbackRowMatchesSportteryMatch(match, row)
+    );
+    if (matchedStatusRow) await persistLiveFixtureStatus(db, match, matchedStatusRow, capturedAt);
     const live = liveResultForSportteryMatch(match, liveRows.matches);
     if (!live) {
-      const nearLive = liveRows.matches.find((row) => liveFallbackRowMatchesSportteryMatch(match, row));
+      const nearLive = matchedStatusRow || liveRows.matches.find((row) => liveFallbackRowMatchesSportteryMatch(match, row));
       if (nearLive) {
         liveFallbackCandidates.push({
           matchId,

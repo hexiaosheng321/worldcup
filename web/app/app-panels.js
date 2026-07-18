@@ -1177,6 +1177,7 @@ function modelAuditRows() {
   const sportteryRows = (data.sportteryPredictions || []).map((pred) => {
     const item = findSportteryItemForPrediction(pred);
     if (hasOfficialWorldCupLock(pred, item)) return null;
+    if (sportteryPostponedLockExpired(item || pred, pred)) return null;
     const actualScore = item ? verifiedSportteryScore(item) : "";
     const liveScore = item ? liveScoreForSportteryItem(item) : null;
     const reviewLifecycle = sportteryReviewLifecycle(item || pred, pred, liveScore, actualScore);
