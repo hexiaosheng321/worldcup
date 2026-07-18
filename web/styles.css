@@ -7375,6 +7375,49 @@ body::before {
   min-width: 112px;
 }
 
+.r15-market-result.released {
+  position: relative;
+  margin: -5px;
+  padding: 8px 9px;
+  border: 1px solid #63bea1;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #e8f8f2 0%, #f7fcfa 72%);
+  box-shadow: inset 4px 0 0 #14916d, 0 4px 12px rgba(20, 145, 109, 0.1);
+}
+
+.r15-market-result.released b {
+  color: #064f3b;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.r15-market-result.released span {
+  justify-self: end;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #117f61;
+  color: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.r15-market-result.released.grade-a {
+  border-color: #d9a628;
+  background: linear-gradient(135deg, #fff7dc 0%, #f7fcfa 78%);
+  box-shadow: inset 4px 0 0 #d89b09, 0 5px 14px rgba(216, 155, 9, 0.14);
+}
+
+.r15-market-result.released.grade-a span {
+  background: #0b4f91;
+  box-shadow: 0 0 0 2px rgba(216, 155, 9, 0.2);
+}
+
+.r15-market-result.released em {
+  color: #0d7256;
+  letter-spacing: 0.02em;
+}
+
 .r15-market-result b {
   color: #122c46;
   font-size: 12px;

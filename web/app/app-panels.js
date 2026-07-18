@@ -1177,11 +1177,12 @@ function r15MarketCell(market = {}, verified = false) {
           ? "命中"
           : "未中";
   const tone = !market.qualified || !verified ? "pending" : market.hit ? "hit" : "miss";
+  const releaseTone = market.qualified ? `released grade-${String(market.grade || "").toLowerCase()}` : "";
   return `
-    <div class="r15-market-result ${tone}">
+    <div class="r15-market-result ${tone} ${releaseTone}">
       <b>${dash(r15SelectionText(market))}</b>
       ${market.qualified ? `<span>${dash(market.grade)}级</span>` : ""}
-      <em>${status}</em>
+      <em>${market.qualified ? `正式放行 · ${status}` : status}</em>
     </div>
   `;
 }
@@ -1196,6 +1197,7 @@ function openR15BacktestModal() {
   const rows = r15BacktestRows();
   const summary = r15BacktestSummary(rows);
   const dailyRows = r15DailyReviewRows(rows);
+  const releasedRows = rows.filter(({ evaluation }) => evaluation.hasFormal);
   const latestDaily = dailyRows[0] || { date: "-", opened: 0, released: 0, verified: 0, hits: 0, rate: null };
   const progress = Math.min(100, (summary.verifiedMatches / 30) * 100);
   const marketMeta = [
@@ -1215,17 +1217,16 @@ function openR15BacktestModal() {
       </article>
     `;
   }).join("");
-  const tableRows = rows.map(({ match, pred, score, evaluation, league }) => {
+  const tableRows = releasedRows.map(({ match, pred, score, evaluation, league }) => {
     const status = r15SampleStatus(evaluation);
     const inferenceDate = window.WC_R15_BACKTEST.inferenceDate(pred, match.date);
     const matchDate = pred.date || match.date;
-    const released = evaluation.hasFormal;
     return `
-      <tr class="${released ? "r15-row-released" : "r15-row-observe"}">
+      <tr class="r15-row-released">
         <td><strong>${dash(inferenceDate)}</strong>${matchDate && matchDate !== inferenceDate ? `<small>比赛 ${formatDate(matchDate)}</small>` : ""}</td>
         <td>${dash(league)}</td>
         <td><span class="version-badge">${evaluation.revision}</span><br><small>整包 ${dash(evaluation.overallGrade)}级</small></td>
-        <td class="text-cell match-name-cell">${released ? '<span class="r15-release-flag">正式放行</span>' : ""}${reviewMatchButton(match)}</td>
+        <td class="text-cell match-name-cell"><span class="r15-release-flag">正式放行</span>${reviewMatchButton(match)}</td>
         <td>${dash(score || "待赛果")}</td>
         <td>${r15MarketCell(evaluation.markets.winDrawLose, evaluation.verified)}</td>
         <td>${r15MarketCell(evaluation.markets.handicap, evaluation.verified)}</td>
@@ -1234,7 +1235,7 @@ function openR15BacktestModal() {
         <td><span class="r15-sample-status ${status.tone}">${status.label}</span><small>${status.note}</small></td>
       </tr>
     `;
-  }).join("") || `<tr><td colspan="10" class="empty-cell">尚未读取到R15锁版记录</td></tr>`;
+  }).join("") || `<tr><td colspan="10" class="empty-cell">尚未读取到正式放行记录</td></tr>`;
 
   document.querySelector(".global-stats-modal")?.remove();
   const modal = document.createElement("div");
@@ -1279,7 +1280,7 @@ function openR15BacktestModal() {
         </section>
         <section class="r15-ledger-table-wrap">
           <div class="global-stats-table-toolbar r15-ledger-toolbar">
-            <div><span>逐场审计账本</span><strong>${summary.totalRows} 场R15记录 · ${summary.verifiedMatches} 场已进入有效样本</strong></div>
+            <div><span>正式放行审计账本</span><strong>${releasedRows.length} 场正式放行 · ${summary.verifiedMatches} 场已验票 · ${summary.pendingMatches} 场待验票</strong></div>
           </div>
           <div class="review-record-wrap compact r15-ledger-scroll">
             <table class="review-record-table r15-backtest-table">

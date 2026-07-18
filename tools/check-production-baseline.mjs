@@ -86,6 +86,12 @@ for (const marker of ["20260718_r15_inference_day_v2", "data-r15-daily-review-op
 for (const marker of [".r15-daily-review-launch", ".r15-daily-overview", ".r15-daily-match-list", ".r15-backtest-table tbody tr.r15-row-released", ".r15-release-flag"]) {
   if (!styles.includes(marker)) throw new Error(`Production baseline missing R15 daily review styling: ${marker}`);
 }
+for (const marker of ["const releasedRows = rows.filter(({ evaluation }) => evaluation.hasFormal)", "正式放行审计账本", "尚未读取到正式放行记录", "正式放行 · ${status}"]) {
+  if (!panels.includes(marker)) throw new Error(`Production baseline missing formal-release-only R15 ledger marker: ${marker}`);
+}
+for (const marker of [".r15-market-result.released", ".r15-market-result.released.grade-a"]) {
+  if (!styles.includes(marker)) throw new Error(`Production baseline missing released-market emphasis: ${marker}`);
+}
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
   throw new Error("Production baseline must keep the language menu outside the header clipping box");
 }
