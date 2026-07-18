@@ -201,8 +201,12 @@ export function rowToCase(row) {
     handicap: payload.handicap ?? row.asian_handicap,
     judgementBasis: payload.judgementBasis || "",
     predictedHandicapResult: payload.predictedHandicapResult || "",
+    formalPredictedHandicapResult: payload.formalPredictedHandicapResult || "",
     handicapHit: payload.handicapHit ?? null,
-    formalHandicapSingleHit: payload.formalHandicapSingleHit ?? payload.handicapHit ?? null,
+    candidateHandicapSingleHit: payload.candidateHandicapSingleHit ?? payload.handicapHit ?? null,
+    formalHandicapSingleHit: Object.prototype.hasOwnProperty.call(payload, "formalHandicapSingleHit")
+      ? payload.formalHandicapSingleHit
+      : payload.handicapHit ?? null,
     independentHandicapLeader: payload.independentHandicapLeader || "",
     independentHandicapLeaderSingleHit: payload.independentHandicapLeaderSingleHit ?? null,
     conditionalHandicapChallenger: payload.conditionalHandicapChallenger || "",
@@ -210,9 +214,19 @@ export function rowToCase(row) {
     formalWinDrawLoseHandicapJointHit: payload.formalWinDrawLoseHandicapJointHit ?? null,
     handicapTrackAudit: payload.handicapTrackAudit || null,
     predictedTotalGoals: payload.predictedTotalGoals || "",
+    formalPredictedTotalGoals: payload.formalPredictedTotalGoals || "",
     totalGoalsHit: payload.totalGoalsHit ?? null,
+    candidateTotalGoalsHit: payload.candidateTotalGoalsHit ?? payload.totalGoalsHit ?? null,
+    formalTotalGoalsHit: Object.prototype.hasOwnProperty.call(payload, "formalTotalGoalsHit")
+      ? payload.formalTotalGoalsHit
+      : payload.totalGoalsHit ?? null,
     predictedScores: Array.isArray(payload.predictedScores) ? payload.predictedScores : [],
+    formalPredictedScores: Array.isArray(payload.formalPredictedScores) ? payload.formalPredictedScores : [],
     scoreCovered: payload.scoreCovered ?? null,
+    candidateScoreCovered: payload.candidateScoreCovered ?? payload.scoreCovered ?? null,
+    formalScoreCovered: Object.prototype.hasOwnProperty.call(payload, "formalScoreCovered")
+      ? payload.formalScoreCovered
+      : payload.scoreCovered ?? null,
     scoreSelectionPolicy: payload.scoreSelectionPolicy || "",
     officialScoreCoverageProbability: payload.officialScoreCoverageProbability ?? null,
     independentRiskScenario: payload.independentRiskScenario || null,
@@ -229,6 +243,9 @@ export function rowToCase(row) {
     crossLeagueNormalization: payload.crossLeagueNormalization || null,
     evidenceDirectionConflict: payload.evidenceDirectionConflict || null,
     evidenceDrivenRiskChallenger: payload.evidenceDrivenRiskChallenger || null,
+    outputConsistency: payload.outputConsistency || null,
+    criticalPackageGap: payload.criticalPackageGap || null,
+    selectionAudit: payload.selectionAudit || null,
     competitionStageAudit: payload.competitionStageAudit || null,
     twoLegLeadControl: payload.twoLegLeadControl || null,
     diagnosisSummary: payload.diagnosisSummary || "",

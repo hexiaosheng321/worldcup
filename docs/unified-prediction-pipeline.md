@@ -108,6 +108,7 @@ npm run prediction:unified -- --match 1320350 --evidence /tmp/research-1320350.j
 - 每个锁版必须携带 `modelRevision`、`scoreSelectionPolicy` 和完整 `backtestContract`，复盘按版本分组，禁止把 R10 与历史版本混合宣称命中率提升。
 - 让球赛后分别记录正式单选、独立边际第一项、主方向下次优条件 Challenger 和胜平负+让球联合命中，不得只留一个 `handicapHit`。
 - 同场最新 `PRE_LOCK` 赛后写入独立 `shadow_model_audits`，不进入正式 Case Base，但必须生成四组件与 Challenger 分轨验票。
+- `PRE_LOCK` 的四组件主审计口径固定为 `CANDIDATE_SHADOW`：候选玩法使用 `candidate*Hit` 验票；`formal*Hit` 只允许读取 `formalSelections`，被R15关闭或未开售的正式玩法必须保持 `null`，不得回退到候选结果或标记为“正式失败”。
 - 复盘失败只能生成 `SHADOW_PENDING` Challenger；同联赛、同赛季、同版本累计30至50场，目标命中率提高且联合命中、Brier Score、Log Loss不退化后，才可人工采纳为 Champion。
 
 ## 2026-07-16 R11 胜平负去重复回灌

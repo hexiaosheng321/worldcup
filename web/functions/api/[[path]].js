@@ -658,6 +658,7 @@ function scorePicksFromPayload(payload = {}) {
     .match(/\b\d+\s*[-:]\s*\d+\b/g) || [])
     .map((item) => item.replace(/\s+/g, "").replace(":", "-")))];
   const explicit = normalize([
+    payload.scores,
     payload.predictedScores,
     payload.twoScores,
     payload.scorePick,
@@ -675,6 +676,50 @@ function scorePicksFromPayload(payload = {}) {
   ]).slice(0, 2);
 }
 
+function directionPickFromPayload(payload = {}) {
+  const text = firstText(
+    payload.winDrawLose,
+    payload.pick,
+    payload.recommendation,
+    payload.recommendationSide,
+    payload.recommendation_side
+  ).toUpperCase();
+  if (text === "HOME" || text === "胜") return "HOME";
+  if (text === "DRAW" || text === "平") return "DRAW";
+  if (text === "AWAY" || text === "负") return "AWAY";
+  return "";
+}
+
+function hasOwnSelectionEnvelope(payload = {}, key = "") {
+  return Object.prototype.hasOwnProperty.call(payload, key)
+    && payload[key]
+    && typeof payload[key] === "object"
+    && !Array.isArray(payload[key]);
+}
+
+function selectionHits(selection = {}, resultSide = "", actualHandicap = "", actualGoals = null, actualScore = "") {
+  const direction = directionPickFromPayload(selection);
+  const handicap = handicapPickFromPayload(selection);
+  const totalGoals = totalGoalPickFromPayload(selection);
+  const scores = scorePicksFromPayload(selection);
+  return {
+    selections: {
+      winDrawLose: direction,
+      handicap,
+      totalGoals: totalGoals.text,
+      scores,
+    },
+    hits: {
+      winDrawLose: direction && resultSide ? direction === resultSide : null,
+      handicap: handicap && actualHandicap ? handicap === actualHandicap : null,
+      totalGoals: totalGoals.picks.length && actualGoals !== null && actualGoals !== "" && Number.isFinite(Number(actualGoals))
+        ? totalGoals.picks.includes(Number(actualGoals))
+        : null,
+      scores: scores.length && actualScore ? scores.includes(actualScore) : null,
+    },
+  };
+}
+
 function totalGoalPickFromPayload(payload = {}) {
   const text = firstText(payload.totalGoalsPick, payload.totalGoalPick, payload.totalGoals, payload.totalGoal, payload.goalRange);
   const picks = [...new Set((String(text).match(/\d+/g) || []).map(Number).filter(Number.isFinite))];
@@ -682,7 +727,7 @@ function totalGoalPickFromPayload(payload = {}) {
 }
 
 function handicapPickFromPayload(payload = {}) {
-  const text = firstText(payload.handicapPick, payload.handicapResult, payload.letBallPick, payload.letBallResult, payload.handicapFinal);
+  const text = firstText(payload.handicapPick, payload.handicapResult, payload.handicap, payload.letBallPick, payload.letBallResult, payload.handicapFinal);
   if (/让胜/.test(text)) return "让胜";
   if (/让平/.test(text)) return "让平";
   if (/让负/.test(text)) return "让负";
@@ -706,11 +751,37 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
   const diagnosticSource = { ...lockPayload, ...predictionPayload };
   const resultPayload = parseObject(result.payload_json);
   const actualScore = scoreText(result.full_time_home_goals, result.full_time_away_goals);
-  const scorePicks = scorePicksFromPayload(diagnosticSource);
-  const totalGoalPick = totalGoalPickFromPayload(diagnosticSource);
-  const handicapPick = handicapPickFromPayload(diagnosticSource);
   const actualHandicap = actualHandicapResult(lock, result);
   const unifiedRunEvidence = parseObject(diagnosticSource.unifiedRunEvidence);
+  const candidateEnvelopePresent = hasOwnSelectionEnvelope(diagnosticSource, "candidateSelections");
+  const formalEnvelopePresent = hasOwnSelectionEnvelope(diagnosticSource, "formalSelections");
+  const candidateSelectionSource = candidateEnvelopePresent
+    ? parseObject(diagnosticSource.candidateSelections)
+    : {
+        ...diagnosticSource,
+        recommendation: firstText(diagnosticSource.recommendation, lock.recommendation),
+        recommendationSide: firstText(diagnosticSource.recommendationSide, lock.recommendation_side),
+      };
+  const formalSelectionSource = formalEnvelopePresent
+    ? parseObject(diagnosticSource.formalSelections)
+    : candidateSelectionSource;
+  const candidateAudit = selectionHits(
+    candidateSelectionSource,
+    result.result_1x2,
+    actualHandicap,
+    result.total_goals,
+    actualScore
+  );
+  const formalAudit = selectionHits(
+    formalSelectionSource,
+    result.result_1x2,
+    actualHandicap,
+    result.total_goals,
+    actualScore
+  );
+  const candidateShadowScope = review.hitStatus === "VOID" && candidateEnvelopePresent;
+  const componentAuditScope = candidateShadowScope ? "CANDIDATE_SHADOW" : formalEnvelopePresent ? "FORMAL_SELECTIONS" : "LEGACY_SELECTIONS";
+  const activeAudit = candidateShadowScope ? candidateAudit : formalAudit;
   const jointDecision = parseObject(unifiedRunEvidence.jointDecision);
   const independentHandicapRisk = parseObject(jointDecision.independentHandicapRisk);
   const conditionalHandicapChallenger = parseObject(unifiedRunEvidence.conditionalHandicapChallenger);
@@ -720,36 +791,46 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
   const independentHandicapPick = firstText(jointDecision.independentHandicapLeader, independentHandicapRisk.pick);
   const conditionalHandicapPick = firstText(conditionalHandicapChallenger.pick);
   const handicapTrackHit = (pick) => pick && actualHandicap ? pick === actualHandicap : null;
-  const totalGoalsHit = totalGoalPick.picks.length ? totalGoalPick.picks.includes(Number(result.total_goals)) : null;
-  const scoreCovered = scorePicks.length ? scorePicks.includes(actualScore) : null;
-  const handicapHit = handicapTrackHit(handicapPick);
+  const handicapHit = activeAudit.hits.handicap;
   const independentHandicapLeaderSingleHit = handicapTrackHit(independentHandicapPick);
   const conditionalHandicapChallengerSingleHit = handicapTrackHit(conditionalHandicapPick);
-  const directionHit = review.modelAudit?.directionHit ?? null;
-  const formalWinDrawLoseHandicapJointHit = typeof directionHit === "boolean" && typeof handicapHit === "boolean"
-    ? directionHit && handicapHit
+  const directionHit = activeAudit.hits.winDrawLose;
+  const formalWinDrawLoseHandicapJointHit = typeof formalAudit.hits.winDrawLose === "boolean" && typeof formalAudit.hits.handicap === "boolean"
+    ? formalAudit.hits.winDrawLose && formalAudit.hits.handicap
+    : null;
+  const candidateWinDrawLoseHandicapJointHit = typeof candidateAudit.hits.winDrawLose === "boolean" && typeof candidateAudit.hits.handicap === "boolean"
+    ? candidateAudit.hits.winDrawLose && candidateAudit.hits.handicap
     : null;
   const componentAudit = {
     winDrawLoseSingleHit: directionHit,
-    formalHandicapSingleHit: handicapHit,
-    totalGoalsDoubleHit: totalGoalsHit,
-    scoreDoubleHit: scoreCovered,
+    handicapSingleHit: handicapHit,
+    totalGoalsDoubleHit: activeAudit.hits.totalGoals,
+    scoreDoubleHit: activeAudit.hits.scores,
   };
   const failedComponents = Object.entries(componentAudit).filter(([, hit]) => hit === false).map(([key]) => key);
   const auditedComponents = Object.values(componentAudit).filter((hit) => typeof hit === "boolean").length;
   const modelAuditStatus = failedComponents.length ? "FAIL" : auditedComponents === 4 ? "PASS" : "PARTIAL";
-  const failureLabels = {
-    winDrawLoseSingleHit: "胜平负单选失败",
-    formalHandicapSingleHit: "正式让球单选失败",
-    totalGoalsDoubleHit: "总进球双选失败",
-    scoreDoubleHit: "比分双选失败",
-  };
+  const failureLabels = candidateShadowScope
+    ? {
+        winDrawLoseSingleHit: "候选胜平负影子失败",
+        handicapSingleHit: "候选让球影子失败",
+        totalGoalsDoubleHit: "候选总进球影子失败",
+        scoreDoubleHit: "候选比分影子失败",
+      }
+    : {
+        winDrawLoseSingleHit: "胜平负单选失败",
+        handicapSingleHit: "正式让球单选失败",
+        totalGoalsDoubleHit: "总进球双选失败",
+        scoreDoubleHit: "比分双选失败",
+      };
   const seasonLearning = parseObject(unifiedRunEvidence.seasonLearning);
   const crossLeagueNormalization = parseObject(unifiedRunEvidence.crossLeagueNormalization);
   const evidenceDirectionConflict = parseObject(unifiedRunEvidence.evidenceDirectionConflict);
   const evidenceDrivenRiskChallenger = parseObject(unifiedRunEvidence.evidenceDrivenRiskChallenger);
   const competitionStage = parseObject(unifiedRunEvidence.competitionStage);
   const twoLegLeadControl = parseObject(unifiedRunEvidence.twoLegLeadControl);
+  const outputConsistency = parseObject(unifiedRunEvidence.outputConsistency);
+  const criticalPackageGap = parseObject(unifiedRunEvidence.criticalPackageGap);
   const independentRiskScenario = parseObject(diagnosticSource.independentRiskScenario || unifiedRunEvidence.riskScenario);
   const finalDecision = parseObject(diagnosticSource.finalDecision);
   const scoreSelectionPolicy = firstText(diagnosticSource.scoreSelectionPolicy, finalDecision.scoreSelectionPolicy, scoreSelection.selectionPolicy);
@@ -777,11 +858,20 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
       status: modelAuditStatus,
       auditedComponents,
       failedComponents,
+      componentAuditScope,
       ...componentAudit,
-      handicapSingleHit: handicapHit,
+      candidateWinDrawLoseSingleHit: candidateAudit.hits.winDrawLose,
+      candidateHandicapSingleHit: candidateAudit.hits.handicap,
+      candidateTotalGoalsDoubleHit: candidateAudit.hits.totalGoals,
+      candidateScoreDoubleHit: candidateAudit.hits.scores,
+      formalWinDrawLoseSingleHit: formalAudit.hits.winDrawLose,
+      formalHandicapSingleHit: formalAudit.hits.handicap,
+      formalTotalGoalsDoubleHit: formalAudit.hits.totalGoals,
+      formalScoreDoubleHit: formalAudit.hits.scores,
       independentHandicapLeaderSingleHit,
       conditionalHandicapChallengerSingleHit,
       formalWinDrawLoseHandicapJointHit,
+      candidateWinDrawLoseHandicapJointHit,
     },
     failureMode,
     actualHomeGoals: result.full_time_home_goals,
@@ -804,6 +894,14 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
     crossLeagueNormalization: Object.keys(crossLeagueNormalization).length ? crossLeagueNormalization : null,
     evidenceDirectionConflict: Object.keys(evidenceDirectionConflict).length ? evidenceDirectionConflict : null,
     evidenceDrivenRiskChallenger: Object.keys(evidenceDrivenRiskChallenger).length ? evidenceDrivenRiskChallenger : null,
+    outputConsistency: Object.keys(outputConsistency).length ? outputConsistency : null,
+    criticalPackageGap: Object.keys(criticalPackageGap).length ? criticalPackageGap : null,
+    selectionAudit: {
+      scope: componentAuditScope,
+      accountingPolicy: "FINAL_LOCK_FORMAL_SELECTIONS_PRE_LOCK_CANDIDATE_SHADOW",
+      candidate: candidateAudit,
+      formal: formalAudit,
+    },
     competitionStageAudit: Object.keys(competitionStage).length ? competitionStage : null,
     twoLegLeadControl: Object.keys(twoLegLeadControl).length ? twoLegLeadControl : null,
     lockedOdds: {
@@ -820,9 +918,11 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
       diagnosticSource.keyJudgement
     ),
     actualHandicapResult: actualHandicap,
-    predictedHandicapResult: handicapPick,
+    predictedHandicapResult: candidateAudit.selections.handicap,
+    formalPredictedHandicapResult: formalAudit.selections.handicap,
     handicapHit,
-    formalHandicapSingleHit: handicapHit,
+    candidateHandicapSingleHit: candidateAudit.hits.handicap,
+    formalHandicapSingleHit: formalAudit.hits.handicap,
     independentHandicapLeader: independentHandicapPick,
     independentHandicapLeaderSingleHit,
     conditionalHandicapChallenger: conditionalHandicapPick,
@@ -830,15 +930,23 @@ export function caseDiagnosticPayload(lock, result, review, tags, oddsHistory = 
     formalWinDrawLoseHandicapJointHit,
     handicapTrackAudit: {
       actual: actualHandicap,
-      formal: { pick: handicapPick, hit: handicapHit },
+      candidate: { pick: candidateAudit.selections.handicap, hit: candidateAudit.hits.handicap },
+      formal: { pick: formalAudit.selections.handicap, hit: formalAudit.hits.handicap },
       independent: { pick: independentHandicapPick, hit: independentHandicapLeaderSingleHit },
       conditionalChallenger: { pick: conditionalHandicapPick, hit: conditionalHandicapChallengerSingleHit },
       formalWinDrawLoseHandicapJointHit,
+      candidateWinDrawLoseHandicapJointHit,
     },
-    predictedTotalGoals: totalGoalPick.text,
-    totalGoalsHit,
-    predictedScores: scorePicks,
-    scoreCovered,
+    predictedTotalGoals: candidateAudit.selections.totalGoals,
+    formalPredictedTotalGoals: formalAudit.selections.totalGoals,
+    totalGoalsHit: activeAudit.hits.totalGoals,
+    candidateTotalGoalsHit: candidateAudit.hits.totalGoals,
+    formalTotalGoalsHit: formalAudit.hits.totalGoals,
+    predictedScores: candidateAudit.selections.scores,
+    formalPredictedScores: formalAudit.selections.scores,
+    scoreCovered: activeAudit.hits.scores,
+    candidateScoreCovered: candidateAudit.hits.scores,
+    formalScoreCovered: formalAudit.hits.scores,
     scoreSelectionPolicy,
     officialScoreCoverageProbability: Number.isFinite(officialScoreCoverageProbability) ? officialScoreCoverageProbability : null,
     independentRiskScenario: independentRiskScenario.score ? independentRiskScenario : null,
@@ -868,21 +976,44 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
       ? `${lock.model_version || "V4"} 跳过场影子验票`
       : `${lock.model_version || "V4"} 四组件命中样本沉淀`;
   const recommendations = [];
-  const formalHandicapFailed = (diagnosticPayload.modelAudit?.formalHandicapSingleHit ?? diagnosticPayload.modelAudit?.handicapSingleHit) === false;
-  if (diagnosticPayload.modelAudit?.winDrawLoseSingleHit === false) recommendations.push("复查最终胜平负方向、反向脚本投票权和球队xG分配。");
+  const componentAuditScope = diagnosticPayload.modelAudit?.componentAuditScope || "LEGACY_SELECTIONS";
+  const candidateShadowScope = componentAuditScope === "CANDIDATE_SHADOW";
+  const handicapFailed = diagnosticPayload.modelAudit?.handicapSingleHit === false;
+  const challengerHandicapEvidenceHit = handicapFailed && (
+    diagnosticPayload.independentHandicapLeaderSingleHit === true
+    || diagnosticPayload.conditionalHandicapChallengerSingleHit === true
+  );
+  if (diagnosticPayload.modelAudit?.winDrawLoseSingleHit === false) recommendations.push(candidateShadowScope
+    ? "复查候选胜平负方向、反向脚本投票权和球队xG分配；该结果只进入影子验票。"
+    : "复查最终胜平负方向、反向脚本投票权和球队xG分配。");
   if (diagnosticPayload.evidenceDirectionConflict?.materialConflict) recommendations.push("复查市场、首球方和两回合追分暴露的二对一冲突，确认是否存在两项独立量化反证。");
   if (diagnosticPayload.crossLeagueNormalization?.complete === false) recommendations.push("补齐跨联赛强度、对手质量、比赛类型与时效因子后再计算xG。");
   if (diagnosticPayload.twoLegLeadControl?.applied && diagnosticPayload.totalGoalsHit === false) recommendations.push("复查两回合领先方后续进球衰减，分开校准胜负方向与三球以上幅度。");
-  if (formalHandicapFailed) recommendations.push("复查正式让球的完整净胜球分布，不得由单个正式比分决定让球单选。");
-  if (formalHandicapFailed && diagnosticPayload.independentHandicapLeaderSingleHit === true) recommendations.push("独立让球边际命中而正式让球失败，将该差异纳入让球Challenger影子验票。");
-  if (formalHandicapFailed && diagnosticPayload.conditionalHandicapChallengerSingleHit === true) recommendations.push("主方向条件让球命中而正式让球失败，复查联合净胜球质量排序。");
-  if (diagnosticPayload.totalGoalsHit === false) recommendations.push("复查总进球区间和半场触发脚本。");
-  if (diagnosticPayload.scoreCovered === false) recommendations.push("复核两个正式比分的联合概率排序、双方进球分配和联赛赛季校准；独立风险剧本单独验票，不强占正式比分名额。");
+  if (handicapFailed) recommendations.push(candidateShadowScope
+    ? "复查候选让球的完整净胜球分布；不得将被R15关闭的候选标记为正式让球失败。"
+    : "复查正式让球的完整净胜球分布，不得由单个正式比分决定让球单选。");
+  if (handicapFailed && diagnosticPayload.independentHandicapLeaderSingleHit === true) recommendations.push(candidateShadowScope
+    ? "独立让球边际命中而候选让球失败，将该差异纳入让球Challenger影子验票。"
+    : "独立让球边际命中而正式让球失败，将该差异纳入让球Challenger影子验票。");
+  if (handicapFailed && diagnosticPayload.conditionalHandicapChallengerSingleHit === true) recommendations.push(candidateShadowScope
+    ? "主方向条件让球命中而候选让球失败，复查联合净胜球质量排序。"
+    : "主方向条件让球命中而正式让球失败，复查联合净胜球质量排序。");
+  if (candidateShadowScope && handicapFailed && diagnosticPayload.modelAudit?.formalHandicapSingleHit === null) {
+    recommendations.push("R15已关闭该让球正式玩法；保留现有冲突闸门或一球保护，只累计候选与Challenger影子结果。");
+  }
+  if (diagnosticPayload.totalGoalsHit === false) {
+    recommendations.push(candidateShadowScope ? "复查候选总进球区间和半场触发脚本。" : "复查总进球区间和半场触发脚本。");
+    if (/R15/.test(String(diagnosticPayload.modelRevision || ""))) {
+      recommendations.push("按联赛、xG残差与0至1球尾部概率记录总进球观察，不根据单场结果反向调整统一阈值。");
+    }
+  }
+  if (diagnosticPayload.scoreCovered === false) recommendations.push(candidateShadowScope
+    ? "复核候选比分的联合概率排序、双方进球分配和联赛赛季校准；独立风险剧本继续单独验票。"
+    : "复核两个正式比分的联合概率排序、双方进球分配和联赛赛季校准；独立风险剧本单独验票，不强占正式比分名额。");
   if (auditFailed && !recommendations.length) recommendations.push("复查相似案例、盘口偏差和风险排除层，确认是否需要降级规则。");
   if (auditIncomplete) recommendations.push("补齐缺失的玩法输出或赛果字段后重新验票，不得沉淀为正样本。");
   if (auditPassed && review.hitStatus === "VOID") recommendations.push("保留为联赛与赛季影子校准样本，不计正式推荐命中率。");
   if (auditPassed && review.hitStatus !== "VOID") recommendations.push("保留为同模型版本四组件正样本，用于相似案例分布校验。");
-  const shouldUpgradeModel = auditFailed && (isHighGradeLose || recommendations.length >= 2);
   const failedModules = [...new Set((diagnosticPayload.modelAudit?.failedComponents || []).map((key) => ({
     winDrawLoseSingleHit: "WIN_DRAW_LOSE",
     formalHandicapSingleHit: "HANDICAP",
@@ -890,20 +1021,30 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
     totalGoalsDoubleHit: "TOTAL_GOALS",
     scoreDoubleHit: "EXACT_SCORE",
   }[key])).filter(Boolean))];
-  const primaryMetricsByModule = {
-    WIN_DRAW_LOSE: "winDrawLoseSingleHit",
-    HANDICAP: "formalHandicapSingleHit",
-    TOTAL_GOALS: "totalGoalsDoubleHit",
-    EXACT_SCORE: "scoreDoubleHit",
-  };
+  const shouldUpgradeModel = auditFailed && (isHighGradeLose || failedModules.length >= 2 || challengerHandicapEvidenceHit);
+  const primaryMetricsByModule = candidateShadowScope
+    ? {
+        WIN_DRAW_LOSE: "candidateWinDrawLoseSingleHit",
+        HANDICAP: "candidateHandicapSingleHit",
+        TOTAL_GOALS: "candidateTotalGoalsDoubleHit",
+        EXACT_SCORE: "candidateScoreDoubleHit",
+      }
+    : {
+        WIN_DRAW_LOSE: "formalWinDrawLoseSingleHit",
+        HANDICAP: "formalHandicapSingleHit",
+        TOTAL_GOALS: "formalTotalGoalsDoubleHit",
+        EXACT_SCORE: "formalScoreDoubleHit",
+      };
   const challengerPromotion = {
     status: shouldUpgradeModel ? "SHADOW_PENDING" : "OBSERVATION_ONLY",
+    accountingScope: componentAuditScope,
+    accountingPolicy: "FINAL_LOCK_FORMAL_SELECTIONS_PRE_LOCK_CANDIDATE_SHADOW",
     sourceModelRevision: diagnosticPayload.modelRevision || lock.model_version || "V4",
     modules: failedModules,
     minimumSettledSamples: 30,
     targetSettledSamples: 50,
     primaryMetrics: failedModules.map((module) => primaryMetricsByModule[module]).filter(Boolean),
-    guardrailMetrics: ["formalWinDrawLoseHandicapJointHit", "brierScore", "logLoss", "calibrationBin"],
+    guardrailMetrics: ["formalWinDrawLoseHandicapJointHit", "candidateWinDrawLoseHandicapJointHit", "brierScore", "logLoss", "calibrationBin"],
     automaticPromotion: false,
     promotionPolicy: "同联赛、同赛季、同模型版本累计30至50场影子样本；目标命中率提高，胜平负+让球联合命中不降，Brier Score与Log Loss不退化后才可人工采纳。",
   };

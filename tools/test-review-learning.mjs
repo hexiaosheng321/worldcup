@@ -114,6 +114,89 @@ assert.equal(failedShadowNote.recommendation.challengerPromotion.targetSettledSa
 assert.ok(failedShadowNote.recommendation.challengerPromotion.guardrailMetrics.includes("formalWinDrawLoseHandicapJointHit"));
 assert.ok(!failedShadowNote.title.includes("命中样本沉淀"));
 
+const r15Lock = {
+  ...lock,
+  lock_id: "test-r15-pre-lock",
+  lock_type: "PRE_LOCK",
+  match_id: "test-r15-match",
+  league: "瑞超",
+  final_grade: "C",
+  final_action: "观察",
+  recommendation_side: "HOME",
+  recommendation: "胜",
+  payload_json: JSON.stringify({
+    sportteryPrediction: {
+      modelRevision: "LESSONS_2026-07-17_MARKET_SCOPED_GATES_R15",
+      candidateSelections: {
+        winDrawLose: "胜",
+        handicap: "让胜",
+        totalGoals: "2球/3球",
+        scores: ["1-1", "2-1"],
+      },
+      formalSelections: {
+        winDrawLose: null,
+        handicap: null,
+        totalGoals: "2球/3球",
+        scores: [],
+      },
+      unifiedRunEvidence: {
+        modelRevision: "LESSONS_2026-07-17_MARKET_SCOPED_GATES_R15",
+        outputConsistency: { complete: true, score: 92.2 },
+        criticalPackageGap: { marketBlocking: true, blockedMarkets: ["handicap"] },
+        jointDecision: { independentHandicapLeader: "让负", independentHandicapRisk: { pick: "让负" } },
+        conditionalHandicapChallenger: { pick: "让平" },
+      },
+    },
+  }),
+};
+const r15Result = {
+  result_1x2: "HOME",
+  full_time_home_goals: 2,
+  full_time_away_goals: 1,
+  total_goals: 3,
+  payload_json: "{}",
+};
+const r15Review = { ...evaluateLock(r15Lock, r15Result), hitStatus: "VOID", betOutcome: "VOID" };
+const r15Payload = caseDiagnosticPayload(r15Lock, r15Result, r15Review, { failureTags: [], successTags: [] });
+assert.equal(r15Payload.learningEligibility, "SHADOW_AUDIT");
+assert.equal(r15Payload.modelAudit.componentAuditScope, "CANDIDATE_SHADOW");
+assert.deepEqual(r15Payload.modelAudit.failedComponents, ["handicapSingleHit"]);
+assert.equal(r15Payload.modelAudit.candidateWinDrawLoseSingleHit, true);
+assert.equal(r15Payload.modelAudit.candidateHandicapSingleHit, false);
+assert.equal(r15Payload.modelAudit.candidateTotalGoalsDoubleHit, true);
+assert.equal(r15Payload.modelAudit.candidateScoreDoubleHit, true);
+assert.equal(r15Payload.modelAudit.formalWinDrawLoseSingleHit, null);
+assert.equal(r15Payload.modelAudit.formalHandicapSingleHit, null);
+assert.equal(r15Payload.modelAudit.formalTotalGoalsDoubleHit, true);
+assert.equal(r15Payload.modelAudit.formalScoreDoubleHit, null);
+assert.equal(r15Payload.formalWinDrawLoseHandicapJointHit, null);
+assert.equal(r15Payload.handicapTrackAudit.formal.pick, "");
+assert.equal(r15Payload.handicapTrackAudit.formal.hit, null);
+assert.equal(r15Payload.handicapTrackAudit.candidate.pick, "让胜");
+assert.equal(r15Payload.handicapTrackAudit.conditionalChallenger.hit, true);
+assert.equal(r15Payload.selectionAudit.accountingPolicy, "FINAL_LOCK_FORMAL_SELECTIONS_PRE_LOCK_CANDIDATE_SHADOW");
+assert.equal(r15Payload.outputConsistency.score, 92.2);
+assert.deepEqual(r15Payload.criticalPackageGap.blockedMarkets, ["handicap"]);
+const r15Note = upgradeNoteFromCase(r15Lock, r15Result, r15Review, "case-r15", r15Payload);
+assert.equal(r15Note.status, "SHADOW_PENDING");
+assert.ok(r15Note.title.includes("候选让球影子失败"));
+assert.ok(!r15Note.title.includes("正式让球单选失败"));
+assert.equal(r15Note.recommendation.challengerPromotion.accountingScope, "CANDIDATE_SHADOW");
+assert.deepEqual(r15Note.recommendation.challengerPromotion.primaryMetrics, ["candidateHandicapSingleHit"]);
+assert.ok(r15Note.recommendation.nextActions.some((action) => action.includes("R15已关闭该让球正式玩法")));
+const exposedR15Case = rowToCase({
+  case_id: "case-r15",
+  source_lock_id: r15Lock.lock_id,
+  match_id: r15Lock.match_id,
+  hit_status: "VOID",
+  payload_json: JSON.stringify(r15Payload),
+  failure_tags_json: "[]",
+  success_tags_json: "[]",
+});
+assert.equal(exposedR15Case.candidateHandicapSingleHit, false);
+assert.equal(exposedR15Case.formalHandicapSingleHit, null, "正式让球为空时不得回退到候选结果");
+assert.equal(exposedR15Case.selectionAudit.scope, "CANDIDATE_SHADOW");
+
 const passedShadowNote = upgradeNoteFromCase(lock, result, {
   ...review,
   modelAudit: { directionHit: true },

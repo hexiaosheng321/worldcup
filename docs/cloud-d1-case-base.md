@@ -67,7 +67,8 @@ curl https://worldcup-dashboard-4hr.pages.dev/api/health
 - `/api/results` 写入或更新赛果后，会自动触发该场锁版复盘和 Case Base 生成，避免手工比分回填断链。
 - Case Base 的 `payload_json` 固定保存比分覆盖、总进球覆盖、让球覆盖、半场比分、失败模式和诊断摘要。
 - 每条新 Case 会同步生成一条 `model_upgrade_notes` 记录，用于把赛后诊断沉淀为模型升级候选项。
-- `betOutcome` 与 `modelAudit` 分开保存：跳过场的 `betOutcome=VOID` 不计正式推荐胜负，但 `modelAudit` 仍验票胜平负、正式让球、独立让球、条件 Challenger、胜平负+让球联合、总进球和比分。
+- `betOutcome` 与 `modelAudit` 分开保存：跳过场的 `betOutcome=VOID` 不计正式推荐胜负，但 `modelAudit` 仍按选择范围验票胜平负、候选/正式让球、独立让球、条件 Challenger、胜平负+让球联合、总进球和比分。
+- R15 `PRE_LOCK` 的 `modelAudit.componentAuditScope=CANDIDATE_SHADOW`；候选与正式玩法分别保存在 `selectionAudit.candidate/formal`，正式指标不得从候选字段回退。升级记录的主指标使用 `candidate*Hit`，正式指标仅作为覆盖率与不退化护栏。
 - Case 同时保存联赛、当前赛季和量化赛季叙事；`VOID` 只能生成影子观察或失败记录，不能因为“不计胜负”被误写成正样本。
 - 样本不足时只展示参考，不参与置信度修正。
 - 前端默认继续使用本地静态数据；云端接口可用后再逐步切换具体页面。
