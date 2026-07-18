@@ -31,6 +31,8 @@ const prediction = {
 
 assert.equal(engine.isR15Prediction(prediction), true);
 assert.equal(engine.revisionLabel(prediction), "R15a");
+assert.equal(engine.inferenceDate({ lockedAt: "2026-07-17T15:59:59Z" }, "2026-07-19"), "2026-07-17");
+assert.equal(engine.inferenceDate({ lockedAt: "2026-07-17T16:00:01Z" }, "2026-07-19"), "2026-07-18");
 
 const hit = engine.evaluatePrediction(prediction, {
   score: "2-1",
@@ -72,12 +74,13 @@ const partialHit = engine.evaluatePrediction(prediction, {
   total: 1,
 });
 const daily = engine.summarizeDaily([
-  { date: "2026-07-18", matchName: "主队A vs 客队A", evaluation: hit },
-  { date: "2026-07-18", matchName: "主队B vs 客队B", evaluation: partialHit },
-  { date: "2026-07-18", matchName: "主队C vs 客队C", evaluation: pending },
-  { date: "2026-07-18", matchName: "主队D vs 客队D", evaluation: candidateOnly },
+  { date: "2026-07-19", pred: { lockedAt: "2026-07-18T07:00:00Z" }, matchName: "主队A vs 客队A", evaluation: hit },
+  { date: "2026-07-18", pred: { lockedAt: "2026-07-18T07:01:00Z" }, matchName: "主队B vs 客队B", evaluation: partialHit },
+  { date: "2026-07-19", pred: { lockedAt: "2026-07-18T07:02:00Z" }, matchName: "主队C vs 客队C", evaluation: pending },
+  { date: "2026-07-18", pred: { lockedAt: "2026-07-18T07:03:00Z" }, matchName: "主队D vs 客队D", evaluation: candidateOnly },
 ]);
 assert.equal(daily.length, 1);
+assert.equal(daily[0].date, "2026-07-18", "每日复盘必须按推演锁版日归组，不能按比赛日拆分");
 assert.equal(daily[0].opened, 4);
 assert.equal(daily[0].released, 3);
 assert.equal(daily[0].verified, 2);

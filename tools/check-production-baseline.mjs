@@ -74,13 +74,13 @@ for (const marker of [
 if (!styles.includes(".market-closed")) {
   throw new Error("Production baseline requires a neutral closed-market status treatment.");
 }
-for (const marker of ["evaluationOutcome", "summarizeDaily", 'hitCount > 0 ? "PARTIAL" : "MISS"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
+for (const marker of ["evaluationOutcome", "inferenceDate", "summarizeDaily", 'pred.lockedAt || pred.generatedAt', 'hitCount > 0 ? "PARTIAL" : "MISS"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
   if (!r15Backtest.includes(marker)) throw new Error(`Production baseline missing R15 daily review aggregation: ${marker}`);
 }
-for (const marker of ["20260718_r15_daily_review_v1", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "每日放行账本"]) {
+for (const marker of ["20260718_r15_inference_day_v2", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "推演日 = lockedAt 北京时间", "r15-row-released"]) {
   if (!index.includes(marker) && !panels.includes(marker) && !main.includes(marker)) throw new Error(`Production baseline missing R15 daily review window: ${marker}`);
 }
-for (const marker of [".r15-daily-review-launch", ".r15-daily-overview", ".r15-daily-match-list"]) {
+for (const marker of [".r15-daily-review-launch", ".r15-daily-overview", ".r15-daily-match-list", ".r15-backtest-table tbody tr.r15-row-released", ".r15-release-flag"]) {
   if (!styles.includes(marker)) throw new Error(`Production baseline missing R15 daily review styling: ${marker}`);
 }
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {

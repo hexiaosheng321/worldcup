@@ -141,10 +141,20 @@
     };
   }
 
+  function inferenceDate(pred = {}, fallback = "") {
+    const explicit = String(pred.inferenceDate || pred.reviewDate || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(explicit)) return explicit.slice(0, 10);
+    const timestamp = pred.lockedAt || pred.generatedAt || pred.publishedAt || pred.createdAt || "";
+    const parsed = Date.parse(timestamp);
+    if (Number.isFinite(parsed)) return new Date(parsed + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const fallbackText = String(fallback || "").trim();
+    return /^\d{4}-\d{2}-\d{2}/.test(fallbackText) ? fallbackText.slice(0, 10) : "未标日期";
+  }
+
   function summarizeDaily(records = []) {
     const groups = new Map();
     records.forEach((record) => {
-      const date = String(record?.date || "未标日期");
+      const date = inferenceDate(record?.pred || record, record?.date);
       if (!groups.has(date)) groups.set(date, []);
       groups.get(date).push(record);
     });
@@ -180,6 +190,7 @@
     marketAvailability,
     evaluatePrediction,
     evaluationOutcome,
+    inferenceDate,
     summarize,
     summarizeDaily,
   };

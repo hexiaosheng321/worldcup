@@ -998,7 +998,7 @@ function r15BacktestRows(sourceRows = modelAuditRows()) {
       return { ...row, score, evaluation };
     })
     .sort((a, b) => {
-      const dateCompare = String(b.match.date || "").localeCompare(String(a.match.date || ""));
+      const dateCompare = engine.inferenceDate(b.pred, b.match.date).localeCompare(engine.inferenceDate(a.pred, a.match.date));
       if (dateCompare !== 0) return dateCompare;
       return Number(b.match.no || 0) - Number(a.match.no || 0);
     });
@@ -1076,7 +1076,7 @@ function openR15DailyReviewModal() {
   const tableRows = dailyRows.map((day) => `
     <tr>
       <td><strong>${dash(day.date)}</strong><small>${formatDate(day.date)}</small></td>
-      <td><strong>${day.opened}</strong><small>场R15记录</small></td>
+      <td><strong>${day.opened}</strong><small>场R15推演</small></td>
       <td><strong>${day.released}</strong><small>${day.opened ? `${((day.released / day.opened) * 100).toFixed(1)}% 放行` : "0.0% 放行"}</small></td>
       <td><div class="r15-daily-match-list">${day.matches.map(r15DailyMatchItem).join("") || "<span class='empty-mark'>当日无正式放行</span>"}</div></td>
       <td><strong>${day.verified}</strong><small>${day.pending} 场待验票</small></td>
@@ -1093,32 +1093,33 @@ function openR15DailyReviewModal() {
         <div>
           <span>DAILY RELEASE REVIEW</span>
           <strong>每日放行复盘</strong>
-          <em>每天自动汇总开盘记录、正式放行比赛与赛果命中；当场全部正式放行玩法均中，才计为命中一场。</em>
+          <em>每天按北京时间锁版日汇总推演记录、正式放行比赛与赛果命中；当场全部正式放行玩法均中，才计为命中一场。</em>
         </div>
         <button type="button" data-global-stats-close aria-label="关闭每日放行复盘">×</button>
       </header>
       <div class="global-stats-dialog-body r15-daily-review-body">
         <section class="r15-daily-overview">
-          <article><span>复盘日期</span><strong>${dailyRows.length}</strong><em>按锁版日期自动聚合</em></article>
-          <article><span>累计开盘</span><strong>${totalOpened}</strong><em>R15 / R15a 记录</em></article>
+          <article><span>推演日期</span><strong>${dailyRows.length}</strong><em>按北京时间锁版日聚合</em></article>
+          <article><span>累计推演</span><strong>${totalOpened}</strong><em>R15 / R15a 记录</em></article>
           <article><span>累计放行</span><strong>${totalReleased}</strong><em>至少一个正式玩法</em></article>
           <article><span>完成验票</span><strong>${totalVerified}</strong><em>${Math.max(0, totalReleased - totalVerified)} 场等待赛果</em></article>
           <article class="is-hit"><span>命中场次</span><strong>${totalHits}<small>/${totalVerified}</small></strong><em>${totalVerified ? hitRate(totalHits, totalVerified) : "暂无已验样本"}</em></article>
         </section>
         <section class="r15-daily-rule">
           <b>每日口径</b>
-          <span>开盘 = 当日R15记录</span>
+          <span>推演日 = lockedAt 北京时间</span>
+          <span>推演 = 当日完成的R15记录</span>
           <span>挑出 = 至少一个 formalSelection</span>
           <span>命中 = 当场正式放行玩法全部命中</span>
           <span>部分命中单列，不计整场命中</span>
         </section>
         <section class="r15-daily-table-wrap">
           <div class="global-stats-table-toolbar r15-daily-toolbar">
-            <div><span>每日放行账本</span><strong>${dailyRows.length} 个日期 · ${totalReleased} 场正式放行 · ${totalHits}/${totalVerified || 0} 场命中</strong></div>
+            <div><span>每日放行账本</span><strong>${dailyRows.length} 个推演日 · ${totalReleased} 场正式放行 · ${totalHits}/${totalVerified || 0} 场命中</strong></div>
           </div>
           <div class="review-record-wrap compact r15-daily-scroll">
             <table class="review-record-table r15-daily-table">
-              <thead><tr><th>日期</th><th>当日开盘</th><th>正式放行</th><th>放行比赛与结果</th><th>已验票</th><th>命中场次</th><th>命中率</th></tr></thead>
+              <thead><tr><th>推演日</th><th>当日推演</th><th>正式放行</th><th>放行比赛与结果</th><th>已验票</th><th>命中场次</th><th>命中率</th></tr></thead>
               <tbody>${tableRows}</tbody>
             </table>
           </div>
@@ -1216,12 +1217,15 @@ function openR15BacktestModal() {
   }).join("");
   const tableRows = rows.map(({ match, pred, score, evaluation, league }) => {
     const status = r15SampleStatus(evaluation);
+    const inferenceDate = window.WC_R15_BACKTEST.inferenceDate(pred, match.date);
+    const matchDate = pred.date || match.date;
+    const released = evaluation.hasFormal;
     return `
-      <tr>
-        <td>${dash(pred.date || match.date)}</td>
+      <tr class="${released ? "r15-row-released" : "r15-row-observe"}">
+        <td><strong>${dash(inferenceDate)}</strong>${matchDate && matchDate !== inferenceDate ? `<small>比赛 ${formatDate(matchDate)}</small>` : ""}</td>
         <td>${dash(league)}</td>
         <td><span class="version-badge">${evaluation.revision}</span><br><small>整包 ${dash(evaluation.overallGrade)}级</small></td>
-        <td class="text-cell match-name-cell">${reviewMatchButton(match)}</td>
+        <td class="text-cell match-name-cell">${released ? '<span class="r15-release-flag">正式放行</span>' : ""}${reviewMatchButton(match)}</td>
         <td>${dash(score || "待赛果")}</td>
         <td>${r15MarketCell(evaluation.markets.winDrawLose, evaluation.verified)}</td>
         <td>${r15MarketCell(evaluation.markets.handicap, evaluation.verified)}</td>
@@ -1261,7 +1265,7 @@ function openR15BacktestModal() {
         </section>
         <button type="button" class="r15-daily-review-launch" data-r15-daily-review-open>
           <span>DAILY / 每日放行复盘</span>
-          <strong>${formatDate(latestDaily.date)} · ${latestDaily.opened} 场开盘，挑出 ${latestDaily.released} 场</strong>
+          <strong>${formatDate(latestDaily.date)} · ${latestDaily.opened} 场推演，挑出 ${latestDaily.released} 场</strong>
           <em>${latestDaily.verified ? `已验 ${latestDaily.verified} 场 · 命中 ${latestDaily.hits}/${latestDaily.verified} · ${hitRate(latestDaily.hits, latestDaily.verified)}` : `${latestDaily.released} 场等待官方赛果验票`}</em>
           <b>打开每日复盘窗口 <i aria-hidden="true">↗</i></b>
         </button>
@@ -1279,7 +1283,7 @@ function openR15BacktestModal() {
           </div>
           <div class="review-record-wrap compact r15-ledger-scroll">
             <table class="review-record-table r15-backtest-table">
-              <thead><tr><th>日期</th><th>联赛</th><th>版本/整包</th><th>比赛</th><th>赛果</th><th>胜平负</th><th>让球</th><th>总进球</th><th>比分</th><th>样本状态</th></tr></thead>
+              <thead><tr><th>推演日</th><th>联赛</th><th>版本/整包</th><th>比赛</th><th>赛果</th><th>胜平负</th><th>让球</th><th>总进球</th><th>比分</th><th>样本状态</th></tr></thead>
               <tbody>${tableRows}</tbody>
             </table>
           </div>
