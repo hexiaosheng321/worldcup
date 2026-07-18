@@ -4451,7 +4451,7 @@ function renderSportteryDataSupport(item, totalGoals, scoreOdds, sourceStamp) {
     </details>
     <section class="match-page-section">
       <span>数据说明</span>
-      <p>盘口来自体彩官方接口；实时比分来自 APIfootball；赛后仍以体彩官方赛果回填作为复盘口径。最近体彩快照：${sourceStamp || "等待刷新"}。</p>
+      <p>盘口以 OKOOO 为主源，赛程与开售信息由 500彩票网校验；实时比分来自现场比分源，赛后由多源赛果回填复核。最近 SP 快照：${sourceStamp || "等待刷新"}。</p>
     </section>
   `;
 }
@@ -6078,7 +6078,8 @@ function snapshotWeights(snapshot, playType) {
 function analyzePlayHistory(match, playType) {
   const snapshots = (match.history?.[playType] || [])
     .filter((item) => `${item.updateDate || ""} ${item.updateTime || ""}`.trim())
-    .sort((a, b) => `${a.updateDate} ${a.updateTime}`.localeCompare(`${b.updateDate} ${b.updateTime}`));
+    .sort((a, b) => `${a.updateDate} ${a.updateTime}`.localeCompare(`${b.updateDate} ${b.updateTime}`))
+    .filter((item) => snapshotWeights(item, playType).length > 0);
   if (snapshots.length < 2) {
     return {
       playType,
@@ -6108,6 +6109,14 @@ function analyzePlayHistory(match, playType) {
     .filter(Boolean)
     .sort((a, b) => Math.abs(b.weightDelta) - Math.abs(a.weightDelta));
   const strongest = options.find((item) => item.trend === "strengthening") || options[0];
+  if (!strongest) {
+    return {
+      playType,
+      available: false,
+      label: { had: "胜平负", hhad: "让球", ttg: "总进球" }[playType],
+      reason: "有效快照不足",
+    };
+  }
   const volatility = options[0] ? Math.abs(options[0].spDeltaPct) : 0;
   return {
     playType,

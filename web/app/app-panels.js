@@ -1639,7 +1639,8 @@ function analyzePlayHistory(match, playType) {
       return String(item.goalLine ?? "").replace("+", "") === expectedHandicap;
     })
     .filter((item) => `${item.updateDate || ""} ${item.updateTime || ""}`.trim())
-    .sort((a, b) => `${a.updateDate} ${a.updateTime}`.localeCompare(`${b.updateDate} ${b.updateTime}`));
+    .sort((a, b) => `${a.updateDate} ${a.updateTime}`.localeCompare(`${b.updateDate} ${b.updateTime}`))
+    .filter((item) => snapshotWeights(item, playType).length > 0);
   if (snapshots.length < 2) {
     return {
       playType,
@@ -1669,6 +1670,14 @@ function analyzePlayHistory(match, playType) {
     .filter(Boolean)
     .sort((a, b) => Math.abs(b.weightDelta) - Math.abs(a.weightDelta));
   const strongest = options.find((item) => item.trend === "strengthening") || options[0];
+  if (!strongest) {
+    return {
+      playType,
+      available: false,
+      label: { had: "胜平负", hhad: "让球", ttg: "总进球" }[playType],
+      reason: "有效快照不足",
+    };
+  }
   const volatility = options[0] ? Math.abs(options[0].spDeltaPct) : 0;
   return {
     playType,
