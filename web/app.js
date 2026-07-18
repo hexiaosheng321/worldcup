@@ -3382,53 +3382,9 @@ function renderQuickMatchMode(match, pred, filter, finished, hLabel) {
   `;
 }
 
-function compactProjectionValue(value, fallback = "-") {
-  if (value === undefined || value === null || value === "") return fallback;
-  return displayModelText(value);
-}
-
 function projectionScorePick(pred, fallback = "") {
   const scores = [pred?.mainScore || pred?.score1, pred?.counterScore || pred?.score2].filter(Boolean);
   return scores.length ? scores.join(" / ") : fallback || pred?.scorePick || "-";
-}
-
-function renderProjectionDecisionDeck(match, pred, filter, options = {}) {
-  const gate = options.gate === false ? null : match?.no ? autoDecisionGate(match.no, pred) : null;
-  const resolved = resolvedPredictionDecision(pred, { handicapLine: match ? handicapLine(match) : "" });
-  const scorePick = projectionScorePick(pred, options.scorePick);
-  const totalPick = pred?.totalGoalsPick || options.totalPick || "-";
-  const handicap = resolved?.handicapPick || handicapPick(pred) || options.handicapPick || "-";
-  const issue = options.issue || (match ? ticaiIssue(match) : pred?.issue) || "-";
-  const version = pred ? predictionVersionLabel(pred) : "待推演";
-  const summary = resolved?.hasConflict
-    ? `${resolved.resolution} 最终单选 ${resolved.pick || "-"}；让球 ${handicap}；总进球 ${totalPick}；比分 ${scorePick}`
-    : finalDecisionActionText(pred) || `单选 ${pred?.pick || "-"}；让球 ${handicap}；总进球 ${totalPick}；比分 ${scorePick}`;
-  const competition = pred
-    ? modelDisplayName(pred, match, options.competition || pred?.competitionModel || pred?.competitionType || (match?.group ? `${match.group}组` : ""))
-    : options.competition || (match?.group ? `${match.group}组` : "");
-  const meta = [
-    competition,
-    gate ? `证据 ${gate.level} / ${gate.score}` : "",
-    filter?.grade ? `置信 ${filter.grade}` : "",
-    filter?.advice ? `动作 ${filter.advice}` : "",
-  ].filter(Boolean);
-  return `
-    <section class="match-page-section projection-deck">
-      <div class="projection-deck-head">
-        <span>完整推演总览</span>
-        <strong>${compactProjectionValue(summary)}</strong>
-        <em>${meta.join(" · ")}</em>
-      </div>
-      <div class="projection-deck-grid">
-        <article><small>体彩期号</small><b>${issue}</b></article>
-        <article><small>模型版本</small><b>${version}</b></article>
-        <article><small>单选</small><b>${resolved?.pick || pred?.pick || options.directionPick || "-"}</b></article>
-        <article><small>让球</small><b>${handicap}</b></article>
-        <article><small>总进球</small><b>${totalPick}</b></article>
-        <article><small>比分预测</small><b>${scorePick}</b></article>
-      </div>
-    </section>
-  `;
 }
 
 function renderWorldCupFullProjection(match, pred, filter, odds) {
@@ -3441,7 +3397,6 @@ function renderWorldCupFullProjection(match, pred, filter, odds) {
     `;
   }
   return `
-    ${renderProjectionDecisionDeck(match, pred, filter)}
     ${renderDecisionGatePanel(match.no, pred)}
     ${renderSpRadarPanel(match.no, "detail")}
     ${renderModelTriadPanel(match.no, pred)}
@@ -3497,7 +3452,7 @@ function renderMatchDetail(no) {
   const pred = latestPredictionFor(no);
   const finished = Boolean(parseScore(officialScoreForMatch(match)));
   const odds = oddsMatch(no);
-  const hLabel = pred ? handicapLabel(pred) : handicapLine(no) ? `${match.home}${handicapLine(no)}` : "";
+  const hLabel = pred ? handicapLabel(pred) : handicapLine(match) ? `${match.home}${handicapLine(match)}` : "";
   const filter = pred ? advancedFilter(pred) : null;
   const backLabel =
     matchDetailReturnTarget === "review"
@@ -4406,17 +4361,7 @@ function renderSportteryV4FullMode(item, modelPred, research, totalGoals, scoreO
       ${renderJudgementRiskPanel(modelPred, research.riskNotes)}
     `;
   }
-  const filter = sportteryV4Filter(modelPred, research);
   return `
-    ${renderProjectionDecisionDeck(item, modelPred, filter, {
-      gate: false,
-      issue: item.issue || item.no || "-",
-      competition: item.league || modelPred.competitionModel || modelPred.competitionType || "体彩赛事",
-      totalPick: research.totalPick,
-      scorePick: research.scorePick,
-      handicapPick: research.handicapPick,
-      directionPick: research.directionPick,
-    })}
     ${renderSportteryEvidenceGate(item, modelPred, research)}
     ${renderUniversalModelPanel(modelPred)}
     ${renderD1CaseBasePanel(modelPred, item)}

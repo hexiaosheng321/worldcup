@@ -2836,73 +2836,6 @@ body::before {
   background: linear-gradient(180deg, #ffffff, #fff8d9);
 }
 
-.projection-deck {
-  display: grid;
-  gap: 14px;
-  border-color: rgba(7, 60, 135, 0.22);
-  background:
-    linear-gradient(135deg, rgba(7, 60, 135, 0.08), transparent 45%),
-    linear-gradient(180deg, #ffffff, #f5f9ff);
-}
-
-.projection-deck-head {
-  display: grid;
-  gap: 7px;
-}
-
-.projection-deck-head span {
-  color: var(--gold);
-  font-size: 13px;
-  font-weight: 950;
-  letter-spacing: 0.04em;
-}
-
-.projection-deck-head strong {
-  color: var(--blue);
-  font-family: Georgia, "Songti SC", serif;
-  font-size: clamp(24px, 3vw, 36px);
-  line-height: 1.1;
-  font-weight: 950;
-}
-
-.projection-deck-head em {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: normal;
-  font-weight: 900;
-}
-
-.projection-deck-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.projection-deck-grid article {
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.88);
-}
-
-.projection-deck-grid small {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 950;
-}
-
-.projection-deck-grid b {
-  display: block;
-  color: var(--blue);
-  font-size: 17px;
-  font-weight: 950;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-}
-
 .final-decision-gate {
   display: grid;
   gap: 14px;
@@ -3461,10 +3394,6 @@ body::before {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .projection-deck-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .universal-model-panel .universal-model-head,
   .v4-phase {
     grid-template-columns: 1fr;
@@ -3495,7 +3424,6 @@ body::before {
   .match-page-grid,
   .decision-grid,
   .filter-board-grid,
-  .projection-deck-grid,
   .final-decision-grid,
   .universal-model-grid,
   .v4-step-grid,

@@ -38,6 +38,9 @@ const foundRetired = retiredMarkers.filter((marker) => index.includes(marker) ||
 if (foundRetired.length) {
   throw new Error(`Production baseline rejected retired World Cup UI: ${foundRetired.join(", ")}`);
 }
+if (detailApp.includes("完整推演总览")) {
+  throw new Error("Production baseline rejects the duplicated full-projection summary above the lock action.");
+}
 
 const requiredMarkers = [
   'data-tab="schedule"',
