@@ -865,18 +865,28 @@ function predictionReviewData(pred, match) {
   const actualHandicapDirection = handicapDirection(scoreText, reviewHandicapLine(pred));
   const hPick = handicapPick(pred);
   const lifecycle = match?.reviewLifecycle || sportteryReviewLifecycle(match || {}, pred, null, scoreText);
+  const unavailableSelection = (value) => ["未开售", "不开盘"].includes(String(value ?? "").trim());
+  const marketAvailability = {
+    winDrawLose: pred?.marketAvailability?.winDrawLose !== false && !unavailableSelection(pred?.pick),
+    handicap: pred?.marketAvailability?.handicap !== false && !unavailableSelection(hPick),
+    totalGoals: pred?.marketAvailability?.totalGoals !== false && !unavailableSelection(pred?.totalGoalsPick),
+    scores:
+      pred?.marketAvailability?.scores !== false &&
+      ![pred?.mainScore, pred?.counterScore].some((value) => unavailableSelection(value)),
+  };
   return {
     pred,
     lifecycle,
+    marketAvailability,
     actualDirection,
     actualHandicapDirection,
     hPick,
-    directionHit: actualDirection ? pred.pick === actualDirection : null,
-    handicapHit: actualHandicapDirection ? hPick === actualHandicapDirection : null,
-    totalGoalsHit: totalGoalsHit(pred.totalGoalsPick, scoreText),
-    mainHit: scoreText ? pred.mainScore === scoreText : null,
-    counterHit: scoreText ? pred.counterScore === scoreText : null,
-    scoreHit: scoreText ? pred.mainScore === scoreText || pred.counterScore === scoreText : null,
+    directionHit: actualDirection && marketAvailability.winDrawLose ? pred.pick === actualDirection : null,
+    handicapHit: actualHandicapDirection && marketAvailability.handicap ? hPick === actualHandicapDirection : null,
+    totalGoalsHit: marketAvailability.totalGoals ? totalGoalsHit(pred.totalGoalsPick, scoreText) : null,
+    mainHit: scoreText && marketAvailability.scores ? pred.mainScore === scoreText : null,
+    counterHit: scoreText && marketAvailability.scores ? pred.counterScore === scoreText : null,
+    scoreHit: scoreText && marketAvailability.scores ? pred.mainScore === scoreText || pred.counterScore === scoreText : null,
     matchType: modelMatchType(pred),
     actualMatchType: actualMatchType(scoreText),
     matchTypeHit: matchTypeHit(pred, scoreText),
@@ -913,16 +923,19 @@ function reviewAttribution(pred, match, review = predictionReviewData(pred, matc
   const consistency = marketConsistency(match?.no, pred);
   const expectedGoals = predictedGoalAverage(pred);
 
-  if (review.directionHit && review.handicapHit && review.totalGoalsHit) {
+  const evaluatedCoreHits = [review.directionHit, review.handicapHit, review.totalGoalsHit].filter(
+    (value) => typeof value === "boolean"
+  );
+  if (evaluatedCoreHits.length && evaluatedCoreHits.every(Boolean)) {
     reasons.push("核心方向命中");
   } else {
-    if (!review.directionHit) reasons.push("方向错");
-    if (review.directionHit && !review.handicapHit) reasons.push("赢球幅度错");
-    if (!review.totalGoalsHit) reasons.push("进球区间错");
+    if (review.directionHit === false) reasons.push("方向错");
+    if (review.directionHit === true && review.handicapHit === false) reasons.push("赢球幅度错");
+    if (review.totalGoalsHit === false) reasons.push("进球区间错");
   }
-  if (!review.scoreHit) reasons.push("比分峰值偏移");
-  if ((consistency.score || 0) < 46 && (!review.directionHit || !review.handicapHit)) reasons.push("盘口冲突未降级");
-  if (gate.score < 55 && (!review.directionHit || !review.handicapHit || !review.totalGoalsHit)) reasons.push("证据不足，复盘需降权");
+  if (review.scoreHit === false) reasons.push("比分峰值偏移");
+  if ((consistency.score || 0) < 46 && (review.directionHit === false || review.handicapHit === false)) reasons.push("盘口冲突未降级");
+  if (gate.score < 55 && [review.directionHit, review.handicapHit, review.totalGoalsHit].some((value) => value === false)) reasons.push("证据不足，复盘需降权");
   if (Number.isFinite(expectedGoals) && parsed && Math.abs(parsed.total - expectedGoals) >= 2) reasons.push("比赛节奏偏离");
   if (modelEvidenceScore(match?.no, pred).score < 65 && reasons.some((item) => item.includes("错"))) reasons.push("信息证据不足");
 
@@ -937,6 +950,13 @@ function reviewAttribution(pred, match, review = predictionReviewData(pred, matc
 
 function hitCell(hit) {
   return `<span class="${hit === null ? "empty-mark" : hit ? "good" : "bad"}">${hit === null ? "-" : hit ? "中" : "未中"}</span>`;
+}
+
+function reviewMarketCell(selection, hit, available = true) {
+  if (!available || ["未开售", "不开盘"].includes(String(selection ?? "").trim())) {
+    return `<span class="market-closed">不开盘</span>`;
+  }
+  return `<b>${dash(selection)}</b>${hitCell(hit)}`;
 }
 
 function dash(value) {
@@ -1267,14 +1287,17 @@ function renderGlobalStats() {
   const rows = visibleRows.map((row) => ({ ...row, ...row.review }));
 
   const verifiedRows = rows.filter((row) => row.actualDirection);
-  const handicapVerifiedRows = rows.filter((row) => row.actualHandicapDirection);
-  const directionHits = verifiedRows.filter((row) => row.directionHit).length;
+  const directionVerifiedRows = rows.filter((row) => row.directionHit !== null);
+  const handicapVerifiedRows = rows.filter((row) => row.handicapHit !== null);
+  const totalGoalsVerifiedRows = rows.filter((row) => row.totalGoalsHit !== null);
+  const scoreVerifiedRows = rows.filter((row) => row.scoreHit !== null);
+  const directionHits = directionVerifiedRows.filter((row) => row.directionHit).length;
   const handicapHits = handicapVerifiedRows.filter((row) => row.handicapHit).length;
-  const totalGoalsHits = verifiedRows.filter((row) => row.totalGoalsHit).length;
-  const scoreHits = verifiedRows.filter((row) => row.scoreHit).length;
-  const adviceRows = verifiedRows.filter((row) => ["A", "A-", "B", "B-"].includes(row.confidence));
+  const totalGoalsHits = totalGoalsVerifiedRows.filter((row) => row.totalGoalsHit).length;
+  const scoreHits = scoreVerifiedRows.filter((row) => row.scoreHit).length;
+  const adviceRows = directionVerifiedRows.filter((row) => ["A", "A-", "B", "B-"].includes(row.confidence));
   const adviceHits = adviceRows.filter((row) => row.directionHit).length;
-  const confidenceBacktests = confidenceDirectionBacktests(verifiedRows);
+  const confidenceBacktests = confidenceDirectionBacktests(directionVerifiedRows);
   const postponedRows = rows.filter((row) => ["POSTPONED", "RESCHEDULED"].includes(row.lifecycle?.code));
   const voidRows = rows.filter((row) => row.lifecycle?.code === "VOID");
   const gateRows = rows.map((row) => ({ ...row, gate: autoDecisionGate(row.match.no, row.pred) }));
@@ -1286,10 +1309,10 @@ function renderGlobalStats() {
     <div class="review-summary-grid">
       <article class="review-metric"><span>已锁版场次</span><strong>${rows.length}</strong><em>${competitions.size} 个赛事类型</em></article>
       <article class="review-metric"><span>已验证</span><strong>${verifiedRows.length}</strong><em>已有实际比分</em></article>
-      <article class="review-metric"><span>方向命中</span><strong>${directionHits}/${verifiedRows.length || 0}</strong><em>${hitRate(directionHits, verifiedRows.length)}</em></article>
+      <article class="review-metric"><span>方向命中</span><strong>${directionHits}/${directionVerifiedRows.length || 0}</strong><em>${hitRate(directionHits, directionVerifiedRows.length)}</em></article>
       <article class="review-metric"><span>让球命中</span><strong>${handicapHits}/${handicapVerifiedRows.length || 0}</strong><em>${hitRate(handicapHits, handicapVerifiedRows.length)}</em></article>
-      <article class="review-metric"><span>总进球</span><strong>${totalGoalsHits}/${verifiedRows.length || 0}</strong><em>${hitRate(totalGoalsHits, verifiedRows.length)}</em></article>
-      <article class="review-metric"><span>比分覆盖</span><strong>${scoreHits}/${verifiedRows.length || 0}</strong><em>${hitRate(scoreHits, verifiedRows.length)}</em></article>
+      <article class="review-metric"><span>总进球</span><strong>${totalGoalsHits}/${totalGoalsVerifiedRows.length || 0}</strong><em>${hitRate(totalGoalsHits, totalGoalsVerifiedRows.length)}</em></article>
+      <article class="review-metric"><span>比分覆盖</span><strong>${scoreHits}/${scoreVerifiedRows.length || 0}</strong><em>${hitRate(scoreHits, scoreVerifiedRows.length)}</em></article>
       <article class="review-metric"><span>A/B方向</span><strong>${adviceHits}/${adviceRows.length || 0}</strong><em>${hitRate(adviceHits, adviceRows.length)}</em></article>
       <article class="review-metric"><span>A级证据</span><strong>${mainGateRows.length}</strong><em>证据完整，不代表自动主推</em></article>
       ${confidenceBacktests.map(({ grade, hits, total, rate }) => `
@@ -1369,10 +1392,10 @@ function renderGlobalStats() {
           <td class="text-cell match-name-cell">${reviewMatchButton(match)}</td>
           <td class="actual-cell lifecycle-${String(lifecycle.code || "pending").toLowerCase()}">${dash(actualDisplay)}</td>
           <td><span class="gate-badge ${confidenceTone(confidence)}">${dash(confidence)}</span></td>
-          <td><b>${dash(pred.pick)}</b>${hitCell(review.directionHit)}</td>
-          <td><b>${dash(review.hPick)}</b>${hitCell(review.handicapHit)}</td>
-          <td><b>${dash(pred.totalGoalsPick)}</b>${hitCell(review.totalGoalsHit)}</td>
-          <td><b>${dash(pred.mainScore)} / ${dash(pred.counterScore)}</b>${hitCell(review.scoreHit)}</td>
+          <td>${reviewMarketCell(pred.pick, review.directionHit, review.marketAvailability?.winDrawLose)}</td>
+          <td>${reviewMarketCell(review.hPick, review.handicapHit, review.marketAvailability?.handicap)}</td>
+          <td>${reviewMarketCell(pred.totalGoalsPick, review.totalGoalsHit, review.marketAvailability?.totalGoals)}</td>
+          <td>${reviewMarketCell(`${dash(pred.mainScore)} / ${dash(pred.counterScore)}`, review.scoreHit, review.marketAvailability?.scores)}</td>
           <td><span class="attribution-badge ${attribution.severity}">${attribution.type}</span></td>
         </tr>
       `;

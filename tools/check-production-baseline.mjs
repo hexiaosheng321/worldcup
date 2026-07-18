@@ -59,6 +59,18 @@ if (!index.includes("app/app-detail.js?v=20260716_brazil_profile_null_guard_r1")
 for (const marker of ["market_unavailable_r1", "未开售", "marketAvailability"]) {
   if (!index.includes(marker) && !detailApp.includes(marker) && !main.includes(marker)) throw new Error(`Production baseline missing unavailable-market presentation: ${marker}`);
 }
+for (const marker of [
+  "20260718_market_closed_review_v1",
+  "function reviewMarketCell",
+  'return `<span class="market-closed">不开盘</span>`',
+  "const directionVerifiedRows = rows.filter((row) => row.directionHit !== null)",
+  "actualDirection && marketAvailability.winDrawLose ? pred.pick === actualDirection : null",
+]) {
+  if (!index.includes(marker) && !panels.includes(marker)) throw new Error(`Production baseline missing closed-market backtest guard: ${marker}`);
+}
+if (!styles.includes(".market-closed")) {
+  throw new Error("Production baseline requires a neutral closed-market status treatment.");
+}
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
   throw new Error("Production baseline must keep the language menu outside the header clipping box");
 }
