@@ -3194,7 +3194,9 @@ body::before {
 
 .v4-phase-head {
   display: flex;
-  align-items: flex-start;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
   gap: 11px;
   padding: 5px 4px;
 }
