@@ -1409,7 +1409,7 @@ function statsAuditKickoffMeta(match = {}, pred = {}) {
 function compareStatsAuditKickoff(a, b) {
   const left = statsAuditKickoffMeta(a.match, a.pred);
   const right = statsAuditKickoffMeta(b.match, b.pred);
-  const dateCompare = right.date.localeCompare(left.date);
+  const dateCompare = left.date.localeCompare(right.date);
   if (dateCompare !== 0) return dateCompare;
   if (left.time && right.time) {
     const timeCompare = left.time.localeCompare(right.time);
@@ -1543,7 +1543,7 @@ function renderGlobalStats() {
     `;
   }
   const tableRows = orderedVisibleRows
-    .map(({ match, pred, review, competition, playType }) => {
+    .map(({ match, pred, review, competition }) => {
       const attribution = reviewAttribution(pred, match, review);
       const confidence = confidenceGrade(pred);
       const scoreText = officialScoreForMatch(match);
@@ -1553,7 +1553,6 @@ function renderGlobalStats() {
       return `
         <tr data-global-stats-no="${match.no}">
           <td>${dash(competition)}</td>
-          <td>${dash(playType)}</td>
           <td class="stats-kickoff-cell"><strong>${dash(kickoff.date)}</strong><small>${kickoff.time ? `${kickoff.time} 北京时间` : "开赛时间待同步"}</small></td>
           <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
           <td>${match.no}</td>
@@ -1568,7 +1567,7 @@ function renderGlobalStats() {
         </tr>
       `;
     })
-    .join("") || `<tr><td colspan="13" class="empty-cell">当前范围暂无模型推演记录</td></tr>`;
+    .join("") || `<tr><td colspan="12" class="empty-cell">当前范围暂无模型推演记录</td></tr>`;
   const tableSummary = `${activeGlobalStatsLeague === "all" ? "全部联赛" : activeGlobalStatsLeague} · ${dateScopeLabel} · ${visibleRows.length}/${allRows.length} 场`;
 
   table.innerHTML = `
@@ -1576,7 +1575,7 @@ function renderGlobalStats() {
       <div>
         <span>回测明细表</span>
         <strong>${tableSummary}</strong>
-        <em class="global-stats-sort-note">最新比赛日优先 · 当日按开赛时间排序</em>
+        <em class="global-stats-sort-note">最早比赛在上 · 最新比赛在下 · 当日按开赛时间排序</em>
       </div>
       <button type="button" data-global-stats-maximize aria-label="最大化查看回测明细表">
         <span>最大化查看</span>
@@ -1587,7 +1586,6 @@ function renderGlobalStats() {
         <thead>
           <tr>
             <th>赛事</th>
-            <th>玩法</th>
             <th>比赛日期 / 开赛</th>
             <th>版本</th>
             <th>场次</th>

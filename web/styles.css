@@ -7900,13 +7900,21 @@ body::before {
 }
 
 .global-stats-record-table {
-  min-width: 1260px;
+  min-width: 1160px;
 }
 
-.global-stats-record-table th:nth-child(6),
-.global-stats-record-table td:nth-child(6) {
+.global-stats-record-table th:nth-child(5),
+.global-stats-record-table td:nth-child(5) {
   min-width: 180px;
   max-width: 210px;
+}
+
+.global-stats-record-table td:nth-child(-n + 7) {
+  background: #f5f7fa;
+}
+
+.global-stats-record-table td:nth-child(n + 8):nth-child(-n + 12) {
+  background: #fff5d6;
 }
 
 .stats-kickoff-cell strong,

@@ -92,11 +92,15 @@ for (const marker of ["const releasedRows = rows.filter(({ evaluation }) => eval
 for (const marker of [".r15-market-result.released", ".r15-market-result.released.grade-a"]) {
   if (!styles.includes(marker)) throw new Error(`Production baseline missing released-market emphasis: ${marker}`);
 }
-for (const marker of ["function statsAuditKickoffMeta", "function compareStatsAuditKickoff", "const orderedVisibleRows = visibleRows.slice().sort(compareStatsAuditKickoff)", "比赛日期 / 开赛", "当日按开赛时间排序"]) {
+for (const marker of ["function statsAuditKickoffMeta", "function compareStatsAuditKickoff", "const dateCompare = left.date.localeCompare(right.date)", "const orderedVisibleRows = visibleRows.slice().sort(compareStatsAuditKickoff)", "比赛日期 / 开赛", "最早比赛在上 · 最新比赛在下", "当日按开赛时间排序"]) {
   if (!panels.includes(marker)) throw new Error(`Production baseline missing chronological stats ledger ordering: ${marker}`);
 }
 for (const marker of [".stats-kickoff-cell", ".global-stats-sort-note"]) {
   if (!styles.includes(marker)) throw new Error(`Production baseline missing stats kickoff hierarchy styling: ${marker}`);
+}
+const globalStatsLedgerBlock = panels.slice(panels.indexOf("const tableRows = orderedVisibleRows"), panels.indexOf("function openGlobalStatsModal"));
+if (globalStatsLedgerBlock.includes("<th>玩法</th>") || globalStatsLedgerBlock.includes("<td>${dash(playType)}</td>")) {
+  throw new Error("Production baseline rejects the redundant play-type column in the global stats ledger.");
 }
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
   throw new Error("Production baseline must keep the language menu outside the header clipping box");
