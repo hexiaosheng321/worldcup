@@ -2283,27 +2283,57 @@ function renderUniversalModelPanel(pred) {
   const modelName = modelDisplayName(pred, {}, modelTemplate);
   const processText = pred.decisionProcess || pred.modelDecisionProcess || "V4按固定顺序执行：胜平负SP复核、赛事规则、球队状态、风格对位、机构线、状态转移、比分总进球、让球独立闸门、失败方式、价值过滤。";
   const stepRows = v4StepRows(pred);
+  const phaseRows = [
+    { key: "baseline", no: "01", label: "输入复核", note: "确认市场底盘、比赛动机与球队状态", steps: stepRows.slice(0, 4) },
+    { key: "simulation", no: "02", label: "发展推演", note: "从盘口防守到比赛进程与时间触发", steps: stepRows.slice(4, 8) },
+    { key: "gate", no: "03", label: "决策闸门", note: "主动暴露冲突、失败方式与伪价值", steps: stepRows.slice(8, 13) },
+    { key: "final", no: "04", label: "锁版输出", note: "只保留通过全部闸门后的正式动作", steps: stepRows.slice(13) },
+  ];
   if (!modelTemplate && !stepRows.some((item) => item.text)) return "";
   return `
     <section class="match-page-section universal-model-panel">
       <div class="universal-model-head">
-        <span>V4 推演链</span>
-        <strong>${modelName}</strong>
+        <div class="universal-model-identity">
+          <span><i aria-hidden="true"></i>V4 推演链</span>
+          <strong>${modelName}</strong>
+          <small>赛前锁版 · 固定顺序执行</small>
+        </div>
+        <div class="universal-model-metrics" aria-label="推演链结构">
+          <div><b>14</b><small>判断步骤</small></div>
+          <div><b>04</b><small>决策阶段</small></div>
+          <div class="is-lock"><b>01</b><small>锁版动作</small></div>
+        </div>
         <em>${displayModelText(processText)}</em>
       </div>
-      <div class="v4-step-grid">${stepRows
-        .map((item) => {
-          const ready = Boolean(item.text);
-          return `
-            <article class="${ready ? "is-ready" : "is-missing"}">
-              <div class="v4-step-title">
-                <span>${item.no}</span>
-                <strong>${item.title}</strong>
+      <div class="v4-process-map">${phaseRows
+        .map((phase) => `
+          <section class="v4-phase v4-phase-${phase.key}" aria-label="${phase.label}">
+            <header class="v4-phase-head">
+              <span>${phase.no}</span>
+              <div>
+                <small>PHASE ${phase.no}</small>
+                <strong>${phase.label}</strong>
+                <p>${phase.note}</p>
               </div>
-              <p>${ready ? displayModelText(item.text) : "待补齐：本场锁版 payload 没有写入这一层推演依据。"}</p>
-            </article>
-          `;
-        })
+            </header>
+            <div class="v4-step-grid">${phase.steps
+              .map((item) => {
+                const ready = Boolean(item.text);
+                const badge = item.no === "14" ? "LOCK" : ["09", "11", "12", "13"].includes(item.no) ? "GATE" : "";
+                return `
+                  <article class="${ready ? "is-ready" : "is-missing"} ${phase.key === "gate" ? "is-gate" : ""} ${item.no === "14" ? "is-final" : ""}" data-v4-step="${item.no}">
+                    <div class="v4-step-title">
+                      <span>${item.no}</span>
+                      <strong>${item.title}</strong>
+                      ${badge ? `<em>${badge}</em>` : ""}
+                    </div>
+                    <p>${ready ? displayModelText(item.text) : "待补齐：本场锁版 payload 没有写入这一层推演依据。"}</p>
+                  </article>
+                `;
+              })
+              .join("")}</div>
+          </section>
+        `)
         .join("")}</div>
     </section>
   `;
