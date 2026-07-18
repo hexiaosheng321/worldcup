@@ -102,6 +102,9 @@ const globalStatsLedgerBlock = panels.slice(panels.indexOf("const tableRows = or
 if (globalStatsLedgerBlock.includes("<th>玩法</th>") || globalStatsLedgerBlock.includes("<td>${dash(playType)}</td>")) {
   throw new Error("Production baseline rejects the redundant play-type column in the global stats ledger.");
 }
+if (globalStatsLedgerBlock.includes("<th>版本</th>") || globalStatsLedgerBlock.includes("<td><span class=\"version-badge\">${predictionModelVersion(pred)}</span></td>")) {
+  throw new Error("Production baseline rejects the redundant version column in the global stats ledger.");
+}
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
   throw new Error("Production baseline must keep the language menu outside the header clipping box");
 }

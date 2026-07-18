@@ -7900,20 +7900,20 @@ body::before {
 }
 
 .global-stats-record-table {
-  min-width: 1160px;
+  min-width: 1080px;
 }
 
-.global-stats-record-table th:nth-child(5),
-.global-stats-record-table td:nth-child(5) {
+.global-stats-record-table th:nth-child(4),
+.global-stats-record-table td:nth-child(4) {
   min-width: 180px;
   max-width: 210px;
 }
 
-.global-stats-record-table td:nth-child(-n + 7) {
+.global-stats-record-table td:nth-child(-n + 6) {
   background: #f5f7fa;
 }
 
-.global-stats-record-table td:nth-child(n + 8):nth-child(-n + 12) {
+.global-stats-record-table td:nth-child(n + 7):nth-child(-n + 11) {
   background: #fff5d6;
 }
 

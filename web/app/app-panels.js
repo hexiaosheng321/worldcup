@@ -1554,7 +1554,6 @@ function renderGlobalStats() {
         <tr data-global-stats-no="${match.no}">
           <td>${dash(competition)}</td>
           <td class="stats-kickoff-cell"><strong>${dash(kickoff.date)}</strong><small>${kickoff.time ? `${kickoff.time} 北京时间` : "开赛时间待同步"}</small></td>
-          <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
           <td>${match.no}</td>
           <td class="text-cell match-name-cell">${reviewMatchButton(match)}</td>
           <td class="actual-cell lifecycle-${String(lifecycle.code || "pending").toLowerCase()}">${dash(actualDisplay)}</td>
@@ -1567,7 +1566,7 @@ function renderGlobalStats() {
         </tr>
       `;
     })
-    .join("") || `<tr><td colspan="12" class="empty-cell">当前范围暂无模型推演记录</td></tr>`;
+    .join("") || `<tr><td colspan="11" class="empty-cell">当前范围暂无模型推演记录</td></tr>`;
   const tableSummary = `${activeGlobalStatsLeague === "all" ? "全部联赛" : activeGlobalStatsLeague} · ${dateScopeLabel} · ${visibleRows.length}/${allRows.length} 场`;
 
   table.innerHTML = `
@@ -1587,7 +1586,6 @@ function renderGlobalStats() {
           <tr>
             <th>赛事</th>
             <th>比赛日期 / 开赛</th>
-            <th>版本</th>
             <th>场次</th>
             <th>比赛</th>
             <th>实际比分</th>
