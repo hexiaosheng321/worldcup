@@ -707,16 +707,25 @@ function renderHome() {
       const countdownLabel = liveStatus.tone === "countdown" ? "距离开赛" : liveStatus.label;
       const countdownNote = liveStatus.tone === "countdown" ? `${kickoffLabel} 北京时间` : liveStatus.note;
       return `
-        <button type="button" class="home-match-card ${liveStatus.tone === "live" ? "is-live" : ""} ${["pending-result", "unavailable"].includes(liveStatus.tone) ? "pending-result" : ""} ${liveStatus.tone === "finished" ? "finished" : ""}" data-live-score-active="${(liveStatus.tone === "live" && normalizeResultScore(liveStatus.value)) || liveStatus.tone === "unavailable" ? "1" : "0"}" ${cardTarget}>
-          <span>${groupLabel}</span>
-          <em>${formatDate(match.date)}</em>
-          <strong>${match.home}<small>vs</small>${match.away}</strong>
+        <button type="button" class="home-match-card ${liveStatus.tone === "live" ? "is-live" : ""} ${["pending-result", "unavailable"].includes(liveStatus.tone) ? "pending-result" : ""} ${liveStatus.tone === "finished" ? "finished" : ""}" data-home-match-tone="${liveStatus.tone}" data-live-score-active="${(liveStatus.tone === "live" && normalizeResultScore(liveStatus.value)) || liveStatus.tone === "unavailable" ? "1" : "0"}" ${cardTarget} aria-label="查看${match.home}对${match.away}赛事详情">
+          <div class="home-match-meta">
+            <span class="home-match-league">${groupLabel}</span>
+            <em class="home-match-date">${formatDate(match.date)}</em>
+          </div>
+          <div class="home-match-fixture">
+            <strong class="home-match-team">${match.home}</strong>
+            <small class="home-match-versus">VS</small>
+            <strong class="home-match-team home-match-team-away">${match.away}</strong>
+          </div>
           <div class="home-match-countdown">
             <small data-home-live-label>${countdownLabel}</small>
             <strong data-match-countdown data-kickoff-at="${effectiveKickoffAt || ""}">${countdownValue}</strong>
             <em data-home-live-note>${countdownNote}</em>
           </div>
-          <b>${hasPrediction ? "已有推演" : "待锁版"}</b>
+          <div class="home-match-footer">
+            <b><i aria-hidden="true"></i>${hasPrediction ? "已有推演" : "待锁版"}</b>
+            <span>赛事详情 <i aria-hidden="true">↗</i></span>
+          </div>
         </button>
       `;
     })
