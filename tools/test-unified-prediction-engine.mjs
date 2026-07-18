@@ -506,6 +506,17 @@ assert.equal(uclAliases.featureSet.recentForm.away.length, 3);
 assert.equal(uclAliases.featureSet.crossLeagueNormalization.complete, true);
 assert.equal(uclAliases.featureSet.crossLeagueNormalization.home.normalizedCrossLeague, 3);
 
+const finnishAliases = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "芬超", home: "塞伊奈", away: "库普斯" },
+  samples: [
+    ...Array.from({ length: 5 }, (_, index) => ({ league: "芬超", kickoffTime: `2026-06-${String(index + 1).padStart(2, "0")}`, homeTeam: "SJK", awayTeam: `芬兰对手${index}`, actualHomeGoals: 2, actualAwayGoals: 1 })),
+    ...Array.from({ length: 5 }, (_, index) => ({ league: "芬超", kickoffTime: `2026-06-${String(index + 10).padStart(2, "0")}`, homeTeam: `芬兰对手乙${index}`, awayTeam: "KuPS", actualHomeGoals: 0, actualAwayGoals: 2 })),
+  ],
+}, { lockType: "PRE_LOCK" });
+assert.equal(finnishAliases.featureSet.recentForm.home.length, 5);
+assert.equal(finnishAliases.featureSet.recentForm.away.length, 5);
+
 const uclUnnormalized = runUnifiedPrediction({
   ...context,
   match: { ...context.match, league: "欧冠", home: "杰尔", away: "维京人" },

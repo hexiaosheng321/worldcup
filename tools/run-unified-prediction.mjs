@@ -85,13 +85,24 @@ const item = exactId || candidates.sort((a, b) =>
 )[0];
 if (!item) throw new Error(`Match not found in live Sporttery pool: ${matchQuery}`);
 
+// Some sales feeds expose a city-level short name that is not a unique club
+// identity.  Keep the public display label untouched, but use the verified
+// fixture identity for historical sample matching inside the model.
+const canonicalFixtureTeams = {
+  "2040552": { away: "GAIS" },
+  "1318497": { away: "GAIS" },
+};
+const fixtureTeamIdentity = canonicalFixtureTeams[String(item.matchId || "")]
+  || canonicalFixtureTeams[String(item.sportteryKey || item.sourceMatchId || "")]
+  || {};
+
 const match = {
   matchId: String(item.matchId || item.sportteryKey || item.orderId || ""),
   issue: item.issue || item.no || "",
   no: item.no || "",
   league: leagueName(item.league),
-  home: item.home || "",
-  away: item.away || "",
+  home: fixtureTeamIdentity.home || item.home || "",
+  away: fixtureTeamIdentity.away || item.away || "",
   matchDate: item.matchDate || item.ticaiDate || oddsData.lotterNo || "",
   kickoffTime: item.kickoffTime || "",
   handicap: item.handicap || "0",

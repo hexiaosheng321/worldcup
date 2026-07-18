@@ -22,6 +22,9 @@ const TEAM_ALIASES = {
   "洛城银河": ["洛杉矶银河", "LA Galaxy"],
   "洛杉矶FC": ["Los Angeles FC", "LAFC"],
   "盖斯": ["Gais", "GAIS"],
+  "瓦萨": ["VPS", "VPS Vaasa"],
+  "塞伊奈": ["SJK", "Seinajoen JK", "Seinäjoen JK"],
+  "库普斯": ["KuPS", "KuPS Kuopio"],
 };
 
 function extractWindowJson(content = "", name = "") {
