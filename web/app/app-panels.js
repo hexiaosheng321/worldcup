@@ -1014,6 +1014,121 @@ function r15BacktestSummary(rows = r15BacktestRows()) {
   };
 }
 
+function r15DailyReviewRows(rows = r15BacktestRows()) {
+  const engine = window.WC_R15_BACKTEST;
+  if (!engine?.summarizeDaily) return [];
+  return engine.summarizeDaily(rows.map(({ match, pred, score, evaluation, league }) => ({
+    date: pred.date || match.date,
+    league,
+    match,
+    pred,
+    score,
+    evaluation,
+  })));
+}
+
+const r15DailyMarketLabels = {
+  winDrawLose: "胜平负",
+  handicap: "让球",
+  totalGoals: "总进球",
+  scores: "比分",
+};
+
+function r15DailyOutcomeMeta(outcome = {}) {
+  return {
+    HIT: { label: "命中", tone: "hit" },
+    PARTIAL: { label: "部分命中", tone: "partial" },
+    MISS: { label: "未中", tone: "miss" },
+    PENDING: { label: "待验票", tone: "pending" },
+  }[outcome.status] || { label: "观察", tone: "observe" };
+}
+
+function r15DailyMatchItem(row = {}) {
+  const outcome = row.outcome || window.WC_R15_BACKTEST?.evaluationOutcome?.(row.evaluation) || {};
+  const status = r15DailyOutcomeMeta(outcome);
+  const releasedMarkets = (outcome.formalMarkets || []).map((key) => {
+    const market = row.evaluation?.markets?.[key] || {};
+    const selection = Array.isArray(market.selection) ? market.selection.join(" / ") : market.selection;
+    return `${r15DailyMarketLabels[key] || key} ${dash(selection)}`;
+  });
+  return `
+    <article class="r15-daily-match ${status.tone}">
+      <div>
+        <span>${dash(row.league)} · ${dash(row.match?.no)}</span>
+        ${reviewMatchButton(row.match)}
+        <small>${releasedMarkets.join(" · ")}</small>
+      </div>
+      <aside>
+        <b>${dash(row.score || "待赛果")}</b>
+        <em>${status.label}</em>
+        ${row.evaluation?.verified ? `<small>${outcome.hitCount}/${outcome.totalMarkets} 项正式玩法</small>` : ""}
+      </aside>
+    </article>
+  `;
+}
+
+function openR15DailyReviewModal() {
+  const dailyRows = r15DailyReviewRows();
+  const totalOpened = dailyRows.reduce((sum, row) => sum + row.opened, 0);
+  const totalReleased = dailyRows.reduce((sum, row) => sum + row.released, 0);
+  const totalVerified = dailyRows.reduce((sum, row) => sum + row.verified, 0);
+  const totalHits = dailyRows.reduce((sum, row) => sum + row.hits, 0);
+  const tableRows = dailyRows.map((day) => `
+    <tr>
+      <td><strong>${dash(day.date)}</strong><small>${formatDate(day.date)}</small></td>
+      <td><strong>${day.opened}</strong><small>场R15记录</small></td>
+      <td><strong>${day.released}</strong><small>${day.opened ? `${((day.released / day.opened) * 100).toFixed(1)}% 放行` : "0.0% 放行"}</small></td>
+      <td><div class="r15-daily-match-list">${day.matches.map(r15DailyMatchItem).join("") || "<span class='empty-mark'>当日无正式放行</span>"}</div></td>
+      <td><strong>${day.verified}</strong><small>${day.pending} 场待验票</small></td>
+      <td><strong>${day.hits}</strong><small>${day.partial} 场部分命中 · ${day.misses} 场未中</small></td>
+      <td><strong>${day.verified ? `${day.hits}/${day.verified}` : "-"}</strong><small>${day.rate === null ? "等待赛果" : `${(day.rate * 100).toFixed(1)}%`}</small></td>
+    </tr>
+  `).join("") || `<tr><td colspan="7" class="empty-cell">尚未读取到每日R15记录</td></tr>`;
+
+  const modal = document.createElement("div");
+  modal.className = "global-stats-modal r15-daily-review-modal";
+  modal.innerHTML = `
+    <div class="global-stats-dialog r15-daily-review-dialog" role="dialog" aria-modal="true" aria-label="R15每日放行复盘">
+      <header>
+        <div>
+          <span>DAILY RELEASE REVIEW</span>
+          <strong>每日放行复盘</strong>
+          <em>每天自动汇总开盘记录、正式放行比赛与赛果命中；当场全部正式放行玩法均中，才计为命中一场。</em>
+        </div>
+        <button type="button" data-global-stats-close aria-label="关闭每日放行复盘">×</button>
+      </header>
+      <div class="global-stats-dialog-body r15-daily-review-body">
+        <section class="r15-daily-overview">
+          <article><span>复盘日期</span><strong>${dailyRows.length}</strong><em>按锁版日期自动聚合</em></article>
+          <article><span>累计开盘</span><strong>${totalOpened}</strong><em>R15 / R15a 记录</em></article>
+          <article><span>累计放行</span><strong>${totalReleased}</strong><em>至少一个正式玩法</em></article>
+          <article><span>完成验票</span><strong>${totalVerified}</strong><em>${Math.max(0, totalReleased - totalVerified)} 场等待赛果</em></article>
+          <article class="is-hit"><span>命中场次</span><strong>${totalHits}<small>/${totalVerified}</small></strong><em>${totalVerified ? hitRate(totalHits, totalVerified) : "暂无已验样本"}</em></article>
+        </section>
+        <section class="r15-daily-rule">
+          <b>每日口径</b>
+          <span>开盘 = 当日R15记录</span>
+          <span>挑出 = 至少一个 formalSelection</span>
+          <span>命中 = 当场正式放行玩法全部命中</span>
+          <span>部分命中单列，不计整场命中</span>
+        </section>
+        <section class="r15-daily-table-wrap">
+          <div class="global-stats-table-toolbar r15-daily-toolbar">
+            <div><span>每日放行账本</span><strong>${dailyRows.length} 个日期 · ${totalReleased} 场正式放行 · ${totalHits}/${totalVerified || 0} 场命中</strong></div>
+          </div>
+          <div class="review-record-wrap compact r15-daily-scroll">
+            <table class="review-record-table r15-daily-table">
+              <thead><tr><th>日期</th><th>当日开盘</th><th>正式放行</th><th>放行比赛与结果</th><th>已验票</th><th>命中场次</th><th>命中率</th></tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
 function renderR15BacktestEntry(sourceRows = modelAuditRows()) {
   const target = document.querySelector("#r15-backtest-entry");
   if (!target) return;
@@ -1079,6 +1194,8 @@ function r15SampleStatus(evaluation = {}) {
 function openR15BacktestModal() {
   const rows = r15BacktestRows();
   const summary = r15BacktestSummary(rows);
+  const dailyRows = r15DailyReviewRows(rows);
+  const latestDaily = dailyRows[0] || { date: "-", opened: 0, released: 0, verified: 0, hits: 0, rate: null };
   const progress = Math.min(100, (summary.verifiedMatches / 30) * 100);
   const marketMeta = [
     ["winDrawLose", "胜平负单选", "01"],
@@ -1142,6 +1259,12 @@ function openR15BacktestModal() {
             <div><dt>R15记录</dt><dd>${summary.totalRows}</dd></div>
           </dl>
         </section>
+        <button type="button" class="r15-daily-review-launch" data-r15-daily-review-open>
+          <span>DAILY / 每日放行复盘</span>
+          <strong>${formatDate(latestDaily.date)} · ${latestDaily.opened} 场开盘，挑出 ${latestDaily.released} 场</strong>
+          <em>${latestDaily.verified ? `已验 ${latestDaily.verified} 场 · 命中 ${latestDaily.hits}/${latestDaily.verified} · ${hitRate(latestDaily.hits, latestDaily.verified)}` : `${latestDaily.released} 场等待官方赛果验票`}</em>
+          <b>打开每日复盘窗口 <i aria-hidden="true">↗</i></b>
+        </button>
         <section class="r15-audit-grid">${metricCards}</section>
         <section class="r15-scope-note">
           <b>统计口径</b>

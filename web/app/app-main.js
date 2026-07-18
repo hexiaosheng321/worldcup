@@ -218,23 +218,28 @@ document.body.addEventListener("click", (event) => {
     openR15BacktestModal();
     return;
   }
+  const r15DailyReviewOpen = event.target.closest("[data-r15-daily-review-open]");
+  if (r15DailyReviewOpen) {
+    openR15DailyReviewModal();
+    return;
+  }
   const globalStatsModal = event.target.closest(".global-stats-modal");
   const globalStatsClose = event.target.closest("[data-global-stats-close]");
   const globalStatsBackdrop = event.target.classList?.contains("global-stats-modal") ? event.target : null;
   if (globalStatsClose || globalStatsBackdrop) {
-    document.querySelector(".global-stats-modal")?.remove();
+    (globalStatsClose?.closest(".global-stats-modal") || globalStatsBackdrop)?.remove();
     return;
   }
   if (globalStatsModal) {
     const sportteryButton = event.target.closest("[data-review-open-sporttery]");
     if (sportteryButton) {
-      document.querySelector(".global-stats-modal")?.remove();
+      document.querySelectorAll(".global-stats-modal").forEach((modal) => modal.remove());
       openSportteryMatchPage(sportteryButton.dataset.reviewOpenSporttery, "model-stats");
       return;
     }
     const matchButton = event.target.closest("[data-review-open-match]");
     if (matchButton) {
-      document.querySelector(".global-stats-modal")?.remove();
+      document.querySelectorAll(".global-stats-modal").forEach((modal) => modal.remove());
       openMatchPage(matchButton.dataset.reviewOpenMatch, "model-stats");
       return;
     }

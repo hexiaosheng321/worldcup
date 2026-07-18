@@ -20,6 +20,7 @@ const unifiedPublisher = fs.readFileSync("tools/publish-unified-locks.mjs", "utf
 const i18n = fs.readFileSync("web/app/app-i18n.js", "utf8");
 const baseStyles = fs.readFileSync("web/styles-base.css", "utf8");
 const reviewEngine = fs.readFileSync("web/lib/reviewEngine.js", "utf8");
+const r15Backtest = fs.readFileSync("web/lib/r15Backtest.js", "utf8");
 const firecrawlContext = fs.readFileSync("web/data/firecrawlObjectiveContext.js", "utf8");
 
 const retiredMarkers = [
@@ -70,6 +71,15 @@ for (const marker of [
 }
 if (!styles.includes(".market-closed")) {
   throw new Error("Production baseline requires a neutral closed-market status treatment.");
+}
+for (const marker of ["evaluationOutcome", "summarizeDaily", 'status: "PARTIAL"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
+  if (!r15Backtest.includes(marker)) throw new Error(`Production baseline missing R15 daily review aggregation: ${marker}`);
+}
+for (const marker of ["20260718_r15_daily_review_v1", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "每日放行账本"]) {
+  if (!index.includes(marker) && !panels.includes(marker) && !main.includes(marker)) throw new Error(`Production baseline missing R15 daily review window: ${marker}`);
+}
+for (const marker of [".r15-daily-review-launch", ".r15-daily-overview", ".r15-daily-match-list"]) {
+  if (!styles.includes(marker)) throw new Error(`Production baseline missing R15 daily review styling: ${marker}`);
 }
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
   throw new Error("Production baseline must keep the language menu outside the header clipping box");

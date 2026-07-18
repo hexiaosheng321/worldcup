@@ -122,6 +122,55 @@
     };
   }
 
+  function evaluationOutcome(evaluation = {}) {
+    const formalMarkets = MARKET_KEYS.filter((market) => evaluation.markets?.[market]?.qualified);
+    if (!formalMarkets.length) {
+      return { status: "OBSERVE", formalMarkets, hitCount: 0, totalMarkets: 0, allHit: false };
+    }
+    if (!evaluation.verified) {
+      return { status: "PENDING", formalMarkets, hitCount: 0, totalMarkets: formalMarkets.length, allHit: false };
+    }
+    const hitCount = formalMarkets.filter((market) => evaluation.markets[market].hit === true).length;
+    const missCount = formalMarkets.filter((market) => evaluation.markets[market].hit === false).length;
+    return {
+      status: missCount === 0 ? "HIT" : hitCount > 0 ? "PARTIAL" : "MISS",
+      formalMarkets,
+      hitCount,
+      totalMarkets: formalMarkets.length,
+      allHit: missCount === 0,
+    };
+  }
+
+  function summarizeDaily(records = []) {
+    const groups = new Map();
+    records.forEach((record) => {
+      const date = String(record?.date || "未标日期");
+      if (!groups.has(date)) groups.set(date, []);
+      groups.get(date).push(record);
+    });
+    return [...groups.entries()]
+      .map(([date, rows]) => {
+        const matches = rows
+          .filter((row) => row.evaluation?.hasFormal)
+          .map((row) => ({ ...row, outcome: evaluationOutcome(row.evaluation) }));
+        const verifiedMatches = matches.filter((row) => row.evaluation?.verified);
+        const hits = verifiedMatches.filter((row) => row.outcome.allHit).length;
+        return {
+          date,
+          opened: rows.length,
+          released: matches.length,
+          verified: verifiedMatches.length,
+          hits,
+          partial: verifiedMatches.filter((row) => row.outcome.status === "PARTIAL").length,
+          misses: verifiedMatches.filter((row) => row.outcome.status === "MISS").length,
+          pending: matches.filter((row) => !row.evaluation?.verified).length,
+          rate: verifiedMatches.length ? hits / verifiedMatches.length : null,
+          matches,
+        };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
+
   global.WC_R15_BACKTEST = {
     MARKET_KEYS,
     isR15Prediction,
@@ -130,6 +179,8 @@
     componentRecommendations,
     marketAvailability,
     evaluatePrediction,
+    evaluationOutcome,
     summarize,
+    summarizeDaily,
   };
 })(typeof window === "undefined" ? globalThis : window);
