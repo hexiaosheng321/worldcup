@@ -1384,6 +1384,44 @@ function globalStatsDateLabel(selection) {
   return `${formatDate(selection)} 模型记录`;
 }
 
+function statsAuditKickoffMeta(match = {}, pred = {}) {
+  const date = String(
+    match.currentMatchDate ||
+    match.matchDate ||
+    pred.matchDate ||
+    match.date ||
+    pred.date ||
+    ""
+  ).slice(0, 10);
+  const rawTime = [
+    match.currentKickoffTime,
+    match.kickoffTime,
+    match.time,
+    pred.kickoffClock,
+    pred.kickoffTimeText,
+    pred.kickoffTime,
+  ].find((value) => /\d{1,2}:\d{2}/.test(String(value || ""))) || "";
+  const timeMatch = String(rawTime).match(/(?:T|\s)?(\d{1,2}):(\d{2})/);
+  const time = timeMatch ? `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}` : "";
+  return { date, time };
+}
+
+function compareStatsAuditKickoff(a, b) {
+  const left = statsAuditKickoffMeta(a.match, a.pred);
+  const right = statsAuditKickoffMeta(b.match, b.pred);
+  const dateCompare = right.date.localeCompare(left.date);
+  if (dateCompare !== 0) return dateCompare;
+  if (left.time && right.time) {
+    const timeCompare = left.time.localeCompare(right.time);
+    if (timeCompare !== 0) return timeCompare;
+  } else if (left.time || right.time) {
+    return left.time ? -1 : 1;
+  }
+  const leagueCompare = String(a.league || "").localeCompare(String(b.league || ""), "zh-CN");
+  if (leagueCompare !== 0) return leagueCompare;
+  return Number(a.match.no || 0) - Number(b.match.no || 0);
+}
+
 function renderGlobalStats() {
   const cards = document.querySelector("#global-stats-cards");
   const table = document.querySelector("#global-stats-table");
@@ -1412,6 +1450,7 @@ function renderGlobalStats() {
       const leagueOk = activeGlobalStatsLeague === "all" || league === activeGlobalStatsLeague;
       return dateOk && leagueOk;
     });
+  const orderedVisibleRows = visibleRows.slice().sort(compareStatsAuditKickoff);
   const rows = visibleRows.map((row) => ({ ...row, ...row.review }));
 
   const verifiedRows = rows.filter((row) => row.actualDirection);
@@ -1503,18 +1542,19 @@ function renderGlobalStats() {
       </div>
     `;
   }
-  const tableRows = visibleRows
+  const tableRows = orderedVisibleRows
     .map(({ match, pred, review, competition, playType }) => {
       const attribution = reviewAttribution(pred, match, review);
       const confidence = confidenceGrade(pred);
       const scoreText = officialScoreForMatch(match);
       const lifecycle = review.lifecycle || match.reviewLifecycle || {};
       const actualDisplay = scoreText || lifecycle.scoreLabel || "";
+      const kickoff = statsAuditKickoffMeta(match, pred);
       return `
         <tr data-global-stats-no="${match.no}">
           <td>${dash(competition)}</td>
           <td>${dash(playType)}</td>
-          <td>${dash(pred.date || match.date)}</td>
+          <td class="stats-kickoff-cell"><strong>${dash(kickoff.date)}</strong><small>${kickoff.time ? `${kickoff.time} 北京时间` : "开赛时间待同步"}</small></td>
           <td><span class="version-badge">${predictionModelVersion(pred)}</span></td>
           <td>${match.no}</td>
           <td class="text-cell match-name-cell">${reviewMatchButton(match)}</td>
@@ -1536,6 +1576,7 @@ function renderGlobalStats() {
       <div>
         <span>回测明细表</span>
         <strong>${tableSummary}</strong>
+        <em class="global-stats-sort-note">最新比赛日优先 · 当日按开赛时间排序</em>
       </div>
       <button type="button" data-global-stats-maximize aria-label="最大化查看回测明细表">
         <span>最大化查看</span>
@@ -1547,7 +1588,7 @@ function renderGlobalStats() {
           <tr>
             <th>赛事</th>
             <th>玩法</th>
-            <th>锁版日期</th>
+            <th>比赛日期 / 开赛</th>
             <th>版本</th>
             <th>场次</th>
             <th>比赛</th>

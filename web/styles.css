@@ -7849,6 +7849,13 @@ body::before {
   letter-spacing: 0;
 }
 
+.global-stats-table-toolbar .global-stats-sort-note {
+  color: #557089;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+}
+
 .global-stats-table-toolbar button {
   min-height: 38px;
   padding: 0 16px;
@@ -7900,6 +7907,26 @@ body::before {
 .global-stats-record-table td:nth-child(6) {
   min-width: 180px;
   max-width: 210px;
+}
+
+.stats-kickoff-cell strong,
+.stats-kickoff-cell small {
+  display: block;
+  white-space: nowrap;
+}
+
+.stats-kickoff-cell strong {
+  color: #0b315e;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.stats-kickoff-cell small {
+  margin-top: 4px;
+  color: #557089;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 900;
 }
 
 .global-stats-modal {
