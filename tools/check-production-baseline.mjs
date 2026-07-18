@@ -23,6 +23,7 @@ const reviewEngine = fs.readFileSync("web/lib/reviewEngine.js", "utf8");
 const r15Backtest = fs.readFileSync("web/lib/r15Backtest.js", "utf8");
 const firecrawlContext = fs.readFileSync("web/data/firecrawlObjectiveContext.js", "utf8");
 const spCompactionMigration = fs.readFileSync("migrations/0006_compact_existing_sp_snapshots.sql", "utf8");
+const canonicalIdMigration = fs.readFileSync("migrations/0007_restore_20260718_canonical_match_ids.sql", "utf8");
 
 const retiredMarkers = [
   'data-tab="path"',
@@ -492,6 +493,9 @@ for (const marker of ["persistOkoooMatchesToD1", "db.batch", "opening-plus-chang
 }
 for (const marker of ["LAG(odds_key)", "first_rank <> 1", "last_rank <> 1", "hourly_rank <> 1", "odds_key IS previous_key"]) {
   if (!spCompactionMigration.includes(marker)) throw new Error(`Production baseline requires classification-safe legacy SP compaction: ${marker}`);
+}
+for (const marker of ["sporttery-2040546", "sporttery-2040559", "restored-existing-d1-canonical", "UPDATE odds_snapshots", "UPDATE matches"]) {
+  if (!canonicalIdMigration.includes(marker)) throw new Error(`Production baseline requires the July 18 canonical match-id restoration: ${marker}`);
 }
 for (const marker of ["odds sync completed with non-critical failures", "okooo-primary-500-schedule-official-results-optional"]) {
   if (!syncWorker.includes(marker)) throw new Error(`Production baseline requires OKOOO-first odds sync isolation: ${marker}`);
