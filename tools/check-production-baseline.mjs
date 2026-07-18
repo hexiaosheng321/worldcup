@@ -72,7 +72,7 @@ for (const marker of [
 if (!styles.includes(".market-closed")) {
   throw new Error("Production baseline requires a neutral closed-market status treatment.");
 }
-for (const marker of ["evaluationOutcome", "summarizeDaily", 'status: "PARTIAL"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
+for (const marker of ["evaluationOutcome", "summarizeDaily", 'hitCount > 0 ? "PARTIAL" : "MISS"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
   if (!r15Backtest.includes(marker)) throw new Error(`Production baseline missing R15 daily review aggregation: ${marker}`);
 }
 for (const marker of ["20260718_r15_daily_review_v1", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "每日放行账本"]) {
