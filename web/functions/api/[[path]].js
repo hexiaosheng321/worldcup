@@ -3856,20 +3856,30 @@ async function fetchFiveHundredKickoffs(env) {
 }
 export async function persistOkoooMatchesToD1(db, matches, capturedAt = new Date().toISOString()) {
   const existingRows = await db.prepare(`
-    SELECT match_id, match_code, home_team, away_team, kickoff_time, payload_json
-    FROM matches
-    ORDER BY updated_at DESC
+    SELECT
+      m.match_id, m.match_code, m.home_team, m.away_team, m.kickoff_time,
+      m.payload_json, m.created_at, m.updated_at,
+      EXISTS(SELECT 1 FROM locked_predictions l WHERE l.match_id = m.match_id) AS has_lock,
+      EXISTS(SELECT 1 FROM match_results r WHERE r.match_id = m.match_id) AS has_result
+    FROM matches m
+    ORDER BY m.updated_at DESC
     LIMIT 500
   `).all();
   const existingMatches = existingRows.results || [];
   const existingById = new Map(existingMatches.map((row) => [String(row.match_id || ""), row]));
   const byFixture = new Map();
   const byPlaceholder = new Map();
+  const byMatchIdentity = new Map();
 
   for (const row of existingMatches) {
     const payload = parseObject(row.payload_json);
     const fixtureDate = String(row.kickoff_time || "").slice(0, 10);
     const fixtureId = String(payload.fiveHundredFixtureId || "");
+    if (row.match_code && row.home_team && row.away_team && fixtureDate) {
+      const identityKey = [row.match_code, normalizeTeamName(row.home_team), normalizeTeamName(row.away_team), fixtureDate].join("|");
+      if (!byMatchIdentity.has(identityKey)) byMatchIdentity.set(identityKey, []);
+      byMatchIdentity.get(identityKey).push(row);
+    }
     if (row.match_code && fixtureDate && fixtureId) {
       const key = [row.match_code, fixtureDate, fixtureId].join("|");
       if (!byFixture.has(key)) byFixture.set(key, []);
@@ -3886,22 +3896,42 @@ export async function persistOkoooMatchesToD1(db, matches, capturedAt = new Date
   }
 
   const duplicateMatchIds = new Set();
+  let protectedDuplicatesSkipped = 0;
+  const markDuplicate = (row, canonicalMatchId) => {
+    if (!row || String(row.match_id) === canonicalMatchId) return;
+    if (Number(row.has_lock || 0) || Number(row.has_result || 0)) {
+      protectedDuplicatesSkipped += 1;
+      return;
+    }
+    duplicateMatchIds.add(String(row.match_id));
+  };
   const preparedMatches = [];
   for (const sourceMatch of matches) {
     const match = { ...sourceMatch };
-    const matchId = sportteryDbMatchId(match);
     const fixtureDate = match.matchDate || match.ticaiDate || "";
+    const requestedMatchId = sportteryDbMatchId(match);
+    const identityKey = [match.issue, normalizeTeamName(match.home), normalizeTeamName(match.away), fixtureDate].join("|");
+    const identityCandidates = [...(byMatchIdentity.get(identityKey) || [])].sort((left, right) => {
+      const leftReferences = Number(Boolean(Number(left.has_lock || 0))) + Number(Boolean(Number(left.has_result || 0)));
+      const rightReferences = Number(Boolean(Number(right.has_lock || 0))) + Number(Boolean(Number(right.has_result || 0)));
+      if (leftReferences !== rightReferences) return rightReferences - leftReferences;
+      return String(left.created_at || left.updated_at || "9999").localeCompare(String(right.created_at || right.updated_at || "9999"));
+    });
+    const canonicalRow = identityCandidates[0] || null;
+    const matchId = String(canonicalRow?.match_id || requestedMatchId);
+    if (matchId !== requestedMatchId) {
+      match.sourceMatchId = String(match.matchId || "");
+      match.matchId = matchId.replace(/^sporttery-/, "");
+      match.canonicalMatchIdSource = "existing-d1-match-identity";
+    }
+    for (const row of identityCandidates) markDuplicate(row, matchId);
     if (match.fiveHundredFixtureId && fixtureDate && match.issue) {
       const key = [match.issue, fixtureDate, match.fiveHundredFixtureId].join("|");
-      for (const row of byFixture.get(key) || []) {
-        if (String(row.match_id) !== matchId) duplicateMatchIds.add(String(row.match_id));
-      }
+      for (const row of byFixture.get(key) || []) markDuplicate(row, matchId);
     }
     if (authoritativeSportteryMatchId(match.matchId) && fixtureDate && match.issue && match.home && match.away) {
       const key = [match.issue, match.home, match.away, fixtureDate].join("|");
-      for (const row of byPlaceholder.get(key) || []) {
-        if (String(row.match_id) !== matchId) duplicateMatchIds.add(String(row.match_id));
-      }
+      for (const row of byPlaceholder.get(key) || []) markDuplicate(row, matchId);
     }
     const existing = existingById.get(matchId);
     const existingPayload = parseObject(existing?.payload_json);
@@ -4064,6 +4094,7 @@ export async function persistOkoooMatchesToD1(db, matches, capturedAt = new Date
       snapshotsWritten,
       unchangedSnapshotsSkipped,
       removedDuplicates: duplicateMatchIds.size,
+      protectedDuplicatesSkipped,
       dailyCleanupDue,
       statementCount: statements.length + 1,
     }),
@@ -4081,6 +4112,7 @@ export async function persistOkoooMatchesToD1(db, matches, capturedAt = new Date
     snapshotsWritten,
     unchangedSnapshotsSkipped,
     removedDuplicates: duplicateMatchIds.size,
+    protectedDuplicatesSkipped,
     dailyCleanupDue,
     statementCount: statements.length,
     batchCount,

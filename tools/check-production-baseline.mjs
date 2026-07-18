@@ -487,7 +487,7 @@ if (!sync.includes('postApi("/api/sync/okooo-live")') || sync.includes("fetchSpo
 for (const marker of ["syncHealthDecision", "retryableStatuses", "payload?.ok !== false", 'health.level === "DEGRADED"', "process.exitCode = health.exitCode"]) {
   if (!sync.includes(marker)) throw new Error(`Production baseline requires retry/degraded-success sync policy: ${marker}`);
 }
-for (const marker of ["persistOkoooMatchesToD1", "db.batch", "opening-plus-changes-plus-30m-heartbeat", "maxSnapshotsPerMatch = 128", "newest_rank <= 24 OR s.opening_rank = 1"]) {
+for (const marker of ["persistOkoooMatchesToD1", "db.batch", "opening-plus-changes-plus-30m-heartbeat", "maxSnapshotsPerMatch = 128", "newest_rank <= 24 OR s.opening_rank = 1", "existing-d1-match-identity", "protectedDuplicatesSkipped"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires bounded batched SP history: ${marker}`);
 }
 for (const marker of ["LAG(odds_key)", "first_rank <> 1", "last_rank <> 1", "hourly_rank <> 1", "odds_key IS previous_key"]) {
