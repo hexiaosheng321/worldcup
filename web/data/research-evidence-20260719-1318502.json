@@ -1,0 +1,101 @@
+{
+  "match": {
+    "matchId": "1318502",
+    "league": "瑞超",
+    "home": "埃尔夫",
+    "away": "天狼星",
+    "kickoffTime": "22:30",
+    "competitionStage": "REGULAR_SEASON_ROUND_13"
+  },
+  "competitionStage": "REGULAR_SEASON_ROUND_13",
+  "tieContext": {
+    "isTwoLeg": false,
+    "legNumber": null,
+    "aggregateHomeBeforeMatch": null,
+    "aggregateAwayBeforeMatch": null,
+    "leaderNeedsGoalDifference": false,
+    "trailingSideSustainedThreat": false,
+    "trailingSideCollapseRisk": false
+  },
+  "generatedAt": "2026-07-19T06:13:00Z",
+  "teamState": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "埃尔夫近5场3平2负、进5失7，正式比赛已连续6场不胜；天狼星近5场4胜1平、进12失7，当前保持联赛领先。主队近期控制力不足，客队进攻状态与赛季强度均占优。",
+    "capturedAt": "2026-07-19T06:13:00Z",
+    "observedAt": "2026-07-19T06:13:00Z",
+    "sources": [
+      {"title": "FotMob Elfsborg v Sirius form and availability", "url": "https://www.fotmob.com/en-GB/matches/sirius-vs-elfsborg/1semog"},
+      {"title": "IF Elfsborg official week 29 fixtures", "url": "https://mail.elfsborg.se/2026/07/13/elfsborgsmatcher-vecka-29-3/"}
+    ],
+    "impact": {"home": -0.02, "draw": 0, "away": 0.02, "xgHome": -0.04, "xgAway": 0.06},
+    "recentMatches": [
+      {"league":"瑞超","kickoffTime":"2026-07-12","homeTeam":"哥德堡盖斯","awayTeam":"埃尔夫斯堡","actualHomeGoals":1,"actualAwayGoals":0,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-07-05","homeTeam":"埃尔夫斯堡","awayTeam":"哈马比","actualHomeGoals":1,"actualAwayGoals":2,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-30","homeTeam":"奥尔格里特","awayTeam":"埃尔夫斯堡","actualHomeGoals":2,"actualAwayGoals":2,"source":"project-sample-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-26","homeTeam":"埃尔夫斯堡","awayTeam":"赫根","actualHomeGoals":1,"actualAwayGoals":1,"source":"project-sample-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-22","homeTeam":"埃尔夫斯堡","awayTeam":"米亚尔比","actualHomeGoals":1,"actualAwayGoals":1,"source":"project-sample-verified"},
+      {"league":"瑞超","kickoffTime":"2026-07-12","homeTeam":"布鲁马","awayTeam":"天狼星","actualHomeGoals":1,"actualAwayGoals":2,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-07-04","homeTeam":"天狼星","awayTeam":"米亚尔比","actualHomeGoals":4,"actualAwayGoals":4,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-30","homeTeam":"AIK索尔纳","awayTeam":"天狼星","actualHomeGoals":0,"actualAwayGoals":3,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-24","homeTeam":"天狼星","awayTeam":"哥德堡盖斯","actualHomeGoals":2,"actualAwayGoals":1,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-19","homeTeam":"佐加顿斯","awayTeam":"天狼星","actualHomeGoals":2,"actualAwayGoals":3,"source":"fotmob-verified"}
+    ],
+    "venueSampleReplacements": {"home": null, "away": null}
+  },
+  "injuries": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "FotMob列出埃尔夫后卫Niklas Hult背伤、前锋Per Frick脚踝骨折；天狼星Joakim Persson大腿伤存疑、Noel Milleskog肩伤。双方均有减员，只对主客攻防作小幅、对称且有上限的修正。",
+    "capturedAt": "2026-07-19T06:13:00Z",
+    "observedAt": "2026-07-19T06:13:00Z",
+    "sources": [{"title":"FotMob injuries and suspensions","url":"https://www.fotmob.com/en-GB/matches/sirius-vs-elfsborg/1semog"}],
+    "impact": {"home": -0.005, "draw": 0, "away": 0.005, "xgHome": -0.02, "xgAway": -0.01}
+  },
+  "expectedLineups": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "正式首发尚未公布。最近首发均为4-2-3-1：埃尔夫以Pettersson、Holmen、Magnusson、Olsson和Ihler为框架；天狼星以Ure为锋线核心。只核验近期结构，不宣称为正式首发。",
+    "capturedAt": "2026-07-19T06:13:00Z",
+    "observedAt": "2026-07-19T06:13:00Z",
+    "sources": [{"title":"FotMob latest starting XI","url":"https://www.fotmob.com/en-GB/matches/sirius-vs-elfsborg/1semog"}],
+    "impact": {"home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0}
+  },
+  "motivation": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "瑞超常规赛第13轮。天狼星需要维持榜首优势，埃尔夫需要终止连续不胜并改善主场表现；双方动机充分，不把排名直接等同于90分钟结果。",
+    "capturedAt": "2026-07-19T06:13:00Z",
+    "observedAt": "2026-07-19T06:13:00Z",
+    "sources": [{"title":"Allsvenskan round 13 official schedule","url":"https://www.hbk.se/nyheter/2026/juli/allsvenskan-omgang-13"},{"title":"FotMob live table and form","url":"https://www.fotmob.com/en-GB/matches/sirius-vs-elfsborg/1semog"}],
+    "impact": {"home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0}
+  },
+  "weatherVenue": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "Borås Arena为人工草，开球前后约12至13摄氏度、多云，早些时候有降雨。人工草降低积水影响，但湿冷条件仍对节奏作极轻微下修。",
+    "capturedAt": "2026-07-19T06:13:00Z",
+    "observedAt": "2026-07-19T06:13:00Z",
+    "sources": [{"title":"FotMob venue and weather","url":"https://www.fotmob.com/en-GB/matches/sirius-vs-elfsborg/1semog"}],
+    "impact": {"home": 0, "draw": 0, "away": 0, "xgHome": -0.01, "xgAway": -0.01}
+  },
+  "styleMatchup": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "埃尔夫近6场未能零封且进攻效率偏低；天狼星近5场进12球、客场连续制造高质量机会。主路径是天狼星主动推进并占据射门优势，埃尔夫依靠主场转换保留1-1与反击胜路径。",
+    "capturedAt": "2026-07-19T06:13:00Z",
+    "observedAt": "2026-07-19T06:13:00Z",
+    "sources": [{"title":"FotMob form and match insights","url":"https://www.fotmob.com/en-GB/matches/sirius-vs-elfsborg/1semog"},{"title":"Ligan venue split","url":"https://ligan.se/en/allsvenskan/2026/fixtures/elfsborg-sirius"}],
+    "impact": {"home": -0.005, "draw": 0, "away": 0.005, "xgHome": 0, "xgAway": 0.04},
+    "firstGoalSide": "AWAY"
+  },
+  "marketNews": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "已读取25个HAD及25个+1 HHAD有效快照。HAD由3.45/3.65/1.77变为3.55/3.75/1.72，去水约24.93%/23.60%/51.46%，市场小幅增强天狼星客胜方向。",
+    "capturedAt": "2026-07-19T06:13:00Z",
+    "observedAt": "2026-07-19T06:13:00Z",
+    "sources": [{"title":"Current D1 SP series","url":"https://ticai-model.com/sporttery-match/1318502"}],
+    "impact": {"home": -0.005, "draw": 0, "away": 0.005, "xgHome": 0, "xgAway": 0}
+  }
+}

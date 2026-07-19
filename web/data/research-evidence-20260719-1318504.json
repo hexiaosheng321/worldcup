@@ -1,0 +1,69 @@
+{
+  "match": {"matchId":"1318504","league":"瑞超","home":"哈尔姆","away":"赫根","kickoffTime":"22:30","competitionStage":"REGULAR_SEASON_ROUND_13"},
+  "competitionStage": "REGULAR_SEASON_ROUND_13",
+  "tieContext": {"isTwoLeg":false,"legNumber":null,"aggregateHomeBeforeMatch":null,"aggregateAwayBeforeMatch":null,"leaderNeedsGoalDifference":false,"trailingSideSustainedThreat":false,"trailingSideCollapseRisk":false},
+  "generatedAt": "2026-07-19T06:13:00Z",
+  "teamState": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"哈尔姆近5轮1胜1平3负、进5失11，12轮积6分排名第16；赫根近5轮2胜1平2负、进10失11，排名第3。客队整体赛季强度明显占优，但最近两轮连续丢4球，防守波动不能忽略。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Halmstads BK official match guide","url":"https://www.hbk.se/nyheter/2026/juli/matchguide-hbk-bk-hacken"},{"title":"Halmstads BK official table","url":"https://hbk.se/"}],
+    "impact":{"home":-0.015,"draw":0,"away":0.015,"xgHome":-0.02,"xgAway":0.05},
+    "recentMatches":[
+      {"league":"瑞超","kickoffTime":"2026-07-14","homeTeam":"佐加顿","awayTeam":"哈尔姆","actualHomeGoals":3,"actualAwayGoals":0,"source":"hbk-official"},
+      {"league":"瑞超","kickoffTime":"2026-07-04","homeTeam":"哈尔姆","awayTeam":"韦斯特","actualHomeGoals":1,"actualAwayGoals":3,"source":"hbk-official"},
+      {"league":"瑞超","kickoffTime":"2026-05-30","homeTeam":"马尔默","awayTeam":"哈尔姆","actualHomeGoals":5,"actualAwayGoals":2,"source":"hbk-official"},
+      {"league":"瑞超","kickoffTime":"2026-05-23","homeTeam":"哈尔姆","awayTeam":"奥尔格里特","actualHomeGoals":2,"actualAwayGoals":0,"source":"hbk-official"},
+      {"league":"瑞超","kickoffTime":"2026-05-16","homeTeam":"哈尔姆","awayTeam":"埃尔夫斯堡","actualHomeGoals":1,"actualAwayGoals":1,"source":"hbk-official"},
+      {"league":"瑞超","kickoffTime":"2026-07-11","homeTeam":"厄尔格","awayTeam":"赫根","actualHomeGoals":4,"actualAwayGoals":3,"source":"hbk-official"},
+      {"league":"瑞超","kickoffTime":"2026-07-07","homeTeam":"赫根","awayTeam":"佐加顿斯","actualHomeGoals":2,"actualAwayGoals":4,"source":"hbk-official"},
+      {"league":"瑞超","kickoffTime":"2026-05-31","homeTeam":"赫根","awayTeam":"哈马比","actualHomeGoals":3,"actualAwayGoals":2,"source":"hbk-official"},
+      {"league":"瑞超","kickoffTime":"2026-05-26","homeTeam":"埃尔夫斯堡","awayTeam":"赫根","actualHomeGoals":1,"actualAwayGoals":1,"source":"hbk-official"},
+      {"league":"瑞超","kickoffTime":"2026-05-17","homeTeam":"米亚尔比","awayTeam":"赫根","actualHomeGoals":0,"actualAwayGoals":1,"source":"hbk-official"}
+    ],
+    "venueSampleReplacements":{"home":null,"away":null}
+  },
+  "injuries": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"哈尔姆官方赛前资料未列出本场新增停赛；赫根左后卫Adam Lundkvist确认停赛。其余只记录已公开信息，不用“下一张黄牌停赛”名单冒充本场缺阵。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Halmstads BK official suspension report","url":"https://www.hbk.se/nyheter/2026/juli/matchguide-hbk-bk-hacken"}],
+    "impact":{"home":0.005,"draw":0,"away":-0.005,"xgHome":0.02,"xgAway":0}
+  },
+  "expectedLineups": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"正式首发尚未公布。哈尔姆最近首发由Rönning、Kapsimalis、Gregor、Kaib、Allansson、Carneil与Faraj构成；赫根最近使用Linde、Wembangomo、Helander、Doumbia、Svanbäck、Rygaard与Lindgren。仅作近期结构核验。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Halmstads BK official latest starting XIs","url":"https://www.hbk.se/nyheter/2026/juli/matchguide-hbk-bk-hacken"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "motivation": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"瑞超常规赛第13轮。哈尔姆垫底需要尽快抢分，赫根排名第3并需维持争冠组位置；双方动机充分。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Halmstads BK official round 13 guide","url":"https://www.hbk.se/nyheter/2026/juli/matchguide-hbk-bk-hacken"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "weatherVenue": {
+    "status":"VERIFIED","evidenceGrade":"B",
+    "summary":"比赛在Örjans Vall举行，开球前后约18摄氏度、间歇多云，稍早存在阵雨但当前未见延期预警；仅作极轻微节奏修正。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Halmstads BK official venue and kickoff","url":"https://www.hbk.se/nyheter/2026/juli/publikinfo-hbk-bk-hacken"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":-0.005,"xgAway":-0.005}
+  },
+  "styleMatchup": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"哈尔姆近三轮联赛丢11球，低位防守容易在被打穿第一线后暴露中卫；赫根进攻产量高但最近两轮也丢8球。主路径为赫根控球压制并率先得分，同时保留哈尔姆借客队防守波动形成1-1或2-1反向路径。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Halmstads BK official form and lineups","url":"https://www.hbk.se/nyheter/2026/juli/matchguide-hbk-bk-hacken"}],
+    "impact":{"home":0,"draw":0,"away":0.005,"xgHome":0.03,"xgAway":0.04},
+    "firstGoalSide":"AWAY"
+  },
+  "marketNews": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"已读取25个HAD及25个+1 HHAD有效快照。HAD由4.56/4.10/1.50变为4.90/4.35/1.44，去水约18.09%/20.37%/61.54%，市场明显增强赫根客胜方向。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Current D1 SP series","url":"https://ticai-model.com/sporttery-match/1318504"}],
+    "impact":{"home":-0.01,"draw":0,"away":0.01,"xgHome":0,"xgAway":0}
+  }
+}

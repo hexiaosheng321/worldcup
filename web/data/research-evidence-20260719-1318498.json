@@ -1,0 +1,69 @@
+{
+  "match": {"matchId":"1318498","league":"瑞超","home":"哈马比","away":"代格福","kickoffTime":"22:30","competitionStage":"REGULAR_SEASON_ROUND_13"},
+  "competitionStage": "REGULAR_SEASON_ROUND_13",
+  "tieContext": {"isTwoLeg":false,"legNumber":null,"aggregateHomeBeforeMatch":null,"aggregateAwayBeforeMatch":null,"leaderNeedsGoalDifference":false,"trailingSideSustainedThreat":false,"trailingSideCollapseRisk":false},
+  "generatedAt":"2026-07-19T06:13:00Z",
+  "teamState": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"哈马比联赛近5轮2胜3负，但夏歇后连续击败埃尔夫与卡尔马，7个主场取得5胜1平1负；代格福近6轮2平4负，最近两个联赛客场均未进球。主队整体实力、主场与近期反弹均占优。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Sports Mole Hammarby v Degerfors preview","url":"https://www.sportsmole.co.uk/football/hammarby/preview/hammarby-vs-degerfors-prediction-team-news-lineups_601381.html"},{"title":"Degerfors IF official match preview","url":"https://degerforsif.se/infor-hammarby-borta-2/"},{"title":"FotMob Hammarby v Degerfors","url":"https://www.fotmob.com/en-GB/matches/degerfors-vs-hammarby/1t56ws"}],
+    "impact":{"home":0.025,"draw":0,"away":-0.025,"xgHome":0.08,"xgAway":-0.04},
+    "recentMatches":[
+      {"league":"瑞超","kickoffTime":"2026-07-12","homeTeam":"哈马比","awayTeam":"卡尔马","actualHomeGoals":2,"actualAwayGoals":0,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-07-05","homeTeam":"埃尔夫斯堡","awayTeam":"哈马比","actualHomeGoals":1,"actualAwayGoals":2,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-31","homeTeam":"赫根","awayTeam":"哈马比","actualHomeGoals":3,"actualAwayGoals":2,"source":"project-sample-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-24","homeTeam":"哈马比","awayTeam":"AIK索尔纳","actualHomeGoals":1,"actualAwayGoals":2,"source":"project-sample-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-21","homeTeam":"哥德堡盖斯","awayTeam":"哈马比","actualHomeGoals":2,"actualAwayGoals":0,"source":"project-sample-verified"},
+      {"league":"瑞超","kickoffTime":"2026-07-12","homeTeam":"韦斯特","awayTeam":"代格福","actualHomeGoals":2,"actualAwayGoals":0,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-07-04","homeTeam":"代格福什","awayTeam":"马尔默","actualHomeGoals":0,"actualAwayGoals":1,"source":"fotmob-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-31","homeTeam":"代格福什","awayTeam":"布洛马波卡纳","actualHomeGoals":2,"actualAwayGoals":2,"source":"project-sample-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-23","homeTeam":"卡尔马","awayTeam":"代格福什","actualHomeGoals":2,"actualAwayGoals":1,"source":"project-sample-verified"},
+      {"league":"瑞超","kickoffTime":"2026-05-16","homeTeam":"哥德堡盖斯","awayTeam":"代格福什","actualHomeGoals":1,"actualAwayGoals":1,"source":"project-sample-verified"}
+    ],
+    "venueSampleReplacements":{"home":null,"away":null}
+  },
+  "injuries": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"哈马比后卫Victor Eriksson累积黄牌停赛，Sourou Kone膝伤；代格福中场Nahom Girmai Netabay与Ludvig Fritzson停赛，Ziyad Salifu和Juhani Pikkarainen伤缺。客队中轴减员更集中，但修正保持有上限。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"FotMob injuries and suspensions","url":"https://www.fotmob.com/en-GB/matches/degerfors-vs-hammarby/1t56ws"},{"title":"Sports Mole team news","url":"https://www.sportsmole.co.uk/football/hammarby/preview/hammarby-vs-degerfors-prediction-team-news-lineups_601381.html"}],
+    "impact":{"home":0.01,"draw":0,"away":-0.01,"xgHome":0.04,"xgAway":-0.04}
+  },
+  "expectedLineups": {
+    "status":"VERIFIED","evidenceGrade":"B",
+    "summary":"正式首发尚未公布，代格福官方明确首发将在开球前一小时发布。近期结构显示哈马比使用4-2-3-1，以Hahn、Skoglund、Winther、Tekie、Besara与Abraham为框架；代格福以Taranis为锋线参考。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Degerfors IF official lineup timing","url":"https://degerforsif.se/infor-hammarby-borta-2/"},{"title":"FotMob latest starting XI","url":"https://www.fotmob.com/en-GB/matches/degerfors-vs-hammarby/1t56ws"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "motivation": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"瑞超常规赛第13轮。哈马比需要延续争冠追赶，代格福处于下游并需摆脱连续不胜；双方动机明确。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Degerfors IF official round 13 preview","url":"https://degerforsif.se/infor-hammarby-borta-2/"},{"title":"Allsvenskan round 13 schedule","url":"https://www.hbk.se/nyheter/2026/juli/allsvenskan-omgang-13"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "weatherVenue": {
+    "status":"VERIFIED","evidenceGrade":"B",
+    "summary":"3Arena为人工草，开球前后约15摄氏度、多云，早间降雨已减弱，当前未见延期预警。人工草和温和气温不构成显著降速因素。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"FotMob venue and weather","url":"https://www.fotmob.com/en-GB/matches/degerfors-vs-hammarby/1t56ws"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "styleMatchup": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"哈马比主场控球和前场压迫稳定，Abraham与Besara提供持续终结；代格福近期客场进攻弱且中场两人停赛，难以持续脱离压迫。主路径为哈马比早段建立优势，但-2盘口必须独立检查只赢两球或一球的穿盘风险。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Sports Mole tactical and form preview","url":"https://www.sportsmole.co.uk/football/hammarby/preview/hammarby-vs-degerfors-prediction-team-news-lineups_601381.html"},{"title":"FotMob Hammarby v Degerfors","url":"https://www.fotmob.com/en-GB/matches/degerfors-vs-hammarby/1t56ws"}],
+    "impact":{"home":0.01,"draw":0,"away":-0.01,"xgHome":0.06,"xgAway":-0.03},
+    "firstGoalSide":"HOME"
+  },
+  "marketNews": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"已读取25个HAD及25个-2 HHAD有效快照。HAD维持1.16/5.80/10.50，去水约76.31%/15.26%/8.43%，市场主胜极热但尚无进一步强化；让球必须与胜平负分层判断。",
+    "capturedAt":"2026-07-19T06:13:00Z","observedAt":"2026-07-19T06:13:00Z",
+    "sources":[{"title":"Current D1 SP series","url":"https://ticai-model.com/sporttery-match/1318498"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  }
+}
