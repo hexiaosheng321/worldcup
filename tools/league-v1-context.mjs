@@ -83,7 +83,33 @@ function sampleKey(sample = {}) {
   ].join("|");
 }
 
-function dedupeSamples(samples = []) {
+function sampleSourcePriority(sample = {}) {
+  const source = String(sample.source || "");
+  if (source.includes("d1-base-case")) return 3;
+  if (source.includes("completed-match-auto") || source.includes("api-football")) return 2;
+  return 1;
+}
+
+function calendarDay(value = "") {
+  const parsed = Date.parse(`${dateKey(value)}T00:00:00Z`);
+  return Number.isFinite(parsed) ? Math.floor(parsed / 86400000) : null;
+}
+
+function sameSettledMatch(left = {}, right = {}) {
+  const leftGoals = sampleGoals(left);
+  const rightGoals = sampleGoals(right);
+  const leftDay = calendarDay(left.kickoffTime || left.matchDate || left.date);
+  const rightDay = calendarDay(right.kickoffTime || right.matchDate || right.date);
+  if (!leftGoals || !rightGoals || leftDay === null || rightDay === null) return false;
+  return left.league === right.league
+    && Math.abs(leftDay - rightDay) <= 1
+    && (sameTeam(left.homeTeam, right.homeTeam) || sameTeam(right.homeTeam, left.homeTeam))
+    && (sameTeam(left.awayTeam, right.awayTeam) || sameTeam(right.awayTeam, left.awayTeam))
+    && leftGoals.home === rightGoals.home
+    && leftGoals.away === rightGoals.away;
+}
+
+export function dedupeSamples(samples = []) {
   const byKey = new Map();
   samples.forEach((sample) => {
     const key = sampleKey(sample);
@@ -92,7 +118,18 @@ function dedupeSamples(samples = []) {
     const preferred = source.includes("d1-base-case") || source.includes("api-football");
     if (!existing || preferred) byKey.set(key, sample);
   });
-  return [...byKey.values()];
+  const settled = [];
+  for (const sample of byKey.values()) {
+    const duplicateIndex = settled.findIndex((candidate) => sameSettledMatch(candidate, sample));
+    if (duplicateIndex < 0) {
+      settled.push(sample);
+      continue;
+    }
+    if (sampleSourcePriority(sample) > sampleSourcePriority(settled[duplicateIndex])) {
+      settled[duplicateIndex] = sample;
+    }
+  }
+  return settled;
 }
 
 function baseCaseToSample(item = {}) {

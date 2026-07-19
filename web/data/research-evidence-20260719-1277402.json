@@ -1,0 +1,198 @@
+{
+  "match": {
+    "matchId": "1277402",
+    "league": "世界杯",
+    "home": "西班牙",
+    "away": "阿根廷",
+    "kickoffTime": "2026-07-20 03:00",
+    "competitionStage": "FINAL"
+  },
+  "competitionStage": "FINAL",
+  "tieContext": {
+    "isTwoLeg": false,
+    "legNumber": null,
+    "aggregateHomeBeforeMatch": null,
+    "aggregateAwayBeforeMatch": null,
+    "leaderNeedsGoalDifference": false,
+    "trailingSideSustainedThreat": false,
+    "trailingSideCollapseRisk": false
+  },
+  "generatedAt": "2026-07-19T03:19:45Z",
+  "teamState": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "按彩票90分钟口径，西班牙本届七场6胜1平、进13失1，连续六场取胜；阿根廷七场5胜2平、进16失7，淘汰赛连续四场失球且两次90分钟战平。已将西班牙–比利时的滚动赛果与D1 Base Case重复记录去重，近期状态只计一场。",
+    "capturedAt": "2026-07-19T03:19:45Z",
+    "observedAt": "2026-07-19T03:19:45Z",
+    "sources": [
+      {
+        "title": "FIFA World Cup 2026 fixtures and 90-minute results",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums"
+      },
+      {
+        "title": "FIFA Spain road to the final",
+        "url": "https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026/articles/el-camino-de-espana-hacia-la-final-de-la-copa-mundial"
+      },
+      {
+        "title": "AP World Cup final team profiles",
+        "url": "https://apnews.com/article/messi-spain-argentina-world-cup-final-bd35b9beccfc120ec0a78fd72162f33c"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    },
+    "recentMatches": [
+      { "league": "世界杯", "kickoffTime": "2026-07-15", "homeTeam": "法国", "awayTeam": "西班牙", "actualHomeGoals": 0, "actualAwayGoals": 2, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-10", "homeTeam": "西班牙", "awayTeam": "比利时", "actualHomeGoals": 2, "actualAwayGoals": 1, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-07", "homeTeam": "葡萄牙", "awayTeam": "西班牙", "actualHomeGoals": 0, "actualAwayGoals": 1, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-03", "homeTeam": "西班牙", "awayTeam": "奥地利", "actualHomeGoals": 3, "actualAwayGoals": 0, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-27", "homeTeam": "乌拉圭", "awayTeam": "西班牙", "actualHomeGoals": 0, "actualAwayGoals": 1, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-22", "homeTeam": "西班牙", "awayTeam": "沙特阿拉伯", "actualHomeGoals": 4, "actualAwayGoals": 0, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-16", "homeTeam": "西班牙", "awayTeam": "佛得角", "actualHomeGoals": 0, "actualAwayGoals": 0, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-16", "homeTeam": "英格兰", "awayTeam": "阿根廷", "actualHomeGoals": 1, "actualAwayGoals": 2, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-12", "homeTeam": "阿根廷", "awayTeam": "瑞士", "actualHomeGoals": 1, "actualAwayGoals": 1, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-08", "homeTeam": "阿根廷", "awayTeam": "埃及", "actualHomeGoals": 3, "actualAwayGoals": 2, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-07-04", "homeTeam": "阿根廷", "awayTeam": "佛得角", "actualHomeGoals": 2, "actualAwayGoals": 2, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-28", "homeTeam": "约旦", "awayTeam": "阿根廷", "actualHomeGoals": 1, "actualAwayGoals": 3, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-23", "homeTeam": "阿根廷", "awayTeam": "奥地利", "actualHomeGoals": 2, "actualAwayGoals": 0, "source": "fifa-verified-90min" },
+      { "league": "世界杯", "kickoffTime": "2026-06-17", "homeTeam": "阿根廷", "awayTeam": "阿尔及利亚", "actualHomeGoals": 3, "actualAwayGoals": 0, "source": "fifa-verified-90min" }
+    ]
+  },
+  "injuries": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "西班牙赛前确认亚马尔和佩德罗·波罗的不适已消除，26人均可用；阿根廷的罗梅罗和帕雷德斯已在半决赛复出首发，当前同样没有新的确定缺阵。两队伤停层保持中性0修正。",
+    "capturedAt": "2026-07-19T03:19:45Z",
+    "observedAt": "2026-07-19T03:19:45Z",
+    "sources": [
+      {
+        "title": "Spain v Argentina final team news and predicted lineups",
+        "url": "https://www.sportsmole.co.uk/football/spain/world-cup-2026/preview/spain-vs-argentina-prediction-team-news-lineups_601336.html"
+      },
+      {
+        "title": "Spain final training and availability update",
+        "url": "https://cadenaser.com/nacional/2026/07/18/espana-mantiene-la-calma-pese-a-suspender-el-entrenamiento-previo-a-la-final-la-seleccion-esta-muy-bien-cadena-ser/"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  },
+  "expectedLineups": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "官方首发尚未发布。当前预测西班牙以乌内·西蒙、波罗、库巴西、拉波尔特、库库雷利亚、罗德里、法比安、亚马尔、奥尔莫、巴埃纳和奥亚萨瓦尔为框架；阿根廷以马丁内斯、蒙蒂尔、罗梅罗、利桑德罗、塔利亚菲科、德保罗、帕雷德斯、恩佐、麦卡利斯特、梅西和阿尔瓦雷斯为框架。只验证人员可用性与结构，不将预测名单当作官方首发。",
+    "capturedAt": "2026-07-19T03:19:45Z",
+    "observedAt": "2026-07-19T03:19:45Z",
+    "sources": [
+      {
+        "title": "Spain v Argentina final predicted lineups",
+        "url": "https://www.sportsmole.co.uk/football/spain/world-cup-2026/preview/spain-vs-argentina-prediction-team-news-lineups_601336.html"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  },
+  "motivation": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "2026世界杯单场决赛，西班牙争取第二座世界杯，阿根廷争取连续两届夺冠。彩票只按90分钟赛果结算，平局可将冠军归属延长至加时或点球，因此冠军动机不直接等同于90分钟必须取胜，对平局路径作有上限升权。",
+    "capturedAt": "2026-07-19T03:19:45Z",
+    "observedAt": "2026-07-19T03:19:45Z",
+    "sources": [
+      {
+        "title": "FIFA Spain v Argentina World Cup final preview",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/spain-v-argentina-live-stream-team-news-tickets-and-more"
+      }
+    ],
+    "impact": {
+      "home": -0.0075,
+      "draw": 0.015,
+      "away": -0.0075,
+      "xgHome": -0.04,
+      "xgAway": -0.04
+    }
+  },
+  "weatherVenue": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "比赛在纽约新泽西球场举行，当地下午预计约28摄氏度、较前一日更少潮湿且没有开球时段雷暴预警。西班牙场地训练因前一日雷暴取消后改为室内激活，阿根廷延迟后完成训练；未发现延期或迁场风险，只对双方xG作轻微高温修正。",
+    "capturedAt": "2026-07-19T03:19:45Z",
+    "observedAt": "2026-07-19T03:19:45Z",
+    "sources": [
+      {
+        "title": "FIFA World Cup final venue and kickoff information",
+        "url": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/final-live-watch-teams-tickets"
+      },
+      {
+        "title": "Spain training and New Jersey weather update",
+        "url": "https://cadenaser.com/nacional/2026/07/18/espana-mantiene-la-calma-pese-a-suspender-el-entrenamiento-previo-a-la-final-la-seleccion-esta-muy-bien-cadena-ser/"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": -0.02,
+      "xgAway": -0.02
+    }
+  },
+  "styleMatchup": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "西班牙七场只失1球且本届尚未落后，阿根廷以90分钟口径进攻产出更高，但淘汰赛连续四场失球。主路径为西班牙以罗德里–法比安保持控制、亚马尔和奥尔莫攻击肋部；阿根廷由梅西与阿尔瓦雷斯打转换和二点。首球证据偏西班牙，同时必须保留阿根廷在梅西定位球和转换中先手的独立风险路径。",
+    "capturedAt": "2026-07-19T03:19:45Z",
+    "observedAt": "2026-07-19T03:19:45Z",
+    "sources": [
+      {
+        "title": "FIFA Spain and Argentina tournament statistics comparison",
+        "url": "https://www.fifa.com/en/articles/tournament-stats-how-spain-argentina-perform"
+      },
+      {
+        "title": "AP World Cup final tactical and defensive profiles",
+        "url": "https://apnews.com/article/messi-spain-argentina-world-cup-final-bd35b9beccfc120ec0a78fd72162f33c"
+      }
+    ],
+    "impact": {
+      "home": 0.01,
+      "draw": 0,
+      "away": -0.01,
+      "xgHome": 0.02,
+      "xgAway": -0.03
+    },
+    "firstGoalSide": "HOME"
+  },
+  "marketNews": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "截至锁版前已读取25个胜平负和25个-1让球有效快照；普通胜平负稳定为2.02/2.87/3.50，去水概率约43.84%/30.86%/25.30%，-1让球为4.35/3.55/1.62，总进球2球3.00、3球3.85。开盘至当前无实质变动，市场层只作有上限校准，不直接决定方向。",
+    "capturedAt": "2026-07-19T03:19:45Z",
+    "observedAt": "2026-07-19T03:19:45Z",
+    "sources": [
+      {
+        "title": "彩票模型当前决赛与D1 SP时间序列",
+        "url": "https://ticai-model.com/sporttery-match/1277402"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  }
+}

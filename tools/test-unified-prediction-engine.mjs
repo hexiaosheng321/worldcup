@@ -1,5 +1,19 @@
 import assert from "node:assert/strict";
 import { RESEARCH_KEYS, criticalPackageGapAudit, handicapDecisionAudit, oneGoalWinAudit, outputConsistencyAudit, overallComponentGradeAudit, packageAdviceForGrade, packageMarketSelection, runUnifiedPrediction, selectConditionalHandicapDecision, selectFormalHandicapDecision, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
+import { dedupeSamples } from "./league-v1-context.mjs";
+
+const dedupedSettlementSamples = dedupeSamples([
+  { league: "世界杯", kickoffTime: "2026-07-11 03:00", homeTeam: "西班牙", awayTeam: "比利时", actualHomeGoals: 2, actualAwayGoals: 1, score: "2-1", source: "completed-match-auto" },
+  { league: "世界杯", kickoffTime: "2026-07-10 22:00", homeTeam: "西班牙", awayTeam: "比利时", actualHomeGoals: 2, actualAwayGoals: 1, score: "2-1", source: "d1-base-case" },
+]);
+assert.equal(dedupedSettlementSamples.length, 1);
+assert.equal(dedupedSettlementSamples[0].source, "d1-base-case");
+
+const distinctLeagueSamples = dedupeSamples([
+  { league: "西甲", kickoffTime: "2026-07-10 22:00", homeTeam: "西班牙", awayTeam: "比利时", actualHomeGoals: 2, actualAwayGoals: 1, score: "2-1", source: "completed-match-auto" },
+  { league: "世界杯", kickoffTime: "2026-07-11 03:00", homeTeam: "西班牙", awayTeam: "比利时", actualHomeGoals: 2, actualAwayGoals: 1, score: "2-1", source: "d1-base-case" },
+]);
+assert.equal(distinctLeagueSamples.length, 2);
 
 const sameDirectionCoverage = selectOfficialScores([
   { score: "2-0", probability: 0.16 },
