@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { RESEARCH_KEYS, criticalPackageGapAudit, handicapDecisionAudit, oneGoalWinAudit, outputConsistencyAudit, overallComponentGradeAudit, packageAdviceForGrade, packageMarketSelection, runUnifiedPrediction, selectConditionalHandicapDecision, selectFormalHandicapDecision, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
-import { dedupeSamples } from "./league-v1-context.mjs";
+import { buildTeamState, dedupeSamples } from "./league-v1-context.mjs";
 
 const dedupedSettlementSamples = dedupeSamples([
   { league: "世界杯", kickoffTime: "2026-07-11 03:00", homeTeam: "西班牙", awayTeam: "比利时", actualHomeGoals: 2, actualAwayGoals: 1, score: "2-1", source: "completed-match-auto" },
@@ -14,6 +14,33 @@ const distinctLeagueSamples = dedupeSamples([
   { league: "世界杯", kickoffTime: "2026-07-11 03:00", homeTeam: "西班牙", awayTeam: "比利时", actualHomeGoals: 2, actualAwayGoals: 1, score: "2-1", source: "d1-base-case" },
 ]);
 assert.equal(distinctLeagueSamples.length, 2);
+
+const dedupedFinnishAliases = dedupeSamples([
+  { league: "芬超", kickoffTime: "2026-06-28", homeTeam: "TPS", awayTeam: "Jaro", actualHomeGoals: 3, actualAwayGoals: 2, score: "3-2", source: "completed-match-auto" },
+  { league: "芬超", kickoffTime: "2026-06-27", homeTeam: "Turku PS", awayTeam: "FF Jaro", actualHomeGoals: 3, actualAwayGoals: 2, score: "3-2", source: "d1-base-case" },
+]);
+assert.equal(dedupedFinnishAliases.length, 1);
+assert.equal(dedupedFinnishAliases[0].source, "d1-base-case");
+
+const currentSeasonState = buildTeamState([
+  { league: "芬超", kickoffTime: "2025-07-01", homeTeam: "Inter Turku", awayTeam: "Old Opponent", actualHomeGoals: 4, actualAwayGoals: 0 },
+  { league: "芬超", kickoffTime: "2026-05-01", homeTeam: "Inter Turku", awayTeam: "Current Opponent", actualHomeGoals: 1, actualAwayGoals: 0 },
+], { league: "芬超", home: "国际图", away: "Current Opponent", matchDate: "2026-07-19" });
+assert.equal(currentSeasonState.homeState.played, 1);
+assert.equal(currentSeasonState.homeState.points, 3);
+
+const finnishAliasSamples = [
+  { league: "芬超", kickoffTime: "2026-07-10", homeTeam: "FF Jaro", awayTeam: "Opponent A", actualHomeGoals: 2, actualAwayGoals: 1 },
+  { league: "芬超", kickoffTime: "2026-07-05", homeTeam: "Opponent B", awayTeam: "Jaro", actualHomeGoals: 0, actualAwayGoals: 1 },
+  { league: "芬超", kickoffTime: "2026-06-29", homeTeam: "Jaro", awayTeam: "Opponent C", actualHomeGoals: 1, actualAwayGoals: 1 },
+  { league: "芬超", kickoffTime: "2026-06-22", homeTeam: "Opponent D", awayTeam: "FF Jaro", actualHomeGoals: 2, actualAwayGoals: 0 },
+  { league: "芬超", kickoffTime: "2026-06-15", homeTeam: "Jaro", awayTeam: "Opponent E", actualHomeGoals: 3, actualAwayGoals: 1 },
+  { league: "芬超", kickoffTime: "2026-07-11", homeTeam: "Inter Turku", awayTeam: "Opponent F", actualHomeGoals: 2, actualAwayGoals: 0 },
+  { league: "芬超", kickoffTime: "2026-07-06", homeTeam: "Opponent G", awayTeam: "FC Inter Turku", actualHomeGoals: 1, actualAwayGoals: 2 },
+  { league: "芬超", kickoffTime: "2026-06-30", homeTeam: "FC Inter", awayTeam: "Opponent H", actualHomeGoals: 1, actualAwayGoals: 0 },
+  { league: "芬超", kickoffTime: "2026-06-23", homeTeam: "Opponent I", awayTeam: "Inter Turku", actualHomeGoals: 2, actualAwayGoals: 2 },
+  { league: "芬超", kickoffTime: "2026-06-16", homeTeam: "Inter Turku", awayTeam: "Opponent J", actualHomeGoals: 3, actualAwayGoals: 0 },
+];
 
 const sameDirectionCoverage = selectOfficialScores([
   { score: "2-0", probability: 0.16 },
@@ -152,6 +179,14 @@ assert.ok(({ A: ["主打", "可选", "谨慎", "跳过"], B: ["可选", "谨慎"
 assert.equal(final.featureSet.componentFoundationEligible, true);
 assert.equal(final.featureSet.criticalPackageGap.blocking, false);
 assert.ok(Array.isArray(final.finalDecision.formalMarkets));
+
+const jaroInterAliases = runUnifiedPrediction({
+  ...context,
+  match: { matchId: "finnish-aliases", league: "芬超", home: "雅罗", away: "国际图", matchDate: "2026-07-19", handicap: "+1" },
+  samples: finnishAliasSamples,
+}, { lockType: "PRE_LOCK" });
+assert.equal(jaroInterAliases.featureSet.recentForm.home.length, 5);
+assert.equal(jaroInterAliases.featureSet.recentForm.away.length, 5);
 
 const recommendation = (grade, advice = "可选", eligible = true) => ({ grade, advice, eligible, probability: 0.6 });
 const allMarketsAvailable = { winDrawLose: true, handicap: true, totalGoals: true, scores: true };

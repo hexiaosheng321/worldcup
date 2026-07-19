@@ -25,6 +25,14 @@ const TEAM_ALIASES = {
   "瓦萨": ["VPS", "VPS Vaasa"],
   "塞伊奈": ["SJK", "Seinajoen JK", "Seinäjoen JK"],
   "库普斯": ["KuPS", "KuPS Kuopio"],
+  "坦山猫": ["Ilves", "Tampereen Ilves", "Ilves Tampere"],
+  "赫尔辛基": ["HJK", "HJK Helsinki"],
+  "玛丽港": ["Mariehamn", "IFK Mariehamn"],
+  "TPS图尔": ["TPS", "Turku PS", "TPS Turku"],
+  "AC奥卢": ["AC Oulu", "Oulu"],
+  "雅罗": ["Jaro", "FF Jaro"],
+  "国际图": ["国际图尔", "Inter Turku", "FC Inter Turku", "FC Inter"],
+  "国际图尔": ["国际图", "Inter Turku", "FC Inter Turku", "FC Inter"],
 };
 
 function extractWindowJson(content = "", name = "") {
@@ -40,14 +48,20 @@ function normalizeName(value = "") {
     .replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
-function aliasesFor(team = "") {
-  return [team, ...(TEAM_ALIASES[team] || [])].map(normalizeName).filter(Boolean);
+function teamIdentity(team = "") {
+  const normalized = normalizeName(team);
+  if (!normalized) return "";
+  for (const [canonical, aliases] of Object.entries(TEAM_ALIASES)) {
+    const names = [canonical, ...aliases].map(normalizeName);
+    if (names.includes(normalized)) return normalizeName(canonical);
+  }
+  return normalized;
 }
 
 function sameTeam(left = "", right = "") {
-  const leftNames = aliasesFor(left);
-  const rightName = normalizeName(right);
-  return leftNames.some((name) => name && rightName && (name === rightName || name.includes(rightName) || rightName.includes(name)));
+  const leftName = teamIdentity(left);
+  const rightName = teamIdentity(right);
+  return Boolean(leftName && rightName && (leftName === rightName || leftName.includes(rightName) || rightName.includes(leftName)));
 }
 
 function dateKey(value = "") {
@@ -77,8 +91,8 @@ function sampleKey(sample = {}) {
   return [
     sample.league,
     dateKey(sample.kickoffTime),
-    normalizeName(sample.homeTeam),
-    normalizeName(sample.awayTeam),
+    teamIdentity(sample.homeTeam),
+    teamIdentity(sample.awayTeam),
     sample.score,
   ].join("|");
 }
@@ -182,14 +196,16 @@ function resultForTeam(sample = {}, team = "") {
 }
 
 function tableFor(samples = [], league = "", beforeDate = "") {
+  const season = dateKey(beforeDate).slice(0, 4);
   const table = new Map();
   const ensure = (team) => {
-    const key = normalizeName(team);
+    const key = teamIdentity(team);
     if (!table.has(key)) table.set(key, { team, played: 0, won: 0, draw: 0, lost: 0, points: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 });
     return table.get(key);
   };
   dedupeSamples(samples)
     .filter((sample) => sample.league === league && beforeMatch(sample, beforeDate))
+    .filter((sample) => !season || dateKey(sample.kickoffTime || sample.matchDate || sample.date).startsWith(season))
     .forEach((sample) => {
       const goals = sampleGoals(sample);
       if (!goals) return;

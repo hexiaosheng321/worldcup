@@ -265,6 +265,7 @@ function teamKey(value = "") {
     [/拉赫蒂|Lahti/i, "lahti"], [/HIFK|Helsinki IFK/i, "hifk"], [/赫尔火|赫尔辛基火花|IF Gnistan/i, "gnistan"], [/赫尔辛(?:基)?|HJK(?: Helsinki)?/i, "hjk"], [/玛丽港|Mariehamn/i, "mariehamn"],
     [/AC\s*奥(?:卢)?|AC\s*Oulu/i, "acoulu"], [/TPS|Turku\s*PS/i, "tps"],
     [/瓦萨|VPS(?:\s*Vaasa)?/i, "vps"], [/塞伊奈|SJK|Sein[aä]joen/i, "sjk"], [/库普斯|KuPS(?:\s*Kuopio)?/i, "kups"],
+    [/^(?:雅罗|(?:FF\s*)?Jaro)$/i, "jaro"], [/^(?:国际图(?:尔)?|(?:FC\s*)?Inter(?:\s*Turku)?)$/i, "inter-turku"],
     [/盖斯|GAIS/i, "gais"],
   ];
   const matched = aliases.find(([pattern]) => pattern.test(raw));

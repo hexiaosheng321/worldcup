@@ -1,0 +1,121 @@
+{
+  "match": {
+    "matchId": "1317881",
+    "league": "芬超",
+    "home": "雅罗",
+    "away": "国际图",
+    "kickoffTime": "23:30",
+    "competitionStage": "REGULAR_SEASON_ROUND_16"
+  },
+  "competitionStage": "REGULAR_SEASON_ROUND_16",
+  "tieContext": {
+    "isTwoLeg": false,
+    "legNumber": null,
+    "aggregateHomeBeforeMatch": null,
+    "aggregateAwayBeforeMatch": null,
+    "leaderNeedsGoalDifference": false,
+    "trailingSideSustainedThreat": false,
+    "trailingSideCollapseRisk": false
+  },
+  "generatedAt": "2026-07-19T06:27:46Z",
+  "teamState": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "官方积分榜显示国际图15场30分列第2、仅因净胜球落后榜首，雅罗15场11分列第11。雅罗最近5场进7失15且4场至少3球；国际图最近5场联赛进7失5，另在7月16日欧协联主场2-1击败萨拉热窝。主队防守波动明显，客队赛季稳定性更高，但客队三天内连续作赛需单独折损。",
+    "capturedAt": "2026-07-19T06:27:46Z",
+    "observedAt": "2026-07-19T06:27:46Z",
+    "sources": [
+      {"title": "FF Jaro official match preview", "url": "https://ffjaro.fi/infor-ff-jaro-fc-inter-2/"},
+      {"title": "FC Inter official match preview", "url": "https://fcinter.fi/ajankohtaista/taistelu-veikkausliigan-karjessa-jatkuu-sunnuntaina-pietarsaaressa"},
+      {"title": "Veikkausliiga table before kickoff", "url": "https://www.skysports.com/football/ff-jaro-vs-fc-inter-turku/table/551749"},
+      {"title": "FotMob form and match insights", "url": "https://www.fotmob.com/en-GB/matches/fc-inter-turku-vs-ff-jaro/1v70ap"}
+    ],
+    "impact": {"home": -0.02, "draw": 0, "away": 0.02, "xgHome": -0.05, "xgAway": 0.05},
+    "recentMatches": [
+      {"league":"芬超","kickoffTime":"2026-07-04","homeTeam":"雅罗","awayTeam":"坦山猫","actualHomeGoals":2,"actualAwayGoals":1,"source":"project-sample-and-official-preview-verified"},
+      {"league":"芬超","kickoffTime":"2026-06-27","homeTeam":"TPS图尔","awayTeam":"雅罗","actualHomeGoals":3,"actualAwayGoals":2,"source":"project-sample-and-fotmob-verified"},
+      {"league":"芬超","kickoffTime":"2026-06-24","homeTeam":"雅罗","awayTeam":"IF Gnistan","actualHomeGoals":1,"actualAwayGoals":1,"source":"project-sample-and-fotmob-verified"},
+      {"league":"芬超","kickoffTime":"2026-06-17","homeTeam":"坦山猫","awayTeam":"雅罗","actualHomeGoals":5,"actualAwayGoals":0,"source":"project-sample-and-fotmob-verified"},
+      {"league":"芬超","kickoffTime":"2026-06-13","homeTeam":"雅罗","awayTeam":"赫尔辛基","actualHomeGoals":2,"actualAwayGoals":5,"source":"project-sample-and-fotmob-verified"},
+      {"league":"欧协联","kickoffTime":"2026-07-16","homeTeam":"国际图","awayTeam":"FK Sarajevo","actualHomeGoals":2,"actualAwayGoals":1,"matchType":"OFFICIAL","leagueStrengthFactor":1,"opponentQualityFactor":1,"source":"fc-inter-official-match-report-neutral-normalization"},
+      {"league":"芬超","kickoffTime":"2026-06-27","homeTeam":"玛丽港","awayTeam":"国际图","actualHomeGoals":0,"actualAwayGoals":2,"source":"project-sample-and-official-preview-verified"},
+      {"league":"芬超","kickoffTime":"2026-06-24","homeTeam":"国际图","awayTeam":"塞伊奈","actualHomeGoals":1,"actualAwayGoals":1,"source":"project-sample-and-official-preview-verified"},
+      {"league":"芬超","kickoffTime":"2026-06-17","homeTeam":"赫尔辛基","awayTeam":"国际图","actualHomeGoals":3,"actualAwayGoals":3,"source":"project-sample-verified"},
+      {"league":"芬超","kickoffTime":"2026-06-13","homeTeam":"国际图","awayTeam":"AC奥卢","actualHomeGoals":0,"actualAwayGoals":0,"source":"project-sample-verified"},
+      {"league":"芬超","kickoffTime":"2026-05-30","homeTeam":"库普斯","awayTeam":"国际图","actualHomeGoals":1,"actualAwayGoals":1,"source":"project-sample-verified"}
+    ],
+    "venueSampleReplacements": {"home": null, "away": null}
+  },
+  "injuries": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "雅罗官方确认Luca Weckström、Linus Zetterström、Mats Pedersen长期伤缺，Adam Widjeskog累计四黄停赛，新援Jonathan Lawson本场尚不能出场；Altti Hellemaa已具备出场资格。国际图官方赛前材料未披露新增确定伤停，因此不把“未披露”解释成全员健康，只对已确认的雅罗减员作有上限修正。",
+    "capturedAt": "2026-07-19T06:27:46Z",
+    "observedAt": "2026-07-19T06:27:46Z",
+    "sources": [
+      {"title": "FF Jaro official player availability", "url": "https://ffjaro.fi/infor-ff-jaro-fc-inter-2/"},
+      {"title": "FC Inter official preview", "url": "https://fcinter.fi/ajankohtaista/taistelu-veikkausliigan-karjessa-jatkuu-sunnuntaina-pietarsaaressa"}
+    ],
+    "impact": {"home": -0.01, "draw": 0, "away": 0.01, "xgHome": -0.07, "xgAway": 0.02}
+  },
+  "expectedLineups": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "正式首发尚未公布。雅罗可把新援Hellemaa纳入比赛名单，但Widjeskog、Lawson及三名长期伤员不可用；国际图7月16日欧战首发以Huuhtanen、Niska、Kuittinen、Kangasniemi、Conteh、Jephta和Essomba为框架。本项只核验可用性与最近阵容骨架，不宣称为正式首发，也不预设国际图必然轮换。",
+    "capturedAt": "2026-07-19T06:27:46Z",
+    "observedAt": "2026-07-19T06:27:46Z",
+    "sources": [
+      {"title": "FF Jaro official preview and availability", "url": "https://ffjaro.fi/infor-ff-jaro-fc-inter-2/"},
+      {"title": "FC Inter official Sarajevo match report and XI", "url": "https://fcinter.fi/ajankohtaista/inter-historiallisesti-jatkoon-konferenssiliigan-karsinnoissa"}
+    ],
+    "impact": {"home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0}
+  },
+  "motivation": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "芬超常规赛第16轮。国际图少赛一场、30分与榜首库普斯同分，赢球具有争榜首价值；雅罗11分列第11，领先垫底队7分但落后第10名3分，保级与追赶动机明确。国际图周四刚踢完欧战，周三还要客战伊斯坦布尔，赛程负荷真实存在，故动机与体能分开处理。",
+    "capturedAt": "2026-07-19T06:27:46Z",
+    "observedAt": "2026-07-19T06:27:46Z",
+    "sources": [
+      {"title": "FF Jaro official preview and table context", "url": "https://ffjaro.fi/infor-ff-jaro-fc-inter-2/"},
+      {"title": "FC Inter official preview and European schedule", "url": "https://fcinter.fi/ajankohtaista/taistelu-veikkausliigan-karjessa-jatkuu-sunnuntaina-pietarsaaressa"}
+    ],
+    "impact": {"home": 0.005, "draw": 0, "away": -0.005, "xgHome": 0.02, "xgAway": -0.05}
+  },
+  "weatherVenue": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "比赛在Pietarsaari的Project Liv Arena人工草场进行，开球时预报约16摄氏度。没有证据显示存在足以改变赛果方向的极端天气，仅对总节奏作极轻微下修。",
+    "capturedAt": "2026-07-19T06:27:46Z",
+    "observedAt": "2026-07-19T06:27:46Z",
+    "sources": [
+      {"title": "FotMob venue surface and weather", "url": "https://www.fotmob.com/en-GB/matches/fc-inter-turku-vs-ff-jaro/1v70ap"},
+      {"title": "FF Jaro official venue and kickoff", "url": "https://ffjaro.fi/infor-ff-jaro-fc-inter-2/"}
+    ],
+    "impact": {"home": 0, "draw": 0, "away": 0, "xgHome": -0.01, "xgAway": -0.01}
+  },
+  "styleMatchup": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "雅罗近5场联赛4场至少3球、5场失15球，主场进攻能制造进球但防线开放；国际图近5场各项赛事进9球，联赛赛季失球明显少于雅罗，且近6次交锋对雅罗5胜1平。主路径为国际图控制球权并率先得分，雅罗利用主场与客队赛程负荷保留1-1及反击得分路径。",
+    "capturedAt": "2026-07-19T06:27:46Z",
+    "observedAt": "2026-07-19T06:27:46Z",
+    "sources": [
+      {"title": "FotMob form and head-to-head insights", "url": "https://www.fotmob.com/en-GB/matches/fc-inter-turku-vs-ff-jaro/1v70ap"},
+      {"title": "FF Jaro official tactical assessment", "url": "https://ffjaro.fi/infor-ff-jaro-fc-inter-2/"}
+    ],
+    "impact": {"home": -0.005, "draw": 0, "away": 0.005, "xgHome": 0.01, "xgAway": 0.03},
+    "firstGoalSide": "AWAY"
+  },
+  "marketNews": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "已读取25个HAD及25个雅罗+1 HHAD有效快照。HAD由5.15/4.00/1.46变为5.45/4.05/1.43，最新去水约16.24%/21.86%/61.90%，市场继续增强国际图客胜方向；四个体彩玩法均处于可售状态。",
+    "capturedAt": "2026-07-19T06:27:46Z",
+    "observedAt": "2026-07-19T06:27:46Z",
+    "sources": [
+      {"title": "Current D1 SP series", "url": "https://ticai-model.com/sporttery-match/1317881"}
+    ],
+    "impact": {"home": -0.005, "draw": 0, "away": 0.005, "xgHome": 0, "xgAway": 0}
+  }
+}
