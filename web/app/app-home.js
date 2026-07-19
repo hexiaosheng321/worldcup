@@ -41,7 +41,7 @@ function predictionModelVersion(pred) {
 
 function predictionVersionLabel(pred) {
   if (!pred) return "";
-  return `${predictionModelVersion(pred)} 锁版`;
+  return `${predictionModelVersion(pred)} ${pred.lockType === "PRE_LOCK" ? "待锁版" : "锁版"}`;
 }
 
 function groupedPredictions() {

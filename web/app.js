@@ -1372,7 +1372,7 @@ function predictionModelVersion(pred) {
 
 function predictionVersionLabel(pred) {
   if (!pred) return "";
-  return `${predictionModelVersion(pred)} 锁版`;
+  return `${predictionModelVersion(pred)} ${pred.lockType === "PRE_LOCK" ? "待锁版" : "锁版"}`;
 }
 
 function groupedPredictions() {
@@ -3578,6 +3578,7 @@ function sportteryResearchSnapshot(item, modelPred) {
   const score = normalizeResultScore(item.score);
   if (modelPred) {
     const modelName = modelDisplayName(modelPred, item, modelPred.competitionModel || modelPred.competitionType || item?.league);
+    const lockStateLabel = modelPred.lockType === "PRE_LOCK" ? "待锁版" : "锁版";
     const actualTotal = parseScore(score)?.total;
     const resolved = resolvedPredictionDecision(modelPred, { handicapLine: item?.handicap || reviewHandicapLine(modelPred) });
     const riskNotes = [
@@ -3588,7 +3589,7 @@ function sportteryResearchSnapshot(item, modelPred) {
       modelPred.dataQuality,
     ].filter(Boolean);
     return {
-      statusLabel: score ? "赛后复盘" : `${modelName}锁版`,
+      statusLabel: score ? "赛后复盘" : `${modelName}${lockStateLabel}`,
       action: modelPred.advice || "已锁版",
       directionPick: resolved?.pick || modelPred.pick || "-",
       handicapPick: resolved?.handicapPick || handicapPick(modelPred) || "-",
@@ -4487,6 +4488,7 @@ function renderSportteryMatchDetail(key) {
   const scoreOdds = item.scoreOdds || [];
   const sourceStamp = formatCapturedAt(oddsData.importedAt || resultsData.importedAt);
   const modelName = modelPred ? modelDisplayName(modelPred, item, modelPred.competitionModel || modelPred.competitionType || item.league) : "";
+  const decisionStateLabel = modelPred?.lockType === "PRE_LOCK" ? "待锁版结论" : "锁版结论";
   content.innerHTML = `
     <div class="match-page-toolbar">
       <button type="button" data-detail-back>${backLabel}</button>
@@ -4515,7 +4517,7 @@ function renderSportteryMatchDetail(key) {
     <div class="match-mode-panel active" data-match-mode-panel="quick">
       <section class="quick-decision-board sporttery-quick-board">
         <article class="quick-main-card">
-          <span>${modelPred ? "锁版结论" : "模型状态"}</span>
+          <span>${modelPred ? decisionStateLabel : "模型状态"}</span>
           <strong>${modelPred ? research.directionPick : lockSyncing ? "同步锁版中" : "待锁版"}</strong>
           <p>${modelPred ? `让球 ${research.handicapPick} · 总进球 ${research.totalPick} · 比分 ${research.scorePick}` : lockSyncing ? "正在读取 Cloudflare D1 锁版记录" : `盘口预筛 ${research.directionPick} · 让球 ${research.handicapPick}`}</p>
         </article>
