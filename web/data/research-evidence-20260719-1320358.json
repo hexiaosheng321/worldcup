@@ -1,0 +1,116 @@
+{
+  "match": {
+    "matchId": "1320358",
+    "league": "韩职",
+    "home": "富川F",
+    "away": "首尔F",
+    "kickoffTime": "2026-07-19 18:30",
+    "competitionStage": "REGULAR_SEASON_ROUND_18"
+  },
+  "competitionStage": "REGULAR_SEASON_ROUND_18",
+  "tieContext": {
+    "isTwoLeg": false,
+    "legNumber": null,
+    "aggregateHomeBeforeMatch": null,
+    "aggregateAwayBeforeMatch": null,
+    "leaderNeedsGoalDifference": false,
+    "trailingSideSustainedThreat": false,
+    "trailingSideCollapseRisk": false
+  },
+  "generatedAt": "2026-07-19T04:48:30Z",
+  "teamState": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "富川近5轮2胜2平1负、进5失4，最近4轮保持不败；首尔近5轮3胜1平1负、进5失3。联赛17轮后富川4胜7平6负积19分，首尔11胜3平3负积36分领跑，客队整体赛季强度占优，但富川近期韧性明显增强。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "K League official Bucheon v Seoul preview", "url": "https://www.kleague.com/news_view.do?category=club&orderBy=seq&page=1&seq=95667&viewOption=album" },
+      { "title": "FotMob Bucheon v Seoul team form", "url": "https://www.fotmob.com/matches/fc-seoul-vs-bucheon-fc-1995/1qlt8w22" },
+      { "title": "FotMob FC Seoul season form", "url": "https://www.fotmob.com/teams/92630/overview/fc-seoul" }
+    ],
+    "impact": { "home": -0.01, "draw": 0, "away": 0.01, "xgHome": -0.02, "xgAway": 0.04 },
+    "recentMatches": [
+      { "league": "韩职", "kickoffTime": "2026-07-11", "homeTeam": "金泉尚武", "awayTeam": "富川F", "actualHomeGoals": 1, "actualAwayGoals": 1, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-07-04", "homeTeam": "大田市民", "awayTeam": "富川F", "actualHomeGoals": 2, "actualAwayGoals": 2, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-17", "homeTeam": "富川F", "awayTeam": "浦项制铁", "actualHomeGoals": 2, "actualAwayGoals": 0, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-13", "homeTeam": "富川F", "awayTeam": "全北现代", "actualHomeGoals": 0, "actualAwayGoals": 0, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-10", "homeTeam": "蔚山现代", "awayTeam": "富川F", "actualHomeGoals": 1, "actualAwayGoals": 0, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-07-12", "homeTeam": "首尔F", "awayTeam": "江原F", "actualHomeGoals": 0, "actualAwayGoals": 0, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-07-05", "homeTeam": "首尔F", "awayTeam": "仁川联", "actualHomeGoals": 1, "actualAwayGoals": 0, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-16", "homeTeam": "大田市民", "awayTeam": "首尔F", "actualHomeGoals": 1, "actualAwayGoals": 2, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-12", "homeTeam": "光州F", "awayTeam": "首尔F", "actualHomeGoals": 0, "actualAwayGoals": 1, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-09", "homeTeam": "济州联", "awayTeam": "首尔F", "actualHomeGoals": 2, "actualAwayGoals": 1, "source": "fotmob-verified" }
+    ]
+  },
+  "injuries": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "富川官方赛前稿确认进攻核心加布里埃尔可用，金承彬已在上轮结束长期伤停并完成复出；截至采集时未发现首尔新增的确定性核心缺阵。没有用无法核验的名单作负面修正。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "K League official Bucheon squad update", "url": "https://www.kleague.com/news_view.do?category=club&orderBy=seq&page=1&seq=95667&viewOption=album" },
+      { "title": "FotMob Bucheon v Seoul match page", "url": "https://www.fotmob.com/matches/fc-seoul-vs-bucheon-fc-1995/1qlt8w22" }
+    ],
+    "impact": { "home": 0.005, "draw": 0, "away": -0.005, "xgHome": 0.02, "xgAway": 0 }
+  },
+  "expectedLineups": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "官方首发尚未公布。最近首发结构显示富川使用3-4-3，以金亨根、洪成旭、白栋圭、帕特里克、加布里埃尔与加莱戈为框架；首尔使用4-4-2，以具圣润、崔俊、金珍洙、巴贝茨、克里马拉等为框架。仅作阵型与人员可用性核验，不视为正式首发。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "FotMob latest starting XI for Bucheon and Seoul", "url": "https://www.fotmob.com/matches/fc-seoul-vs-bucheon-fc-1995/1qlt8w22" }
+    ],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "motivation": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "K联赛1常规赛第18轮。富川首次在主场迎战首尔并争取延续5场不败；首尔以36分领跑，需要维持争冠领先。两队动机均充分，不将排名动机直接替代90分钟概率。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "K League official round 18 preview", "url": "https://www.kleague.com/news_view.do?category=club&orderBy=seq&page=1&seq=95667&viewOption=album" }
+    ],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0.01, "xgAway": 0.01 }
+  },
+  "weatherVenue": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "比赛在富川综合运动场举行，当地开球前后约25至26摄氏度、多云，当前未见强降雨或延期预警。仅按夏季湿热对双方节奏作极轻微下修。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "Bucheon hourly weather forecast", "url": "https://www.accuweather.com/en/kr/bucheon/223678/hourly-weather-forecast/223678" },
+      { "title": "FotMob match venue and kickoff", "url": "https://www.fotmob.com/matches/fc-seoul-vs-bucheon-fc-1995/1qlt8w22" }
+    ],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": -0.01, "xgAway": -0.01 }
+  },
+  "styleMatchup": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "富川最近4轮不败主要依靠低比分韧性和落后后的反击恢复，首尔近5场仅失3球且赛季防守稳定。主路径是首尔控球与阵地压迫占优，富川用三中卫和边路转换保护+1；首球倾向首尔，但需保留富川主场先手后收缩的风险路径。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "K League official tactical preview", "url": "https://www.kleague.com/news_view.do?category=club&orderBy=seq&page=1&seq=95667&viewOption=album" },
+      { "title": "FotMob recent form and formations", "url": "https://www.fotmob.com/matches/fc-seoul-vs-bucheon-fc-1995/1qlt8w22" }
+    ],
+    "impact": { "home": 0, "draw": 0.005, "away": -0.005, "xgHome": -0.01, "xgAway": 0.02 },
+    "firstGoalSide": "AWAY"
+  },
+  "marketNews": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "已读取25个HAD和25个+1 HHAD有效快照。HAD从5.15/3.45/1.55变为4.95/3.45/1.57，当前去水约17.90%/25.68%/56.42%；+1从2.12/3.20/2.90变为2.08/3.15/3.02，市场小幅加强富川受让保护，但整体仍以首尔客胜为主方向。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "Current D1 SP series for Bucheon v Seoul", "url": "https://ticai-model.com/sporttery-match/1320358" }
+    ],
+    "impact": { "home": 0.005, "draw": 0.005, "away": -0.01, "xgHome": 0, "xgAway": 0 }
+  }
+}

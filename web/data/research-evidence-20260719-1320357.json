@@ -1,0 +1,117 @@
+{
+  "match": {
+    "matchId": "1320357",
+    "league": "韩职",
+    "home": "安养F",
+    "away": "光州F",
+    "kickoffTime": "2026-07-19 18:30",
+    "competitionStage": "REGULAR_SEASON_ROUND_18"
+  },
+  "competitionStage": "REGULAR_SEASON_ROUND_18",
+  "tieContext": {
+    "isTwoLeg": false,
+    "legNumber": null,
+    "aggregateHomeBeforeMatch": null,
+    "aggregateAwayBeforeMatch": null,
+    "leaderNeedsGoalDifference": false,
+    "trailingSideSustainedThreat": false,
+    "trailingSideCollapseRisk": false
+  },
+  "generatedAt": "2026-07-19T04:48:30Z",
+  "teamState": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "安养近5轮2胜2平1负、进8失7，上轮客场1-0击败仁川；光州近5轮2平3负、仅进1球失9球，联赛已15场不胜。17轮后安养5胜8平4负积23分，光州1胜5平11负积8分垫底。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "FC Anyang official schedule and results", "url": "https://fc-anyang.com/match/match.asp" },
+      { "title": "FotMob Anyang v Gwangju form", "url": "https://www.fotmob.com/matches/gwangju-fc-vs-fc-anyang/2wrgtjbt" },
+      { "title": "FotMob Gwangju fixtures", "url": "https://www.fotmob.com/teams/245905/fixtures/gwangju-fc" }
+    ],
+    "impact": { "home": 0.02, "draw": 0, "away": -0.02, "xgHome": 0.05, "xgAway": -0.05 },
+    "recentMatches": [
+      { "league": "韩职", "kickoffTime": "2026-07-12", "homeTeam": "仁川联", "awayTeam": "安养F", "actualHomeGoals": 0, "actualAwayGoals": 1, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-07-04", "homeTeam": "安养F", "awayTeam": "浦项制铁", "actualHomeGoals": 2, "actualAwayGoals": 3, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-17", "homeTeam": "济州联", "awayTeam": "安养F", "actualHomeGoals": 1, "actualAwayGoals": 2, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-13", "homeTeam": "安养F", "awayTeam": "金泉尚武", "actualHomeGoals": 2, "actualAwayGoals": 2, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-10", "homeTeam": "安养F", "awayTeam": "全北现代", "actualHomeGoals": 1, "actualAwayGoals": 1, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-07-11", "homeTeam": "光州F", "awayTeam": "浦项制铁", "actualHomeGoals": 0, "actualAwayGoals": 3, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-07-05", "homeTeam": "光州F", "awayTeam": "蔚山现代", "actualHomeGoals": 1, "actualAwayGoals": 1, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-16", "homeTeam": "仁川联", "awayTeam": "光州F", "actualHomeGoals": 4, "actualAwayGoals": 0, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-12", "homeTeam": "光州F", "awayTeam": "首尔F", "actualHomeGoals": 0, "actualAwayGoals": 1, "source": "fotmob-verified" },
+      { "league": "韩职", "kickoffTime": "2026-05-09", "homeTeam": "光州F", "awayTeam": "江原F", "actualHomeGoals": 0, "actualAwayGoals": 0, "source": "fotmob-verified" }
+    ]
+  },
+  "injuries": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "公开赛前信息列出光州后卫闵尚基、郭成勋以及中场朱世钟、崔庆禄等缺阵；截至采集时未发现安养新增的同等级集中缺阵。伤停仅作有上限修正，不把非官方预计名单当成确切首发。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "Anyang v Gwangju current team news", "url": "https://news.7msport.com/news/newsdata/20260717/258066.shtml" },
+      { "title": "FotMob Anyang v Gwangju availability page", "url": "https://www.fotmob.com/matches/gwangju-fc-vs-fc-anyang/2wrgtjbt" }
+    ],
+    "impact": { "home": 0.01, "draw": 0, "away": -0.01, "xgHome": 0.03, "xgAway": -0.05 }
+  },
+  "expectedLineups": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "官方首发尚未公布。最近首发结构显示安养使用4-3-3，以金多率、李朱勇、权敬原、马特乌斯·奥利维拉等为框架；光州使用4-1-4-1，以金敬敏、权成允、范格伦斯文、朱世钟和贾西尔·阿萨尼等可用人员框架为参考。只核验阵型，不宣称正式首发。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "FotMob latest starting XI for Anyang and Gwangju", "url": "https://www.fotmob.com/matches/gwangju-fc-vs-fc-anyang/2wrgtjbt" }
+    ],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "motivation": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "K联赛1常规赛第18轮。安养积23分处在争冠组边缘，需要主场抢分稳住前六；光州积8分垫底，保级压力同样明确。动机双方均充分，排名差只通过赛季强度进入模型。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "K League official standings", "url": "https://www.kleague.com/club/club.do?teamId=K27" },
+      { "title": "FC Anyang official round 18 fixture", "url": "https://fc-anyang.com/match/match.asp" }
+    ],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": 0, "xgAway": 0 }
+  },
+  "weatherVenue": {
+    "status": "VERIFIED",
+    "evidenceGrade": "B",
+    "summary": "比赛在安养综合运动场举行，首都圈开球前后约25至26摄氏度、多云，未发现强降雨或延期预警。夏季湿热仅对双方节奏作极轻微下修。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "Anyang/Bucheon metropolitan hourly weather", "url": "https://www.accuweather.com/en/kr/anyang/223669/hourly-weather-forecast/223669" },
+      { "title": "FotMob Anyang Stadium fixture", "url": "https://www.fotmob.com/matches/gwangju-fc-vs-fc-anyang/2wrgtjbt" }
+    ],
+    "impact": { "home": 0, "draw": 0, "away": 0, "xgHome": -0.01, "xgAway": -0.01 }
+  },
+  "styleMatchup": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "安养近5场进8球但也失7球，前场推进能力和后场波动并存；光州近5场只进1球、失9球，连续客场低迷。主路径为安养依靠中前场压迫制造首球，光州以低位和反击拖慢节奏；同时安养近7个联赛主场未胜，必须保留1-1或小胜不穿的风险。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "FotMob Anyang and Gwangju recent form", "url": "https://www.fotmob.com/matches/gwangju-fc-vs-fc-anyang/2wrgtjbt" },
+      { "title": "Current K League matchup profile", "url": "https://news.7msport.com/news/newsdata/20260717/258066.shtml" }
+    ],
+    "impact": { "home": 0.01, "draw": 0, "away": -0.01, "xgHome": 0.03, "xgAway": -0.02 },
+    "firstGoalSide": "HOME"
+  },
+  "marketNews": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "已读取25个HAD和25个-1 HHAD有效快照。HAD从1.53/3.50/5.30变为1.50/3.58/5.45，当前去水约59.02%/24.73%/16.25%；-1从2.88/3.15/2.15变为2.83/3.10/2.21，主胜与让胜均小幅加强，但幅度有限。",
+    "capturedAt": "2026-07-19T04:48:30Z",
+    "observedAt": "2026-07-19T04:48:30Z",
+    "sources": [
+      { "title": "Current D1 SP series for Anyang v Gwangju", "url": "https://ticai-model.com/sporttery-match/1320357" }
+    ],
+    "impact": { "home": 0.005, "draw": 0, "away": -0.005, "xgHome": 0, "xgAway": 0 }
+  }
+}
