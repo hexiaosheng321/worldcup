@@ -1,0 +1,56 @@
+{
+  "match": {"matchId":"1318500","league":"瑞超","home":"厄尔格","away":"佐加顿","kickoffTime":"01:00","competitionStage":"REGULAR_SEASON_ROUND_13"},
+  "competitionStage": "REGULAR_SEASON_ROUND_13",
+  "tieContext": {"isTwoLeg":false,"legNumber":null,"aggregateHomeBeforeMatch":null,"aggregateAwayBeforeMatch":null,"leaderNeedsGoalDifference":false,"trailingSideSustainedThreat":false,"trailingSideCollapseRisk":false},
+  "generatedAt": "2026-07-20T04:41:03Z",
+  "teamState": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"佐加顿官方赛前材料将球队描述为状态强劲，上一轮3比0击败哈尔姆；厄尔格9分排名倒数第二，但上一轮4比3击败赫根，说明主队虽整体弱势却具备制造高波动比赛的能力。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Djurgarden official match preview","url":"https://www.dif.se/nyheter/2026/infor-orgryte-djurgarden"}],
+    "impact":{"home":-0.015,"draw":0,"away":0.015,"xgHome":0,"xgAway":0.05}
+  },
+  "injuries": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"佐加顿中卫Mikael Marques确认继续停赛，厄尔格的Tobias Sana也确认停赛；佐加顿另有数名球员上轮缺席但本场状态未完全确认，未把这些不确定信息继续加权。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Djurgarden official availability report","url":"https://www.dif.se/nyheter/2026/infor-orgryte-djurgarden"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0.02,"xgAway":0.02}
+  },
+  "expectedLineups": {
+    "status":"NOT_PUBLISHED","evidenceGrade":"A",
+    "summary":"佐加顿官方明确说明比赛名单和首发将在开球前十分钟发布；锁版采集时正式首发尚未发布，因此不把可能阵容当作正式阵容。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Djurgarden official lineup publication notice","url":"https://www.dif.se/nyheter/2026/infor-orgryte-djurgarden"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "motivation": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"瑞超第13轮，佐加顿需要延续胜势追赶前列，厄尔格倒数第二需要保级抢分。双方目标明确，强弱差不会被动机项重复放大。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Djurgarden official competition context","url":"https://www.dif.se/nyheter/2026/infor-orgryte-djurgarden"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "weatherVenue": {
+    "status":"VERIFIED","evidenceGrade":"B",
+    "summary":"官方确认比赛在Gamla Ullevi举行。采集时没有可交叉验证的极端天气或延期预警，因此天气层不作方向和进球修正。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Djurgarden official venue and kickoff","url":"https://www.dif.se/nyheter/2026/infor-orgryte-djurgarden"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "styleMatchup": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"厄尔格强调控球并刚在开放对攻中4比3取胜，佐加顿则以更强阵容和连续胜势进入本场。主路径是客队压制，但主队控球及客队中卫停赛使双方进球和一球差分支必须保留。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Djurgarden official tactical assessment","url":"https://www.dif.se/nyheter/2026/infor-orgryte-djurgarden"}],
+    "impact":{"home":0,"draw":0,"away":0.005,"xgHome":0.03,"xgAway":0.03},
+    "firstGoalSide":"AWAY"
+  },
+  "marketNews": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"D1已读取25个HAD、25个厄尔格加1的HHAD和25个总进球快照；HAD保持6.60/5.25/1.27，HHAD保持3.00/3.90/1.86，属于强客胜稳定盘而非数据缺失。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Current D1 SP series","url":"https://ticai-model.com/sporttery-match/1318500"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  }
+}

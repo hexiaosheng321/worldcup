@@ -1,0 +1,56 @@
+{
+  "match": {"matchId":"1318503","league":"瑞超","home":"卡尔马","away":"马尔默","kickoffTime":"01:00","competitionStage":"REGULAR_SEASON_ROUND_13"},
+  "competitionStage": "REGULAR_SEASON_ROUND_13",
+  "tieContext": {"isTwoLeg":false,"legNumber":null,"aggregateHomeBeforeMatch":null,"aggregateAwayBeforeMatch":null,"leaderNeedsGoalDifference":false,"trailingSideSustainedThreat":false,"trailingSideCollapseRisk":false},
+  "generatedAt": "2026-07-20T04:41:03Z",
+  "teamState": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"卡尔马12轮13分列第12，上一轮0比2负哈马比，但六个主场拿到13分；马尔默12轮19分列第6并取得联赛三连胜，最近一轮4比0击败哥德堡，整体状态偏客队。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Kalmar official match preview","url":"https://kalmarff.se/infor-kalmar-ff-malmo-ff-det-blir-viktigt-for-oss-att-vara-modiga-med-bollen/"},{"title":"Sports Mole form and table preview","url":"https://www.sportsmole.co.uk/football/kalmar/preview/kalmar-vs-malmo-prediction-team-news-lineups_601422.html"}],
+    "impact":{"home":-0.01,"draw":0.005,"away":0.005,"xgHome":-0.02,"xgAway":0.04}
+  },
+  "injuries": {
+    "status":"VERIFIED","evidenceGrade":"B",
+    "summary":"赛前伤停信息显示卡尔马的Malcolm Stolt继续缺阵；马尔默的Anders Christiansen和Pontus Jansson缺阵。双方都有减员，客队中后场损失不允许被近期连胜掩盖。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Sports Mole verified pre-match team news","url":"https://www.sportsmole.co.uk/football/kalmar/preview/kalmar-vs-malmo-prediction-team-news-lineups_601422.html"}],
+    "impact":{"home":0.005,"draw":0,"away":-0.005,"xgHome":0.02,"xgAway":-0.01}
+  },
+  "expectedLineups": {
+    "status":"VERIFIED","evidenceGrade":"B",
+    "summary":"正式首发尚未公布；第三方赛前页给出可能阵容，卡尔马预计以Olusanya与Sagoe Jr组成前场，马尔默预计由Botheim领衔。该信息只用于结构核验，不宣称为官方首发。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Sports Mole possible lineups","url":"https://www.sportsmole.co.uk/football/kalmar/preview/kalmar-vs-malmo-prediction-team-news-lineups_601422.html"},{"title":"Kalmar official squad publication notice","url":"https://kalmarff.se/infor-kalmar-ff-malmo-ff-det-blir-viktigt-for-oss-att-vara-modiga-med-bollen/"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "motivation": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"瑞超第13轮，马尔默距第三名仅2分，需要延续三连胜追赶前列；卡尔马作为升班队需要利用主场拉开降级区距离。双方积分动机都充分。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Sports Mole table context","url":"https://www.sportsmole.co.uk/football/kalmar/preview/kalmar-vs-malmo-prediction-team-news-lineups_601422.html"},{"title":"Kalmar official match preview","url":"https://kalmarff.se/infor-kalmar-ff-malmo-ff-det-blir-viktigt-for-oss-att-vara-modiga-med-bollen/"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "weatherVenue": {
+    "status":"VERIFIED","evidenceGrade":"B",
+    "summary":"官方确认比赛在Guldfågeln Arena举行，且预计有超过九千名观众。采集时未获得可交叉验证的极端天气预警，因此只保留主场环境，不作天气方向修正。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Kalmar official venue and attendance preview","url":"https://kalmarff.se/infor-kalmar-ff-malmo-ff-det-blir-viktigt-for-oss-att-vara-modiga-med-bollen/"}],
+    "impact":{"home":0.005,"draw":0,"away":-0.005,"xgHome":0,"xgAway":0}
+  },
+  "styleMatchup": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"卡尔马官方指出球队上一轮面对高压时难以长时间控球，本场需要更勇敢地持球并保持紧凑；马尔默擅长控球、反抢后快速转换。客队三连胜占优，但卡尔马主场成绩要求保留平局路径。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Kalmar official tactical preview","url":"https://kalmarff.se/infor-kalmar-ff-malmo-ff-det-blir-viktigt-for-oss-att-vara-modiga-med-bollen/"},{"title":"Sports Mole home-away form","url":"https://www.sportsmole.co.uk/football/kalmar/preview/kalmar-vs-malmo-prediction-team-news-lineups_601422.html"}],
+    "impact":{"home":0,"draw":0.005,"away":-0.005,"xgHome":0.02,"xgAway":0.02},
+    "firstGoalSide":"AWAY"
+  },
+  "marketNews": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"D1已读取25个HAD、25个卡尔马减1的HHAD和25个总进球快照。HAD从2.30/3.45/2.47先变为2.40/3.45/2.37，最新又到2.47/3.45/2.30，市场已由主队微优反转为客队微优。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Current D1 SP series","url":"https://ticai-model.com/sporttery-match/1318503"}],
+    "impact":{"home":-0.01,"draw":0,"away":0.01,"xgHome":0,"xgAway":0}
+  }
+}

@@ -566,6 +566,17 @@ const finnishAliases = runUnifiedPrediction({
 assert.equal(finnishAliases.featureSet.recentForm.home.length, 5);
 assert.equal(finnishAliases.featureSet.recentForm.away.length, 5);
 
+const ilvesAlias = runUnifiedPrediction({
+  ...context,
+  match: { ...context.match, league: "芬超", home: "TPS", away: "坦山猫" },
+  samples: [
+    ...Array.from({ length: 8 }, (_, index) => ({ league: "芬超", kickoffTime: `2026-06-${String(index + 1).padStart(2, "0")}`, homeTeam: "TPS", awayTeam: `芬兰对手甲${index}`, actualHomeGoals: 2, actualAwayGoals: 1 })),
+    ...Array.from({ length: 8 }, (_, index) => ({ league: "芬超", kickoffTime: `2026-06-${String(index + 10).padStart(2, "0")}`, homeTeam: `芬兰对手乙${index}`, awayTeam: "Ilves", actualHomeGoals: 0, actualAwayGoals: 2 })),
+  ],
+}, { lockType: "PRE_LOCK" });
+assert.equal(ilvesAlias.featureSet.recentForm.home.length, 8);
+assert.equal(ilvesAlias.featureSet.recentForm.away.length, 8);
+
 const uclUnnormalized = runUnifiedPrediction({
   ...context,
   match: { ...context.match, league: "欧冠", home: "杰尔", away: "维京人" },

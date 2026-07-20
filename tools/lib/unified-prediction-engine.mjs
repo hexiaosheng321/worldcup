@@ -262,7 +262,7 @@ function teamKey(value = "") {
     [/布鲁马|布洛马波卡纳|布鲁马波卡纳|Brommapojkarna/i, "brommapojkarna"],
     [/布拉干|巴甘蒂诺|Bragantino/i, "bragantino"], [/迈拉索|米拉索(?:尔)?|Mirassol/i, "mirassol"],
     [/洛城银河|洛杉矶银河|LA Galaxy/i, "la-galaxy"], [/洛杉矶FC|Los Angeles FC|LAFC/i, "lafc"],
-    [/拉赫蒂|Lahti/i, "lahti"], [/HIFK|Helsinki IFK/i, "hifk"], [/赫尔火|赫尔辛基火花|IF Gnistan/i, "gnistan"], [/赫尔辛(?:基)?|HJK(?: Helsinki)?/i, "hjk"], [/玛丽港|Mariehamn/i, "mariehamn"],
+    [/拉赫蒂|Lahti/i, "lahti"], [/HIFK|Helsinki IFK/i, "hifk"], [/赫尔火|赫尔辛基火花|IF Gnistan/i, "gnistan"], [/赫尔辛(?:基)?|HJK(?: Helsinki)?/i, "hjk"], [/玛丽港|Mariehamn/i, "mariehamn"], [/坦山猫|(?:Tampereen\s*)?Ilves(?:\s*Tampere)?/i, "ilves"],
     [/AC\s*奥(?:卢)?|AC\s*Oulu/i, "acoulu"], [/TPS|Turku\s*PS/i, "tps"],
     [/瓦萨|VPS(?:\s*Vaasa)?/i, "vps"], [/塞伊奈|SJK|Sein[aä]joen/i, "sjk"], [/库普斯|KuPS(?:\s*Kuopio)?/i, "kups"],
     [/^(?:雅罗|(?:FF\s*)?Jaro)$/i, "jaro"], [/^(?:国际图(?:尔)?|(?:FC\s*)?Inter(?:\s*Turku)?)$/i, "inter-turku"],

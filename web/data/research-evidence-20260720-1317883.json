@@ -1,0 +1,56 @@
+{
+  "match": {"matchId":"1317883","league":"芬超","home":"玛丽港","away":"拉赫蒂","kickoffTime":"00:00","competitionStage":"REGULAR_SEASON_ROUND_16"},
+  "competitionStage": "REGULAR_SEASON_ROUND_16",
+  "tieContext": {"isTwoLeg":false,"legNumber":null,"aggregateHomeBeforeMatch":null,"aggregateAwayBeforeMatch":null,"leaderNeedsGoalDifference":false,"trailingSideSustainedThreat":false,"trailingSideCollapseRisk":false},
+  "generatedAt": "2026-07-20T04:41:03Z",
+  "teamState": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"联赛公开赛程与积分信息显示，玛丽港赛前4分垫底，最近6轮全败且合计失19球；拉赫蒂19分列第8，最近4轮2胜2平且其中3场零封，近期稳定性明显占优。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Veikkausliiga IFK Mariehamn schedule and results","url":"https://www.veikkausliiga.com/joukkueet/ifk-mariehamn/otteluohjelma"},{"title":"FC Lahti official fixtures and results","url":"https://www.fclahti.fi/tulevat-ottelut/"}],
+    "impact":{"home":-0.025,"draw":0.005,"away":0.02,"xgHome":-0.08,"xgAway":0.08}
+  },
+  "injuries": {
+    "status":"NOT_PUBLISHED","evidenceGrade":"B",
+    "summary":"锁版采集时官方比赛页尚未发布本场完整伤停与名单，不以第三方传闻替代官方确认，也不把未披露视为全员健康，伤停层保持零修正。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Veikkausliiga official match lineup page","url":"https://www.veikkausliiga.com/tilastot/2026/veikkausliiga/ottelut/4036947/kokoonpanot/"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "expectedLineups": {
+    "status":"NOT_PUBLISHED","evidenceGrade":"B",
+    "summary":"官方页面明确说明首发将在开球前一小时发布；当前尚无正式首发，因此本层不预设阵型和轮换，仅确认该信息尚未到发布时间。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Veikkausliiga official match lineup page","url":"https://www.veikkausliiga.com/tilastot/2026/veikkausliiga/ottelut/4036947/kokoonpanot/"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "motivation": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"芬超常规赛第16轮，玛丽港处于榜尾必须抢分止跌，拉赫蒂需要巩固中游并靠近上半区。两队动机均充分，积分差只用于实力与状态层，不直接当作赛果。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Veikkausliiga official round 16 schedule","url":"https://www.veikkausliiga.com/tilastot/2026/veikkausliiga/ottelut/?group=1"},{"title":"Veikkausliiga current table and fixtures","url":"https://veikkausliigapelit.fi/"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "weatherVenue": {
+    "status":"VERIFIED","evidenceGrade":"B",
+    "summary":"比赛在Wiklöf Holding Arena进行；开球时预报约19摄氏度且风力偏强。没有延期或极端天气预警，但较强风可能轻微压低射门与长传稳定性。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Veikkausliiga official fixture","url":"https://www.veikkausliiga.com/joukkueet/ifk-mariehamn/otteluohjelma"},{"title":"Mariehamn hourly forecast","url":"https://www.timeanddate.com/weather/finland/mariehamn/hourly"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":-0.015,"xgAway":-0.015}
+  },
+  "styleMatchup": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"玛丽港近期连续失球且多场早早进入追分局；拉赫蒂最近4轮不败并保持3场零封，更适合先压低主队有效进攻后寻找客胜。仍保留玛丽港主场抢开局的反向路径。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Veikkausliiga IFK Mariehamn results","url":"https://www.veikkausliiga.com/joukkueet/ifk-mariehamn/otteluohjelma"},{"title":"FC Lahti official recent results","url":"https://www.fclahti.fi/tulevat-ottelut/"}],
+    "impact":{"home":-0.01,"draw":0,"away":0.01,"xgHome":-0.04,"xgAway":0.04},
+    "firstGoalSide":"AWAY"
+  },
+  "marketNews": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"D1已读取25个HAD、25个玛丽港加1的HHAD和25个总进球快照。HAD由5.25/4.10/1.44变为5.35/4.20/1.42，客胜方向小幅增强且全部体彩玩法可售。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Current D1 SP series","url":"https://ticai-model.com/sporttery-match/1317883"}],
+    "impact":{"home":-0.005,"draw":0,"away":0.005,"xgHome":0,"xgAway":0}
+  }
+}

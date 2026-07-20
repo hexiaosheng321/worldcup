@@ -1,0 +1,56 @@
+{
+  "match": {"matchId":"1317882","league":"芬超","home":"TPS","away":"坦山猫","kickoffTime":"23:00","competitionStage":"REGULAR_SEASON_ROUND_16"},
+  "competitionStage": "REGULAR_SEASON_ROUND_16",
+  "tieContext": {"isTwoLeg":false,"legNumber":null,"aggregateHomeBeforeMatch":null,"aggregateAwayBeforeMatch":null,"leaderNeedsGoalDifference":false,"trailingSideSustainedThreat":false,"trailingSideCollapseRisk":false},
+  "generatedAt": "2026-07-20T04:41:03Z",
+  "teamState": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"TPS赛前22分列第7，坦山猫16分列第9；双方近5轮均为2胜1平2负。TPS八个联赛主场拿到19分、得失球14比6，坦山猫则处于欧战与联赛连续作赛阶段并刚完成换帅。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"FC TPS official match preview","url":"https://fc.tps.fi/uutiset/tps-isannoi-ilvesta-kupittaan-illassa-yritetaan-jatkaa-voittokulkua/"}],
+    "impact":{"home":0.015,"draw":0,"away":-0.015,"xgHome":0.04,"xgAway":-0.03}
+  },
+  "injuries": {
+    "status":"NOT_PUBLISHED","evidenceGrade":"B",
+    "summary":"两队本场正式伤停名单在锁版采集时尚未由官方完整发布；不把缺少公告解释为全员健康，也不采用未交叉验证的传闻，伤停层保持零修正。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"FC TPS official pre-match information","url":"https://fc.tps.fi/uutiset/tps-isannoi-ilvesta-kupittaan-illassa-yritetaan-jatkaa-voittokulkua/"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "expectedLineups": {
+    "status":"NOT_PUBLISHED","evidenceGrade":"B",
+    "summary":"正式首发在锁版采集时尚未发布。官方赛前材料确认TPS新增锋线选择，但不足以推定首发组合，因此阵容层只记录可用信息并保持零修正。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"FC TPS official match preview","url":"https://fc.tps.fi/uutiset/tps-isannoi-ilvesta-kupittaan-illassa-yritetaan-jatkaa-voittokulkua/"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "motivation": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"芬超常规赛第16轮，TPS争取进入上半区，坦山猫需要缩小与中游的分差；双方积分目标都明确。坦山猫的欧战赛程只作为体能折损，不被错误解释为动机不足。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"FC TPS official table and schedule context","url":"https://fc.tps.fi/uutiset/tps-isannoi-ilvesta-kupittaan-illassa-yritetaan-jatkaa-voittokulkua/"}],
+    "impact":{"home":0.005,"draw":0,"away":-0.005,"xgHome":0.01,"xgAway":-0.02}
+  },
+  "weatherVenue": {
+    "status":"VERIFIED","evidenceGrade":"B",
+    "summary":"比赛在Veritas Stadion进行；开球时预报约20摄氏度、阴天、降雨概率接近零，未见足以改变比赛方向的极端天气信号，因此不作方向修正。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"FC TPS official venue and kickoff","url":"https://fc.tps.fi/uutiset/otteluinfo-veikkausliigan-ottelu-tps-ilves-ma-20-7-klo-18-00/"},{"title":"Turku hourly forecast","url":"https://www.timeanddate.com/weather/finland/turku/hourly"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  },
+  "styleMatchup": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"TPS主场强项是整体协作与防守稳定，最近一轮3比0取胜；坦山猫换帅后寻求反弹，但连续欧战会压缩恢复时间。主路径偏TPS主场控制，同时保留坦山猫转换反击及平局路径。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"FC TPS official tactical preview","url":"https://fc.tps.fi/uutiset/tps-isannoi-ilvesta-kupittaan-illassa-yritetaan-jatkaa-voittokulkua/"}],
+    "impact":{"home":0.005,"draw":0,"away":-0.005,"xgHome":0.02,"xgAway":0},
+    "firstGoalSide":"HOME"
+  },
+  "marketNews": {
+    "status":"VERIFIED","evidenceGrade":"A",
+    "summary":"D1已读取25个HAD、25个TPS加1的HHAD和25个总进球快照；HAD始终为2.44/3.40/2.35，市场为稳定而非缺失，比分与总进球玩法均已开售。",
+    "capturedAt":"2026-07-20T04:41:03Z","observedAt":"2026-07-20T04:41:03Z",
+    "sources":[{"title":"Current D1 SP series","url":"https://ticai-model.com/sporttery-match/1317882"}],
+    "impact":{"home":0,"draw":0,"away":0,"xgHome":0,"xgAway":0}
+  }
+}
