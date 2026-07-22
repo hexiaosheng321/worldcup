@@ -138,6 +138,11 @@ if (globalStatsLedgerBlock.includes("<th>版本</th>") || globalStatsLedgerBlock
 if (!baseStyles.includes("body.home-mode .home-topbar") || !baseStyles.includes("overflow: visible")) {
   throw new Error("Production baseline must keep the language menu outside the header clipping box");
 }
+for (const marker of ["mobile-stats-strip=20260722_v1", ".global-stats-cards .review-summary-grid", "scroll-snap-type: x proximity", "grid-template-rows: repeat(3, 88px)", "grid-auto-columns: clamp(132px, 42vw, 156px)"]) {
+  if (!index.includes(marker) && !styles.includes(marker) && !fs.readFileSync("web/styles-effects.css", "utf8").includes(marker)) {
+    throw new Error(`Production baseline missing compact mobile stats strip: ${marker}`);
+  }
+}
 for (const marker of ["Mobile reading system", "font-size: 15px", "min-height: 44px", "@media (max-width: 640px)"]) {
   if (!baseStyles.includes(marker)) throw new Error(`Production baseline missing mobile readability marker: ${marker}`);
 }

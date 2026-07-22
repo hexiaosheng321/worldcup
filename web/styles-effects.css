@@ -1931,6 +1931,58 @@ body::before {
     grid-template-columns: 1fr !important;
   }
 
+  /* 全局回测概览：手机端保持三行横向统计带，兼顾纵向高度与滑动距离。 */
+  .global-stats-cards .review-summary-grid {
+    display: grid;
+    grid-template-columns: none !important;
+    grid-template-rows: repeat(3, 88px);
+    grid-auto-flow: column;
+    grid-auto-columns: clamp(132px, 42vw, 156px);
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 0 2px 7px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .global-stats-cards .review-summary-grid::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .global-stats-cards .review-summary-grid::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(7, 60, 135, 0.22);
+  }
+
+  .global-stats-cards .review-summary-grid .review-metric {
+    height: 88px;
+    min-height: 0;
+    padding: 9px 10px;
+    overflow: hidden;
+    scroll-snap-align: start;
+  }
+
+  .global-stats-cards .review-summary-grid .review-metric span,
+  .global-stats-cards .review-summary-grid .review-metric em {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .global-stats-cards .review-summary-grid .review-metric strong {
+    margin: 4px 0 2px;
+    font-size: 22px;
+  }
+
+  .global-stats-cards .review-summary-grid .review-metric em {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
   .review-record-wrap,
   .historical-score-panel,
   .trend-table-wrap,
