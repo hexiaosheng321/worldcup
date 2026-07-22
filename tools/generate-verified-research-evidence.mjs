@@ -18,6 +18,16 @@ const officialByMatch = {
   "1338441": { title: "UEFA Sabah vs KuPS 官方比赛页", url: "https://www.uefa.com/uefachampionsleague/match/2048715--sabah-vs-kups-kuopio/" },
   "1331030": { title: "UEFA Aarhus vs Lech Poznań 官方比赛页", url: "https://www.uefa.com/uefachampionsleague/match/2048717--aarhus-vs-lech-poznan/" },
   "1331048": { title: "UEFA Sturm Graz 2026/27官方赛程", url: "https://www.uefa.com/uefachampionsleague/clubs/50111--sturm-graz/matches/" },
+  "1320364": { title: "K League FC Seoul vs Pohang Steelers 官方比赛页", url: "https://tv.kleague.com/en-int/player/fc-seoul-pohang-steelers/2185790" },
+  "1320362": { title: "K League Bucheon FC 1995 vs FC Anyang 官方赛程", url: "https://tv.kleague.com/en-int/page/fc-anyang" },
+  "1320363": { title: "K League Gwangju FC vs Gimcheon Sangmu FC 官方赛程", url: "https://tv.kleague.com/en-int/player/fc-anyang-gwangju-fc/2185731" },
+  "1327268": { title: "Eliteserien Bodø/Glimt vs HamKam 官方赛程", url: "https://www.eliteserien.no/terminliste" },
+  "1327714": { title: "Eliteserien Lillestrøm vs Viking 官方赛程", url: "https://www.eliteserien.no/terminliste" },
+  "1324072": { title: "Inter Miami CF vs Chicago Fire FC 官方比赛页", url: "https://www.intermiamicf.com/competitions/mls-regular-season/2026/matches/miavschi-07-22-2026/" },
+  "1324082": { title: "LAFC vs Real Salt Lake 官方赛前页", url: "https://www.lafc.com/news/preview-lafc-vs-real-salt-lake-2026-mls-season-july-22" },
+  "1316888": { title: "CBF Chapecoense vs Flamengo 官方比赛页", url: "https://www.cbf.com.br/futebol-brasileiro/jogos/campeonato-brasileiro/serie-a/2026/chapecoense-x-flamengo/832079" },
+  "1316881": { title: "CBF São Paulo vs Athletico Paranaense 官方比赛页", url: "https://www.cbf.com.br/futebol-brasileiro/jogos/campeonato-brasileiro/serie-a/2026/sao-paulo-x-athletico-paranaense/832072" },
+  "1331035": { title: "UEFA Omonia vs Kairat Almaty 官方比赛页", url: "https://www.uefa.com/uefachampionsleague/match/2048720--omonia-vs-kairat-almaty/" },
 };
 const uefaQualifyingSource = { title: "UEFA 2026/27欧冠资格赛官方赛程与赛制", url: "https://www.uefa.com/uefachampionsleague/news/02a6-20e5a8be4e63-ae971c582f8c-1000--champions-league-qualifying-fixtures-dates-how-it-works/" };
 const verifiedRecentByMatch = {

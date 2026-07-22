@@ -1,0 +1,185 @@
+{
+  "match": {
+    "matchId": "1327268",
+    "issue": "三204",
+    "no": "204",
+    "league": "挪超",
+    "home": "博德闪",
+    "away": "汉坎",
+    "matchDate": "2026-07-23",
+    "kickoffTime": "01:00",
+    "handicap": "-2",
+    "competitionStage": ""
+  },
+  "competitionStage": "",
+  "generatedAt": "2026-07-22T06:28:24.862Z",
+  "teamState": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "博德闪赛前可读取8场真实近况，已有样本场均进球2.88、失球0.63；汉坎可读取8场。额外赛果只补球队状态，不进入无赔率Base Case。",
+    "capturedAt": "2026-07-22T06:28:24.862Z",
+    "observedAt": "2026-07-22T06:28:24.862Z",
+    "sources": [
+      {
+        "title": "Eliteserien Bodø/Glimt vs HamKam 官方赛程",
+        "url": "https://www.eliteserien.no/terminliste"
+      },
+      {
+        "title": "足彩AI真实历史样本与SP快照",
+        "url": "https://ticai-model.com/api/bootstrap?scope=full&includeCases=1"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    },
+    "recentMatches": []
+  },
+  "injuries": {
+    "status": "NOT_PUBLISHED",
+    "evidenceGrade": "C",
+    "summary": "锁版检索时，官方赛程与当前公开渠道未发布博德闪 vs 汉坎可核验的最终伤停清单；本层不猜测，量化影响强制为0。",
+    "capturedAt": "2026-07-22T06:28:24.862Z",
+    "observedAt": "2026-07-22T06:28:24.862Z",
+    "sources": [
+      {
+        "title": "Eliteserien Bodø/Glimt vs HamKam 官方赛程",
+        "url": "https://www.eliteserien.no/terminliste"
+      },
+      {
+        "title": "足彩AI真实历史样本与SP快照",
+        "url": "https://ticai-model.com/api/bootstrap?scope=full&includeCases=1"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  },
+  "expectedLineups": {
+    "status": "NOT_PUBLISHED",
+    "evidenceGrade": "C",
+    "summary": "锁版检索时，官方赛程与当前公开渠道未发布博德闪 vs 汉坎可核验的最终预计首发清单；本层不猜测，量化影响强制为0。",
+    "capturedAt": "2026-07-22T06:28:24.862Z",
+    "observedAt": "2026-07-22T06:28:24.862Z",
+    "sources": [
+      {
+        "title": "Eliteserien Bodø/Glimt vs HamKam 官方赛程",
+        "url": "https://www.eliteserien.no/terminliste"
+      },
+      {
+        "title": "足彩AI真实历史样本与SP快照",
+        "url": "https://ticai-model.com/api/bootstrap?scope=full&includeCases=1"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  },
+  "motivation": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "官方赛程确认本场为2026赛季挪超常规联赛，按90分钟结算，无加时和点球分支；未将未核实动机写入概率。",
+    "capturedAt": "2026-07-22T06:28:24.862Z",
+    "observedAt": "2026-07-22T06:28:24.862Z",
+    "sources": [
+      {
+        "title": "Eliteserien Bodø/Glimt vs HamKam 官方赛程",
+        "url": "https://www.eliteserien.no/terminliste"
+      },
+      {
+        "title": "足彩AI真实历史样本与SP快照",
+        "url": "https://ticai-model.com/api/bootstrap?scope=full&includeCases=1"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  },
+  "weatherVenue": {
+    "status": "VERIFIED",
+    "evidenceGrade": "C",
+    "summary": "官方赛程已确认博德闪 vs 汉坎的开赛时间；锁版时未发现官方延期、中立场或极端天气公告，因此该层保持中性0修正。",
+    "capturedAt": "2026-07-22T06:28:24.862Z",
+    "observedAt": "2026-07-22T06:28:24.862Z",
+    "sources": [
+      {
+        "title": "Eliteserien Bodø/Glimt vs HamKam 官方赛程",
+        "url": "https://www.eliteserien.no/terminliste"
+      },
+      {
+        "title": "足彩AI真实历史样本与SP快照",
+        "url": "https://ticai-model.com/api/bootstrap?scope=full&includeCases=1"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  },
+  "styleMatchup": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "风格层只使用真实近期进失球和主客场数据：联赛样本场均总进球3.05，开放度系数1.174；模型已用主客场攻防方差进入xG，未添加主观球风标签。",
+    "capturedAt": "2026-07-22T06:28:24.862Z",
+    "observedAt": "2026-07-22T06:28:24.862Z",
+    "sources": [
+      {
+        "title": "Eliteserien Bodø/Glimt vs HamKam 官方赛程",
+        "url": "https://www.eliteserien.no/terminliste"
+      },
+      {
+        "title": "足彩AI真实历史样本与SP快照",
+        "url": "https://ticai-model.com/api/bootstrap?scope=full&includeCases=1"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  },
+  "marketNews": {
+    "status": "VERIFIED",
+    "evidenceGrade": "A",
+    "summary": "当前胜平负与让球盘来自锁版前快照，SP历史共读取7个有效状态，方向校验后保留7个，总变动幅度0.160；盘口只做有上限校准。",
+    "capturedAt": "2026-07-22T06:28:24.862Z",
+    "observedAt": "2026-07-22T06:28:24.862Z",
+    "sources": [
+      {
+        "title": "Eliteserien Bodø/Glimt vs HamKam 官方赛程",
+        "url": "https://www.eliteserien.no/terminliste"
+      },
+      {
+        "title": "足彩AI真实历史样本与SP快照",
+        "url": "https://ticai-model.com/api/bootstrap?scope=full&includeCases=1"
+      }
+    ],
+    "impact": {
+      "home": 0,
+      "draw": 0,
+      "away": 0,
+      "xgHome": 0,
+      "xgAway": 0
+    }
+  }
+}
