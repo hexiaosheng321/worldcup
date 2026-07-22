@@ -49,13 +49,15 @@ body.dashboard-mode .home-topbar {
   .home-topbar,
   body.home-mode .home-topbar {
     display: flex;
-    flex-flow: row nowrap;
+    flex-flow: row wrap;
     align-items: center;
-    gap: 10px;
+    column-gap: 10px;
+    row-gap: 6px;
     padding: 8px 10px;
   }
 
   .home-logo {
+    order: 1;
     flex: 0 0 auto;
   }
 
@@ -63,12 +65,21 @@ body.dashboard-mode .home-topbar {
     max-width: 112px;
   }
 
+  .home-screen .home-topbar nav,
   .home-topbar nav {
-    flex: 1 1 auto;
-    flex-wrap: nowrap;
+    order: 3;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 0 0 100%;
     min-width: 0;
-    width: auto;
+    width: 100%;
+    gap: 4px;
     padding-bottom: 0;
+  }
+
+  .home-topbar .language-switcher {
+    order: 2;
+    margin-left: auto;
   }
 
   .home-topbar nav button,
@@ -91,7 +102,8 @@ body.dashboard-mode .home-topbar {
 
   .home-topbar,
   body.home-mode .home-topbar {
-    gap: 8px;
+    column-gap: 8px;
+    row-gap: 6px;
     min-height: 64px;
     padding: 9px 10px;
   }
@@ -103,12 +115,24 @@ body.dashboard-mode .home-topbar {
     letter-spacing: 0.04em;
   }
 
+  .home-screen .home-topbar nav,
   .home-topbar nav {
-    gap: 6px;
+    gap: 4px;
   }
 
   .home-topbar nav button,
-  body.home-mode .home-topbar nav button,
+  body.home-mode .home-topbar nav button {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 4px 3px;
+    font-size: clamp(10px, 2.9vw, 12px);
+    line-height: 1.15;
+    letter-spacing: 0;
+    text-align: center;
+    white-space: normal;
+  }
+
   .tab {
     min-height: 38px;
     padding: 0 12px;
