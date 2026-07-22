@@ -1,6 +1,5 @@
 window.WC_SIMILAR_CASE_ENGINE = (() => {
   const SIMILARITY_WEIGHTS = {
-    league: 0.03,
     modelProb: 0.22,
     sportterySp: 0.15,
     valueGap: 0.15,
@@ -55,15 +54,15 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     return text || "未分类赛事";
   }
 
-  function leagueScore(current, sample) {
-    const left = normalizeCompetition(current.league);
-    const right = normalizeCompetition(sample.league);
-    if (left === right) return 100;
-    return 0;
-  }
-
   function sameCompetition(current, sample) {
     return normalizeCompetition(current.league) === normalizeCompetition(sample.league);
+  }
+
+  function canonicalDataQuality(value = "MEDIUM") {
+    const quality = String(value || "MEDIUM").trim().toUpperCase();
+    if (["A", "HIGH"].includes(quality)) return "HIGH";
+    if (["B", "MEDIUM"].includes(quality)) return "MEDIUM";
+    return "LOW";
   }
 
   function formatScore(home, away) {
@@ -121,6 +120,10 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
     return item?.sampleType === "external-history" || item?.modelVersion === "EXTERNAL_HISTORY";
   }
 
+  function isFormalEvaluatedSample(item) {
+    return ["WIN", "LOSE"].includes(String(item?.hitStatus || "").toUpperCase());
+  }
+
   function externalSampleLabel(item) {
     if (!isExternalSample(item)) return "";
     const hasOdds = hasNumbers(item.sportteryHomeSp, item.sportteryDrawSp, item.sportteryAwaySp) || hasNumbers(item.euroHomeOdds, item.euroDrawOdds, item.euroAwayOdds);
@@ -160,7 +163,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   }
 
   function dataQualityRank(value = "MEDIUM") {
-    return { HIGH: 3, MEDIUM: 2, LOW: 1 }[String(value || "MEDIUM").toUpperCase()] || 2;
+    return { HIGH: 3, MEDIUM: 2, LOW: 1 }[canonicalDataQuality(value)] || 1;
   }
 
   function compareSamplePriority(left, right) {
@@ -192,7 +195,6 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       if (!Number.isFinite(score)) return;
       parts.push({ key, score: clampScore(score), weight: SIMILARITY_WEIGHTS[key] || 0 });
     }
-    add("league", leagueScore(current, sample));
     if (hasNumbers(current.modelHomeProb, current.modelDrawProb, current.modelAwayProb, sample.modelHomeProb, sample.modelDrawProb, sample.modelAwayProb)) {
       const distance =
         Math.abs(current.modelHomeProb - sample.modelHomeProb) +
@@ -242,8 +244,7 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   }
 
   function isDistributionOnlySample(current, sample, parts = similarityParts(current, sample)) {
-    const comparableKeys = parts.map((item) => item.key).filter((key) => key !== "league");
-    return comparableKeys.length === 0 && sameCompetition(current, sample) && isExternalSample(sample);
+    return parts.length === 0 && sameCompetition(current, sample) && isExternalSample(sample);
   }
 
   function calculateSimilarity(current, sample) {
@@ -266,11 +267,13 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
   }
 
   function buildSimilarCaseStats(cases, current) {
-    const lockedCases = cases.filter((item) => !isExternalSample(item));
+    const internalCases = cases.filter((item) => !isExternalSample(item));
+    const lockedCases = internalCases.filter(isFormalEvaluatedSample);
     const externalCases = cases.filter(isExternalSample);
+    const eligibleCases = [...lockedCases, ...externalCases];
     const sameRecommendation = lockedCases.filter((item) => item.recommendationSide === current.recommendationSide);
     const sameGrade = lockedCases.filter((item) => item.finalGrade === current.finalGrade);
-    const policy = samplePolicy(cases.length);
+    const policy = samplePolicy(eligibleCases.length);
     const policyLabel =
       lockedCases.length >= 30
         ? policy.label
@@ -284,29 +287,30 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
           ? "外部历史样本达到 30 场，可参与赛果、进球、比分分布校验，但不直接修正模型命中率。"
           : policy.note;
     return {
-      sampleCount: cases.length,
+      sampleCount: eligibleCases.length,
       lockedSampleCount: lockedCases.length,
+      voidExcludedCount: internalCases.length - lockedCases.length,
       externalSampleCount: externalCases.length,
       competition: normalizeCompetition(current.league),
       samplePolicy: policy.level,
       samplePolicyLabel: policyLabel,
       samplePolicyNote: policyNote,
-      homeWinRate: rate(cases, (item) => item.actualResult === "HOME"),
-      drawRate: rate(cases, (item) => item.actualResult === "DRAW"),
-      awayWinRate: rate(cases, (item) => item.actualResult === "AWAY"),
-      avgGoals: average(cases, (item) => Number(item.actualGoals)),
-      totalGoalDistribution: countBy(cases, (item) => `${Number(item.actualGoals)}球`),
-      commonScores: countBy(cases, (item) => formatScore(item.actualHomeGoals, item.actualAwayGoals)),
-      handicapDistribution: countBy(cases, handicapResult),
-      over25Rate: rate(cases, (item) => Number(item.actualGoals) > 2.5),
-      under25Rate: rate(cases, (item) => Number(item.actualGoals) <= 2.5),
+      homeWinRate: rate(eligibleCases, (item) => item.actualResult === "HOME"),
+      drawRate: rate(eligibleCases, (item) => item.actualResult === "DRAW"),
+      awayWinRate: rate(eligibleCases, (item) => item.actualResult === "AWAY"),
+      avgGoals: average(eligibleCases, (item) => Number(item.actualGoals)),
+      totalGoalDistribution: countBy(eligibleCases, (item) => `${Number(item.actualGoals)}球`),
+      commonScores: countBy(eligibleCases, (item) => formatScore(item.actualHomeGoals, item.actualAwayGoals)),
+      handicapDistribution: countBy(eligibleCases, handicapResult),
+      over25Rate: rate(eligibleCases, (item) => Number(item.actualGoals) > 2.5),
+      under25Rate: rate(eligibleCases, (item) => Number(item.actualGoals) <= 2.5),
       sameRecommendationCount: sameRecommendation.length,
       sameRecommendationHitRate: rate(sameRecommendation, (item) => item.hitStatus === "WIN"),
       marketFavoriteHitRate: rate(externalCases, (item) => item.hitStatus === "WIN"),
       sameGradeCount: sameGrade.length,
       sameGradeHitRate: rate(sameGrade, (item) => item.hitStatus === "WIN"),
-      avgRiskScore: average(cases, (item) => Number(item.riskScore)),
-      avgConsistencyScore: average(cases, (item) => Number(item.consistencyScore)),
+      avgRiskScore: average(eligibleCases, (item) => Number(item.riskScore)),
+      avgConsistencyScore: average(eligibleCases, (item) => Number(item.consistencyScore)),
       upsetRate: rate(lockedCases, (item) => ["C", "D"].includes(item.finalGrade) && item.hitStatus === "WIN"),
     };
   }
@@ -372,7 +376,8 @@ window.WC_SIMILAR_CASE_ENGINE = (() => {
       .filter((item) => item.modelVersion === "V4" || isExternalSample(item))
       .filter((item) => String(item.matchId) !== String(currentMatch.matchId))
       .filter((item) => sameCompetition(currentMatch, item))
-      .filter((item) => ["HIGH", "MEDIUM"].includes(item.dataQuality || "MEDIUM"))
+      .filter((item) => ["HIGH", "MEDIUM"].includes(canonicalDataQuality(item.dataQuality)))
+      .filter((item) => isExternalSample(item) || isFormalEvaluatedSample(item))
       .map((item) => ({
         ...item,
         similarityScore: calculateSimilarity(currentMatch, item),

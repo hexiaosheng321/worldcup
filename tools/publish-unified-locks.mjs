@@ -153,7 +153,7 @@ for (const id of ids) {
       `02 赛事规则与动机：${research.motivation}`,
       `03 球队状态：${lock.teamState}`,
       `04 风格对位：${research.styleMatchup}`,
-      `05 盘口与样本：完整盘口样本${run.featureSet.sampleCount}场，两队近期赛果已读取并去重。`,
+      `05 盘口与样本：同联赛历史背景样本${run.featureSet.sampleCount}场（不等同于内部正式 Case Base），两队近期赛果已读取并去重。`,
       `06 赔率动态：${movement.market || "HAD"} ${first.updateDate || ""} ${first.updateTime || ""} ${first.h}/${first.d}/${first.a} -> ${latest.updateDate || ""} ${latest.updateTime || ""} ${latest.h}/${latest.d}/${latest.a}，状态${movement.marketState}。`,
       `07 总进球/比分分轨：总进球${decision.totalGoalsPick}按完整总球边际概率前二生成；比分${decision.scores.join(" / ")}只作叶子输出，按R16前向契约保持C级观察，不反向改写总进球。`,
       `08 让球独立闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%；正式单选固定为独立边际第一项${decision.handicapPick}，条件Challenger为${run.featureSet?.conditionalHandicapChallenger?.pick || "-"}。`,

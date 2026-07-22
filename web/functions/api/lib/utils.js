@@ -48,6 +48,17 @@ export function n(value, fallback = null) {
   return Number.isFinite(number) ? number : fallback;
 }
 
+export function canonicalDataQuality(value = "MEDIUM") {
+  const quality = String(value || "MEDIUM").trim().toUpperCase();
+  if (["A", "HIGH"].includes(quality)) return "HIGH";
+  if (["B", "MEDIUM"].includes(quality)) return "MEDIUM";
+  return "LOW";
+}
+
+export function caseDataQualityEligible(value = "MEDIUM") {
+  return ["HIGH", "MEDIUM"].includes(canonicalDataQuality(value));
+}
+
 export const BJT_OFFSET_MS = 8 * 60 * 60 * 1000;
 export const AUTO_DECISION_CUTOFF = "19:50";
 export const SALE_CLOSE_TIME = "22:00";
@@ -193,7 +204,7 @@ export function rowToCase(row) {
     euroHomeProb: row.euro_home_prob,
     euroDrawProb: row.euro_draw_prob,
     euroAwayProb: row.euro_away_prob,
-    dataQuality: row.data_quality,
+    dataQuality: canonicalDataQuality(row.data_quality),
     actualResult: row.actual_result,
     actualHomeGoals: payload.actualHomeGoals,
     actualAwayGoals: payload.actualAwayGoals,

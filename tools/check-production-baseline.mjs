@@ -20,6 +20,7 @@ const unifiedPublisher = fs.readFileSync("tools/publish-unified-locks.mjs", "utf
 const i18n = fs.readFileSync("web/app/app-i18n.js", "utf8");
 const baseStyles = fs.readFileSync("web/styles-base.css", "utf8");
 const reviewEngine = fs.readFileSync("web/lib/reviewEngine.js", "utf8");
+const similarCaseEngine = fs.readFileSync("web/lib/similarCaseEngine.js", "utf8");
 const r15Backtest = fs.readFileSync("web/lib/r15Backtest.js", "utf8");
 const firecrawlContext = fs.readFileSync("web/data/firecrawlObjectiveContext.js", "utf8");
 const spCompactionMigration = fs.readFileSync("migrations/0006_compact_existing_sp_snapshots.sql", "utf8");
@@ -48,6 +49,21 @@ if (foundRetired.length) {
 }
 if (detailApp.includes("完整推演总览")) {
   throw new Error("Production baseline rejects the duplicated full-projection summary above the lock action.");
+}
+for (const marker of ["内部正式 Case Base 诊断", "影子观察只作诊断，不计正式命中率", "外部历史样本不进入正式命中率分母", "VOID/未验票及影子观察不计正式分母", "threshold: 65"]) {
+  if (!detailApp.includes(marker)) throw new Error(`Production baseline missing Case Base boundary marker: ${marker}`);
+}
+if (!index.includes("case-base-boundaries=20260722_v2")) {
+  throw new Error("Production baseline requires the Case Base boundary cache namespace.");
+}
+for (const marker of ["sameLeagueSettledCount", "championFormalCount", "formalEvaluatedCount", "voidExcludedCount", "shadowObservationCount", "qualityEligibleCount", "featureComparableCount", "thresholdMatchedCount"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing similar-case diagnostic stage: ${marker}`);
+}
+if (api.includes('addPart(parts, "league"') || similarCaseEngine.includes('add("league"')) {
+  throw new Error("Production baseline requires league to remain a hard filter rather than a repeated similarity weight.");
+}
+if (unifiedPublisher.includes("完整盘口样本") || !unifiedPublisher.includes("同联赛历史背景样本")) {
+  throw new Error("Production baseline requires historical-background wording to stay distinct from formal Case Base counts.");
 }
 
 const requiredMarkers = [
@@ -606,7 +622,7 @@ for (const marker of ["sportteryDetailNavigationPending", "previousScrollY", 'be
   }
 }
 
-for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-wdl-calibrator.mjs", "tools/test-live-score-targets.mjs", "tools/test-online-stability.mjs", "tools/test-postponed-review-lifecycle.mjs"]) {
+for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-case-base-boundaries.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-wdl-calibrator.mjs", "tools/test-live-score-targets.mjs", "tools/test-online-stability.mjs", "tools/test-postponed-review-lifecycle.mjs"]) {
   execFileSync(process.execPath, [testFile], { stdio: "inherit" });
 }
 

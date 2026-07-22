@@ -12,6 +12,7 @@
     "prediction:unified": "node tools/run-unified-prediction.mjs",
     "prediction:test": "node tools/test-unified-prediction-engine.mjs",
     "competition:test": "node tools/test-competition-normalization.mjs",
+    "case-boundaries:test": "node tools/test-case-base-boundaries.mjs",
     "venue-samples:test": "node tools/test-direct-venue-samples.mjs",
     "review:test": "node tools/test-review-learning.mjs",
     "r15-backtest:test": "node tools/test-r15-backtest.mjs",

@@ -4014,27 +4014,36 @@ function renderD1Rate(hitRateValue, count) {
 
 function renderD1CaseBaseContent(result) {
   const stats = result?.stats || {};
+  const diagnostics = result?.diagnostics || {};
   const failureReasons = stats.failureReasons || [];
   const advice = result?.downgradeAdvice || {};
   const warningFlags = result?.warningFlags || [];
   return `
     <div class="similar-case-summary d1-case-summary">
-      <article><small>相似历史样本数</small><strong>${Number(result?.sampleCount || stats.sampleCount || 0)}场</strong></article>
-      <article><small>同联赛同盘口命中率</small><strong>${renderD1Rate(stats.sameLeagueHandicapHitRate, stats.sameLeagueHandicapCount)}</strong></article>
-      <article><small>同模型版本命中率</small><strong>${renderD1Rate(stats.sameModelVersionHitRate, stats.sameModelVersionCount)}</strong></article>
+      <article><small>内部正式相似案例</small><strong>${Number(result?.sampleCount || stats.sampleCount || 0)}场</strong></article>
+      <article><small>同联赛已结算</small><strong>${Number(diagnostics.sameLeagueSettledCount || 0)}场</strong></article>
+      <article><small>Champion 角色</small><strong>${Number(diagnostics.championFormalCount || 0)}场</strong></article>
+      <article><small>正式已验票</small><strong>${Number(diagnostics.formalEvaluatedCount || 0)}场</strong></article>
+      <article><small>VOID/未验票排除</small><strong>${Number(diagnostics.voidExcludedCount || 0)}场</strong></article>
+      <article><small>影子观察</small><strong>${Number(diagnostics.shadowObservationCount || 0)}场</strong></article>
+      <article><small>质量合格</small><strong>${Number(diagnostics.qualityEligibleCount || 0)}场</strong></article>
+      <article><small>特征可比较</small><strong>${Number(diagnostics.featureComparableCount || 0)}场</strong></article>
+      <article><small>达到 ${Number(diagnostics.threshold || 65)} 分</small><strong>${Number(diagnostics.thresholdMatchedCount || 0)}场</strong></article>
       <article><small>是否建议降级</small><strong>${advice.level || (advice.downgrade ? "降级" : "维持")}</strong></article>
     </div>
     <div class="similar-case-practical">
+      <article><small>同联赛同盘口命中率</small><strong>${renderD1Rate(stats.sameLeagueHandicapHitRate, stats.sameLeagueHandicapCount)}</strong></article>
+      <article><small>同模型版本命中率</small><strong>${renderD1Rate(stats.sameModelVersionHitRate, stats.sameModelVersionCount)}</strong></article>
       <article><small>常见失败原因</small><strong>${
         failureReasons.length
           ? failureReasons.map((item) => `${item.label} ${item.count}次`).join(" / ")
           : "暂无失败样本"
       }</strong></article>
-      <article><small>样本使用规则</small><strong>${stats.samplePolicyLabel || "只展示不修正"}：${stats.samplePolicyNote || "等待 D1 样本补齐"}</strong></article>
+      <article><small>样本使用规则</small><strong>${stats.samplePolicyLabel || "只展示不修正"}：仅 WIN/LOSE 的内部正式案例进入命中率与置信修正；VOID/未验票及影子观察不计正式分母。</strong></article>
       <article><small>降级说明</small><strong>${advice.reason || "暂无触发降级条件"}</strong></article>
       <article><small>风险提示</small><strong>${warningFlags.length ? warningFlags.join(" / ") : "暂无 D1 风险提示"}</strong></article>
     </div>
-    <p class="similar-case-summary-text">${result?.summaryText || "D1 Case Base 已接入，等待样本扩充。"}</p>
+    <p class="similar-case-summary-text">${result?.summaryText || "内部正式 Case Base 已接入，等待样本扩充。"}</p>
   `;
 }
 
@@ -4042,14 +4051,14 @@ function renderD1CaseBasePanel(pred, match) {
   if (!pred || !match) return "";
   return `
     <section class="match-page-section similar-case-panel d1-case-panel" id="${d1CasePanelId(pred, match)}" data-d1-case-panel>
-      <span>D1 Case Base 诊断</span>
+      <span>内部正式 Case Base 诊断</span>
       <div class="similar-case-summary">
-        <article><small>相似历史样本数</small><strong>读取中</strong></article>
+        <article><small>内部正式相似案例</small><strong>读取中</strong></article>
         <article><small>同联赛同盘口命中率</small><strong>读取中</strong></article>
         <article><small>同模型版本命中率</small><strong>读取中</strong></article>
         <article><small>是否建议降级</small><strong>读取中</strong></article>
       </div>
-      <p class="similar-case-summary-text">正在从 D1 Case Base 读取相似案例。</p>
+      <p class="similar-case-summary-text">正在读取内部正式案例及过滤漏斗；影子观察只作诊断，不计正式命中率。</p>
     </section>
   `;
 }
@@ -4059,21 +4068,21 @@ async function refreshD1CaseBasePanel(pred, match) {
   if (!panel || !pred || !match) return;
   const lock = lockFromPrediction(pred, match);
   if (!lock || !window.WC_CLOUD_STORE?.similarCases) {
-    panel.innerHTML = `<span>D1 Case Base 诊断</span><p class="similar-case-summary-text">D1 接口暂不可用，本页只显示本地相似样本。</p>`;
+    panel.innerHTML = `<span>内部正式 Case Base 诊断</span><p class="similar-case-summary-text">D1 接口暂不可用，本页只显示本地相似样本。</p>`;
     return;
   }
   const result = await window.WC_CLOUD_STORE.similarCases({
     ...lock,
-    threshold: 55,
+    threshold: 65,
     sampleLimit: 80,
     topLimit: 6,
     modelVersion: predictionModelVersion(pred),
   });
   if (!result?.ok) {
-    panel.innerHTML = `<span>D1 Case Base 诊断</span><p class="similar-case-summary-text">D1 暂未返回可用 Case Base：${result?.data?.error || result?.error || "等待云端同步"}</p>`;
+    panel.innerHTML = `<span>内部正式 Case Base 诊断</span><p class="similar-case-summary-text">D1 暂未返回可用 Case Base：${result?.data?.error || result?.error || "等待云端同步"}</p>`;
     return;
   }
-  panel.innerHTML = `<span>D1 Case Base 诊断</span>${renderD1CaseBaseContent(result)}`;
+  panel.innerHTML = `<span>内部正式 Case Base 诊断</span>${renderD1CaseBaseContent(result)}`;
 }
 
 async function writePredictionLockToD1(pred, match, button) {
@@ -4265,12 +4274,12 @@ function renderSimilarCasePanel(pred, match) {
       <div class="similar-case-summary">
         <article><small>样本范围</small><strong>${stats.competition || "同赛事"}</strong></article>
         <article><small>使用方式</small><strong>${caseUsageText}</strong></article>
-        <article><small>匹配样本</small><strong>${result.sampleCount}</strong></article>
-        <article><small>锁版 / 外部</small><strong>${stats.lockedSampleCount || 0} / ${stats.externalSampleCount || 0}</strong></article>
+        <article><small>外部历史样本</small><strong>${result.sampleCount}</strong></article>
+        <article><small>严格盘口 / 分布补充</small><strong>${strictSampleCount} / ${distributionSampleCount}</strong></article>
         <article><small>主 / 平 / 客</small><strong>${pct(stats.homeWinRate)} / ${pct(stats.drawRate)} / ${pct(stats.awayWinRate)}</strong></article>
         <article><small>平均进球</small><strong>${Number(stats.avgGoals || 0).toFixed(2)}</strong></article>
       </div>
-      <p class="similar-case-summary-text">${caseSummaryText}</p>
+      <p class="similar-case-summary-text">${caseSummaryText} 外部历史样本不进入正式命中率分母。</p>
       <div class="similar-case-distribution">
         <article><small>总进球分布</small><strong>${totalText}</strong></article>
         <article><small>常见比分</small><strong>${scoreText}</strong></article>

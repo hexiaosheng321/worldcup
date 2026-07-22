@@ -1,4 +1,4 @@
-import { AUTO_DECISION_CUTOFF, BJT_OFFSET_MS, SALE_CLOSE_TIME, addMinutes, bjtAt, bjtParts, caseTags, enrichLockRow, evaluateLock, firstLockText, firstNumber, hasFinalApproval, id, isBlankValue, isDefaultNumber, isWorldCupLeague, isoFromMs, javascript, json, jsonHeaders, lockPayloadShape, lockSummaryFromShape, n, parseArray, parseObject, pickSideText, readJson, requireDb, rowToCase, sha256Hex, sideFromResult } from "./lib/utils.js";
+import { AUTO_DECISION_CUTOFF, BJT_OFFSET_MS, SALE_CLOSE_TIME, addMinutes, bjtAt, bjtParts, canonicalDataQuality, caseDataQualityEligible, caseTags, enrichLockRow, evaluateLock, firstLockText, firstNumber, hasFinalApproval, id, isBlankValue, isDefaultNumber, isWorldCupLeague, isoFromMs, javascript, json, jsonHeaders, lockPayloadShape, lockSummaryFromShape, n, parseArray, parseObject, pickSideText, readJson, requireDb, rowToCase, sha256Hex, sideFromResult } from "./lib/utils.js";
 
 async function edgeCached(request, { ttl, keepSearchParams = [] }, buildResponse) {
   if (request.method !== "GET" || typeof caches === "undefined" || !caches.default) {
@@ -212,7 +212,6 @@ async function sportterySitemap(db) {
 
 
 const weights = {
-  league: 0.1,
   modelProb: 0.22,
   sportterySp: 0.15,
   valueGap: 0.15,
@@ -260,7 +259,6 @@ function addPart(parts, key, score) {
 
 function similarity(current, sample) {
   const parts = [];
-  addPart(parts, "league", normalizeCompetition(current.league) === normalizeCompetition(sample.league) ? 100 : 0);
   if (has(current.modelHomeProb, current.modelDrawProb, current.modelAwayProb, sample.modelHomeProb, sample.modelDrawProb, sample.modelAwayProb)) {
     addPart(parts, "modelProb", 100 - (Math.abs(current.modelHomeProb - sample.modelHomeProb) + Math.abs(current.modelDrawProb - sample.modelDrawProb) + Math.abs(current.modelAwayProb - sample.modelAwayProb)) * 100);
   }
@@ -284,6 +282,20 @@ function similarity(current, sample) {
   const totalWeight = parts.reduce((sum, item) => sum + item.weight, 0);
   if (!totalWeight) return 0;
   return Math.round(parts.reduce((sum, item) => sum + item.score * item.weight, 0) / totalWeight);
+}
+
+function comparableFeatureCount(current, sample) {
+  let count = 0;
+  if (has(current.modelHomeProb, current.modelDrawProb, current.modelAwayProb, sample.modelHomeProb, sample.modelDrawProb, sample.modelAwayProb)) count += 1;
+  if (has(current.sportteryHomeSp, current.sportteryDrawSp, current.sportteryAwaySp, sample.sportteryHomeSp, sample.sportteryDrawSp, sample.sportteryAwaySp)) count += 1;
+  if (has(current.valueHomeGap, current.valueDrawGap, current.valueAwayGap, sample.valueHomeGap, sample.valueDrawGap, sample.valueAwayGap)) count += 1;
+  if (has(current.asianHandicap, sample.asianHandicap)) count += 1;
+  if (has(current.asianHomeWater, current.asianAwayWater, sample.asianHomeWater, sample.asianAwayWater)) count += 1;
+  if (has(current.euroHomeProb, current.euroDrawProb, current.euroAwayProb, sample.euroHomeProb, sample.euroDrawProb, sample.euroAwayProb)) count += 1;
+  if (has(current.consistencyScore, sample.consistencyScore)) count += 1;
+  if (has(current.riskScore, sample.riskScore)) count += 1;
+  if (current.finalGrade && sample.finalGrade) count += 1;
+  return count;
 }
 
 function rate(rows, predicate) {
@@ -446,18 +458,21 @@ async function ensureCaseBaseRoleSchema(db) {
 
 async function listCases(db, options = {}) {
   await ensureCaseBaseRoleSchema(db);
-  const limit = Math.min(Math.max(Number(options.limit || 500), 1), 500);
+  const maxLimit = Math.min(Math.max(Number(options.maxLimit || 500), 1), 2000);
+  const limit = Math.min(Math.max(Number(options.limit || 500), 1), maxLimit);
   const league = String(options.league || "").trim();
   const includeShadow = options.includeShadow === true;
+  const includeIneligibleQuality = options.includeIneligibleQuality === true;
   const statement = league
     ? includeShadow
-      ? db.prepare("SELECT * FROM case_base WHERE league = ? AND data_quality IN ('HIGH', 'MEDIUM') ORDER BY created_at DESC LIMIT ?").bind(league, limit)
-      : db.prepare("SELECT * FROM case_base WHERE league = ? AND data_quality IN ('HIGH', 'MEDIUM') AND case_role = 'CHAMPION_FORMAL' ORDER BY created_at DESC LIMIT ?").bind(league, limit)
+      ? db.prepare("SELECT * FROM case_base WHERE league = ? ORDER BY created_at DESC LIMIT ?").bind(league, limit)
+      : db.prepare("SELECT * FROM case_base WHERE league = ? AND case_role = 'CHAMPION_FORMAL' ORDER BY created_at DESC LIMIT ?").bind(league, limit)
     : includeShadow
       ? db.prepare("SELECT * FROM case_base ORDER BY created_at DESC LIMIT ?").bind(limit)
       : db.prepare("SELECT * FROM case_base WHERE case_role = 'CHAMPION_FORMAL' ORDER BY created_at DESC LIMIT ?").bind(limit);
   const { results } = await statement.all();
-  return results.map(rowToCase);
+  const cases = results.map(rowToCase);
+  return includeIneligibleQuality ? cases : cases.filter((item) => caseDataQualityEligible(item.dataQuality));
 }
 
 function rowToExternalSample(row) {
@@ -487,7 +502,7 @@ function rowToExternalSample(row) {
     asianHandicap: row.asian_handicap,
     asianHomeWater: row.asian_home_water,
     asianAwayWater: row.asian_away_water,
-    dataQuality: row.data_quality,
+    dataQuality: canonicalDataQuality(row.data_quality),
     actualResult: row.actual_result,
     actualHomeGoals: row.actual_home_goals,
     actualAwayGoals: row.actual_away_goals,
@@ -519,7 +534,7 @@ function dedupeHistoricalSamples(samples = []) {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(sample);
   });
-  const quality = (sample) => ({ HIGH: 3, MEDIUM: 2, LOW: 1 }[String(sample.dataQuality || "MEDIUM").toUpperCase()] || 2);
+  const quality = (sample) => ({ HIGH: 3, MEDIUM: 2, LOW: 1 }[canonicalDataQuality(sample.dataQuality)] || 1);
   const completeness = (sample) => [sample.sportteryHomeSp, sample.sportteryDrawSp, sample.sportteryAwaySp, sample.asianHandicap, sample.over25Odds, sample.under25Odds].filter((value) => value !== null && value !== undefined && value !== "").length;
   return [...groups.values()].map((rows) => {
     const ranked = [...rows].sort((a, b) => quality(b) - quality(a) || completeness(b) - completeness(a) || Number(b.similarityScore || 0) - Number(a.similarityScore || 0));
@@ -547,7 +562,7 @@ async function historicalSimilarSamples(db, current) {
   const candidateLimit = Math.min(Math.max(Number(current.candidateLimit || 300), 50), 500);
   const threshold = Number(current.threshold ?? 65);
   const bindings = [league];
-  const filters = ["league = ?", "data_quality IN ('HIGH', 'MEDIUM')"];
+  const filters = ["league = ?", "UPPER(data_quality) IN ('A', 'B', 'HIGH', 'MEDIUM')"];
   const preferProjectPrimarySources = new Set(["美职", "巴西甲", "欧联"]).has(league);
   if (preferProjectPrimarySources) {
     filters.push("(source = '500.com' OR LOWER(source) LIKE 'okooo%' OR source = 'completed-match-auto')");
@@ -579,7 +594,7 @@ async function historicalSimilarSamples(db, current) {
   if (strictPool.length < 10) {
     const broad = await db.prepare(`
       SELECT * FROM external_historical_samples
-      WHERE league = ? AND data_quality IN ('HIGH', 'MEDIUM')
+      WHERE league = ? AND UPPER(data_quality) IN ('A', 'B', 'HIGH', 'MEDIUM')
       ${preferProjectPrimarySources ? "AND (source = '500.com' OR LOWER(source) LIKE 'okooo%' OR source = 'completed-match-auto')" : ""}
       ORDER BY kickoff_time DESC LIMIT ?
     `).bind(league, candidateLimit).all();
@@ -1644,12 +1659,13 @@ async function createCaseForLock(db, lockId) {
     await db.prepare(`
       UPDATE case_base
       SET case_role = ?, source_lock_type = ?, preferred_at_settlement = ?,
-          actual_result = ?, actual_goals = ?, hit_status = ?, failure_tags_json = ?, success_tags_json = ?, payload_json = ?
+          data_quality = ?, actual_result = ?, actual_goals = ?, hit_status = ?, failure_tags_json = ?, success_tags_json = ?, payload_json = ?
       WHERE source_lock_id = ?
     `).bind(
       caseRole,
       lock.lock_type,
       preferredAtSettlement ? 1 : 0,
+      canonicalDataQuality(lock.data_quality),
       result.result_1x2,
       result.total_goals,
       review.hitStatus,
@@ -1681,7 +1697,7 @@ async function createCaseForLock(db, lockId) {
     lock.sporttery_home_sp, lock.sporttery_draw_sp, lock.sporttery_away_sp, lock.sporttery_home_prob, lock.sporttery_draw_prob, lock.sporttery_away_prob,
     lock.value_home_gap, lock.value_draw_gap, lock.value_away_gap, lock.asian_handicap, lock.asian_home_water, lock.asian_away_water,
     lock.euro_home_odds, lock.euro_draw_odds, lock.euro_away_odds, lock.euro_home_prob, lock.euro_draw_prob, lock.euro_away_prob,
-    lock.data_quality, result.result_1x2, result.total_goals, review.hitStatus,
+    canonicalDataQuality(lock.data_quality), result.result_1x2, result.total_goals, review.hitStatus,
     JSON.stringify(tags.failureTags),
     JSON.stringify(tags.successTags),
     JSON.stringify(diagnosticPayload),
@@ -3279,7 +3295,7 @@ async function createAutoLocks(db, matches, capturedAt) {
       lock.sportteryHomeProb,
       lock.sportteryDrawProb,
       lock.sportteryAwayProb,
-      lock.dataQuality,
+      canonicalDataQuality(lock.dataQuality),
       lock.reasoningSummary,
       JSON.stringify([prediction.decisionConflict].filter(Boolean)),
       JSON.stringify(lock.payload)
@@ -5817,7 +5833,7 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         n(body.asianHandicap ?? body.asian_handicap, null), n(body.asianHomeWater ?? body.asian_home_water, null), n(body.asianAwayWater ?? body.asian_away_water, null),
         n(body.euroHomeOdds ?? body.euro_home_odds, null), n(body.euroDrawOdds ?? body.euro_draw_odds, null), n(body.euroAwayOdds ?? body.euro_away_odds, null),
         n(body.euroHomeProb ?? body.euro_home_prob, null), n(body.euroDrawProb ?? body.euro_draw_prob, null), n(body.euroAwayProb ?? body.euro_away_prob, null),
-        body.dataQuality || body.data_quality || payloadSummary.dataQuality || "MEDIUM", body.reasoningSummary || body.reasoning_summary || payloadSummary.reasoningSummary || "", JSON.stringify(body.downgradeReasons || body.downgrade_reasons || []), JSON.stringify(body)
+        canonicalDataQuality(body.dataQuality || body.data_quality || payloadSummary.dataQuality || "MEDIUM"), body.reasoningSummary || body.reasoning_summary || payloadSummary.reasoningSummary || "", JSON.stringify(body.downgradeReasons || body.downgrade_reasons || []), JSON.stringify(body)
       ).run();
       return json({ ok: true, lockId });
     }
@@ -6126,30 +6142,57 @@ if (path === "sync/okooo-live" && request.method === "POST") {
 
     if (path === "similar-cases" && request.method === "POST") {
       const current = await readJson(request);
-      const cases = await listCases(db, { league: normalizeCompetition(current.league), limit: 500 });
-      const pool = cases
+      const threshold = Number(current.threshold ?? 65);
+      const sampleLimit = Math.min(Math.max(Number(current.sampleLimit || 50), 1), 100);
+      const cases = await listCases(db, {
+        limit: 2000,
+        maxLimit: 2000,
+        includeShadow: true,
+        includeIneligibleQuality: true,
+      });
+      const sameLeagueCases = cases
         .filter((item) => String(item.matchId) !== String(current.matchId))
-        .filter((item) => normalizeCompetition(item.league) === normalizeCompetition(current.league))
-        .filter((item) => ["A", "B", "HIGH", "MEDIUM"].includes(String(item.dataQuality || "MEDIUM").toUpperCase()))
+        .filter((item) => normalizeCompetition(item.league) === normalizeCompetition(current.league));
+      const championFormalCases = sameLeagueCases
+        .filter((item) => item.caseRole === "CHAMPION_FORMAL");
+      const formalEvaluatedCases = championFormalCases
+        .filter((item) => ["WIN", "LOSE"].includes(String(item.hitStatus || "").toUpperCase()));
+      const qualityEligibleCases = formalEvaluatedCases
+        .filter((item) => caseDataQualityEligible(item.dataQuality));
+      const featureComparableCases = qualityEligibleCases
+        .filter((item) => comparableFeatureCount(current, item) > 0);
+      const thresholdMatchedCases = featureComparableCases
         .map((item) => ({ ...item, similarityScore: similarity(current, item) }))
-        .filter((item) => item.similarityScore >= (current.threshold ?? 65))
-        .sort((a, b) => b.similarityScore - a.similarityScore)
-        .slice(0, current.sampleLimit || 50);
+        .filter((item) => item.similarityScore >= threshold)
+        .sort((a, b) => b.similarityScore - a.similarityScore);
+      const pool = thresholdMatchedCases.slice(0, sampleLimit);
       const topCases = pool.slice(0, current.topLimit || 5);
       const s = stats(pool, current);
       const adjustment = confidenceAdjustment(s);
       const warningFlags = warnings(s, topCases);
       const advice = downgradeAdvice(s, warningFlags);
+      const diagnostics = {
+        sameLeagueSettledCount: sameLeagueCases.length,
+        championFormalCount: championFormalCases.length,
+        formalEvaluatedCount: formalEvaluatedCases.length,
+        voidExcludedCount: championFormalCases.length - formalEvaluatedCases.length,
+        shadowObservationCount: sameLeagueCases.filter((item) => item.caseRole === "SHADOW_OBSERVATION").length,
+        qualityEligibleCount: qualityEligibleCases.length,
+        featureComparableCount: featureComparableCases.length,
+        thresholdMatchedCount: thresholdMatchedCases.length,
+        threshold,
+      };
       return json({
         ok: true,
         sampleCount: pool.length,
         topCases,
         stats: s,
+        diagnostics,
         confidenceAdjustment: adjustment,
         warningFlags,
         downgradeAdvice: advice,
         summaryText: pool.length < 10
-          ? `当前仅在【${s.competition}】匹配到 ${pool.length} 场相似案例，样本量不足，只展示，不参与置信度修正。`
+          ? `【${s.competition}】同联赛已结算 ${diagnostics.sameLeagueSettledCount} 场，其中 Champion 角色 ${diagnostics.championFormalCount} 场、正式已验票 ${diagnostics.formalEvaluatedCount} 场、VOID 等未正式验票排除 ${diagnostics.voidExcludedCount} 场、影子观察 ${diagnostics.shadowObservationCount} 场；质量合格 ${diagnostics.qualityEligibleCount} 场、特征可比较 ${diagnostics.featureComparableCount} 场、达到 ${threshold} 分阈值 ${diagnostics.thresholdMatchedCount} 场。正式相似案例不足 10 场，只展示，不参与置信度修正。`
           : pool.length < 30
             ? `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%，同模型版本 ${(s.sameModelVersionHitRate * 100).toFixed(1)}%，样本只做风险提示。`
             : `【${s.competition}】同赛事匹配到 ${pool.length} 场，当前推荐历史命中率为 ${(s.sameRecommendationHitRate * 100).toFixed(1)}%，同联赛同盘口 ${(s.sameLeagueHandicapHitRate * 100).toFixed(1)}%。`,
