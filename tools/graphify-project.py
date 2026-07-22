@@ -15,6 +15,7 @@ from pathlib import Path
 
 from graphify.detect import detect
 from graphify.diagnostics import diagnose_extraction
+from graphify.build import build_from_json
 
 
 MANIFEST_NAMES = {
@@ -156,7 +157,11 @@ def resolve_relative_data_asset(root: Path, edge: dict, missing_id: str) -> dict
 
 
 def external_stub(missing_id: str, edge: dict) -> dict:
-    label = missing_id.removeprefix("ref_").replace("_", ":", 1)
+    label = (
+        missing_id.removeprefix("ref_").replace("_", ":", 1)
+        if missing_id.startswith("ref_")
+        else f"external:{missing_id}"
+    )
     return {
         "id": missing_id,
         "label": label,
@@ -375,6 +380,7 @@ def self_test() -> int:
                 {"id": "src_main", "label": "main.js", "file_type": "code", "source_file": "src/main.js"},
                 {"id": "src_defs", "label": "defs.js", "file_type": "code", "source_file": "src/defs.js"},
                 {"id": "src_defs_run", "label": "run()", "file_type": "code", "source_file": "src/defs.js"},
+                {"id": "package_devdependencies_wrangler", "label": "wrangler", "file_type": "code", "source_file": "package.json"},
             ],
             "edges": [
                 {"source": "src_main", "target": "ref_node_fs", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "src/main.js", "source_location": "L1"},
@@ -383,12 +389,13 @@ def self_test() -> int:
                 {"source": "abs_src_main", "target": "src_defs_run", "relation": "indirect_call", "confidence": "INFERRED", "source_file": "src/main.js", "source_location": "L1"},
                 {"source": "src_defs", "target": "src_defs_run", "relation": "contains", "confidence": "EXTRACTED", "source_file": "src/defs.js", "source_location": "L1"},
                 {"source": "src_defs", "target": "src_defs_run", "relation": "indirect_call", "confidence": "INFERRED", "source_file": "src/defs.js", "source_location": "L1"},
+                {"source": "package_devdependencies_wrangler", "target": "wrangler", "relation": "imports", "confidence": "EXTRACTED", "source_file": "package.json", "source_location": "L1"},
             ],
         }
         normalized, stats = normalize_extraction(extraction, root)
         summary = diagnose_extraction(normalized, directed=True, root=root, max_examples=0)
         assert stats == {
-            "external_stubs": 1,
+            "external_stubs": 2,
             "binding_stubs": 1,
             "data_asset_stubs": 1,
             "rewired_sources": 1,
@@ -397,6 +404,9 @@ def self_test() -> int:
         }
         assert summary["dangling_endpoint_edges"] == 0
         assert summary["directed_same_endpoint_collapsed_edges"] == 0
+        graph = build_from_json(normalized, root=root, directed=True)
+        assert "wrangler" in graph
+        assert list(graph.successors("package_devdependencies_wrangler")) == ["wrangler"]
     print("Graphify project adapter self-test: OK")
     return 0
 
