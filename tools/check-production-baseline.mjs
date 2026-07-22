@@ -81,6 +81,33 @@ if (missingRequired.length) {
 if (!index.includes('href="#sporttery" data-sporttery-pool>进入完整赛程 →</a>') || /data-home-enter[^>]*>进入完整赛程 →/.test(index)) {
   throw new Error("Production baseline requires the homepage full-schedule link to open the sporttery pool before and after scripts initialize.");
 }
+const topNavStart = index.indexOf('<nav aria-label="总站模块">');
+const topNavEnd = index.indexOf("</nav>", topNavStart);
+const topNav = topNavStart >= 0 && topNavEnd > topNavStart ? index.slice(topNavStart, topNavEnd) : "";
+const expectedTopNav = [
+  "data-site-home>首页",
+  "data-sporttery-pool>赛事池",
+  "data-odds-map>盘口图谱",
+  "data-site-locks>赛事锁版",
+  "data-model-stats>统计和回测研究",
+  "data-model-intro>模型介绍",
+  "data-about-site>关于本站",
+];
+let topNavCursor = -1;
+for (const marker of expectedTopNav) {
+  const position = topNav.indexOf(marker, topNavCursor + 1);
+  if (position < 0) throw new Error(`Production baseline missing or misordered top navigation item: ${marker}`);
+  topNavCursor = position;
+}
+if (topNav.includes("data-home-enter") || topNav.includes(">世界杯<")) {
+  throw new Error("Production baseline rejects the redundant World Cup entry in the top navigation.");
+}
+if ((index.match(/data-home-enter/g) || []).length !== 1 || !index.includes("data-home-enter>回顾2026世界杯专题</button>")) {
+  throw new Error("Production baseline requires one homepage-only 2026 World Cup review entry.");
+}
+if (!index.includes("20260722_worldcup_review_nav_v1") || !index.includes("worldcup-review-nav=20260722_v1")) {
+  throw new Error("Production baseline requires the World Cup review navigation cache namespace.");
+}
 for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260717_postponed_lifecycle_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing language selector marker: ${marker}`);
 }
@@ -170,7 +197,7 @@ for (const marker of ["activeRoots", "requestAnimationFrame", "loadDictionary", 
 }
 for (const localeFile of ["web/i18n/en.json", "web/i18n/ja.json"]) {
   const locale = fs.readFileSync(localeFile, "utf8");
-  for (const marker of ["A级方向命中率", "B级方向命中率", "C级方向命中率", "D级方向命中率", "暂无验证样本", "延期追踪", "无效样本"]) {
+  for (const marker of ["A级方向命中率", "B级方向命中率", "C级方向命中率", "D级方向命中率", "暂无验证样本", "延期追踪", "无效样本", "赛事锁版", "回顾2026世界杯专题"]) {
     if (!locale.includes(marker)) throw new Error(`Production baseline missing confidence backtest translation in ${localeFile}: ${marker}`);
   }
 }
