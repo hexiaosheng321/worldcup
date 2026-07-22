@@ -77,6 +77,9 @@ const missingRequired = requiredMarkers.filter((marker) => !index.includes(marke
 if (missingRequired.length) {
   throw new Error(`Production baseline missing required World Cup behavior: ${missingRequired.join(", ")}`);
 }
+if (!index.includes('data-sporttery-pool>进入完整赛程 →</button>') || index.includes('data-home-enter>进入完整赛程 →</button>')) {
+  throw new Error("Production baseline requires the homepage full-schedule entry to open the sporttery pool.");
+}
 for (const marker of ["data-language-toggle", "data-language-option=\"zh-CN\"", "data-language-option=\"ja\"", "data-language-option=\"en\"", "app/app-i18n.js?v=20260717_postponed_lifecycle_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing language selector marker: ${marker}`);
 }
