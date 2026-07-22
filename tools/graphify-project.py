@@ -79,7 +79,7 @@ def normalized_symbol(value: str) -> str:
 def resolve_imported_binding(root: Path, edge: dict, missing_id: str) -> dict | None:
     source_file = str(edge.get("source_file", ""))
     location = str(edge.get("source_location", ""))
-    if edge.get("relation") != "imports" or not source_file or not location.startswith("L"):
+    if edge.get("relation") not in {"imports", "imports_from"} or not source_file or not location.startswith("L"):
         return None
     importer = (root / source_file).resolve()
     try:
@@ -119,6 +119,38 @@ def resolve_imported_binding(root: Path, edge: dict, missing_id: str) -> dict | 
         "type": "exported_binding_reference",
         "source_file": str(target_file.relative_to(root.resolve())),
         "source_location": f"L{definition_line}",
+        "_origin": "project_graphify_adapter",
+    }
+
+
+def resolve_relative_data_asset(root: Path, edge: dict, missing_id: str) -> dict | None:
+    source_file = str(edge.get("source_file", ""))
+    location = str(edge.get("source_location", ""))
+    if edge.get("relation") not in {"imports", "imports_from"} or not source_file or not location.startswith("L"):
+        return None
+    importer = (root / source_file).resolve()
+    try:
+        line_no = int(location[1:].split("-")[0])
+        line = importer.read_text(encoding="utf-8").splitlines()[line_no - 1]
+    except (OSError, ValueError, IndexError):
+        return None
+    module_match = re.search(r"\bfrom\s+['\"]([^'\"]+)['\"]", line)
+    if not module_match or not module_match.group(1).startswith("."):
+        return None
+    target_file = (importer.parent / module_match.group(1)).resolve()
+    if target_file.suffix.lower() != ".json" or not target_file.is_file():
+        return None
+    try:
+        relative = target_file.relative_to(root.resolve())
+    except ValueError:
+        return None
+    return {
+        "id": missing_id,
+        "label": target_file.name,
+        "file_type": "concept",
+        "type": "data_asset",
+        "source_file": str(relative),
+        "source_location": "L1",
         "_origin": "project_graphify_adapter",
     }
 
@@ -178,7 +210,13 @@ def normalize_extraction(extraction: dict, root: Path) -> tuple[dict, dict]:
     nodes = result.setdefault("nodes", [])
     edges = result.setdefault("edges", [])
     ids = node_ids(result)
-    stats = {"external_stubs": 0, "binding_stubs": 0, "rewired_sources": 0, "unresolved": []}
+    stats = {
+        "external_stubs": 0,
+        "binding_stubs": 0,
+        "data_asset_stubs": 0,
+        "rewired_sources": 0,
+        "unresolved": [],
+    }
 
     for edge in edges:
         source, target = endpoints(edge)
@@ -195,16 +233,20 @@ def normalize_extraction(extraction: dict, root: Path) -> tuple[dict, dict]:
                 stub = external_stub(missing_id, edge)
                 stats["external_stubs"] += 1
             else:
-                stub = resolve_imported_binding(root, edge, missing_id)
-                if stub is None:
-                    stats["unresolved"].append({
-                        "side": side, "id": missing_id,
-                        "source_file": edge.get("source_file", ""),
-                        "source_location": edge.get("source_location", ""),
-                        "relation": edge.get("relation", ""),
-                    })
-                    continue
-                stats["binding_stubs"] += 1
+                stub = resolve_relative_data_asset(root, edge, missing_id)
+                if stub is not None:
+                    stats["data_asset_stubs"] += 1
+                else:
+                    stub = resolve_imported_binding(root, edge, missing_id)
+                    if stub is None:
+                        stats["unresolved"].append({
+                            "side": side, "id": missing_id,
+                            "source_file": edge.get("source_file", ""),
+                            "source_location": edge.get("source_location", ""),
+                            "relation": edge.get("relation", ""),
+                        })
+                        continue
+                    stats["binding_stubs"] += 1
             if stub["id"] not in ids:
                 nodes.append(stub)
                 ids.add(stub["id"])
@@ -243,6 +285,7 @@ def health(root: Path, json_output: bool = False) -> int:
     data_json = (
         list((root / "web/data").glob("*.json"))
         + list((root / "web/i18n").glob("*.json"))
+        + list((root / "tools/data").glob("*.json"))
         + ([root / "web/_routes.json"] if (root / "web/_routes.json").is_file() else [])
     )
     detected_paths = {path.resolve() for path in code_files}
@@ -281,7 +324,9 @@ def health(root: Path, json_output: bool = False) -> int:
             "  raw dangling: "
             f"{raw['dangling_endpoint_edges']} "
             f"(adapter: {adapter['external_stubs']} external stubs, "
-            f"{adapter['binding_stubs']} binding stubs, {adapter['rewired_sources']} source rewrites)"
+            f"{adapter['binding_stubs']} binding stubs, "
+            f"{adapter['data_asset_stubs']} data assets, "
+            f"{adapter['rewired_sources']} source rewrites)"
         )
         print(
             "  directed parallel edges: "
@@ -319,8 +364,12 @@ def self_test() -> int:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         (root / "src").mkdir()
-        (root / "src/main.js").write_text('import { FLAG } from "./defs.js";\n', encoding="utf-8")
+        (root / "src/main.js").write_text(
+            'import { FLAG } from "./defs.js";\nimport data from "./data.json" with { type: "json" };\n',
+            encoding="utf-8",
+        )
         (root / "src/defs.js").write_text("export const FLAG = true;\n", encoding="utf-8")
+        (root / "src/data.json").write_text('{"ok":true}\n', encoding="utf-8")
         extraction = {
             "nodes": [
                 {"id": "src_main", "label": "main.js", "file_type": "code", "source_file": "src/main.js"},
@@ -330,6 +379,7 @@ def self_test() -> int:
             "edges": [
                 {"source": "src_main", "target": "ref_node_fs", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "src/main.js", "source_location": "L1"},
                 {"source": "src_main", "target": "abs_src_defs_flag", "relation": "imports", "confidence": "EXTRACTED", "source_file": "src/main.js", "source_location": "L1"},
+                {"source": "src_main", "target": "abs_src_data_json", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "src/main.js", "source_location": "L2"},
                 {"source": "abs_src_main", "target": "src_defs_run", "relation": "indirect_call", "confidence": "INFERRED", "source_file": "src/main.js", "source_location": "L1"},
                 {"source": "src_defs", "target": "src_defs_run", "relation": "contains", "confidence": "EXTRACTED", "source_file": "src/defs.js", "source_location": "L1"},
                 {"source": "src_defs", "target": "src_defs_run", "relation": "indirect_call", "confidence": "INFERRED", "source_file": "src/defs.js", "source_location": "L1"},
@@ -340,6 +390,7 @@ def self_test() -> int:
         assert stats == {
             "external_stubs": 1,
             "binding_stubs": 1,
+            "data_asset_stubs": 1,
             "rewired_sources": 1,
             "unresolved": [],
             "folded_parallel_edges": 1,
