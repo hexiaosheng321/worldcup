@@ -1186,6 +1186,10 @@ async function ensureSportteryLockForItem(item = {}, key = "") {
 
 function hasCompleteSportteryLockFields(pred = {}) {
   if (!pred) return false;
+  const isR16 = window.WC_R15_BACKTEST?.isR16Prediction?.(pred) === true;
+  if (isR16) {
+    return Boolean(pred.lockId && window.WC_R15_BACKTEST?.nonScorePredictionAvailable?.(pred));
+  }
   const scores = [pred.mainScore, pred.counterScore].filter(Boolean);
   return Boolean(
     pred.lockId &&

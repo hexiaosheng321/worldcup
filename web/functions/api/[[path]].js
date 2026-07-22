@@ -421,12 +421,41 @@ function downgradeAdvice(s, warningFlags) {
   return { downgrade: false, level: "维持", reason: s.samplePolicyNote || "暂无触发降级条件。" };
 }
 
+let caseBaseRoleSchemaReady = false;
+let inferenceLinkSchemaReady = false;
+
+async function ensureInferenceLinkSchema(db) {
+  if (inferenceLinkSchemaReady) return;
+  const { results } = await db.prepare("PRAGMA table_info(locked_predictions)").all();
+  const columns = new Set((results || []).map((row) => row.name));
+  if (!columns.has("model_run_id")) await db.prepare("ALTER TABLE locked_predictions ADD COLUMN model_run_id TEXT").run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_locked_predictions_model_run ON locked_predictions(model_run_id)").run();
+  inferenceLinkSchemaReady = true;
+}
+
+async function ensureCaseBaseRoleSchema(db) {
+  if (caseBaseRoleSchemaReady) return;
+  const { results } = await db.prepare("PRAGMA table_info(case_base)").all();
+  const columns = new Set((results || []).map((row) => row.name));
+  if (!columns.has("case_role")) await db.prepare("ALTER TABLE case_base ADD COLUMN case_role TEXT NOT NULL DEFAULT 'CHAMPION_FORMAL'").run();
+  if (!columns.has("source_lock_type")) await db.prepare("ALTER TABLE case_base ADD COLUMN source_lock_type TEXT NOT NULL DEFAULT 'FINAL_LOCK'").run();
+  if (!columns.has("preferred_at_settlement")) await db.prepare("ALTER TABLE case_base ADD COLUMN preferred_at_settlement INTEGER NOT NULL DEFAULT 1").run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_case_base_role_league ON case_base(case_role, league, created_at)").run();
+  caseBaseRoleSchemaReady = true;
+}
+
 async function listCases(db, options = {}) {
+  await ensureCaseBaseRoleSchema(db);
   const limit = Math.min(Math.max(Number(options.limit || 500), 1), 500);
   const league = String(options.league || "").trim();
+  const includeShadow = options.includeShadow === true;
   const statement = league
-    ? db.prepare("SELECT * FROM case_base WHERE league = ? AND data_quality IN ('HIGH', 'MEDIUM') ORDER BY created_at DESC LIMIT ?").bind(league, limit)
-    : db.prepare("SELECT * FROM case_base ORDER BY created_at DESC LIMIT ?").bind(limit);
+    ? includeShadow
+      ? db.prepare("SELECT * FROM case_base WHERE league = ? AND data_quality IN ('HIGH', 'MEDIUM') ORDER BY created_at DESC LIMIT ?").bind(league, limit)
+      : db.prepare("SELECT * FROM case_base WHERE league = ? AND data_quality IN ('HIGH', 'MEDIUM') AND case_role = 'CHAMPION_FORMAL' ORDER BY created_at DESC LIMIT ?").bind(league, limit)
+    : includeShadow
+      ? db.prepare("SELECT * FROM case_base ORDER BY created_at DESC LIMIT ?").bind(limit)
+      : db.prepare("SELECT * FROM case_base WHERE case_role = 'CHAMPION_FORMAL' ORDER BY created_at DESC LIMIT ?").bind(limit);
   const { results } = await statement.all();
   return results.map(rowToCase);
 }
@@ -600,6 +629,340 @@ async function listRollingCompletedSamples(db, limit = 500) {
   return (results || []).map(rowToExternalSample);
 }
 
+export const REVIEW_LEARNING_STATUSES = Object.freeze([
+  "OBSERVATION",
+  "PROPOSED",
+  "CHALLENGER",
+  "VALIDATING",
+  "ELIGIBLE",
+  "PROMOTED",
+  "REJECTED",
+  "RETIRED",
+]);
+
+const REVIEW_LEARNING_TRANSITIONS = Object.freeze({
+  OBSERVATION: ["PROPOSED", "RETIRED"],
+  PROPOSED: ["CHALLENGER", "REJECTED", "RETIRED"],
+  CHALLENGER: ["VALIDATING", "REJECTED", "RETIRED"],
+  VALIDATING: ["ELIGIBLE", "REJECTED", "RETIRED"],
+  ELIGIBLE: ["PROMOTED", "REJECTED", "RETIRED"],
+  PROMOTED: ["RETIRED"],
+  REJECTED: ["RETIRED"],
+  RETIRED: [],
+});
+
+const LEGACY_REVIEW_STATUS = Object.freeze({
+  OPEN: "OBSERVATION",
+  OBSERVED: "OBSERVATION",
+  OBSERVATION_ONLY: "OBSERVATION",
+  SHADOW_PENDING: "PROPOSED",
+});
+
+export function normalizeReviewLearningStatus(value = "") {
+  const status = String(value || "").trim().toUpperCase();
+  const normalized = LEGACY_REVIEW_STATUS[status] || status;
+  return REVIEW_LEARNING_STATUSES.includes(normalized) ? normalized : "";
+}
+
+function reviewPrimaryModule(payload = {}) {
+  const promotion = parseObject(payload.challengerPromotion || payload.recommendation?.challengerPromotion);
+  return firstText(payload.primaryModule, payload.primary_module, promotion.primaryModule);
+}
+
+function reviewValidation(payload = {}) {
+  return parseObject(payload.validation || payload.recommendation?.validation || payload.challengerPromotion?.validation || payload.recommendation?.challengerPromotion?.validation);
+}
+
+function validationGuardrailReasons(validation = {}) {
+  const reasons = [];
+  const settledSamples = Math.max(0, Number(validation.settledSamples || 0));
+  const candidateHitRate = Number(validation.candidateHitRate);
+  const championHitRate = Number(validation.championHitRate);
+  const brierScore = Number(validation.brierScore);
+  const baselineBrierScore = Number(validation.baselineBrierScore);
+  const logLoss = Number(validation.logLoss);
+  const baselineLogLoss = Number(validation.baselineLogLoss);
+  const formalCoverageRate = Number(validation.formalCoverageRate);
+  const baselineCoverageRate = Number(validation.baselineCoverageRate);
+  if (validation.serverDerived !== true) reasons.push("SERVER_DERIVED_VALIDATION_REQUIRED");
+  if (settledSamples < 30) reasons.push("SETTLED_SAMPLES_BELOW_30");
+  if (validation.guardrailsPassed !== true) reasons.push("GUARDRAILS_NOT_PASSED");
+  if (!Number.isFinite(candidateHitRate) || !Number.isFinite(championHitRate) || candidateHitRate <= championHitRate) reasons.push("TARGET_HIT_RATE_NOT_IMPROVED");
+  if (!Number.isFinite(brierScore) || !Number.isFinite(baselineBrierScore) || brierScore > baselineBrierScore) reasons.push("BRIER_SCORE_DEGRADED");
+  if (!Number.isFinite(logLoss) || !Number.isFinite(baselineLogLoss) || logLoss > baselineLogLoss) reasons.push("LOG_LOSS_DEGRADED");
+  if (!Number.isFinite(formalCoverageRate) || !Number.isFinite(baselineCoverageRate) || formalCoverageRate < baselineCoverageRate) reasons.push("FORMAL_COVERAGE_DEGRADED");
+  if (validation.abcdMonotonic !== true) reasons.push("ABCD_MONOTONICITY_FAILED");
+  return reasons;
+}
+
+export function reviewLearningTransitionAudit(currentValue, targetValue, payload = {}) {
+  const currentStatus = normalizeReviewLearningStatus(currentValue);
+  const targetStatus = normalizeReviewLearningStatus(targetValue);
+  const reasons = [];
+  if (!currentStatus) reasons.push("UNKNOWN_CURRENT_STATUS");
+  if (!targetStatus) reasons.push("UNKNOWN_TARGET_STATUS");
+  if (currentStatus && targetStatus && currentStatus !== targetStatus && !REVIEW_LEARNING_TRANSITIONS[currentStatus]?.includes(targetStatus)) {
+    reasons.push("INVALID_STATE_TRANSITION");
+  }
+  const primaryModule = reviewPrimaryModule(payload);
+  const promotion = parseObject(payload.challengerPromotion || payload.recommendation?.challengerPromotion);
+  const modules = Array.isArray(promotion.modules) ? promotion.modules.filter(Boolean) : primaryModule ? [primaryModule] : [];
+  if (["CHALLENGER", "VALIDATING", "ELIGIBLE", "PROMOTED"].includes(targetStatus)) {
+    if (!primaryModule) reasons.push("PRIMARY_MODULE_REQUIRED");
+    if (modules.length !== 1 || modules[0] !== primaryModule) reasons.push("SINGLE_PRIMARY_MODULE_REQUIRED");
+  }
+  const validation = reviewValidation(payload);
+  if (["ELIGIBLE", "PROMOTED"].includes(targetStatus)) reasons.push(...validationGuardrailReasons(validation));
+  if (targetStatus === "PROMOTED") {
+    if (payload.reviewApproved !== true) reasons.push("MANUAL_REVIEW_APPROVAL_REQUIRED");
+    if (!firstText(payload.approvedBy, payload.approved_by)) reasons.push("APPROVED_BY_REQUIRED");
+    if (!firstText(payload.approvedAt, payload.approved_at)) reasons.push("APPROVED_AT_REQUIRED");
+  }
+  return {
+    valid: reasons.length === 0,
+    reasons: [...new Set(reasons)],
+    currentStatus,
+    targetStatus,
+    primaryModule,
+    validation,
+    automaticPromotion: false,
+  };
+}
+
+const GOVERNANCE_TARGET_MARKETS = Object.freeze(["winDrawLose", "handicap", "totalGoals", "scores"]);
+const GOVERNANCE_MODULE_TARGET = Object.freeze({
+  WIN_DRAW_LOSE: "winDrawLose",
+  HANDICAP: "handicap",
+  TOTAL_GOALS: "totalGoals",
+  EXACT_SCORE: "scores",
+  SEASON_SCORE_CALIBRATION: "scores",
+});
+
+function governanceTargetMarket(primaryModule = "", requested = "") {
+  const fixed = GOVERNANCE_MODULE_TARGET[String(primaryModule || "").toUpperCase()];
+  if (fixed) return fixed;
+  if (String(primaryModule || "").toUpperCase() === "LEAGUE_CALIBRATION" && GOVERNANCE_TARGET_MARKETS.includes(requested)) return requested;
+  return "";
+}
+
+export function modelGovernanceAuthorization(request, env) {
+  const configuredToken = String(env.MODEL_GOVERNANCE_ADMIN_TOKEN || "").trim();
+  const requestToken = String(request.headers.get("x-admin-token") || "").trim();
+  const adminUser = String(request.headers.get("x-admin-user") || "").trim();
+  const authorized = configuredToken.length > 0 && requestToken === configuredToken && adminUser.length > 0;
+  return {
+    authorized,
+    adminUser,
+    error: !configuredToken ? "MODEL_GOVERNANCE_ADMIN_TOKEN is not configured" : !requestToken ? "x-admin-token required" : requestToken !== configuredToken ? "invalid governance admin token" : !adminUser ? "x-admin-user required" : "",
+  };
+}
+
+function stableInputHash(value = "") {
+  let hash = 2166136261;
+  for (const character of String(value)) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function stableJsonValue(value) {
+  if (Array.isArray(value)) return value.map(stableJsonValue);
+  if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableJsonValue(value[key])]));
+  return value;
+}
+
+function comparableValidationInput(value = "") {
+  const input = parseObject(value);
+  delete input.learningGovernance;
+  delete input.r16Validation;
+  delete input.forwardValidation;
+  return JSON.stringify(stableJsonValue(input));
+}
+
+function runRevision(output = {}) {
+  return firstText(output.modelLessons?.version, output.modelRevision, output.modelVersion);
+}
+
+function normalizedActualDirection(value = "", home = 0, away = 0) {
+  const text = String(value || "").trim().toUpperCase();
+  if (["HOME", "H", "胜"].includes(text)) return "HOME";
+  if (["DRAW", "D", "平"].includes(text)) return "DRAW";
+  if (["AWAY", "A", "负"].includes(text)) return "AWAY";
+  return Number(home) > Number(away) ? "HOME" : Number(home) < Number(away) ? "AWAY" : "DRAW";
+}
+
+function targetProbabilityDistribution(output = {}, targetMarket = "", actual = {}) {
+  const featureSet = parseObject(output.featureSet);
+  const sources = {
+    winDrawLose: parseObject(featureSet.probabilities),
+    handicap: parseObject(featureSet.handicap?.probabilities),
+    totalGoals: parseObject(featureSet.totals?.probabilities),
+    scores: parseObject(featureSet.score?.probabilities),
+  };
+  const distribution = sources[targetMarket] || {};
+  const entries = Object.entries(distribution)
+    .map(([label, probability]) => [String(label).replace(":", "-"), Number(probability)])
+    .filter(([, probability]) => Number.isFinite(probability) && probability >= 0);
+  const total = entries.reduce((sum, [, probability]) => sum + probability, 0);
+  const actualLabel = String(actual[targetMarket] || "").replace(":", "-");
+  if (!actualLabel || total <= 0) return null;
+  const normalized = Object.fromEntries(entries.map(([label, probability]) => [label, probability / total]));
+  if (!(actualLabel in normalized)) normalized[actualLabel] = 0;
+  const brierScore = Object.entries(normalized).reduce((sum, [label, probability]) => sum + (probability - (label === actualLabel ? 1 : 0)) ** 2, 0);
+  const logLoss = -Math.log(Math.max(1e-15, normalized[actualLabel] || 0));
+  return { brierScore, logLoss };
+}
+
+function runMarketAudit(output = {}, result = {}, targetMarket = "") {
+  const decision = parseObject(output.finalDecision);
+  const home = Number(result.full_time_home_goals);
+  const away = Number(result.full_time_away_goals);
+  const total = Number(result.total_goals ?? home + away);
+  const actualDirection = normalizedActualDirection(result.result_1x2, home, away);
+  const line = Number(String(output.match?.handicap ?? "0").replace("+", "")) || 0;
+  const adjusted = home + line - away;
+  const actualHandicap = adjusted > 0 ? "让胜" : adjusted < 0 ? "让负" : "让平";
+  const actualScore = `${home}-${away}`;
+  const totalOptions = String(decision.totalGoalsPick || "").replace(/球/g, "").split("/").map((item) => item.trim()).filter(Boolean);
+  const actualTotalBucket = total >= 7 ? "7+" : String(total);
+  const actualByMarket = { winDrawLose: actualDirection, handicap: actualHandicap, totalGoals: actualTotalBucket, scores: actualScore };
+  const hitByMarket = {
+    winDrawLose: ({ 胜: "HOME", 平: "DRAW", 负: "AWAY", HOME: "HOME", DRAW: "DRAW", AWAY: "AWAY" })[String(decision.winDrawLose || decision.recommendationSide || "").toUpperCase()] === actualDirection,
+    handicap: decision.handicapPick === actualHandicap,
+    totalGoals: totalOptions.includes(actualTotalBucket),
+    scores: Array.isArray(decision.scores) && decision.scores.map((score) => String(score).replace(":", "-")).includes(actualScore),
+  };
+  const formalMarkets = output.shadowOnly === true && Array.isArray(decision.shadowEvaluationMarkets)
+    ? decision.shadowEvaluationMarkets
+    : Array.isArray(decision.formalMarkets) ? decision.formalMarkets : [];
+  const probabilityScore = targetProbabilityDistribution(output, targetMarket, actualByMarket);
+  const grade = String(decision.componentRecommendations?.[targetMarket]?.grade || "").toUpperCase();
+  return {
+    targetHit: hitByMarket[targetMarket] === true,
+    targetMarket,
+    grade: ["A", "B", "C", "D"].includes(grade) ? grade : "",
+    formalCoverage: formalMarkets.filter((market) => GOVERNANCE_TARGET_MARKETS.includes(market)).length / GOVERNANCE_TARGET_MARKETS.length,
+    targetFormal: formalMarkets.includes(targetMarket),
+    brierScore: probabilityScore?.brierScore ?? null,
+    logLoss: probabilityScore?.logLoss ?? null,
+    validationEligible: output.validationEligible !== false,
+  };
+}
+
+function meanFinite(rows = [], key = "") {
+  const values = rows.map((row) => Number(row[key])).filter(Number.isFinite);
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+}
+
+function gradeMonotonicAudit(rows = []) {
+  const gradeRates = Object.fromEntries(["A", "B", "C", "D"].map((grade) => {
+    const gradeRows = rows.filter((row) => row.grade === grade);
+    return [grade, { hits: gradeRows.filter((row) => row.targetHit).length, total: gradeRows.length, rate: gradeRows.length ? gradeRows.filter((row) => row.targetHit).length / gradeRows.length : null }];
+  }));
+  const observed = ["A", "B", "C", "D"].filter((grade) => gradeRates[grade].total > 0);
+  const monotonic = observed.length >= 2 && observed.every((grade, index) => index === observed.length - 1 || gradeRates[grade].rate >= gradeRates[observed[index + 1]].rate);
+  return { monotonic, observedGrades: observed, gradeRates };
+}
+
+export function validationCohortMetrics(rows = [], cohort = {}) {
+  const targetMarket = governanceTargetMarket(cohort.primary_module || cohort.primaryModule, cohort.target_market || cohort.targetMarket);
+  const settled = rows.map((row) => {
+    const champion = runMarketAudit(parseObject(row.champion_output_json || row.championOutput), row, targetMarket);
+    const challenger = runMarketAudit(parseObject(row.challenger_output_json || row.challengerOutput), row, targetMarket);
+    return { champion, challenger };
+  }).filter((row) => targetMarket && row.champion.validationEligible && row.challenger.validationEligible && row.champion.brierScore !== null && row.challenger.brierScore !== null);
+  const settledSamples = settled.length;
+  const championHitRate = settledSamples ? settled.filter((row) => row.champion.targetHit).length / settledSamples : 0;
+  const candidateHitRate = settledSamples ? settled.filter((row) => row.challenger.targetHit).length / settledSamples : 0;
+  const championRows = settled.map((row) => row.champion);
+  const challengerRows = settled.map((row) => row.challenger);
+  const monotonic = gradeMonotonicAudit(challengerRows);
+  const metrics = {
+    settledSamples,
+    targetMarket,
+    championHitRate,
+    candidateHitRate,
+    baselineBrierScore: meanFinite(championRows, "brierScore"),
+    brierScore: meanFinite(challengerRows, "brierScore"),
+    baselineLogLoss: meanFinite(championRows, "logLoss"),
+    logLoss: meanFinite(challengerRows, "logLoss"),
+    baselineCoverageRate: meanFinite(championRows, "formalCoverage"),
+    formalCoverageRate: meanFinite(challengerRows, "formalCoverage"),
+    abcdMonotonic: monotonic.monotonic,
+    gradeAudit: monotonic,
+    serverDerived: true,
+  };
+  metrics.guardrailsPassed = settledSamples >= 30
+    && candidateHitRate > championHitRate
+    && metrics.brierScore !== null && metrics.baselineBrierScore !== null && metrics.brierScore <= metrics.baselineBrierScore
+    && metrics.logLoss !== null && metrics.baselineLogLoss !== null && metrics.logLoss <= metrics.baselineLogLoss
+    && metrics.formalCoverageRate !== null && metrics.baselineCoverageRate !== null && metrics.formalCoverageRate >= metrics.baselineCoverageRate
+    && metrics.abcdMonotonic === true;
+  return metrics;
+}
+
+async function ensureModelValidationSchema(db) {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS model_validation_cohorts (
+      cohort_id TEXT PRIMARY KEY,
+      primary_module TEXT NOT NULL,
+      target_market TEXT NOT NULL,
+      league TEXT NOT NULL,
+      season TEXT NOT NULL,
+      champion_revision TEXT NOT NULL,
+      challenger_revision TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'COLLECTING',
+      created_by TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      promoted_note_id TEXT,
+      promoted_at TEXT
+    )
+  `).run();
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS model_validation_samples (
+      cohort_id TEXT NOT NULL,
+      match_id TEXT NOT NULL,
+      champion_run_id TEXT NOT NULL,
+      challenger_run_id TEXT NOT NULL,
+      input_hash TEXT NOT NULL,
+      registered_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (cohort_id, match_id),
+      UNIQUE (cohort_id, champion_run_id),
+      UNIQUE (cohort_id, challenger_run_id)
+    )
+  `).run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_model_validation_samples_cohort ON model_validation_samples(cohort_id, registered_at)").run();
+}
+
+async function ensureParallelModelRunSchema(db) {
+  const schema = await db.prepare("PRAGMA table_info(model_runs)").all();
+  const columns = new Set((schema.results || []).map((row) => row.name));
+  if (!columns.has("run_role")) await db.prepare("ALTER TABLE model_runs ADD COLUMN run_role TEXT NOT NULL DEFAULT 'CHAMPION'").run();
+  if (!columns.has("comparison_group_id")) await db.prepare("ALTER TABLE model_runs ADD COLUMN comparison_group_id TEXT").run();
+  await db.prepare("CREATE INDEX IF NOT EXISTS idx_model_runs_comparison_group ON model_runs(comparison_group_id, run_role, created_at)").run();
+}
+
+async function evaluateStoredValidationCohort(db, cohortId) {
+  await ensureModelValidationSchema(db);
+  const cohort = await db.prepare("SELECT * FROM model_validation_cohorts WHERE cohort_id = ?").bind(cohortId).first();
+  if (!cohort) return { ok: false, status: 404, error: "validation cohort not found" };
+  const { results } = await db.prepare(`
+    SELECT s.match_id, cr.output_json AS champion_output_json, xr.output_json AS challenger_output_json,
+      r.full_time_home_goals, r.full_time_away_goals, r.result_1x2, r.total_goals
+    FROM model_validation_samples s
+    JOIN model_runs cr ON cr.run_id = s.champion_run_id
+    JOIN model_runs xr ON xr.run_id = s.challenger_run_id
+    JOIN match_results r ON r.match_id = s.match_id
+    WHERE s.cohort_id = ?
+    ORDER BY s.registered_at ASC
+  `).bind(cohortId).all();
+  const validation = validationCohortMetrics(results || [], cohort);
+  const nextStatus = validation.guardrailsPassed ? "READY" : validation.settledSamples >= 30 ? "FAILED_GUARDRAILS" : "COLLECTING";
+  if (cohort.status !== "PROMOTED") await db.prepare("UPDATE model_validation_cohorts SET status = ? WHERE cohort_id = ?").bind(nextStatus, cohortId).run();
+  return { ok: true, cohort: { ...cohort, status: cohort.status === "PROMOTED" ? "PROMOTED" : nextStatus }, validation };
+}
+
 async function ensureModelUpgradeSchema(db) {
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS model_upgrade_notes (
@@ -611,7 +974,7 @@ async function ensureModelUpgradeSchema(db) {
       league TEXT,
       trigger_type TEXT NOT NULL,
       severity TEXT NOT NULL DEFAULT 'LOW',
-      status TEXT NOT NULL DEFAULT 'OPEN',
+      status TEXT NOT NULL DEFAULT 'OBSERVATION',
       title TEXT NOT NULL,
       diagnosis_json TEXT,
       recommendation_json TEXT,
@@ -619,6 +982,8 @@ async function ensureModelUpgradeSchema(db) {
       adopted_at TEXT
     )
   `).run();
+  await db.prepare("UPDATE model_upgrade_notes SET status = 'PROPOSED' WHERE status = 'SHADOW_PENDING'").run();
+  await db.prepare("UPDATE model_upgrade_notes SET status = 'OBSERVATION' WHERE status IN ('OPEN', 'OBSERVED', 'OBSERVATION_ONLY')").run();
   await db.prepare("CREATE INDEX IF NOT EXISTS idx_model_upgrade_notes_model_status ON model_upgrade_notes(model_version, status, created_at)").run();
   await db.prepare("CREATE INDEX IF NOT EXISTS idx_model_upgrade_notes_match ON model_upgrade_notes(match_id, created_at)").run();
 }
@@ -1022,6 +1387,7 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
     scoreDoubleHit: "EXACT_SCORE",
   }[key])).filter(Boolean))];
   const shouldUpgradeModel = auditFailed && (isHighGradeLose || failedModules.length >= 2 || challengerHandicapEvidenceHit);
+  const primaryModule = failedModules[0] || "";
   const primaryMetricsByModule = candidateShadowScope
     ? {
         WIN_DRAW_LOSE: "candidateWinDrawLoseSingleHit",
@@ -1036,17 +1402,20 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
         EXACT_SCORE: "formalScoreDoubleHit",
       };
   const challengerPromotion = {
-    status: shouldUpgradeModel ? "SHADOW_PENDING" : "OBSERVATION_ONLY",
+    status: shouldUpgradeModel ? "PROPOSED" : "OBSERVATION",
     accountingScope: componentAuditScope,
     accountingPolicy: "FINAL_LOCK_FORMAL_SELECTIONS_PRE_LOCK_CANDIDATE_SHADOW",
     sourceModelRevision: diagnosticPayload.modelRevision || lock.model_version || "V4",
-    modules: failedModules,
+    primaryModule,
+    modules: primaryModule ? [primaryModule] : [],
+    observedModules: failedModules,
     minimumSettledSamples: 30,
     targetSettledSamples: 50,
-    primaryMetrics: failedModules.map((module) => primaryMetricsByModule[module]).filter(Boolean),
+    primaryMetrics: primaryModule && primaryMetricsByModule[primaryModule] ? [primaryMetricsByModule[primaryModule]] : [],
     guardrailMetrics: ["formalWinDrawLoseHandicapJointHit", "candidateWinDrawLoseHandicapJointHit", "brierScore", "logLoss", "calibrationBin"],
+    requiredTransitions: ["OBSERVATION", "PROPOSED", "CHALLENGER", "VALIDATING", "ELIGIBLE", "PROMOTED"],
     automaticPromotion: false,
-    promotionPolicy: "同联赛、同赛季、同模型版本累计30至50场影子样本；目标命中率提高，胜平负+让球联合命中不降，Brier Score与Log Loss不退化后才可人工采纳。",
+    promotionPolicy: "每次只验证一个主模块；同联赛、同赛季、同模型版本满30场仅进入ELIGIBLE人工评审，目标命中率提高、正式覆盖率不降、ABCD单调且Brier Score与Log Loss不退化后，仍须人工PROMOTED。",
   };
   return {
     noteId: `upgrade-${caseId}`,
@@ -1057,7 +1426,7 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
     league: lock.league,
     triggerType,
     severity,
-    status: shouldUpgradeModel ? "SHADOW_PENDING" : auditFailed || auditIncomplete ? "OPEN" : "OBSERVED",
+    status: shouldUpgradeModel ? "PROPOSED" : "OBSERVATION",
     title,
     diagnosis: {
       homeTeam: lock.home_team,
@@ -1070,6 +1439,7 @@ export function upgradeNoteFromCase(lock, result, review, caseId, diagnosticPayl
     recommendation: {
       nextActions: recommendations,
       shouldUpgradeModel,
+      primaryModule,
       challengerPromotion,
     },
   };
@@ -1085,10 +1455,12 @@ async function createModelUpgradeNoteForCase(db, lock, result, review, caseId, d
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(note_id) DO UPDATE SET
       diagnosis_json=excluded.diagnosis_json,
-      recommendation_json=excluded.recommendation_json,
+      recommendation_json=CASE
+        WHEN model_upgrade_notes.status IN ('OBSERVATION', 'PROPOSED', 'OPEN', 'OBSERVED', 'SHADOW_PENDING') THEN excluded.recommendation_json
+        ELSE model_upgrade_notes.recommendation_json
+      END,
       trigger_type=excluded.trigger_type,
       severity=excluded.severity,
-      status=excluded.status,
       title=excluded.title
   `).bind(
     note.noteId,
@@ -1105,7 +1477,8 @@ async function createModelUpgradeNoteForCase(db, lock, result, review, caseId, d
     JSON.stringify(note.recommendation),
     new Date().toISOString()
   ).run();
-  return note;
+  const persisted = await db.prepare("SELECT * FROM model_upgrade_notes WHERE note_id = ?").bind(note.noteId).first();
+  return persisted ? rowToUpgradeNote(persisted) : note;
 }
 
 function rowToShadowAudit(row) {
@@ -1194,7 +1567,7 @@ function rowToUpgradeNote(row) {
     league: row.league,
     triggerType: row.trigger_type,
     severity: row.severity,
-    status: row.status,
+    status: normalizeReviewLearningStatus(row.status) || "OBSERVATION",
     title: row.title,
     diagnosis: parseObject(row.diagnosis_json),
     recommendation: parseObject(row.recommendation_json),
@@ -1221,22 +1594,35 @@ async function listModelUpgradeNotes(db, params) {
 
 export const PREFERRED_LOCK_ORDER_SQL = "locked_at DESC, lock_id DESC";
 
+export function settledCaseRole(lockType = "", isPreferred = false) {
+  return String(lockType || "").toUpperCase() === "FINAL_LOCK" && isPreferred
+    ? "CHAMPION_FORMAL"
+    : "SHADOW_OBSERVATION";
+}
+
 async function createCaseForLock(db, lockId) {
+  await ensureCaseBaseRoleSchema(db);
   const lock = await db.prepare("SELECT * FROM locked_predictions WHERE lock_id = ?").bind(lockId).first();
   if (!lock) return { ok: false, status: 404, error: "lock not found" };
-  if (lock.lock_type !== "FINAL_LOCK") return { ok: false, status: 400, error: "only FINAL_LOCK can enter Case Base" };
   const preferred = await db.prepare(`
     SELECT lock_id FROM locked_predictions
     WHERE match_id = ?
     ORDER BY ${PREFERRED_LOCK_ORDER_SQL}
     LIMIT 1
   `).bind(lock.match_id).first();
-  if (preferred?.lock_id !== lock.lock_id) {
-    return { ok: false, status: 409, error: "only a latest preferred FINAL_LOCK can enter Case Base" };
-  }
+  const preferredAtSettlement = preferred?.lock_id === lock.lock_id;
+  const caseRole = settledCaseRole(lock.lock_type, preferredAtSettlement);
   const result = await db.prepare("SELECT * FROM match_results WHERE match_id = ?").bind(lock.match_id).first();
   if (!result) return { ok: false, status: 400, error: "result not found" };
-  const review = evaluateLock(lock, result);
+  const evaluated = evaluateLock(lock, result);
+  const review = caseRole === "CHAMPION_FORMAL"
+    ? evaluated
+    : {
+        ...evaluated,
+        hitStatus: "VOID",
+        betOutcome: "VOID",
+        reviewText: "该赛前推演完整进入影子案例库，用于诊断与训练审计，不计正式命中率。",
+      };
   const tags = caseTags(lock, result, review);
   const caseId = `case-${lock.lock_id}`;
   const { results: oddsHistory } = await db.prepare(`
@@ -1247,14 +1633,23 @@ async function createCaseForLock(db, lockId) {
     ORDER BY captured_at ASC
     LIMIT 200
   `).bind(lock.match_id).all();
-  const diagnosticPayload = caseDiagnosticPayload(lock, result, review, tags, oddsHistory || []);
+  const diagnosticPayload = {
+    ...caseDiagnosticPayload(lock, result, review, tags, oddsHistory || []),
+    caseRole,
+    sourceLockType: lock.lock_type,
+    preferredAtSettlement,
+  };
   const existing = await db.prepare("SELECT case_id FROM case_base WHERE source_lock_id = ?").bind(lock.lock_id).first();
   if (existing) {
     await db.prepare(`
       UPDATE case_base
-      SET actual_result = ?, actual_goals = ?, hit_status = ?, failure_tags_json = ?, success_tags_json = ?, payload_json = ?
+      SET case_role = ?, source_lock_type = ?, preferred_at_settlement = ?,
+          actual_result = ?, actual_goals = ?, hit_status = ?, failure_tags_json = ?, success_tags_json = ?, payload_json = ?
       WHERE source_lock_id = ?
     `).bind(
+      caseRole,
+      lock.lock_type,
+      preferredAtSettlement ? 1 : 0,
       result.result_1x2,
       result.total_goals,
       review.hitStatus,
@@ -1264,21 +1659,23 @@ async function createCaseForLock(db, lockId) {
       lock.lock_id
     ).run();
     await db.prepare("UPDATE locked_predictions SET result_status = ? WHERE lock_id = ?").bind(review.hitStatus, lock.lock_id).run();
-    const upgradeNote = await createModelUpgradeNoteForCase(db, lock, result, review, existing.case_id, diagnosticPayload);
-    return { ok: true, caseId: existing.case_id, duplicated: true, refreshed: true, review, upgradeNote };
+    const upgradeNote = lock.lock_type === "PRE_LOCK" ? null : await createModelUpgradeNoteForCase(db, lock, result, review, existing.case_id, diagnosticPayload);
+    return { ok: true, caseId: existing.case_id, caseRole, duplicated: true, refreshed: true, review, upgradeNote };
   }
   await db.prepare(`
     INSERT INTO case_base (
-      case_id, source_lock_id, match_id, league, home_team, away_team, kickoff_time, model_version,
+      case_id, source_lock_id, case_role, source_lock_type, preferred_at_settlement,
+      match_id, league, home_team, away_team, kickoff_time, model_version,
       model_home_prob, model_draw_prob, model_away_prob, recommendation, recommendation_side,
       final_grade, final_action, confidence_score, risk_score, consistency_score,
       sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp, sporttery_home_prob, sporttery_draw_prob, sporttery_away_prob,
       value_home_gap, value_draw_gap, value_away_gap, asian_handicap, asian_home_water, asian_away_water,
       euro_home_odds, euro_draw_odds, euro_away_odds, euro_home_prob, euro_draw_prob, euro_away_prob,
       data_quality, actual_result, actual_goals, hit_status, failure_tags_json, success_tags_json, payload_json, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
-    caseId, lock.lock_id, lock.match_id, lock.league, lock.home_team, lock.away_team, lock.kickoff_time, lock.model_version || "V1",
+    caseId, lock.lock_id, caseRole, lock.lock_type, preferredAtSettlement ? 1 : 0,
+    lock.match_id, lock.league, lock.home_team, lock.away_team, lock.kickoff_time, lock.model_version || "V1",
     lock.model_home_prob, lock.model_draw_prob, lock.model_away_prob, lock.recommendation, lock.recommendation_side,
     lock.final_grade, lock.final_action, lock.confidence_score, lock.risk_score, lock.consistency_score,
     lock.sporttery_home_sp, lock.sporttery_draw_sp, lock.sporttery_away_sp, lock.sporttery_home_prob, lock.sporttery_draw_prob, lock.sporttery_away_prob,
@@ -1291,8 +1688,8 @@ async function createCaseForLock(db, lockId) {
     new Date().toISOString()
   ).run();
   await db.prepare("UPDATE locked_predictions SET result_status = ? WHERE lock_id = ?").bind(review.hitStatus, lock.lock_id).run();
-  const upgradeNote = await createModelUpgradeNoteForCase(db, lock, result, review, caseId, diagnosticPayload);
-  return { ok: true, caseId, review, upgradeNote };
+  const upgradeNote = lock.lock_type === "PRE_LOCK" ? null : await createModelUpgradeNoteForCase(db, lock, result, review, caseId, diagnosticPayload);
+  return { ok: true, caseId, caseRole, review, upgradeNote };
 }
 
 async function upsertCompletedMatchHistoricalSample(db, matchId) {
@@ -2898,21 +3295,21 @@ async function autoReviewMatch(db, matchId) {
   const locks = await db.prepare("SELECT lock_id, lock_type FROM locked_predictions WHERE match_id = ?").bind(matchId).all();
   let reviewed = 0;
   let cases = 0;
+  let shadowCases = 0;
   let shadowAudits = 0;
   for (const lock of locks.results || []) {
-    if (lock.lock_type === "PRE_LOCK") {
-      const shadow = await createShadowAuditForLock(db, lock.lock_id);
-      if (shadow.ok) {
-        reviewed += 1;
-        shadowAudits += 1;
-      }
-      continue;
-    }
     const created = await createCaseForLock(db, lock.lock_id);
     if (created.ok) reviewed += 1;
     if (created.caseId && !created.duplicated) cases += 1;
+    if (created.caseRole === "SHADOW_OBSERVATION" && created.caseId && !created.duplicated) shadowCases += 1;
+    if (lock.lock_type === "PRE_LOCK") {
+      const shadow = await createShadowAuditForLock(db, lock.lock_id);
+      if (shadow.ok) {
+        shadowAudits += 1;
+      }
+    }
   }
-  return { reviewed, cases, shadowAudits, historicalSample, matchRecord };
+  return { reviewed, cases, shadowCases, shadowAudits, historicalSample, matchRecord };
 }
 
 async function reconcileCompletedSamples(db, limit = 4) {
@@ -2955,7 +3352,6 @@ async function reconcileCompletedSamples(db, limit = 4) {
       SELECT 1 FROM locked_predictions lp
       LEFT JOIN case_base cb ON cb.source_lock_id = lp.lock_id
       WHERE lp.match_id = mr.match_id
-        AND lp.lock_type = 'FINAL_LOCK'
         AND (
           cb.case_id IS NULL
           OR json_extract(cb.payload_json, '$.match.matchId') IS NULL
@@ -2971,12 +3367,14 @@ async function reconcileCompletedSamples(db, limit = 4) {
   `).bind(safeLimit).all();
   let reviewed = 0;
   let cases = 0;
+  let shadowCases = 0;
   let historicalSamples = 0;
   const skipped = [];
   for (const row of rows.results || []) {
     const result = await autoReviewMatch(db, row.match_id);
     reviewed += result.reviewed;
     cases += result.cases;
+    shadowCases += result.shadowCases;
     if (result.historicalSample?.stored) historicalSamples += 1;
     else skipped.push({ matchId: row.match_id, reason: result.historicalSample?.reason || "unknown" });
   }
@@ -2986,6 +3384,7 @@ async function reconcileCompletedSamples(db, limit = 4) {
     scanned: rows.results?.length || 0,
     reviewed,
     cases,
+    shadowCases,
     historicalSamples,
     skipped,
     batchLimit: safeLimit,
@@ -4878,7 +5277,7 @@ async function d1FootballDataContextScript(db, env) {
   return javascript(`window.FOOTBALL_DATA_CONTEXT=${JSON.stringify(data)};\n`);
 }
 
-function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
+export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
   const featureSet = parseObject(runOutput.featureSet);
   const research = parseObject(featureSet.research);
   const items = Array.isArray(research.items) ? research.items : [];
@@ -4891,8 +5290,10 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
   const movement = parseObject(featureSet.oddsMovement);
   const handicapEvidence = parseObject(featureSet.handicap);
   const probabilities = parseObject(featureSet.probabilities);
-  const scoreA = decision.scores?.[0] || scenarios[0]?.score || prediction.mainScore || "-";
-  const scoreB = decision.scores?.[1] || scenarios[1]?.score || prediction.counterScore || "-";
+  const isR16 = /(?:^|[^A-Z0-9])R1[67](?:[^A-Z0-9]|$)/i.test(firstText(modelLessons.version, prediction.modelRevision));
+  const scoreA = isR16 ? decision.scores?.[0] || "-" : decision.scores?.[0] || scenarios[0]?.score || prediction.mainScore || "-";
+  const scoreB = isR16 ? decision.scores?.[1] || "-" : decision.scores?.[1] || scenarios[1]?.score || prediction.counterScore || "-";
+  const scoreLeafAvailable = scoreA !== "-" && scoreB !== "-";
   const riskScore = riskScenario.score || decision.riskScenario || "-";
   const odds = Array.isArray(featureSet.market?.odds) ? featureSet.market.odds : [];
   const movementText = movement.complete
@@ -4905,15 +5306,45 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
   const marketText = odds.length === 3
     ? `当前胜平负SP ${odds.join(" / ")}；去水模型概率主胜 ${((Number(probabilities.HOME) || 0) * 100).toFixed(1)}%、平 ${((Number(probabilities.DRAW) || 0) * 100).toFixed(1)}%、客胜 ${((Number(probabilities.AWAY) || 0) * 100).toFixed(1)}%。`
     : "当前胜平负SP已由统一模型复核。";
-  const scenarioText = `正式比分按校准后联合概率覆盖选择 ${scoreA} / ${scoreB}；独立风险剧本为 ${riskScore}。结合球队状态、风格对位、盘口低位和赛事动机，第一球与半场前后的节奏决定比赛是否打开。`;
+  const scenarioText = `${scoreLeafAvailable ? `比分叶子按已批准校准后的联合概率覆盖选择 ${scoreA} / ${scoreB}` : "比分叶子当前不可用，不影响其他玩法"}；独立风险剧本为 ${riskScore}。结合球队状态、风格对位、盘口低位和赛事动机，第一球与半场前后的节奏决定比赛是否打开。`;
   const handicapProbabilities = parseObject(handicapEvidence.probabilities);
   const jointDecision = parseObject(featureSet.jointDecision);
   const independentHandicapRisk = parseObject(jointDecision.independentHandicapRisk);
-  const handicapText = `让球独立概率：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；独立边际第一项 ${independentHandicapRisk.pick || "-"} 作风险审计。正式让球 ${decision.handicapPick || prediction.handicapPick || "-"} 必须与胜平负 ${decision.winDrawLose || prediction.pick || "-"} 及至少一个正式比分 ${scoreA} / ${scoreB} 同时成立。`;
+  const handicapText = isR16
+    ? `让球独立概率：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；R16正式让球固定采用完整净胜球边际第一项 ${decision.handicapPick || prediction.handicapPick || "-"}，不要求正式比分支持。`
+    : `让球独立概率：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；独立边际第一项 ${independentHandicapRisk.pick || "-"} 作风险审计。正式让球 ${decision.handicapPick || prediction.handicapPick || "-"} 必须与胜平负 ${decision.winDrawLose || prediction.pick || "-"} 及至少一个正式比分 ${scoreA} / ${scoreB} 同时成立。`;
   const finalText = `胜平负 ${decision.winDrawLose || prediction.pick || "-"}；让球 ${decision.handicapPick || prediction.handicapPick || "-"}；总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}；比分 ${scoreA} / ${scoreB}；类型 ${decision.matchType || prediction.matchType || "-"}；建议 ${decision.confidence ?? prediction.confidenceScore ?? "-"}% / ${decision.advice || prediction.advice || "-"}。`;
+  const scoreLeafText = scoreLeafAvailable
+    ? `保留联合概率最高的 ${scoreA} / ${scoreB} 两个比分叶子输出，允许同方向；独立风险剧本 ${riskScore} 不占名额；不得反向改写其他玩法。`
+    : `比分叶子当前不可用；仅关闭比分组件，不得反向改写或阻断其他玩法。独立风险剧本为 ${riskScore}。`;
+  const authoritativeScriptSet = [
+    ...scenarios.map((item, index) => ({ label: index ? "正式比分二" : "正式比分一", probability: item.probability, score: item.score, text: "联合概率覆盖路径" })),
+    ...(riskScenario.score ? [{ label: "独立风险", probability: riskScenario.probability, score: riskScenario.score, text: "不占正式比分名额" }] : []),
+  ];
+  const availableMarkets = parseObject(featureSet.marketAvailability?.markets);
+  const formalMarketSet = new Set(Array.isArray(decision.formalMarkets) ? decision.formalMarkets : []);
+  const authoritativeCandidates = {
+    winDrawLose: availableMarkets.winDrawLose === true ? decision.winDrawLose || null : null,
+    handicap: availableMarkets.handicap === true ? decision.handicapPick || null : null,
+    totalGoals: availableMarkets.totalGoals === true ? decision.totalGoalsPick || null : null,
+    scores: availableMarkets.scores === true && scoreLeafAvailable ? [scoreA, scoreB] : [],
+  };
+  const authoritativeFormalSelections = {
+    winDrawLose: formalMarketSet.has("winDrawLose") ? authoritativeCandidates.winDrawLose : null,
+    handicap: formalMarketSet.has("handicap") ? authoritativeCandidates.handicap : null,
+    totalGoals: formalMarketSet.has("totalGoals") ? authoritativeCandidates.totalGoals : null,
+    scores: formalMarketSet.has("scores") ? authoritativeCandidates.scores : [],
+  };
   return {
     ...prediction,
-    modelRevision: firstText(prediction.modelRevision, modelLessons.version, runOutput.modelVersion),
+    ...(isR16 ? {
+      mainScore: scoreLeafAvailable ? scoreA : "",
+      counterScore: scoreLeafAvailable ? scoreB : "",
+      predictedScores: scoreLeafAvailable ? [scoreA, scoreB] : [],
+      candidateSelections: authoritativeCandidates,
+      formalSelections: authoritativeFormalSelections,
+    } : {}),
+    modelRevision: firstText(modelLessons.version, prediction.modelRevision, runOutput.modelVersion),
     decisionProcess: "统一赛前机制：SP复核、赛事规则与动机、球队状态、风格对位、体彩开盘偏差、赔率动态、比赛发展、半场/60分钟触发、冲突闸门、比分总进球、让球闸门、失败方式、价值过滤、最终锁版。",
     competitionRules: prediction.competitionRules || motivationText,
     teamState: prediction.teamState || teamText,
@@ -4923,33 +5354,38 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
     marketGap: prediction.marketGap || marketText,
     lineMovement: prediction.lineMovement || movementText,
     oddsMovement: prediction.oddsMovement || movementText,
-    script: prediction.script || scenarioText,
+    script: isR16 ? scenarioText : prediction.script || scenarioText,
     halftimeDecision: prediction.halftimeDecision || `半场或60分钟仍未出现预期第一球时，重新检查独立风险剧本${riskScore}；正式比分${scoreA} / ${scoreB}不承担固定主反方向。`,
-    stateTransfer: prediction.stateTransfer || scenarioText,
-    decisionConflict: prediction.decisionConflict || `正式组合已执行逻辑兼容门禁：主方向${decision.winDrawLose || prediction.pick || "-"}，让球${decision.handicapPick || prediction.handicapPick || "-"}；独立边际第一项${independentHandicapRisk.pick || "-"}只作冲突审计。`,
+    stateTransfer: isR16 ? scenarioText : prediction.stateTransfer || scenarioText,
+    decisionConflict: prediction.decisionConflict || (isR16
+      ? `R16玩法独立聚合：胜平负${decision.winDrawLose || prediction.pick || "-"}，让球边际第一项${decision.handicapPick || prediction.handicapPick || "-"}；方向条件分支只作影子审计。`
+      : `正式组合已执行逻辑兼容门禁：主方向${decision.winDrawLose || prediction.pick || "-"}，让球${decision.handicapPick || prediction.handicapPick || "-"}；独立边际第一项${independentHandicapRisk.pick || "-"}只作冲突审计。`),
     crossMarketConsistency: prediction.crossMarketConsistency || handicapText,
-    scoreElimination: prediction.scoreElimination || `保留联合概率最高的 ${scoreA} / ${scoreB} 两个正式比分，允许同方向；独立风险剧本 ${riskScore} 不占正式名额；总进球校验 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}。`,
-    totalGoalsValidation: prediction.totalGoalsValidation || `比分分支与总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}交叉校验。`,
+    scoreElimination: isR16 ? scoreLeafText : prediction.scoreElimination || scoreLeafText,
+    totalGoalsValidation: prediction.totalGoalsValidation || (isR16
+      ? `总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}由完整总球边际概率独立生成，不服从两个比分。`
+      : `比分分支与总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}交叉校验。`),
     handicapGate: prediction.handicapGate || handicapText,
-    keyFailureRisk: prediction.keyFailureRisk || `最大失败方式是比赛偏离正式高概率覆盖 ${scoreA} / ${scoreB}，转入独立风险剧本 ${riskScore} 或分布尾部。`,
+    keyFailureRisk: prediction.keyFailureRisk || (scoreLeafAvailable
+      ? `最大失败方式是比赛偏离正式高概率覆盖 ${scoreA} / ${scoreB}，转入独立风险剧本 ${riskScore} 或分布尾部。`
+      : `比分叶子不可用不影响非比分玩法；主要风险仍是完整联合分布偏离当前胜平负、让球或总进球边际。`),
     eventRisk: prediction.eventRisk || weatherText || "早球、定位球、红牌或临场阵容变化可能改变比赛节奏。",
     valueFilter: prediction.valueFilter || `置信 ${decision.confidence ?? prediction.confidenceScore ?? "-"}%：${decision.advice || prediction.advice || "谨慎"}；不因单一低赔自动放大结论。`,
     noiseFilter: prediction.noiseFilter || "排除名气、单一低赔和单一比分噪声，只保留通过十步证据链的方向。",
-    finalDecisionAction: prediction.finalDecisionAction || finalText,
-    scriptSet: prediction.scriptSet || [
-      ...scenarios.map((item, index) => ({ label: index ? "正式比分二" : "正式比分一", probability: item.probability, score: item.score, text: "联合概率覆盖路径" })),
-      ...(riskScenario.score ? [{ label: "独立风险", probability: riskScenario.probability, score: riskScenario.score, text: "不占正式比分名额" }] : []),
-    ],
+    finalDecisionAction: isR16 ? finalText : prediction.finalDecisionAction || finalText,
+    scriptSet: isR16 ? authoritativeScriptSet : prediction.scriptSet || authoritativeScriptSet,
     dataQuality: prediction.dataQuality || `HIGH：十步平均分 ${runOutput.tenStepResult?.averageScore ?? 100}，全部硬门槛通过。`,
     unifiedRunEvidence: {
       ...existingUnifiedEvidence,
       contractVersion: runOutput.contractVersion,
-      modelRevision: firstText(prediction.modelRevision, modelLessons.version, runOutput.modelVersion),
+      modelRevision: firstText(modelLessons.version, prediction.modelRevision, runOutput.modelVersion),
       modelLessons: Object.keys(modelLessons).length ? modelLessons : null,
       tenStepResult: runOutput.tenStepResult,
       gateResult: runOutput.gateResult,
       researchItems: items,
       seasonLearning: featureSet.seasonLearning || null,
+      forwardValidation: featureSet.forwardValidation || null,
+      predictiveConfidence: featureSet.predictiveConfidence || null,
       scoreSelection: featureSet.score || null,
       crossLeagueNormalization: featureSet.crossLeagueNormalization || null,
       evidenceDirectionConflict: featureSet.evidenceDirectionConflict || null,
@@ -4957,6 +5393,7 @@ function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) {
       conditionalHandicapChallenger: featureSet.conditionalHandicapChallenger || null,
       jointDecision: featureSet.jointDecision || null,
       backtestContract: runOutput.backtestContract || null,
+      reviewLearningContract: runOutput.reviewLearningContract || null,
       competitionStage: featureSet.competitionStage || null,
       twoLegLeadControl: featureSet.tieContext?.leadControl || null,
       riskScenario: riskScenario.score ? riskScenario : null,
@@ -5179,11 +5616,18 @@ if (path === "sync/okooo-live" && request.method === "POST") {
 
     if (path === "locks" && request.method === "GET") {
       const matchId = url.searchParams.get("matchId");
+      const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 300), 1), 500);
+      const before = String(url.searchParams.get("before") || "");
+      const beforeId = String(url.searchParams.get("beforeId") || "");
       const stmt = matchId
-        ? db.prepare("SELECT * FROM locked_predictions WHERE match_id = ? ORDER BY locked_at DESC").bind(matchId)
-        : db.prepare("SELECT * FROM locked_predictions ORDER BY locked_at DESC LIMIT 300");
+        ? db.prepare("SELECT * FROM locked_predictions WHERE match_id = ? ORDER BY locked_at DESC, lock_id DESC LIMIT ?").bind(matchId, limit)
+        : before && beforeId
+          ? db.prepare("SELECT * FROM locked_predictions WHERE locked_at < ? OR (locked_at = ? AND lock_id < ?) ORDER BY locked_at DESC, lock_id DESC LIMIT ?").bind(before, before, beforeId, limit)
+          : db.prepare("SELECT * FROM locked_predictions ORDER BY locked_at DESC, lock_id DESC LIMIT ?").bind(limit);
       const { results } = await stmt.all();
-      return json({ ok: true, locks: (results || []).map(enrichLockRow) });
+      const rows = results || [];
+      const last = rows.at(-1);
+      return json({ ok: true, locks: rows.map(enrichLockRow), pagination: { limit, hasMore: rows.length === limit, next: last ? { before: last.locked_at, beforeId: last.lock_id } : null } });
     }
 
     if (path === "locks/preferred" && request.method === "GET") {
@@ -5199,34 +5643,46 @@ if (path === "sync/okooo-live" && request.method === "POST") {
     }
 
     if (path === "model-runs" && request.method === "GET") {
+      await ensureParallelModelRunSchema(db);
       const matchId = url.searchParams.get("matchId");
+      const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 100), 1), 500);
+      const before = String(url.searchParams.get("before") || "");
+      const beforeId = String(url.searchParams.get("beforeId") || "");
       const stmt = matchId
-        ? db.prepare("SELECT * FROM model_runs WHERE match_id = ? ORDER BY created_at DESC LIMIT 100").bind(matchId)
-        : db.prepare("SELECT * FROM model_runs ORDER BY created_at DESC LIMIT 100");
+        ? db.prepare("SELECT * FROM model_runs WHERE match_id = ? ORDER BY created_at DESC, run_id DESC LIMIT ?").bind(matchId, limit)
+        : before && beforeId
+          ? db.prepare("SELECT * FROM model_runs WHERE created_at < ? OR (created_at = ? AND run_id < ?) ORDER BY created_at DESC, run_id DESC LIMIT ?").bind(before, before, beforeId, limit)
+          : db.prepare("SELECT * FROM model_runs ORDER BY created_at DESC, run_id DESC LIMIT ?").bind(limit);
       const { results } = await stmt.all();
-      return json({ ok: true, runs: results || [] });
+      const rows = results || [];
+      const last = rows.at(-1);
+      return json({ ok: true, runs: rows, pagination: { limit, hasMore: rows.length === limit, next: last ? { before: last.created_at, beforeId: last.run_id } : null } });
     }
 
     if (path === "model-runs" && request.method === "POST") {
+      await ensureParallelModelRunSchema(db);
       const body = await readJson(request);
       const matchId = String(body.matchId || body.match_id || "");
       if (!matchId) return json({ ok: false, error: "matchId required" }, 400);
       const runType = String(body.runType || body.run_type || "PRE_LOCK").toUpperCase();
       const output = body.output || body.output_json || {};
-      if (runType === "FINAL_LOCK" && (
-        output.contractVersion !== "UNIFIED_PREDICTION_V4" ||
-        output.lockType !== "FINAL_LOCK" ||
-        output.gateResult?.passed !== true ||
-        output.tenStepResult?.passed !== true ||
-        !Array.isArray(output.tenStepResult?.steps) ||
-        output.tenStepResult.steps.length !== 10
-      )) {
+      const runRole = String(body.runRole || body.run_role || "CHAMPION").toUpperCase();
+      const comparisonGroupId = String(body.comparisonGroupId || body.comparison_group_id || "").trim();
+      if (!["PRE_LOCK", "FINAL_LOCK"].includes(runType)) return json({ ok: false, error: "runType must be PRE_LOCK or FINAL_LOCK" }, 400);
+      if (!["CHAMPION", "CHALLENGER"].includes(runRole)) return json({ ok: false, error: "runRole must be CHAMPION or CHALLENGER" }, 400);
+      if (runRole === "CHALLENGER" && (!comparisonGroupId || output.shadowOnly !== true || output.publicationEligible !== false || (output.finalDecision?.formalMarkets || []).length)) {
+        return json({ ok: false, error: "CHALLENGER runs require a comparison group and an explicit shadow-only output with no formal markets" }, 400);
+      }
+      if (output.contractVersion !== "UNIFIED_PREDICTION_V4" || output.lockType !== runType || !Array.isArray(output.tenStepResult?.steps) || output.tenStepResult.steps.length !== 10) {
+        return json({ ok: false, error: "every model run must preserve the complete UNIFIED_PREDICTION_V4 ten-step pre-match snapshot" }, 400);
+      }
+      if (runType === "FINAL_LOCK" && (output.gateResult?.passed !== true || output.tenStepResult?.passed !== true)) {
         return json({ ok: false, error: "FINAL_LOCK model run must pass the complete UNIFIED_PREDICTION_V4 ten-step contract" }, 400);
       }
       const runId = body.runId || body.run_id || `model-run-${crypto.randomUUID()}`;
       await db.prepare(`
-        INSERT INTO model_runs (run_id, match_id, model_version, run_type, input_json, output_json, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO model_runs (run_id, match_id, model_version, run_type, input_json, output_json, created_at, run_role, comparison_group_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         runId,
         matchId,
@@ -5235,65 +5691,86 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         JSON.stringify(body.input || body.input_json || {}),
         JSON.stringify(output),
         body.createdAt || body.created_at || new Date().toISOString(),
+        runRole,
+        comparisonGroupId || null,
       ).run();
-      return json({ ok: true, runId });
+      return json({ ok: true, runId, runRole, comparisonGroupId });
     }
 
     if (path === "locks" && request.method === "POST") {
+      await ensureInferenceLinkSchema(db);
+      await ensureParallelModelRunSchema(db);
       const body = await readJson(request);
       const submittedMatchId = String(body.matchId || body.match_id || "").trim();
       if (!submittedMatchId) return json({ ok: false, error: "matchId required" }, 400);
       const lockId = body.lockId || body.lock_id || `${submittedMatchId}-${body.lockType || "FINAL_LOCK"}-${Date.now()}`;
       const lockType = body.lockType || body.lock_type || "FINAL_LOCK";
       const league = body.league || "世界杯";
+      const prediction = body.sportteryPrediction || body.prediction || body.payload?.sportteryPrediction || {};
+      const modelRunId = String(body.modelRunId || body.model_run_id || prediction.modelRunId || "");
+      if (!modelRunId) return json({ ok: false, error: `${lockType} requires modelRunId; every inference lock must link to its immutable model run` }, 400);
+      const modelRun = await db.prepare("SELECT * FROM model_runs WHERE run_id = ?").bind(modelRunId).first();
+      if (!modelRun) return json({ ok: false, error: "linked model run not found" }, 400);
+      if (String(modelRun.run_role || "CHAMPION").toUpperCase() !== "CHAMPION") return json({ ok: false, error: "CHALLENGER model runs are shadow-only and cannot publish inference locks" }, 409);
+      const runOutput = parseObject(modelRun.output_json);
+      const compactId = (value) => String(value || "").replace(/^sporttery-/, "");
+      if (compactId(modelRun.match_id) !== compactId(body.matchId || body.match_id)) {
+        return json({ ok: false, error: "model run match does not match lock match" }, 400);
+      }
+      if (String(modelRun.run_type || "").toUpperCase() !== String(lockType).toUpperCase() || runOutput.lockType !== lockType) {
+        return json({ ok: false, error: "model run lock type does not match submitted lock" }, 400);
+      }
       if (lockType === "FINAL_LOCK") {
-        const prediction = body.sportteryPrediction || body.prediction || body.payload?.sportteryPrediction || {};
-        const modelRunId = String(body.modelRunId || body.model_run_id || prediction.modelRunId || "");
-        if (!modelRunId) return json({ ok: false, error: "FINAL_LOCK requires modelRunId" }, 400);
-        const modelRun = await db.prepare("SELECT * FROM model_runs WHERE run_id = ?").bind(modelRunId).first();
-        if (!modelRun) return json({ ok: false, error: "linked model run not found" }, 400);
-        const runOutput = parseObject(modelRun.output_json);
-        const compactId = (value) => String(value || "").replace(/^sporttery-/, "");
-        if (compactId(modelRun.match_id) !== compactId(body.matchId || body.match_id)) {
-          return json({ ok: false, error: "model run match does not match lock match" }, 400);
-        }
         if (modelRun.run_type !== "FINAL_LOCK" || runOutput.contractVersion !== "UNIFIED_PREDICTION_V4" || runOutput.gateResult?.passed !== true || runOutput.tenStepResult?.passed !== true) {
           return json({ ok: false, error: "linked model run did not pass the complete ten-step FINAL_LOCK contract" }, 400);
         }
-        body.sportteryPrediction = enrichPredictionFromUnifiedRun(prediction, runOutput);
-        const handicapPick = handicapPickFromPayload(prediction);
+        const hydratedPrediction = enrichPredictionFromUnifiedRun(prediction, runOutput);
+        body.sportteryPrediction = hydratedPrediction;
+        const handicapPick = handicapPickFromPayload(hydratedPrediction);
         const handicapEvidence = parseObject(runOutput.featureSet?.handicap);
         const scoreEvidence = parseObject(runOutput.featureSet?.score);
         const totalsEvidence = parseObject(runOutput.featureSet?.totals);
         const jointEvidence = parseObject(runOutput.featureSet?.jointDecision);
         const dataQualityEvidence = parseObject(runOutput.featureSet?.dataQuality);
         const handicapDecisionAudit = parseObject(jointEvidence.handicapDecisionAudit);
+        const modelRevision = firstText(runOutput.modelLessons?.version, hydratedPrediction.modelRevision, body.modelRevision);
+        const isR16 = /(?:^|[^A-Z0-9])R1[67](?:[^A-Z0-9]|$)/i.test(modelRevision);
         const handicapProbabilities = parseObject(handicapEvidence.probabilities);
         const rankedHandicap = ["让胜", "让平", "让负"].map((label) => [label, Number(handicapProbabilities[label])]).filter(([, value]) => Number.isFinite(value)).sort((a, b) => b[1] - a[1]);
         if (!handicapPick || rankedHandicap.length !== 3 || !Array.isArray(handicapEvidence.components) || handicapEvidence.components.length < 2) {
           return json({ ok: false, error: "FINAL_LOCK requires independent handicap probabilities from score grid and handicap market" }, 400);
         }
-        const compatibleFormalResolution = jointEvidence.role === "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
+        const compatibleFormalResolution = !isR16 && jointEvidence.role === "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
           && jointEvidence.formalPairOfficialScoreSupported === true
           && handicapDecisionAudit.resolved === true
           && Number(handicapDecisionAudit.probabilityGap || 0) <= 0.1;
         if (rankedHandicap[0][0] !== handicapPick && !compatibleFormalResolution) {
           return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with independent handicap probability leader ${rankedHandicap[0][0]} without a score-supported compatible formal resolution` }, 400);
         }
-        if (!Array.isArray(scoreEvidence.components) || scoreEvidence.components.length < 2 || scoreEvidence.marketComplete !== true) {
+        if (!isR16 && (!Array.isArray(scoreEvidence.components) || scoreEvidence.components.length < 2 || scoreEvidence.marketComplete !== true)) {
           return json({ ok: false, error: "FINAL_LOCK requires independent score probabilities from score model and score market" }, 400);
         }
         if (!Array.isArray(totalsEvidence.components) || totalsEvidence.components.length < 2 || totalsEvidence.marketComplete !== true) {
           return json({ ok: false, error: "FINAL_LOCK requires independent total-goals probabilities from score distribution and total-goals market" }, 400);
         }
-        if (!jointEvidence.selected || jointEvidence.selected.direction !== runOutput.finalDecision?.recommendationSide || jointEvidence.selected.handicapPick !== handicapPick || !(Number(jointEvidence.selected.scoreProbability) > 0) || jointEvidence.formalPairOfficialScoreSupported !== true) {
-          return json({ ok: false, error: "FINAL_LOCK requires a jointly compatible direction and handicap pair supported by at least one official score branch" }, 400);
+        const r16IndependentMarginalValid = isR16
+          && jointEvidence.role === "INDEPENDENT_MARKET_MARGINALS_WITH_FULL_GRID_CROSS_AUDIT"
+          && jointEvidence.independentHandicapLeader === handicapPick
+          && rankedHandicap[0][0] === handicapPick;
+        const legacyJointValid = !isR16
+          && jointEvidence.selected
+          && jointEvidence.selected.direction === runOutput.finalDecision?.recommendationSide
+          && jointEvidence.selected.handicapPick === handicapPick
+          && Number(jointEvidence.selected.scoreProbability) > 0
+          && jointEvidence.formalPairOfficialScoreSupported === true;
+        if (!r16IndependentMarginalValid && !legacyJointValid) {
+          return json({ ok: false, error: isR16 ? "R16+ FINAL_LOCK requires the independent full-grid handicap marginal leader" : "FINAL_LOCK requires a jointly compatible direction and handicap pair supported by at least one official score branch" }, 400);
         }
         if (runOutput.gateResult?.gates?.fundamentalData !== true || dataQualityEvidence.minimumRecentMatchesPerTeam !== 5 || dataQualityEvidence.temporalIntegrity !== true) {
           return json({ ok: false, error: "FINAL_LOCK requires complete non-market fundamentals, five recent matches per team, and pre-lock temporal integrity" }, 400);
         }
-        if (runOutput.gateResult?.gates?.oppositeWinPathChecked !== true || runOutput.gateResult?.gates?.secondScenarioInProbability !== true) {
-          return json({ ok: false, error: "FINAL_LOCK requires a true opposite-result path and the second scenario inside final direction probabilities" }, 400);
+        if (runOutput.gateResult?.gates?.oppositeWinPathChecked !== true || (!isR16 && runOutput.gateResult?.gates?.secondScenarioInProbability !== true)) {
+          return json({ ok: false, error: isR16 ? "R16+ FINAL_LOCK requires an opposite-result path in the full score distribution" : "FINAL_LOCK requires a true opposite-result path and the second scenario inside final direction probabilities" }, 400);
         }
         if (runOutput.gateResult?.gates?.twoLegContextComplete !== true) {
           return json({ ok: false, error: "FINAL_LOCK for a two-leg tie requires structured 90-minute, goal-difference, and aggregate-advancement context" }, 400);
@@ -5321,15 +5798,15 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       }), body.lockedAt || body.locked_at || new Date().toISOString());
       await db.prepare(`
         INSERT INTO locked_predictions (
-          lock_id, match_id, match_code, home_team, away_team, league, kickoff_time, locked_at, lock_type, model_version,
+          lock_id, model_run_id, match_id, match_code, home_team, away_team, league, kickoff_time, locked_at, lock_type, model_version,
           model_home_prob, model_draw_prob, model_away_prob, recommendation, recommendation_side, final_grade, final_action,
           confidence_score, risk_score, consistency_score, sporttery_home_sp, sporttery_draw_sp, sporttery_away_sp,
           sporttery_home_prob, sporttery_draw_prob, sporttery_away_prob, value_home_gap, value_draw_gap, value_away_gap,
           asian_handicap, asian_home_water, asian_away_water, euro_home_odds, euro_draw_odds, euro_away_odds,
           euro_home_prob, euro_draw_prob, euro_away_prob, data_quality, reasoning_summary, downgrade_reasons_json, result_status, payload_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
       `).bind(
-        lockId, body.matchId || body.match_id, body.matchCode || body.match_code || "", body.homeTeam || body.home_team || "", body.awayTeam || body.away_team || "",
+        lockId, modelRunId, body.matchId || body.match_id, body.matchCode || body.match_code || "", body.homeTeam || body.home_team || "", body.awayTeam || body.away_team || "",
         league, body.kickoffTime || body.kickoff_time || "", body.lockedAt || body.locked_at || new Date().toISOString(), lockType, body.modelVersion || body.model_version || "V1",
         n(body.modelHomeProb ?? body.model_home_prob ?? payloadSummary.modelHomeProb, 0), n(body.modelDrawProb ?? body.model_draw_prob ?? payloadSummary.modelDrawProb, 0), n(body.modelAwayProb ?? body.model_away_prob ?? payloadSummary.modelAwayProb, 0),
         body.recommendation || payloadSummary.recommendation || "", body.recommendationSide || body.recommendation_side || payloadSummary.recommendationSide || "SKIP", body.finalGrade || body.final_grade || payloadSummary.finalGrade || "D", body.finalAction || body.final_action || payloadSummary.finalAction || "谨慎",
@@ -5366,7 +5843,8 @@ if (path === "sync/okooo-live" && request.method === "POST") {
     }
 
     if (path === "cases" && request.method === "GET") {
-      return json({ ok: true, cases: await listCases(db) });
+      const includeShadow = url.searchParams.get("scope") === "all";
+      return json({ ok: true, scope: includeShadow ? "all" : "champion", cases: await listCases(db, { includeShadow }) });
     }
 
     if (path === "shadow-audits" && request.method === "GET") {
@@ -5411,7 +5889,130 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       return json({ ok: true, notes: await listModelUpgradeNotes(db, url.searchParams) });
     }
 
+    if (path === "model-validation-cohorts" && request.method === "POST") {
+      const auth = modelGovernanceAuthorization(request, env);
+      if (!auth.authorized) return json({ ok: false, error: auth.error }, 403);
+      await ensureModelValidationSchema(db);
+      const body = await readJson(request);
+      const primaryModule = String(body.primaryModule || body.primary_module || "").trim().toUpperCase();
+      const targetMarket = governanceTargetMarket(primaryModule, body.targetMarket || body.target_market || "");
+      const league = String(body.league || "").trim();
+      const season = String(body.season || "").trim();
+      const championRevision = String(body.championRevision || body.champion_revision || "").trim();
+      const challengerRevision = String(body.challengerRevision || body.challenger_revision || "").trim();
+      if (!primaryModule || !targetMarket || !league || !season || !championRevision || !challengerRevision) {
+        return json({ ok: false, error: "primaryModule, valid targetMarket, league, season, championRevision and challengerRevision required" }, 400);
+      }
+      if (championRevision === challengerRevision) return json({ ok: false, error: "Champion and Challenger revisions must differ" }, 400);
+      const cohortId = body.cohortId || body.cohort_id || `validation-${crypto.randomUUID()}`;
+      await db.prepare(`
+        INSERT INTO model_validation_cohorts (
+          cohort_id, primary_module, target_market, league, season, champion_revision, challenger_revision, status, created_by, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'COLLECTING', ?, ?)
+      `).bind(cohortId, primaryModule, targetMarket, league, season, championRevision, challengerRevision, auth.adminUser, new Date().toISOString()).run();
+      return json({ ok: true, cohortId, status: "COLLECTING", primaryModule, targetMarket, league, season });
+    }
+
+    if (path === "model-validation-samples" && request.method === "POST") {
+      const auth = modelGovernanceAuthorization(request, env);
+      if (!auth.authorized) return json({ ok: false, error: auth.error }, 403);
+      await ensureModelValidationSchema(db);
+      await ensureParallelModelRunSchema(db);
+      const body = await readJson(request);
+      const cohortId = String(body.cohortId || body.cohort_id || "").trim();
+      const championRunId = String(body.championRunId || body.champion_run_id || "").trim();
+      const challengerRunId = String(body.challengerRunId || body.challenger_run_id || "").trim();
+      if (!cohortId || !championRunId || !challengerRunId) return json({ ok: false, error: "cohortId, championRunId and challengerRunId required" }, 400);
+      if (championRunId === challengerRunId) return json({ ok: false, error: "Champion and Challenger run ids must differ" }, 400);
+      const cohort = await db.prepare("SELECT * FROM model_validation_cohorts WHERE cohort_id = ?").bind(cohortId).first();
+      if (!cohort) return json({ ok: false, error: "validation cohort not found" }, 404);
+      if (!["COLLECTING", "FAILED_GUARDRAILS"].includes(cohort.status)) return json({ ok: false, error: `cohort status ${cohort.status} does not accept samples` }, 409);
+      const championRun = await db.prepare("SELECT * FROM model_runs WHERE run_id = ?").bind(championRunId).first();
+      const challengerRun = await db.prepare("SELECT * FROM model_runs WHERE run_id = ?").bind(challengerRunId).first();
+      if (!championRun || !challengerRun) return json({ ok: false, error: "Champion or Challenger model run not found" }, 404);
+      if (String(championRun.run_role || "CHAMPION") !== "CHAMPION" || String(challengerRun.run_role || "") !== "CHALLENGER") return json({ ok: false, error: "paired validation runs must preserve CHAMPION and CHALLENGER roles" }, 400);
+      if (!championRun.comparison_group_id || championRun.comparison_group_id !== challengerRun.comparison_group_id) return json({ ok: false, error: "paired validation runs must share one comparison group" }, 400);
+      if (String(championRun.match_id) !== String(challengerRun.match_id)) return json({ ok: false, error: "paired runs must reference the same fixture" }, 400);
+      const championComparableInput = comparableValidationInput(championRun.input_json);
+      const challengerComparableInput = comparableValidationInput(challengerRun.input_json);
+      if (championComparableInput !== challengerComparableInput) return json({ ok: false, error: "paired runs must use an identical immutable evidence, odds and sample snapshot" }, 400);
+      const championOutput = parseObject(championRun.output_json);
+      const challengerOutput = parseObject(challengerRun.output_json);
+      if (runRevision(championOutput) !== cohort.champion_revision || runRevision(challengerOutput) !== cohort.challenger_revision) {
+        return json({ ok: false, error: "paired run revisions do not match cohort revisions" }, 400);
+      }
+      const input = parseObject(championRun.input_json);
+      const runLeague = String(input.match?.league || championOutput.match?.league || "").trim();
+      const runSeason = String(input.match?.season || String(input.match?.matchDate || input.match?.ticaiDate || "").slice(0, 4)).trim();
+      if (runLeague !== cohort.league || runSeason !== cohort.season) return json({ ok: false, error: "paired run league or season does not match cohort scope" }, 400);
+      const kickoffText = firstText(input.match?.kickoffTime, championOutput.match?.kickoffTime);
+      const matchDate = firstText(input.match?.matchDate, input.match?.ticaiDate, championOutput.match?.matchDate);
+      const kickoffAt = Date.parse(/^\d{4}-\d{2}-\d{2}T/.test(kickoffText) ? kickoffText : `${matchDate}T${kickoffText || "23:59:59"}+08:00`);
+      if (!Number.isFinite(kickoffAt) || Date.parse(championRun.created_at) > kickoffAt || Date.parse(challengerRun.created_at) > kickoffAt) {
+        return json({ ok: false, error: "both paired runs must be immutable pre-match snapshots" }, 400);
+      }
+      const inputHash = stableInputHash(championComparableInput);
+      await db.prepare(`
+        INSERT INTO model_validation_samples (cohort_id, match_id, champion_run_id, challenger_run_id, input_hash, registered_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(cohortId, championRun.match_id, championRunId, challengerRunId, inputHash, new Date().toISOString()).run();
+      return json({ ok: true, cohortId, matchId: championRun.match_id, inputHash });
+    }
+
+    if (path === "model-validation-cohorts/evaluate" && request.method === "POST") {
+      const auth = modelGovernanceAuthorization(request, env);
+      if (!auth.authorized) return json({ ok: false, error: auth.error }, 403);
+      const body = await readJson(request);
+      const cohortId = String(body.cohortId || body.cohort_id || "").trim();
+      if (!cohortId) return json({ ok: false, error: "cohortId required" }, 400);
+      const evaluated = await evaluateStoredValidationCohort(db, cohortId);
+      return json(evaluated, evaluated.status || (evaluated.ok ? 200 : 400));
+    }
+
+    if (path === "model-governance/approved" && request.method === "GET") {
+      const auth = modelGovernanceAuthorization(request, env);
+      if (!auth.authorized) return json({ ok: false, error: auth.error }, 403);
+      await ensureModelUpgradeSchema(db);
+      await ensureModelValidationSchema(db);
+      const league = String(url.searchParams.get("league") || "").trim();
+      const season = String(url.searchParams.get("season") || "").trim();
+      if (!league || !season) return json({ ok: false, error: "league and season required" }, 400);
+      const { results } = await db.prepare("SELECT * FROM model_upgrade_notes WHERE status = 'PROMOTED' AND league = ? ORDER BY adopted_at DESC, created_at DESC").bind(league).all();
+      const learningGovernance = {};
+      let r16Validation = {};
+      const approvedNotes = [];
+      for (const row of results || []) {
+        const note = rowToUpgradeNote(row);
+        const promotion = parseObject(note.recommendation?.challengerPromotion);
+        const cohortId = String(promotion.cohortId || "").trim();
+        if (!cohortId) continue;
+        const evaluated = await evaluateStoredValidationCohort(db, cohortId);
+        if (!evaluated.ok || evaluated.cohort.status !== "PROMOTED" || evaluated.cohort.league !== league || evaluated.cohort.season !== season || evaluated.validation.guardrailsPassed !== true) continue;
+        const source = {
+          governanceNoteId: note.noteId,
+          cohortId,
+          status: "PROMOTED",
+          primaryModule: evaluated.cohort.primary_module,
+          league,
+          season,
+          settledSamples: evaluated.validation.settledSamples,
+          reviewApproved: true,
+          approvedBy: promotion.approvedBy,
+          approvedAt: promotion.approvedAt,
+          validation: evaluated.validation,
+          serverDerived: true,
+        };
+        if (source.primaryModule === "LEAGUE_CALIBRATION" && !learningGovernance.leagueCalibration) learningGovernance.leagueCalibration = source;
+        if (source.primaryModule === "SEASON_SCORE_CALIBRATION" && !learningGovernance.seasonScoreCalibration) learningGovernance.seasonScoreCalibration = source;
+        if (source.primaryModule === "EXACT_SCORE" && !r16Validation.status) r16Validation = source;
+        approvedNotes.push({ noteId: note.noteId, cohortId, primaryModule: source.primaryModule, targetMarket: evaluated.cohort.target_market });
+      }
+      return json({ ok: true, league, season, learningGovernance, r16Validation, approvedNotes, source: "D1_PROMOTED_SERVER_VALIDATED_ONLY" });
+    }
+
     if (path === "model-upgrade-notes" && request.method === "POST") {
+      const auth = modelGovernanceAuthorization(request, env);
+      if (!auth.authorized) return json({ ok: false, error: auth.error }, 403);
       await ensureModelUpgradeSchema(db);
       const body = await readJson(request);
       const noteId = body.noteId || body.note_id || `upgrade-note-${crypto.randomUUID()}`;
@@ -5421,15 +6022,89 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       if (!sourceCaseId || !sourceLockId || !matchId) {
         return json({ ok: false, error: "sourceCaseId, sourceLockId and matchId required" }, 400);
       }
+      const existing = await db.prepare("SELECT * FROM model_upgrade_notes WHERE source_case_id = ?").bind(sourceCaseId).first();
+      const existingRecommendation = parseObject(existing?.recommendation_json);
+      const requestedRecommendation = parseObject(body.recommendation);
+      const recommendation = {
+        ...existingRecommendation,
+        ...requestedRecommendation,
+        challengerPromotion: {
+          ...parseObject(existingRecommendation.challengerPromotion),
+          ...parseObject(requestedRecommendation.challengerPromotion),
+        },
+      };
+      const targetStatus = normalizeReviewLearningStatus(body.status || (existing ? existing.status : "OBSERVATION"));
+      if (!targetStatus) return json({ ok: false, error: "unknown review-learning status" }, 400);
+      if (!existing && !["OBSERVATION", "PROPOSED"].includes(targetStatus)) {
+        return json({ ok: false, error: "new review-learning notes must start as OBSERVATION or PROPOSED" }, 400);
+      }
+      let cohortEvaluation = null;
+      const requestedCohortId = String(body.cohortId || body.cohort_id || requestedRecommendation.challengerPromotion?.cohortId || existingRecommendation.challengerPromotion?.cohortId || "").trim();
+      if (["VALIDATING", "ELIGIBLE", "PROMOTED"].includes(targetStatus)) {
+        if (!requestedCohortId) return json({ ok: false, error: `${targetStatus} requires a server validation cohort` }, 400);
+        cohortEvaluation = await evaluateStoredValidationCohort(db, requestedCohortId);
+        if (!cohortEvaluation.ok) return json(cohortEvaluation, cohortEvaluation.status || 400);
+        const proposedPrimaryModule = reviewPrimaryModule({ recommendation });
+        if (cohortEvaluation.cohort.primary_module !== proposedPrimaryModule) return json({ ok: false, error: "validation cohort primary module does not match proposal" }, 400);
+        if (cohortEvaluation.cohort.league !== String(existing?.league || body.league || "").trim()) return json({ ok: false, error: "validation cohort league does not match upgrade note" }, 400);
+        if (["ELIGIBLE", "PROMOTED"].includes(targetStatus) && cohortEvaluation.validation.guardrailsPassed !== true) {
+          return json({ ok: false, error: "server-derived cohort guardrails did not pass", validation: cohortEvaluation.validation }, 400);
+        }
+      }
+      const serverValidation = cohortEvaluation?.validation || {};
+      const transition = reviewLearningTransitionAudit(existing?.status || "OBSERVATION", targetStatus, {
+        ...body,
+        reviewApproved: targetStatus === "PROMOTED" ? true : body.reviewApproved,
+        approvedBy: targetStatus === "PROMOTED" ? auth.adminUser : body.approvedBy,
+        approvedAt: targetStatus === "PROMOTED" ? new Date().toISOString() : body.approvedAt,
+        validation: serverValidation,
+        recommendation,
+      });
+      if (!transition.valid) {
+        return json({ ok: false, error: "review-learning transition rejected", transition }, 400);
+      }
+      recommendation.primaryModule = transition.primaryModule || recommendation.primaryModule || "";
+      recommendation.validation = transition.validation;
+      recommendation.challengerPromotion = {
+        ...recommendation.challengerPromotion,
+        status: targetStatus,
+        primaryModule: transition.primaryModule || recommendation.challengerPromotion.primaryModule || "",
+        modules: transition.primaryModule ? [transition.primaryModule] : [],
+        cohortId: requestedCohortId || recommendation.challengerPromotion.cohortId || "",
+        settledSamples: Math.max(0, Number(transition.validation.settledSamples || recommendation.challengerPromotion.settledSamples || 0)),
+        validation: transition.validation,
+        reviewApproved: targetStatus === "PROMOTED",
+        approvedBy: targetStatus === "PROMOTED" ? auth.adminUser : "",
+        approvedAt: targetStatus === "PROMOTED" ? new Date().toISOString() : "",
+        validationSource: cohortEvaluation ? "D1_FIXED_PAIRED_COHORT" : "",
+        automaticPromotion: false,
+      };
+      const adoptedAt = targetStatus === "PROMOTED" ? recommendation.challengerPromotion.approvedAt : null;
+      if (existing) {
+        await db.prepare(`
+          UPDATE model_upgrade_notes SET
+            trigger_type=?, severity=?, status=?, title=?, diagnosis_json=?, recommendation_json=?, adopted_at=?
+          WHERE source_case_id=?
+        `).bind(
+          body.triggerType || body.trigger_type || existing.trigger_type,
+          body.severity || existing.severity,
+          targetStatus,
+          body.title || existing.title,
+          JSON.stringify(body.diagnosis || parseObject(existing.diagnosis_json)),
+          JSON.stringify(recommendation),
+          adoptedAt || existing.adopted_at || null,
+          sourceCaseId
+        ).run();
+        if (targetStatus === "PROMOTED" && requestedCohortId) {
+          await db.prepare("UPDATE model_validation_cohorts SET status = 'PROMOTED', promoted_note_id = ?, promoted_at = ? WHERE cohort_id = ?").bind(existing.note_id, adoptedAt, requestedCohortId).run();
+        }
+        return json({ ok: true, noteId: existing.note_id, status: targetStatus, transition, cohortId: requestedCohortId });
+      }
       await db.prepare(`
         INSERT INTO model_upgrade_notes (
           note_id, source_case_id, source_lock_id, match_id, model_version, league, trigger_type,
           severity, status, title, diagnosis_json, recommendation_json, created_at, adopted_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(source_case_id) DO UPDATE SET
-          trigger_type=excluded.trigger_type, severity=excluded.severity, status=excluded.status,
-          title=excluded.title, diagnosis_json=excluded.diagnosis_json, recommendation_json=excluded.recommendation_json,
-          adopted_at=excluded.adopted_at
       `).bind(
         noteId,
         sourceCaseId,
@@ -5439,14 +6114,14 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         body.league || "",
         body.triggerType || body.trigger_type || "MANUAL_REVIEW",
         body.severity || "MEDIUM",
-        body.status || "OPEN",
+        targetStatus,
         body.title || "人工复盘升级建议",
         JSON.stringify(body.diagnosis || {}),
-        JSON.stringify(body.recommendation || {}),
+        JSON.stringify(recommendation),
         body.createdAt || body.created_at || new Date().toISOString(),
-        body.adoptedAt || body.adopted_at || null
+        adoptedAt
       ).run();
-      return json({ ok: true, noteId });
+      return json({ ok: true, noteId, status: targetStatus, transition });
     }
 
     if (path === "similar-cases" && request.method === "POST") {

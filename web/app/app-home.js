@@ -794,7 +794,17 @@ function matchCard(match, options = {}) {
   const displayDate = options.dateGetter ? options.dateGetter(match) : ticaiDate(match);
   const statusText = finished ? "已完赛" : liveStatus.tone === "live" ? "进行中" : liveStatus.tone === "pending-result" ? "待回填" : "待赛";
   const modelText = pred ? `模型 ${pred.pick}` : "待锁版";
-  const scoreText = pred ? `比分 ${pred.mainScore} / ${pred.counterScore}` : "等待推演";
+  const scoreSelections = pred ? [pred.mainScore, pred.counterScore].filter(Boolean) : [];
+  const scoreUnavailable = pred?.marketAvailability?.scores === false || pred?.unifiedRunEvidence?.marketAvailability?.scores === false;
+  const scoreText = !pred
+    ? "等待推演"
+    : scoreUnavailable
+      ? "比分未开售"
+      : scoreSelections.length
+        ? `比分 ${scoreSelections.join(" / ")}`
+        : window.WC_R15_BACKTEST?.isR16Prediction?.(pred)
+          ? "比分未放行"
+          : "比分待补充";
   const liveItems = matchLiveDataSummary(match, pred);
   const liveValue =
     liveStatus.tone === "countdown"

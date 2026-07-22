@@ -4,7 +4,7 @@ const ids = process.argv.slice(2);
 if (!ids.length) throw new Error("Usage: node tools/publish-unified-locks.mjs <matchId...>");
 const apiBase = String(process.env.PUBLIC_API_BASE || "https://ticai-model.com").replace(/\/$/, "");
 const runLabel = String(process.env.UNIFIED_RUN_LABEL || "v4");
-const lockRevision = String(process.env.UNIFIED_LOCK_REVISION || "r2");
+const lockRevision = String(process.env.UNIFIED_LOCK_REVISION || "r16");
 const bootstrap = await (await fetch(`${apiBase}/api/bootstrap?scope=full&includeCases=0`)).json();
 const live = (bootstrap.matches || []).map((row) => {
   try { return { ...JSON.parse(row.payload_json || "{}"), cloudMatchId: row.match_id }; } catch { return {}; }
@@ -25,9 +25,10 @@ for (const id of ids) {
   const isFinal = run.lockType === "FINAL_LOCK";
   if (!isFinal && run.lockType !== "PRE_LOCK") throw new Error(`${id} has invalid lock type ${run.lockType}`);
   if (isFinal && (!run.gateResult?.passed || !run.tenStepResult?.passed)) throw new Error(`${id} has not passed FINAL_LOCK gates`);
-  if (run.contractVersion !== "UNIFIED_PREDICTION_V4" || !run.finalDecision?.winDrawLose || !run.finalDecision?.handicapPick || run.finalDecision?.scores?.length !== 2) {
+  if (run.contractVersion !== "UNIFIED_PREDICTION_V4" || !run.finalDecision?.winDrawLose || !run.finalDecision?.handicapPick || !run.finalDecision?.totalGoalsPick) {
     throw new Error(`${id} does not contain a complete unified prediction package`);
   }
+  if (!Array.isArray(run.finalDecision?.scores)) throw new Error(`${id} exact-score leaf must be an array`);
   const item = live.find((row) => String(row.matchId || row.cloudMatchId || "").replace(/^sporttery-/, "") === String(id));
   if (!item) throw new Error(`${id} missing from live pool`);
   const decision = run.finalDecision;
@@ -79,9 +80,9 @@ for (const id of ids) {
     riskScore: 100 - decision.confidence, consistencyScore: Number(outputConsistency.score ?? gateCompletionScore),
     sportteryHomeSp: Number(item.normal?.win), sportteryDrawSp: Number(item.normal?.draw), sportteryAwaySp: Number(item.normal?.lose),
     asianHandicap: handicap, dataQuality: run.featureSet?.dataQuality?.grade || "D",
-    reasoningSummary: `统一十步模型已完成当前SP、赛事动机、球队状态、风格对位、近期真实样本、赔率动态、比分总进球、让球独立边际、失败方式和价值过滤。让球候选按胜平负主方向下的完整联合净胜球分布选择，并由候选比分验证；独立边际第一项和排除候选项后的次优条件让球分别作风险审计与Challenger影子验票。比分候选按联合概率覆盖选择${decision.scores.join(" / ")}，独立风险剧本${independentRisk.score || "-"}不占候选名额；正式玩法仅以formalSelections为准。`,
+    reasoningSummary: `R16正式稳定模型：胜平负、让球和总进球按完整联合分布的独立边际生成，两个正式比分只作最终叶子输出。${decision.scores.length ? `比分候选按联合概率覆盖选择${decision.scores.join(" / ")}，` : "比分叶子当前不可用，"}比分正式准入按R16前向观察契约；正式玩法仅以formalSelections为准。`,
     sportteryPrediction: {
-      type: `${run.match.league} 稳定 V4 模型${isFinal ? "锁版" : "待锁版"}`, matchId: id, no: item.no || "", issue: item.issue || "",
+      type: `${run.match.league} R16 模型${isFinal ? "锁版" : "待锁版"}`, matchId: id, no: item.no || "", issue: item.issue || "",
       matchDate: item.matchDate || item.ticaiDate, kickoffTime: item.kickoffTime, competition: run.match.league,
       home: item.home, away: item.away, modelVersion: run.modelVersion, modelRevision, pick: candidateSelections.winDrawLose || "",
       handicap: item.handicap, handicapPick: candidateSelections.handicap || "", totalGoalsPick: candidateSelections.totalGoals || "",
@@ -105,6 +106,9 @@ for (const id of ids) {
         componentRecommendations: decision.componentRecommendations || null,
         marketAvailability: run.featureSet?.marketAvailability || null,
         outputConsistency,
+        predictiveConfidence: run.featureSet?.predictiveConfidence || null,
+        forwardValidation: run.featureSet?.forwardValidation || null,
+        reviewLearningContract: run.reviewLearningContract || null,
         criticalPackageGap,
         observationalMarkets: decision.observationalMarkets || [],
         formalMarkets,
@@ -144,16 +148,16 @@ for (const id of ids) {
     finalPick: { winDrawLose: candidateSelections.winDrawLose, handicap: candidateSelections.handicap, scores: candidateSelections.scores, totalGoals: candidateSelections.totalGoals },
     unifiedSteps: [
       marketAvailability.mode === "HHAD_ONLY"
-        ? `01 当前可售SP复核：官方未开售普通胜平负；让球${lock.asianHandicap} SP ${item.handicapOdds?.win || "-"} / ${item.handicapOdds?.draw || "-"} / ${item.handicapOdds?.lose || "-"}，按R15 HHAD_ONLY门禁处理。`
+        ? `01 当前可售SP复核：官方未开售普通胜平负；让球${lock.asianHandicap} SP ${item.handicapOdds?.win || "-"} / ${item.handicapOdds?.draw || "-"} / ${item.handicapOdds?.lose || "-"}，按R16 HHAD_ONLY门禁处理。`
         : `01 当前胜平负SP复核：${lock.sportteryHomeSp} / ${lock.sportteryDrawSp} / ${lock.sportteryAwaySp}。`,
       `02 赛事规则与动机：${research.motivation}`,
       `03 球队状态：${lock.teamState}`,
       `04 风格对位：${research.styleMatchup}`,
       `05 盘口与样本：完整盘口样本${run.featureSet.sampleCount}场，两队近期赛果已读取并去重。`,
       `06 赔率动态：${movement.market || "HAD"} ${first.updateDate || ""} ${first.updateTime || ""} ${first.h}/${first.d}/${first.a} -> ${latest.updateDate || ""} ${latest.updateTime || ""} ${latest.h}/${latest.d}/${latest.a}，状态${movement.marketState}。`,
-      `07 比分/总进球独立闸门：比分候选${decision.scores.join(" / ")}，总进球候选${decision.totalGoalsPick}，两个比分脚本至少覆盖一个总进球选择；是否正式放行以formalSelections为准。`,
-      `08 让球统一闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%；独立边际第一项${handicapAudit.independentLeader || "-"}，主方向完整分布候选单选${decision.handicapPick}，条件Challenger为${run.featureSet?.conditionalHandicapChallenger?.pick || "-"}，候选比分只作支持性验证。`,
-      `09 冲突与失败方式：正式比分${decision.scores.join(" / ")}服务最大概率覆盖；独立风险${independentRisk.score || "-"}只进入风险诊断和置信扣分。`,
+      `07 总进球/比分分轨：总进球${decision.totalGoalsPick}按完整总球边际概率前二生成；比分${decision.scores.join(" / ")}只作叶子输出，按R16前向契约保持C级观察，不反向改写总进球。`,
+      `08 让球独立闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%；正式单选固定为独立边际第一项${decision.handicapPick}，条件Challenger为${run.featureSet?.conditionalHandicapChallenger?.pick || "-"}。`,
+      `09 冲突与失败方式：一致性仅审计完整分布、xG、比赛类型和尾部，不作为预测置信度；独立风险${independentRisk.score || "-"}只进入风险诊断。`,
       `10 最终${isFinal ? "锁版" : "待锁版"}：${candidateSelections.winDrawLose || "未开售"}；${candidateSelections.handicap || "未开售"}；${candidateSelections.totalGoals || "未开售"}；${candidateSelections.scores.join(" / ") || "未开售"}；${decision.advice}。`,
     ],
   };

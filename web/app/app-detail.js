@@ -254,7 +254,7 @@ function renderQuickMatchMode(match, pred, filter, finished, hLabel) {
       <article>
         <span>最终锁版</span>
         <strong>${pred.pick} / ${handicapPick(pred) || "让球待定"}</strong>
-        <p>总进球 ${pred.totalGoalsPick || "暂无"} · 比分 ${pred.mainScore} / ${pred.counterScore}</p>
+        <p>总进球 ${pred.totalGoalsPick || "暂无"} · 比分 ${projectionScorePick(pred)}</p>
       </article>
       <article>
         <span>风险状态</span>
@@ -284,8 +284,13 @@ function renderQuickMatchMode(match, pred, filter, finished, hLabel) {
 }
 
 function projectionScorePick(pred, fallback = "") {
+  const availability = pred?.marketAvailability || pred?.unifiedRunEvidence?.marketAvailability || {};
+  if (availability.scores === false) return "未开售";
   const scores = [pred?.mainScore || pred?.score1, pred?.counterScore || pred?.score2].filter(Boolean);
-  return scores.length ? scores.join(" / ") : fallback || pred?.scorePick || "-";
+  if (scores.length) return scores.join(" / ");
+  const storedPick = fallback || pred?.scorePick || "";
+  if (storedPick && storedPick !== "-") return storedPick;
+  return window.WC_R15_BACKTEST?.isR16Prediction?.(pred) ? "未放行" : "-";
 }
 
 function escapedRegExp(value = "") {
@@ -465,7 +470,7 @@ function renderMatchDetail(no) {
           <div><small>单选</small><b>${pred ? pred.pick : finished ? "已完赛" : "待锁版"}</b></div>
           <div><small>让球</small><b>${pred ? handicapPick(pred) || "暂无" : hLabel || "暂无"}</b></div>
           <div><small>总进球</small><b>${pred?.totalGoalsPick || "暂无"}</b></div>
-          <div><small>比分预测</small><b>${pred ? `${pred.mainScore} / ${pred.counterScore}` : "待推演"}</b></div>
+          <div><small>比分预测</small><b>${pred ? projectionScorePick(pred) : "待推演"}</b></div>
         </div>
       </div>
     </section>
@@ -584,7 +589,7 @@ function sportteryResearchSnapshot(item, modelPred) {
       directionPick: availability.winDrawLose === false ? "未开售" : resolved?.pick || modelPred.pick || "-",
       handicapPick: availability.handicap === false ? "未开售" : resolved?.handicapPick || handicapPick(modelPred) || "-",
       totalPick: availability.totalGoals === false ? "未开售" : modelPred.totalGoalsPick || "-",
-      scorePick: availability.scores === false ? "未开售" : [modelPred.mainScore, modelPred.counterScore].filter(Boolean).join(" / ") || modelPred.scorePick || "-",
+      scorePick: projectionScorePick(modelPred),
       riskNotes,
       score,
       actualDirection: direction(score),
@@ -631,7 +636,7 @@ function sportteryV4Filter(modelPred, research) {
     type: modelPred.matchType || modelPred.type || "常规局",
     grade: confidenceGrade(modelPred) || "-",
     advice: modelPred.advice || research?.action || "复核",
-    scorePool: [modelPred.mainScore, modelPred.counterScore].filter(Boolean).join(" / ") || research?.scorePick || "-",
+    scorePool: projectionScorePick(modelPred, research?.scorePick),
     favoriteIntent: modelPred.favoriteIntent || modelPred.groupSituation || "按世界杯V4经验链判断，但联赛/杯赛保留各自版本号；赛事规则层分别解释动机。",
     underdogResistance: modelPred.underdogResistance || modelPred.recentAnalysis || "按弱队低位防守、转换和受让保护判断。",
     institutionFear: modelPred.institutionFear || modelPred.institutionLine || modelPred.marketGap || "等待机构视角补充。",
@@ -1293,11 +1298,12 @@ function renderSimilarCasePanel(pred, match) {
 
 function renderSportteryEvidenceGate(item, modelPred, research) {
   const leagueProfile = leagueProfileForMatch(item, modelPred);
+  const isR16 = window.WC_R15_BACKTEST?.isR16Prediction?.(modelPred) === true;
   const checks = [
-    ["锁版结果", Boolean(modelPred?.pick && modelPred?.totalGoalsPick && (modelPred?.mainScore || modelPred?.counterScore))],
+    ["锁版结果", isR16 ? hasCompleteSportteryLockFields(modelPred) : Boolean(modelPred?.pick && modelPred?.totalGoalsPick && (modelPred?.mainScore || modelPred?.counterScore))],
     ["体彩当前盘", Boolean(item?.normal || item?.handicapOdds)],
     ["让球盘口", Boolean(item?.handicap || modelPred?.handicapPick || modelPred?.handicap)],
-    ["比分赔率", Boolean(item?.scoreOdds?.length || modelPred?.mainScore)],
+    ...(!isR16 ? [["比分赔率", Boolean(item?.scoreOdds?.length || modelPred?.mainScore)]] : []),
     ["总进球赔率", Boolean(item?.totalGoalsOdds?.length || modelPred?.totalGoalsPick)],
     ["比赛发展推演", Boolean(modelPred?.script)],
     ["半场触发", Boolean(modelPred?.halftimeDecision || modelPred?.halftimeTrigger)],

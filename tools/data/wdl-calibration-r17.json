@@ -1,0 +1,257 @@
+{
+  "contractVersion": "WDL_MARKET_TEMPERATURE_LEAGUE_SHRINKAGE_V1",
+  "probabilityField": "marketProbabilities",
+  "sampleCount": 103,
+  "globalTemperature": 0.71,
+  "leagueShrinkage": 50,
+  "leagueProfiles": {
+    "世界杯": {
+      "sampleCount": 17,
+      "rawTemperature": 0.65,
+      "shrinkageWeight": 0.2537313432835821,
+      "temperature": 0.694776119402985,
+      "validation": {
+        "enoughSamples": false,
+        "directionNotDegraded": false,
+        "probabilityNotDegraded": false,
+        "status": "GLOBAL_FALLBACK"
+      },
+      "enabled": false
+    },
+    "巴西甲": {
+      "sampleCount": 6,
+      "rawTemperature": 0.5,
+      "shrinkageWeight": 0.10714285714285714,
+      "temperature": 0.6875,
+      "validation": {
+        "enoughSamples": false,
+        "directionNotDegraded": true,
+        "probabilityNotDegraded": true,
+        "status": "GLOBAL_FALLBACK"
+      },
+      "enabled": false
+    },
+    "挪超": {
+      "sampleCount": 15,
+      "rawTemperature": 0.57,
+      "shrinkageWeight": 0.23076923076923078,
+      "temperature": 0.6776923076923076,
+      "validation": {
+        "enoughSamples": true,
+        "directionNotDegraded": true,
+        "probabilityNotDegraded": true,
+        "status": "VALIDATED"
+      },
+      "enabled": false
+    },
+    "欧冠": {
+      "sampleCount": 7,
+      "rawTemperature": 0.53,
+      "shrinkageWeight": 0.12280701754385964,
+      "temperature": 0.6878947368421052,
+      "validation": {
+        "enoughSamples": false,
+        "directionNotDegraded": true,
+        "probabilityNotDegraded": true,
+        "status": "GLOBAL_FALLBACK"
+      },
+      "enabled": false
+    },
+    "欧联": {
+      "sampleCount": 3,
+      "rawTemperature": 0.5,
+      "shrinkageWeight": 0.05660377358490566,
+      "temperature": 0.6981132075471698,
+      "validation": {
+        "enoughSamples": false,
+        "directionNotDegraded": true,
+        "probabilityNotDegraded": true,
+        "status": "GLOBAL_FALLBACK"
+      },
+      "enabled": false
+    },
+    "瑞超": {
+      "sampleCount": 18,
+      "rawTemperature": 0.74,
+      "shrinkageWeight": 0.2647058823529412,
+      "temperature": 0.7179411764705882,
+      "validation": {
+        "enoughSamples": true,
+        "directionNotDegraded": true,
+        "probabilityNotDegraded": true,
+        "status": "VALIDATED"
+      },
+      "enabled": false
+    },
+    "美职": {
+      "sampleCount": 5,
+      "rawTemperature": 1.08,
+      "shrinkageWeight": 0.09090909090909091,
+      "temperature": 0.7436363636363637,
+      "validation": {
+        "enoughSamples": false,
+        "directionNotDegraded": true,
+        "probabilityNotDegraded": false,
+        "status": "GLOBAL_FALLBACK"
+      },
+      "enabled": false
+    },
+    "芬超": {
+      "sampleCount": 14,
+      "rawTemperature": 0.53,
+      "shrinkageWeight": 0.21875,
+      "temperature": 0.670625,
+      "validation": {
+        "enoughSamples": false,
+        "directionNotDegraded": true,
+        "probabilityNotDegraded": true,
+        "status": "GLOBAL_FALLBACK"
+      },
+      "enabled": false
+    },
+    "韩职": {
+      "sampleCount": 18,
+      "rawTemperature": 2,
+      "shrinkageWeight": 0.2647058823529412,
+      "temperature": 1.0514705882352942,
+      "validation": {
+        "enoughSamples": true,
+        "directionNotDegraded": false,
+        "probabilityNotDegraded": false,
+        "status": "GLOBAL_FALLBACK"
+      },
+      "enabled": false
+    }
+  },
+  "status": "CHALLENGER",
+  "automaticPromotion": false,
+  "directionPolicy": "VALIDATED_LEAGUE_MARKET_CALIBRATION_WITH_R16_MODEL_FALLBACK",
+  "globalChecks": {
+    "sufficientOutOfSampleSize": true,
+    "directionBeatsStoredModel": true,
+    "directionNotBelowMarket": true,
+    "brierBeatsBoth": true,
+    "logLossBeatsBoth": true
+  },
+  "leagueValidation": {
+    "世界杯": {
+      "enoughSamples": false,
+      "directionNotDegraded": false,
+      "probabilityNotDegraded": false,
+      "status": "GLOBAL_FALLBACK"
+    },
+    "巴西甲": {
+      "enoughSamples": false,
+      "directionNotDegraded": true,
+      "probabilityNotDegraded": true,
+      "status": "GLOBAL_FALLBACK"
+    },
+    "挪超": {
+      "enoughSamples": true,
+      "directionNotDegraded": true,
+      "probabilityNotDegraded": true,
+      "status": "VALIDATED"
+    },
+    "欧冠": {
+      "enoughSamples": false,
+      "directionNotDegraded": true,
+      "probabilityNotDegraded": true,
+      "status": "GLOBAL_FALLBACK"
+    },
+    "欧联": {
+      "enoughSamples": false,
+      "directionNotDegraded": true,
+      "probabilityNotDegraded": true,
+      "status": "GLOBAL_FALLBACK"
+    },
+    "瑞超": {
+      "enoughSamples": true,
+      "directionNotDegraded": true,
+      "probabilityNotDegraded": true,
+      "status": "VALIDATED"
+    },
+    "美职": {
+      "enoughSamples": false,
+      "directionNotDegraded": true,
+      "probabilityNotDegraded": false,
+      "status": "GLOBAL_FALLBACK"
+    },
+    "芬超": {
+      "enoughSamples": false,
+      "directionNotDegraded": true,
+      "probabilityNotDegraded": true,
+      "status": "GLOBAL_FALLBACK"
+    },
+    "韩职": {
+      "enoughSamples": true,
+      "directionNotDegraded": false,
+      "probabilityNotDegraded": false,
+      "status": "GLOBAL_FALLBACK"
+    }
+  },
+  "validation": {
+    "market": {
+      "hits": 36,
+      "total": 63,
+      "hitRate": 0.5714285714285714,
+      "averageBrier": 0.5478828921050852,
+      "averageLogLoss": 0.9287544730553748
+    },
+    "model": {
+      "hits": 32,
+      "total": 63,
+      "hitRate": 0.5079365079365079,
+      "averageBrier": 0.5965021721603573,
+      "averageLogLoss": 1.0029728572988694
+    },
+    "globalCalibration": {
+      "hits": 36,
+      "total": 63,
+      "hitRate": 0.5714285714285714,
+      "averageBrier": 0.5474585031870588,
+      "averageLogLoss": 0.9212918185018799
+    },
+    "calibrated": {
+      "hits": 36,
+      "total": 63,
+      "hitRate": 0.5714285714285714,
+      "averageBrier": 0.5417562880588511,
+      "averageLogLoss": 0.9147827670451619
+    }
+  },
+  "researchGateStatus": "ELIGIBLE",
+  "promotionDecision": "NOT_PROMOTED",
+  "promotionReason": "R17 mixed deployment policy did not satisfy the Champion promotion target; retain research evidence only.",
+  "modelId": "WDL_R17_LOCKED_ALL_MARKET_TEMPERATURE_20260722",
+  "modelRevision": "LESSONS_2026-07-22_WDL_CALIBRATION_R17",
+  "trainingWindow": {
+    "from": "2026-06-30T12:39:18.000Z",
+    "to": "2026-07-21T05:56:17.706Z"
+  },
+  "trainingSource": {
+    "contractVersion": "WDL_LOCKED_TRAINING_MANIFEST_V2",
+    "auditedRecords": 188,
+    "eligibleSamples": 103,
+    "sourceCounts": {
+      "STATIC_WORLD_CUP_LOCK": 62,
+      "STATIC_SPORTTTERY_LOCK": 6,
+      "D1_LOCK": 120
+    },
+    "leagueCounts": {
+      "世界杯": 17,
+      "巴西甲": 6,
+      "挪超": 15,
+      "欧冠": 7,
+      "欧联": 3,
+      "瑞超": 18,
+      "美职": 5,
+      "芬超": 14,
+      "韩职": 18
+    }
+  },
+  "validationMethod": {
+    "type": "EXPANDING_WINDOW_OUT_OF_SAMPLE",
+    "minimumTrain": 40,
+    "testBlock": 12
+  }
+}

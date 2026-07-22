@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { evaluateLock, rowToCase } from "../web/functions/api/lib/utils.js";
-import { PREFERRED_LOCK_ORDER_SQL, caseDiagnosticPayload, upgradeNoteFromCase } from "../web/functions/api/[[path]].js";
+import { PREFERRED_LOCK_ORDER_SQL, REVIEW_LEARNING_STATUSES, caseDiagnosticPayload, enrichPredictionFromUnifiedRun, modelGovernanceAuthorization, normalizeReviewLearningStatus, reviewLearningTransitionAudit, settledCaseRole, upgradeNoteFromCase, validationCohortMetrics } from "../web/functions/api/[[path]].js";
 
 assert.equal(PREFERRED_LOCK_ORDER_SQL, "locked_at DESC, lock_id DESC");
 assert.ok(!PREFERRED_LOCK_ORDER_SQL.includes("lock_type"));
+assert.equal(settledCaseRole("FINAL_LOCK", true), "CHAMPION_FORMAL");
+assert.equal(settledCaseRole("FINAL_LOCK", false), "SHADOW_OBSERVATION");
+assert.equal(settledCaseRole("PRE_LOCK", true), "SHADOW_OBSERVATION");
 
 const lock = {
   lock_id: "test-lock",
@@ -105,10 +108,12 @@ assert.equal(riskOnlyPayload.scoreCovered, false);
 assert.equal(riskOnlyPayload.independentRiskScenario.score, "1-2");
 const failedShadowNote = upgradeNoteFromCase(lock, result, review, "case-test", failedShadowPayload);
 assert.equal(failedShadowNote.triggerType, "MODEL_FAILURE");
-assert.equal(failedShadowNote.status, "SHADOW_PENDING");
+assert.equal(failedShadowNote.status, "PROPOSED");
 assert.equal(failedShadowNote.recommendation.shouldUpgradeModel, true);
-assert.equal(failedShadowNote.recommendation.challengerPromotion.status, "SHADOW_PENDING");
-assert.ok(failedShadowNote.recommendation.challengerPromotion.modules.includes("HANDICAP"));
+assert.equal(failedShadowNote.recommendation.challengerPromotion.status, "PROPOSED");
+assert.equal(failedShadowNote.recommendation.challengerPromotion.modules.length, 1);
+assert.equal(failedShadowNote.recommendation.challengerPromotion.primaryModule, failedShadowNote.recommendation.challengerPromotion.modules[0]);
+assert.ok(failedShadowNote.recommendation.challengerPromotion.observedModules.includes("HANDICAP"));
 assert.equal(failedShadowNote.recommendation.challengerPromotion.minimumSettledSamples, 30);
 assert.equal(failedShadowNote.recommendation.challengerPromotion.targetSettledSamples, 50);
 assert.ok(failedShadowNote.recommendation.challengerPromotion.guardrailMetrics.includes("formalWinDrawLoseHandicapJointHit"));
@@ -178,7 +183,7 @@ assert.equal(r15Payload.selectionAudit.accountingPolicy, "FINAL_LOCK_FORMAL_SELE
 assert.equal(r15Payload.outputConsistency.score, 92.2);
 assert.deepEqual(r15Payload.criticalPackageGap.blockedMarkets, ["handicap"]);
 const r15Note = upgradeNoteFromCase(r15Lock, r15Result, r15Review, "case-r15", r15Payload);
-assert.equal(r15Note.status, "SHADOW_PENDING");
+assert.equal(r15Note.status, "PROPOSED");
 assert.ok(r15Note.title.includes("候选让球影子失败"));
 assert.ok(!r15Note.title.includes("正式让球单选失败"));
 assert.equal(r15Note.recommendation.challengerPromotion.accountingScope, "CANDIDATE_SHADOW");
@@ -186,6 +191,9 @@ assert.deepEqual(r15Note.recommendation.challengerPromotion.primaryMetrics, ["ca
 assert.ok(r15Note.recommendation.nextActions.some((action) => action.includes("R15已关闭该让球正式玩法")));
 const exposedR15Case = rowToCase({
   case_id: "case-r15",
+  case_role: "SHADOW_OBSERVATION",
+  source_lock_type: "PRE_LOCK",
+  preferred_at_settlement: 1,
   source_lock_id: r15Lock.lock_id,
   match_id: r15Lock.match_id,
   hit_status: "VOID",
@@ -196,6 +204,9 @@ const exposedR15Case = rowToCase({
 assert.equal(exposedR15Case.candidateHandicapSingleHit, false);
 assert.equal(exposedR15Case.formalHandicapSingleHit, null, "正式让球为空时不得回退到候选结果");
 assert.equal(exposedR15Case.selectionAudit.scope, "CANDIDATE_SHADOW");
+assert.equal(exposedR15Case.caseRole, "SHADOW_OBSERVATION");
+assert.equal(exposedR15Case.sourceLockType, "PRE_LOCK");
+assert.equal(exposedR15Case.preferredAtSettlement, true);
 
 const passedShadowNote = upgradeNoteFromCase(lock, result, {
   ...review,
@@ -214,7 +225,7 @@ const passedShadowNote = upgradeNoteFromCase(lock, result, {
   },
 });
 assert.equal(passedShadowNote.triggerType, "SHADOW_OBSERVATION");
-assert.equal(passedShadowNote.status, "OBSERVED");
+assert.equal(passedShadowNote.status, "OBSERVATION");
 assert.equal(passedShadowNote.recommendation.shouldUpgradeModel, false);
 
 const incompleteNote = upgradeNoteFromCase(lock, result, review, "case-partial", {
@@ -225,7 +236,7 @@ const incompleteNote = upgradeNoteFromCase(lock, result, review, "case-partial",
   modelAudit: { status: "PARTIAL", winDrawLoseSingleHit: true, handicapSingleHit: null, totalGoalsDoubleHit: true, scoreDoubleHit: null },
 });
 assert.equal(incompleteNote.triggerType, "DATA_QUALITY_OBSERVATION");
-assert.equal(incompleteNote.status, "OPEN");
+assert.equal(incompleteNote.status, "OBSERVATION");
 assert.ok(!incompleteNote.title.includes("命中样本沉淀"));
 
 const exposedCase = rowToCase({
@@ -253,5 +264,173 @@ assert.equal(exposedCase.evidenceDirectionConflict.materialConflict, true);
 assert.equal(exposedCase.evidenceDrivenRiskChallenger.challengerWeight, 0.35);
 assert.equal(exposedCase.competitionStageAudit.matchCanonical, "QUALIFYING");
 assert.equal(exposedCase.twoLegLeadControl.factor, 0.88);
+
+assert.deepEqual(REVIEW_LEARNING_STATUSES, ["OBSERVATION", "PROPOSED", "CHALLENGER", "VALIDATING", "ELIGIBLE", "PROMOTED", "REJECTED", "RETIRED"]);
+assert.equal(normalizeReviewLearningStatus("SHADOW_PENDING"), "PROPOSED");
+assert.equal(normalizeReviewLearningStatus("OPEN"), "OBSERVATION");
+const singleModulePayload = {
+  recommendation: {
+    challengerPromotion: { primaryModule: "HANDICAP", modules: ["HANDICAP"] },
+  },
+};
+assert.equal(reviewLearningTransitionAudit("PROPOSED", "CHALLENGER", singleModulePayload).valid, true);
+assert.equal(reviewLearningTransitionAudit("PROPOSED", "CHALLENGER", {
+  recommendation: { challengerPromotion: { primaryModule: "HANDICAP", modules: ["HANDICAP", "WIN_DRAW_LOSE"] } },
+}).valid, false, "一个Challenger不得同时改多个模块");
+assert.equal(reviewLearningTransitionAudit("CHALLENGER", "VALIDATING", singleModulePayload).valid, true);
+const incompleteValidation = reviewLearningTransitionAudit("VALIDATING", "ELIGIBLE", {
+  ...singleModulePayload,
+  validation: { settledSamples: 29, guardrailsPassed: true },
+});
+assert.equal(incompleteValidation.valid, false);
+assert.ok(incompleteValidation.reasons.includes("SETTLED_SAMPLES_BELOW_30"));
+const validValidation = {
+  serverDerived: true,
+  settledSamples: 30,
+  guardrailsPassed: true,
+  candidateHitRate: 0.58,
+  championHitRate: 0.53,
+  brierScore: 0.59,
+  baselineBrierScore: 0.62,
+  logLoss: 0.95,
+  baselineLogLoss: 1.01,
+  formalCoverageRate: 0.72,
+  baselineCoverageRate: 0.7,
+  abcdMonotonic: true,
+};
+const clientClaimedValidation = reviewLearningTransitionAudit("VALIDATING", "ELIGIBLE", {
+  ...singleModulePayload,
+  validation: { ...validValidation, serverDerived: false },
+});
+assert.equal(clientClaimedValidation.valid, false, "客户端声称命中率不得用于治理晋级");
+assert.ok(clientClaimedValidation.reasons.includes("SERVER_DERIVED_VALIDATION_REQUIRED"));
+assert.equal(reviewLearningTransitionAudit("VALIDATING", "ELIGIBLE", { ...singleModulePayload, validation: validValidation }).valid, true);
+const automaticPromotion = reviewLearningTransitionAudit("ELIGIBLE", "PROMOTED", { ...singleModulePayload, validation: validValidation });
+assert.equal(automaticPromotion.valid, false, "达到30场和守门指标也不得自动晋级");
+assert.ok(automaticPromotion.reasons.includes("MANUAL_REVIEW_APPROVAL_REQUIRED"));
+assert.equal(reviewLearningTransitionAudit("ELIGIBLE", "PROMOTED", {
+  ...singleModulePayload,
+  validation: validValidation,
+  reviewApproved: true,
+  approvedBy: "manual-reviewer",
+  approvedAt: "2026-08-22T12:00:00+08:00",
+}).valid, true);
+assert.equal(reviewLearningTransitionAudit("PROPOSED", "PROMOTED", {
+  ...singleModulePayload,
+  validation: validValidation,
+  reviewApproved: true,
+  approvedBy: "manual-reviewer",
+  approvedAt: "2026-08-22T12:00:00+08:00",
+}).valid, false, "不得跳过VALIDATING和ELIGIBLE直接晋级");
+
+const scoreLeafUnavailable = enrichPredictionFromUnifiedRun({
+  mainScore: "2-1",
+  counterScore: "1-1",
+  candidateSelections: { scores: ["2-1", "1-1"] },
+  formalSelections: { scores: ["2-1", "1-1"] },
+}, {
+  contractVersion: "UNIFIED_PREDICTION_V4",
+  modelLessons: { version: "LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16" },
+  finalDecision: {
+    winDrawLose: "胜",
+    handicapPick: "让平",
+    totalGoalsPick: "2球/3球",
+    scores: [],
+    formalMarkets: ["winDrawLose", "handicap", "totalGoals"],
+  },
+  featureSet: {
+    probabilities: { HOME: 0.55, DRAW: 0.27, AWAY: 0.18 },
+    marketAvailability: { markets: { winDrawLose: true, handicap: true, totalGoals: true, scores: true } },
+    handicap: { probabilities: { "让胜": 0.3, "让平": 0.4, "让负": 0.3 } },
+  },
+  scenarioSet: [],
+});
+assert.equal(scoreLeafUnavailable.mainScore, "");
+assert.equal(scoreLeafUnavailable.counterScore, "");
+assert.deepEqual(scoreLeafUnavailable.predictedScores, []);
+assert.deepEqual(scoreLeafUnavailable.candidateSelections.scores, []);
+assert.deepEqual(scoreLeafUnavailable.formalSelections.scores, []);
+assert.equal(scoreLeafUnavailable.formalSelections.winDrawLose, "胜");
+assert.equal(scoreLeafUnavailable.formalSelections.handicap, "让平");
+assert.equal(scoreLeafUnavailable.formalSelections.totalGoals, "2球/3球");
+
+const requestWithHeaders = (token = "", user = "") => ({
+  headers: new Headers({ "x-admin-token": token, "x-admin-user": user }),
+});
+assert.equal(modelGovernanceAuthorization(requestWithHeaders("secret", "reviewer"), { MODEL_GOVERNANCE_ADMIN_TOKEN: "secret" }).authorized, true);
+assert.equal(modelGovernanceAuthorization(requestWithHeaders("wrong", "reviewer"), { MODEL_GOVERNANCE_ADMIN_TOKEN: "secret" }).authorized, false);
+assert.equal(modelGovernanceAuthorization(requestWithHeaders("secret", ""), { MODEL_GOVERNANCE_ADMIN_TOKEN: "secret" }).authorized, false);
+
+const gradePlan = [
+  ...Array.from({ length: 8 }, () => ["A", true]),
+  ...Array.from({ length: 6 }, () => ["B", true]),
+  ...Array.from({ length: 2 }, () => ["B", false]),
+  ...Array.from({ length: 3 }, () => ["C", true]),
+  ...Array.from({ length: 4 }, () => ["C", false]),
+  ...Array.from({ length: 7 }, () => ["D", false]),
+];
+const cohortRows = gradePlan.map(([grade, challengerHit], index) => {
+  const output = (challenger) => JSON.stringify({
+    match: { handicap: "-1" },
+    featureSet: { probabilities: challenger ? { HOME: 0.7, DRAW: 0.2, AWAY: 0.1 } : { HOME: 0.2, DRAW: 0.3, AWAY: 0.5 } },
+    finalDecision: {
+      winDrawLose: challenger && challengerHit ? "胜" : "负",
+      handicapPick: "让胜",
+      totalGoalsPick: "2球/3球",
+      scores: ["2-0", "2-1"],
+      formalMarkets: ["winDrawLose", "handicap", "totalGoals"],
+      componentRecommendations: { winDrawLose: { grade: challenger ? grade : "C" } },
+    },
+  });
+  return {
+    match_id: `cohort-${index}`,
+    champion_output_json: output(false),
+    challenger_output_json: output(true),
+    full_time_home_goals: 2,
+    full_time_away_goals: 0,
+    result_1x2: "HOME",
+    total_goals: 2,
+  };
+});
+const derivedCohort = validationCohortMetrics(cohortRows, { primary_module: "WIN_DRAW_LOSE", target_market: "winDrawLose" });
+assert.equal(derivedCohort.serverDerived, true);
+assert.equal(derivedCohort.settledSamples, 30);
+assert.equal(derivedCohort.targetMarket, "winDrawLose");
+assert.ok(derivedCohort.candidateHitRate > derivedCohort.championHitRate);
+assert.ok(derivedCohort.brierScore < derivedCohort.baselineBrierScore);
+assert.ok(derivedCohort.logLoss < derivedCohort.baselineLogLoss);
+assert.equal(derivedCohort.abcdMonotonic, true);
+assert.equal(derivedCohort.guardrailsPassed, true);
+
+const exactScoreRows = Array.from({ length: 30 }, (_, index) => {
+  const grade = index < 15 ? "A" : "B";
+  const output = (challenger) => JSON.stringify({
+    featureSet: {
+      probabilities: { HOME: 0.6, DRAW: 0.25, AWAY: 0.15 },
+      score: { probabilities: challenger ? { "2-0": 0.6, "1-0": 0.4 } : { "2-0": 0.3, "1-0": 0.7 } },
+    },
+    finalDecision: {
+      scores: challenger ? ["2-0", "1-0"] : ["1-0", "0-0"],
+      formalMarkets: ["scores"],
+      componentRecommendations: { scores: { grade } },
+    },
+  });
+  return {
+    match_id: `score-cohort-${index}`,
+    champion_output_json: output(false),
+    challenger_output_json: output(true),
+    full_time_home_goals: 2,
+    full_time_away_goals: 0,
+    result_1x2: "HOME",
+    total_goals: 2,
+  };
+});
+const exactScoreCohort = validationCohortMetrics(exactScoreRows, { primary_module: "EXACT_SCORE", target_market: "scores" });
+assert.equal(exactScoreCohort.targetMarket, "scores");
+assert.equal(exactScoreCohort.candidateHitRate, 1);
+assert.equal(exactScoreCohort.championHitRate, 0);
+assert.ok(exactScoreCohort.brierScore < exactScoreCohort.baselineBrierScore, "比分晋级必须读取比分分布，不得复用胜平负概率");
+assert.ok(exactScoreCohort.logLoss < exactScoreCohort.baselineLogLoss);
+assert.equal(exactScoreCohort.guardrailsPassed, true);
 
 console.log("Review learning tests passed.");

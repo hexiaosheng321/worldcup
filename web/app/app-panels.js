@@ -985,16 +985,19 @@ function r15BacktestRows(sourceRows = modelAuditRows()) {
   const engine = window.WC_R15_BACKTEST;
   if (!engine) return [];
   return sourceRows
-    .filter(({ pred }) => engine.isR15Prediction(pred))
+    .filter(({ pred }) => engine.isRevisionPrediction(pred, "R16"))
     .map((row) => {
       const score = officialScoreForMatch(row.match);
       const parsed = parseScore(score);
-      const evaluation = engine.evaluatePrediction(row.pred, {
+      const evaluation = engine.evaluatePrediction({
+        ...row.pred,
+        matchId: row.pred.matchId || row.match.matchId || row.match.cloudMatchId || row.match.id,
+      }, {
         score,
         direction: direction(score),
         handicap: handicapDirection(score, reviewHandicapLine(row.pred)),
         total: parsed?.total,
-      });
+      }, { revision: "R16" });
       return { ...row, score, evaluation };
     })
     .sort((a, b) => {
@@ -1011,6 +1014,7 @@ function r15BacktestSummary(rows = r15BacktestRows()) {
     pendingMatches: 0,
     observationOnly: 0,
     metrics: {},
+    candidateMetrics: {},
   };
 }
 
@@ -1076,19 +1080,19 @@ function openR15DailyReviewModal() {
   const tableRows = dailyRows.map((day) => `
     <tr>
       <td><strong>${dash(day.date)}</strong><small>${formatDate(day.date)}</small></td>
-      <td><strong>${day.opened}</strong><small>场R15推演</small></td>
+      <td><strong>${day.opened}</strong><small>场R16推演</small></td>
       <td><strong>${day.released}</strong><small>${day.opened ? `${((day.released / day.opened) * 100).toFixed(1)}% 放行` : "0.0% 放行"}</small></td>
       <td><div class="r15-daily-match-list">${day.matches.map(r15DailyMatchItem).join("") || "<span class='empty-mark'>当日无正式放行</span>"}</div></td>
       <td><strong>${day.verified}</strong><small>${day.pending} 场待验票</small></td>
       <td><strong>${day.hits}</strong><small>${day.partial} 场部分命中 · ${day.misses} 场未中</small></td>
       <td><strong>${day.verified ? `${day.hits}/${day.verified}` : "-"}</strong><small>${day.rate === null ? "等待赛果" : `${(day.rate * 100).toFixed(1)}%`}</small></td>
     </tr>
-  `).join("") || `<tr><td colspan="7" class="empty-cell">尚未读取到每日R15记录</td></tr>`;
+  `).join("") || `<tr><td colspan="7" class="empty-cell">尚未读取到每日R16记录</td></tr>`;
 
   const modal = document.createElement("div");
   modal.className = "global-stats-modal r15-daily-review-modal";
   modal.innerHTML = `
-    <div class="global-stats-dialog r15-daily-review-dialog" role="dialog" aria-modal="true" aria-label="R15每日放行复盘">
+    <div class="global-stats-dialog r15-daily-review-dialog" role="dialog" aria-modal="true" aria-label="R16每日放行复盘">
       <header>
         <div>
           <span>DAILY RELEASE REVIEW</span>
@@ -1100,7 +1104,7 @@ function openR15DailyReviewModal() {
       <div class="global-stats-dialog-body r15-daily-review-body">
         <section class="r15-daily-overview">
           <article><span>推演日期</span><strong>${dailyRows.length}</strong><em>按北京时间锁版日聚合</em></article>
-          <article><span>累计推演</span><strong>${totalOpened}</strong><em>R15 / R15a 记录</em></article>
+          <article><span>累计推演</span><strong>${totalOpened}</strong><em>R16前向记录</em></article>
           <article><span>累计放行</span><strong>${totalReleased}</strong><em>至少一个正式玩法</em></article>
           <article><span>完成验票</span><strong>${totalVerified}</strong><em>${Math.max(0, totalReleased - totalVerified)} 场等待赛果</em></article>
           <article class="is-hit"><span>命中场次</span><strong>${totalHits}<small>/${totalVerified}</small></strong><em>${totalVerified ? hitRate(totalHits, totalVerified) : "暂无已验样本"}</em></article>
@@ -1108,7 +1112,7 @@ function openR15DailyReviewModal() {
         <section class="r15-daily-rule">
           <b>每日口径</b>
           <span>推演日 = lockedAt 北京时间</span>
-          <span>推演 = 当日完成的R15记录</span>
+          <span>推演 = 当日完成的R16不可变赛前记录</span>
           <span>挑出 = 至少一个 formalSelection</span>
           <span>命中 = 当场正式放行玩法全部命中</span>
           <span>部分命中单列，不计整场命中</span>
@@ -1135,17 +1139,17 @@ function renderR15BacktestEntry(sourceRows = modelAuditRows()) {
   if (!target) return;
   const rows = r15BacktestRows(sourceRows);
   const summary = r15BacktestSummary(rows);
-  const progress = Math.min(100, (summary.verifiedMatches / 30) * 100);
-  const remaining = Math.max(0, 30 - summary.verifiedMatches);
+  const forward = window.WC_R15_BACKTEST?.forwardProgress(rows.map((row) => row.evaluation)) || { settled: 0, target: 30, remaining: 30 };
+  const progress = Math.min(100, (forward.settled / forward.target) * 100);
   target.innerHTML = `
     <button type="button" class="r15-backtest-launch" data-r15-backtest-open>
-      <span class="r15-launch-index">R15</span>
+      <span class="r15-launch-index">R16</span>
       <span class="r15-launch-copy">
-        <b>专项回测窗口</b>
-        <strong>${summary.verifiedMatches}<small>/30 场首轮样本</small></strong>
-        <em>${summary.pendingMatches} 场待验票 · ${remaining ? `还差 ${remaining} 场进入首轮复盘` : "已达到首轮复盘样本线"}</em>
+        <b>30场前向验证</b>
+        <strong>${forward.settled}<small>/30 场已完赛样本</small></strong>
+        <em>${rows.length - forward.settled} 场待验票 · ${forward.remaining ? `还差 ${forward.remaining} 场进入人工评审` : "已达到人工评审样本线"}</em>
       </span>
-      <span class="r15-launch-progress" aria-label="R15首轮样本进度 ${progress.toFixed(0)}%">
+      <span class="r15-launch-progress" aria-label="R16前向样本进度 ${progress.toFixed(0)}%">
         <i style="--r15-progress:${progress}%"></i>
       </span>
       <span class="r15-launch-action">打开专项窗口 <b aria-hidden="true">↗</b></span>
@@ -1196,10 +1200,12 @@ function r15SampleStatus(evaluation = {}) {
 function openR15BacktestModal() {
   const rows = r15BacktestRows();
   const summary = r15BacktestSummary(rows);
+  const forward = window.WC_R15_BACKTEST?.forwardProgress(rows.map((row) => row.evaluation)) || { settled: 0, target: 30, remaining: 30 };
   const dailyRows = r15DailyReviewRows(rows);
   const releasedRows = rows.filter(({ evaluation }) => evaluation.hasFormal);
   const latestDaily = dailyRows[0] || { date: "-", opened: 0, released: 0, verified: 0, hits: 0, rate: null };
-  const progress = Math.min(100, (summary.verifiedMatches / 30) * 100);
+  const latestDailyLabel = latestDaily.date === "-" ? "等待首场R16记录" : formatDate(latestDaily.date);
+  const progress = Math.min(100, (forward.settled / forward.target) * 100);
   const marketMeta = [
     ["winDrawLose", "胜平负单选", "01"],
     ["handicap", "让球单选", "02"],
@@ -1208,12 +1214,13 @@ function openR15BacktestModal() {
   ];
   const metricCards = marketMeta.map(([key, label, index]) => {
     const metric = summary.metrics[key] || { hits: 0, total: 0, grades: {} };
+    const candidateMetric = summary.candidateMetrics?.[key] || { hits: 0, total: 0 };
     return `
       <article class="r15-audit-metric">
         <span>${index} / ${label}</span>
         <strong>${metric.hits}<small>/${metric.total}</small></strong>
         <b>${metric.total ? hitRate(metric.hits, metric.total) : "暂无验证样本"}</b>
-        <em>${r15GradeBreakdown(metric)}</em>
+        <em>${r15GradeBreakdown(metric)}<br>候选观察 ${candidateMetric.hits}/${candidateMetric.total}</em>
       </article>
     `;
   }).join("");
@@ -1241,32 +1248,34 @@ function openR15BacktestModal() {
   const modal = document.createElement("div");
   modal.className = "global-stats-modal r15-backtest-modal";
   modal.innerHTML = `
-    <div class="global-stats-dialog r15-backtest-dialog" role="dialog" aria-modal="true" aria-label="R15专项回测">
+    <div class="global-stats-dialog r15-backtest-dialog" role="dialog" aria-modal="true" aria-label="R16前向验证">
       <header>
         <div>
-          <span>R15 PERFORMANCE LEDGER</span>
-          <strong>R15专项回测</strong>
-          <em>只验正式放行玩法；未开售、候选结论和观察项不进入分母。</em>
+          <span>R16 FORWARD VALIDATION LEDGER</span>
+          <strong>R16 · 30场前向验证</strong>
+          <em>30场进度统计全部不可变赛前R16记录；玩法命中率只统计正式放行项。</em>
         </div>
-        <button type="button" data-global-stats-close aria-label="关闭R15专项回测">×</button>
+        <button type="button" data-global-stats-close aria-label="关闭R16前向验证">×</button>
       </header>
       <div class="global-stats-dialog-body r15-backtest-body">
         <section class="r15-sample-ledger">
           <div>
             <span>首轮复盘进度</span>
-            <strong>${summary.verifiedMatches}<small>/30</small></strong>
-            <em>目标区间 30–50 场 · 以至少一个正式玩法完成验票为一场有效样本</em>
+            <strong>${forward.settled}<small>/30</small></strong>
+            <em>同一赛事只计一次 · 赛前快照不可修改 · 满30场后人工评审，不自动升级</em>
           </div>
           <div class="r15-ledger-track"><i style="--r15-progress:${progress}%"></i></div>
           <dl>
             <div><dt>待验票</dt><dd>${summary.pendingMatches}</dd></div>
             <div><dt>观察/跳过</dt><dd>${summary.observationOnly}</dd></div>
-            <div><dt>R15记录</dt><dd>${summary.totalRows}</dd></div>
+            <div><dt>R16记录</dt><dd>${summary.totalRows}</dd></div>
+            <div><dt>Brier</dt><dd>${summary.probabilityMetrics?.averageBrierScore == null ? "-" : summary.probabilityMetrics.averageBrierScore.toFixed(3)}</dd></div>
+            <div><dt>Log Loss</dt><dd>${summary.probabilityMetrics?.averageLogLoss == null ? "-" : summary.probabilityMetrics.averageLogLoss.toFixed(3)}</dd></div>
           </dl>
         </section>
         <button type="button" class="r15-daily-review-launch" data-r15-daily-review-open>
           <span>DAILY / 每日放行复盘</span>
-          <strong>${formatDate(latestDaily.date)} · ${latestDaily.opened} 场推演，挑出 ${latestDaily.released} 场</strong>
+          <strong>${latestDailyLabel} · ${latestDaily.opened} 场推演，挑出 ${latestDaily.released} 场</strong>
           <em>${latestDaily.verified ? `已验 ${latestDaily.verified} 场 · 命中 ${latestDaily.hits}/${latestDaily.verified} · ${hitRate(latestDaily.hits, latestDaily.verified)}` : `${latestDaily.released} 场等待官方赛果验票`}</em>
           <b>打开每日复盘窗口 <i aria-hidden="true">↗</i></b>
         </button>
@@ -1276,7 +1285,8 @@ function openR15BacktestModal() {
           <span>官方90分钟赛果</span>
           <span>逐玩法独立分母</span>
           <span>仅 formalSelections</span>
-          <span>R15a并入R15、版本单列</span>
+          <span>Brier / Log Loss统计全部有赛前概率且已完赛的R16记录</span>
+          <span>比分前30场为C级观察，不进入正式分母</span>
         </section>
         <section class="r15-ledger-table-wrap">
           <div class="global-stats-table-toolbar r15-ledger-toolbar">
@@ -2075,7 +2085,7 @@ function autoDecisionGate(no, pred) {
   const row = spRadarForMatch(no);
   const hasCurrentOdds = Boolean(oddsMatch(no));
   const weightedChecks = [
-    ["锁版结果", Boolean(pred.pick && pred.totalGoalsPick && (pred.mainScore || pred.score1)), 25],
+    ["锁版结果", window.WC_R15_BACKTEST?.isR16Prediction?.(pred) ? hasCompleteSportteryLockFields(pred) : Boolean(pred.pick && pred.totalGoalsPick && (pred.mainScore || pred.score1)), 25],
     ["体彩当前盘", hasCurrentOdds, 20],
     ["体彩开盘偏差", Boolean(pred.marketGap), 15],
     ["历史样本", hasHistoricalSample(no, pred), 10],

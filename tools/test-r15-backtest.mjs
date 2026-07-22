@@ -30,6 +30,7 @@ const prediction = {
 };
 
 assert.equal(engine.isR15Prediction(prediction), true);
+assert.equal(engine.isR16Prediction(prediction), false);
 assert.equal(engine.revisionLabel(prediction), "R15a");
 assert.equal(engine.inferenceDate({ lockedAt: "2026-07-17T15:59:59Z" }, "2026-07-19"), "2026-07-17");
 assert.equal(engine.inferenceDate({ lockedAt: "2026-07-17T16:00:01Z" }, "2026-07-19"), "2026-07-18");
@@ -96,6 +97,61 @@ const legacy = engine.evaluatePrediction({
   formalSelections: prediction.formalSelections,
 }, { score: "2-1", direction: "胜", handicap: "让平", total: 3 });
 assert.equal(legacy.hasFormal, false, "非R15记录不得进入专项统计");
+
+const r16Prediction = {
+  ...prediction,
+  matchId: "r16-fixture-001",
+  modelRevision: "LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16",
+  lockId: "manual-sporttery-test-v4-pre-r16",
+  marketAvailability: { winDrawLose: true, handicap: true, totalGoals: true, scores: true },
+  candidateSelections: { winDrawLose: "胜", handicap: "让平", totalGoals: "2球/3球", scores: ["2-1", "1-1"] },
+  formalSelections: { winDrawLose: "胜", handicap: "让平", totalGoals: "2球/3球", scores: [] },
+  modelHomeProb: 0.6,
+  modelDrawProb: 0.25,
+  modelAwayProb: 0.15,
+};
+assert.equal(engine.isR16Prediction(r16Prediction), true);
+assert.equal(engine.revisionLabel(r16Prediction), "R16");
+const r17Prediction = { ...r16Prediction, modelRevision: "LESSONS_2026-07-22_WDL_CALIBRATION_R17" };
+assert.equal(engine.isR16Prediction(r17Prediction), true, "R17延续R16正式玩法与叶子分轨统计口径");
+assert.equal(engine.revisionLabel(r17Prediction), "R16");
+const r16Evaluation = engine.evaluatePrediction(r16Prediction, {
+  score: "2-1",
+  direction: "胜",
+  handicap: "让平",
+  total: 3,
+}, { revision: "R16" });
+assert.equal(r16Evaluation.sampleKey, "r16-fixture-001");
+assert.equal(r16Evaluation.hasFormal, true);
+assert.equal(r16Evaluation.markets.winDrawLose.hit, true);
+assert.equal(r16Evaluation.markets.handicap.hit, true);
+assert.equal(r16Evaluation.markets.totalGoals.hit, true);
+assert.equal(r16Evaluation.markets.scores.qualified, false, "R16前30场比分保持候选观察，不进入正式分母");
+assert.equal(r16Evaluation.markets.scores.candidateQualified, true);
+assert.equal(r16Evaluation.markets.scores.candidateHit, true);
+assert.ok(r16Evaluation.probabilityAudit.brierScore > 0);
+assert.ok(r16Evaluation.probabilityAudit.logLoss > 0);
+const r16Summary = engine.summarize([r16Evaluation]);
+assert.equal(r16Summary.metrics.scores.total, 0);
+assert.deepEqual(JSON.parse(JSON.stringify(r16Summary.candidateMetrics.scores)), { hits: 1, total: 1 });
+assert.equal(r16Summary.probabilityMetrics.total, 1);
+assert.equal(r16Summary.probabilityMetrics.averageBrierScore, r16Evaluation.probabilityAudit.brierScore);
+assert.deepEqual(JSON.parse(JSON.stringify(engine.forwardProgress([r16Evaluation]))), {
+  cohort: "R16_FORWARD_30",
+  settled: 1,
+  target: 30,
+  remaining: 29,
+  complete: false,
+  status: "COLLECTING",
+});
+assert.equal(engine.forwardProgress([r16Evaluation, r16Evaluation]).settled, 1);
+assert.equal(engine.nonScorePredictionAvailable({
+  ...r16Prediction,
+  mainScore: "",
+  counterScore: "",
+  candidateSelections: { winDrawLose: "胜", handicap: "让平", totalGoals: "2球/3球", scores: [] },
+  formalSelections: { winDrawLose: "胜", handicap: "让平", totalGoals: "2球/3球", scores: [] },
+}), true, "R16比分为空时三个非比分玩法仍构成可展示推演");
 
 const currentLocks = JSON.parse(fs.readFileSync(new URL("../web/data/manual-locks-20260717-v4-r15a.json", import.meta.url), "utf8"));
 const currentEvaluations = currentLocks.map((lock) => engine.evaluatePrediction({

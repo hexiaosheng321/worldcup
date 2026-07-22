@@ -1,0 +1,385 @@
+{
+  "contractVersion": "WDL_R18_MARKET_RESIDUAL_SELECTOR_V1",
+  "sampleCount": 103,
+  "globalPriorStrength": 12,
+  "leagueShrinkage": 16,
+  "minimumPatternSupport": 8,
+  "minimumModelEdge": 0.08,
+  "globalDisagreement": {
+    "sampleCount": 22,
+    "marketHits": 10,
+    "modelHits": 8,
+    "bothMissed": 4,
+    "delta": -2,
+    "rawModelEdge": -0.09090909090909091
+  },
+  "globalProfiles": {
+    "AWAY_TO_DRAW|MEDIUM_0_15": {
+      "sampleCount": 2,
+      "marketHits": 1,
+      "modelHits": 1,
+      "bothMissed": 0,
+      "delta": 0,
+      "rawEdge": 0,
+      "shrunkModelEdge": -0.07792207792207792
+    },
+    "AWAY_TO_DRAW|CLOSE_0_06": {
+      "sampleCount": 1,
+      "marketHits": 1,
+      "modelHits": 0,
+      "bothMissed": 0,
+      "delta": -1,
+      "rawEdge": -1,
+      "shrunkModelEdge": -0.16083916083916083
+    },
+    "HOME_TO_AWAY|CLOSE_0_06": {
+      "sampleCount": 3,
+      "marketHits": 1,
+      "modelHits": 2,
+      "bothMissed": 0,
+      "delta": 1,
+      "rawEdge": 0.3333333333333333,
+      "shrunkModelEdge": -0.006060606060606055
+    },
+    "AWAY_TO_HOME|STRONG_OVER_0_15": {
+      "sampleCount": 2,
+      "marketHits": 1,
+      "modelHits": 1,
+      "bothMissed": 0,
+      "delta": 0,
+      "rawEdge": 0,
+      "shrunkModelEdge": -0.07792207792207792
+    },
+    "HOME_TO_AWAY|STRONG_OVER_0_15": {
+      "sampleCount": 7,
+      "marketHits": 3,
+      "modelHits": 3,
+      "bothMissed": 1,
+      "delta": 0,
+      "rawEdge": 0,
+      "shrunkModelEdge": -0.057416267942583726
+    },
+    "HOME_TO_DRAW|MEDIUM_0_15": {
+      "sampleCount": 1,
+      "marketHits": 0,
+      "modelHits": 1,
+      "bothMissed": 0,
+      "delta": 1,
+      "rawEdge": 1,
+      "shrunkModelEdge": -0.006993006993006987
+    },
+    "AWAY_TO_HOME|CLOSE_0_06": {
+      "sampleCount": 3,
+      "marketHits": 2,
+      "modelHits": 0,
+      "bothMissed": 1,
+      "delta": -2,
+      "rawEdge": -0.6666666666666666,
+      "shrunkModelEdge": -0.20606060606060606
+    },
+    "HOME_TO_AWAY|MEDIUM_0_15": {
+      "sampleCount": 1,
+      "marketHits": 0,
+      "modelHits": 0,
+      "bothMissed": 1,
+      "delta": 0,
+      "rawEdge": 0,
+      "shrunkModelEdge": -0.0839160839160839
+    },
+    "AWAY_TO_HOME|MEDIUM_0_15": {
+      "sampleCount": 2,
+      "marketHits": 1,
+      "modelHits": 0,
+      "bothMissed": 1,
+      "delta": -1,
+      "rawEdge": -0.5,
+      "shrunkModelEdge": -0.14935064935064934
+    }
+  },
+  "leagueProfiles": {
+    "世界杯": {
+      "disagreementSampleCount": 2,
+      "patterns": {
+        "AWAY_TO_DRAW|MEDIUM_0_15": {
+          "sampleCount": 1,
+          "marketHits": 0,
+          "modelHits": 1,
+          "bothMissed": 0,
+          "delta": 1,
+          "rawEdge": 1,
+          "shrunkModelEdge": -0.014514896867838042,
+          "parentEdge": -0.07792207792207792
+        },
+        "HOME_TO_AWAY|CLOSE_0_06": {
+          "sampleCount": 1,
+          "marketHits": 0,
+          "modelHits": 1,
+          "bothMissed": 0,
+          "delta": 1,
+          "rawEdge": 1,
+          "shrunkModelEdge": 0.05311942959001783,
+          "parentEdge": -0.006060606060606055
+        }
+      }
+    },
+    "巴西甲": {
+      "disagreementSampleCount": 0,
+      "patterns": {}
+    },
+    "挪超": {
+      "disagreementSampleCount": 3,
+      "patterns": {
+        "AWAY_TO_HOME|STRONG_OVER_0_15": {
+          "sampleCount": 1,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 0,
+          "delta": -1,
+          "rawEdge": -1,
+          "shrunkModelEdge": -0.13216195569136746,
+          "parentEdge": -0.07792207792207792
+        },
+        "AWAY_TO_HOME|MEDIUM_0_15": {
+          "sampleCount": 2,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 1,
+          "delta": -1,
+          "rawEdge": -0.5,
+          "shrunkModelEdge": -0.18831168831168832,
+          "parentEdge": -0.14935064935064934
+        }
+      }
+    },
+    "欧冠": {
+      "disagreementSampleCount": 4,
+      "patterns": {
+        "HOME_TO_AWAY|STRONG_OVER_0_15": {
+          "sampleCount": 3,
+          "marketHits": 1,
+          "modelHits": 1,
+          "bothMissed": 1,
+          "delta": 0,
+          "rawEdge": 0,
+          "shrunkModelEdge": -0.04835054142533366,
+          "parentEdge": -0.057416267942583726
+        },
+        "AWAY_TO_HOME|CLOSE_0_06": {
+          "sampleCount": 1,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 0,
+          "delta": -1,
+          "rawEdge": -1,
+          "shrunkModelEdge": -0.25276292335115863,
+          "parentEdge": -0.20606060606060606
+        }
+      }
+    },
+    "欧联": {
+      "disagreementSampleCount": 0,
+      "patterns": {}
+    },
+    "瑞超": {
+      "disagreementSampleCount": 4,
+      "patterns": {
+        "AWAY_TO_DRAW|MEDIUM_0_15": {
+          "sampleCount": 1,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 0,
+          "delta": -1,
+          "rawEdge": -1,
+          "shrunkModelEdge": -0.13216195569136746,
+          "parentEdge": -0.07792207792207792
+        },
+        "HOME_TO_AWAY|STRONG_OVER_0_15": {
+          "sampleCount": 1,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 0,
+          "delta": -1,
+          "rawEdge": -1,
+          "shrunkModelEdge": -0.1128623698283141,
+          "parentEdge": -0.057416267942583726
+        },
+        "HOME_TO_AWAY|CLOSE_0_06": {
+          "sampleCount": 1,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 0,
+          "delta": -1,
+          "rawEdge": -1,
+          "shrunkModelEdge": -0.06452762923351159,
+          "parentEdge": -0.006060606060606055
+        },
+        "AWAY_TO_HOME|CLOSE_0_06": {
+          "sampleCount": 1,
+          "marketHits": 0,
+          "modelHits": 0,
+          "bothMissed": 1,
+          "delta": 0,
+          "rawEdge": 0,
+          "shrunkModelEdge": -0.19393939393939394,
+          "parentEdge": -0.20606060606060606
+        }
+      }
+    },
+    "美职": {
+      "disagreementSampleCount": 0,
+      "patterns": {}
+    },
+    "芬超": {
+      "disagreementSampleCount": 3,
+      "patterns": {
+        "AWAY_TO_HOME|STRONG_OVER_0_15": {
+          "sampleCount": 1,
+          "marketHits": 0,
+          "modelHits": 1,
+          "bothMissed": 0,
+          "delta": 1,
+          "rawEdge": 1,
+          "shrunkModelEdge": -0.014514896867838042,
+          "parentEdge": -0.07792207792207792
+        },
+        "HOME_TO_AWAY|STRONG_OVER_0_15": {
+          "sampleCount": 1,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 0,
+          "delta": -1,
+          "rawEdge": -1,
+          "shrunkModelEdge": -0.1128623698283141,
+          "parentEdge": -0.057416267942583726
+        },
+        "AWAY_TO_HOME|CLOSE_0_06": {
+          "sampleCount": 1,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 0,
+          "delta": -1,
+          "rawEdge": -1,
+          "shrunkModelEdge": -0.25276292335115863,
+          "parentEdge": -0.20606060606060606
+        }
+      }
+    },
+    "韩职": {
+      "disagreementSampleCount": 6,
+      "patterns": {
+        "AWAY_TO_DRAW|CLOSE_0_06": {
+          "sampleCount": 1,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 0,
+          "delta": -1,
+          "rawEdge": -1,
+          "shrunkModelEdge": -0.2102015631427396,
+          "parentEdge": -0.16083916083916083
+        },
+        "HOME_TO_AWAY|CLOSE_0_06": {
+          "sampleCount": 1,
+          "marketHits": 0,
+          "modelHits": 1,
+          "bothMissed": 0,
+          "delta": 1,
+          "rawEdge": 1,
+          "shrunkModelEdge": 0.05311942959001783,
+          "parentEdge": -0.006060606060606055
+        },
+        "HOME_TO_AWAY|STRONG_OVER_0_15": {
+          "sampleCount": 2,
+          "marketHits": 0,
+          "modelHits": 2,
+          "bothMissed": 0,
+          "delta": 2,
+          "rawEdge": 1,
+          "shrunkModelEdge": 0.060074428495481134,
+          "parentEdge": -0.057416267942583726
+        },
+        "HOME_TO_DRAW|MEDIUM_0_15": {
+          "sampleCount": 1,
+          "marketHits": 0,
+          "modelHits": 1,
+          "bothMissed": 0,
+          "delta": 1,
+          "rawEdge": 1,
+          "shrunkModelEdge": 0.05224187577128754,
+          "parentEdge": -0.006993006993006987
+        },
+        "HOME_TO_AWAY|MEDIUM_0_15": {
+          "sampleCount": 1,
+          "marketHits": 0,
+          "modelHits": 0,
+          "bothMissed": 1,
+          "delta": 0,
+          "rawEdge": 0,
+          "shrunkModelEdge": -0.07897984368572603,
+          "parentEdge": -0.0839160839160839
+        }
+      }
+    }
+  },
+  "status": "CHALLENGER",
+  "automaticPromotion": false,
+  "promotionDecision": "FORWARD_VALIDATION_REQUIRED",
+  "validationMethod": "EXPANDING_WINDOW_OUT_OF_SAMPLE_THEN_30_TO_50_FORWARD_SAME_INPUT_PAIRS",
+  "validation": {
+    "champion": {
+      "hits": 32,
+      "total": 63,
+      "hitRate": 0.5079365079365079,
+      "averageBrier": 0.5965021721603573,
+      "averageLogLoss": 1.0029728572988694
+    },
+    "market": {
+      "hits": 36,
+      "total": 63,
+      "hitRate": 0.5714285714285714,
+      "averageBrier": 0.5478828921050852,
+      "averageLogLoss": 0.9287544730553748
+    },
+    "challenger": {
+      "hits": 36,
+      "total": 63,
+      "hitRate": 0.5714285714285714,
+      "averageBrier": 0.5478828921050852,
+      "averageLogLoss": 0.9287544730553748
+    },
+    "overrides": 0
+  },
+  "researchChecks": {
+    "sufficientOutOfSampleSize": true,
+    "directionBeatsChampion": true,
+    "brierNotDegraded": true,
+    "logLossNotDegraded": true
+  },
+  "modelId": "WDL_R18_MARKET_RESIDUAL_SELECTOR_20260722",
+  "modelRevision": "LESSONS_2026-07-22_MARKET_RESIDUAL_R18_CHALLENGER",
+  "championRevision": "LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16",
+  "trainingWindow": {
+    "from": "2026-06-30T12:39:18.000Z",
+    "to": "2026-07-21T05:56:17.706Z"
+  },
+  "trainingSource": {
+    "contractVersion": "WDL_LOCKED_TRAINING_MANIFEST_V2",
+    "auditedRecords": 188,
+    "eligibleSamples": 103,
+    "sourceCounts": {
+      "STATIC_WORLD_CUP_LOCK": 62,
+      "STATIC_SPORTTTERY_LOCK": 6,
+      "D1_LOCK": 120
+    },
+    "leagueCounts": {
+      "世界杯": 17,
+      "巴西甲": 6,
+      "挪超": 15,
+      "欧冠": 7,
+      "欧联": 3,
+      "瑞超": 18,
+      "美职": 5,
+      "芬超": 14,
+      "韩职": 18
+    }
+  }
+}

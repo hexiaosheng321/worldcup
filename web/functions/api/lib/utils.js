@@ -152,6 +152,11 @@ export function rowToCase(row) {
   }
   return {
     caseId: row.case_id,
+    caseRole: row.case_role || payload.caseRole || "CHAMPION_FORMAL",
+    sourceLockType: row.source_lock_type || payload.sourceLockType || "FINAL_LOCK",
+    preferredAtSettlement: row.preferred_at_settlement === undefined || row.preferred_at_settlement === null
+      ? payload.preferredAtSettlement !== false
+      : Number(row.preferred_at_settlement) === 1,
     sourceLockId: row.source_lock_id,
     matchId: row.match_id,
     league: row.league,

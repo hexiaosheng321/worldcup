@@ -16,14 +16,35 @@
     return /(?:^|[^A-Z0-9])R15A?(?:[^A-Z0-9]|$)/i.test(revisionText(pred));
   }
 
+  function isR16Prediction(pred = {}) {
+    return /(?:^|[^A-Z0-9])R1[67](?:[^A-Z0-9]|$)/i.test(revisionText(pred));
+  }
+
+  function isRevisionPrediction(pred = {}, revision = "R15") {
+    return String(revision || "R15").toUpperCase() === "R16" ? isR16Prediction(pred) : isR15Prediction(pred);
+  }
+
   function revisionLabel(pred = {}) {
     const text = revisionText(pred);
+    if (/(?:^|[^A-Z0-9])R1[67](?:[^A-Z0-9]|$)/i.test(text)) return "R16";
     if (/(?:^|[^A-Z0-9])R15A(?:[^A-Z0-9]|$)/i.test(text)) return "R15a";
     return isR15Prediction(pred) ? "R15" : "-";
   }
 
   function formalSelections(pred = {}) {
     const source = pred.formalSelections || pred.unifiedRunEvidence?.formalSelections || {};
+    return {
+      winDrawLose: source.winDrawLose || null,
+      handicap: source.handicap || null,
+      totalGoals: source.totalGoals || null,
+      scores: Array.isArray(source.scores)
+        ? source.scores.filter(Boolean)
+        : String(source.scores || "").split(/\s*[\/、,，]\s*/).filter(Boolean),
+    };
+  }
+
+  function candidateSelections(pred = {}) {
+    const source = pred.candidateSelections || pred.unifiedRunEvidence?.candidateSelections || {};
     return {
       winDrawLose: source.winDrawLose || null,
       handicap: source.handicap || null,
@@ -48,6 +69,24 @@
     return !EMPTY_SELECTIONS.has(String(value || "").trim());
   }
 
+  function nonScorePredictionAvailable(pred = {}) {
+    const formal = formalSelections(pred);
+    const candidates = candidateSelections(pred);
+    return [
+      formal.winDrawLose,
+      formal.handicap,
+      formal.totalGoals,
+      candidates.winDrawLose,
+      candidates.handicap,
+      candidates.totalGoals,
+      pred.pick,
+      pred.recommendationSide,
+      pred.handicapPick,
+      pred.handicapRecommendation,
+      pred.totalGoalsPick,
+    ].some(usableSelection);
+  }
+
   function normalizedScore(value) {
     return String(value || "").trim().replace(":", "-");
   }
@@ -60,8 +99,55 @@
       .filter(Boolean);
   }
 
-  function evaluatePrediction(pred = {}, actual = {}) {
+  function predictionSampleKey(pred = {}) {
+    const direct = pred.matchId || pred.match_id || pred.fixtureId || pred.fixture_id || pred.unifiedRunEvidence?.matchId;
+    if (direct) return String(direct).replace(/^sporttery-/, "");
+    const date = inferenceDate(pred, pred.date || pred.matchDate || pred.ticaiDate || "");
+    const home = pred.home || pred.homeTeam || pred.home_team || "";
+    const away = pred.away || pred.awayTeam || pred.away_team || "";
+    if (home && away) return `${date}|${home}|${away}`;
+    return String(pred.lockId || pred.lock_id || "").trim();
+  }
+
+  function selectionHit(market, selection, actual = {}, actualTotal = Number(actual.total)) {
+    if (market === "winDrawLose") return selection === actual.direction;
+    if (market === "handicap") return selection === actual.handicap;
+    if (market === "totalGoals") {
+      const actualBucket = actualTotal >= 7 ? "7+" : String(actualTotal);
+      return Number.isFinite(actualTotal) && totalGoalOptions(selection).includes(actualBucket);
+    }
+    if (market === "scores") return selection.map(normalizedScore).includes(normalizedScore(actual.score));
+    return false;
+  }
+
+  function directionKey(value) {
+    const text = String(value || "").trim().toUpperCase();
+    if (["HOME", "H", "胜"].includes(text)) return "HOME";
+    if (["DRAW", "D", "平"].includes(text)) return "DRAW";
+    if (["AWAY", "A", "负"].includes(text)) return "AWAY";
+    return "";
+  }
+
+  function probabilityAudit(pred = {}, actual = {}) {
+    const evidence = pred.unifiedRunEvidence || {};
+    const source = evidence.probabilities || evidence.featureSet?.probabilities || {};
+    const raw = {
+      HOME: Number(pred.modelHomeProb ?? pred.model_home_prob ?? source.HOME),
+      DRAW: Number(pred.modelDrawProb ?? pred.model_draw_prob ?? source.DRAW),
+      AWAY: Number(pred.modelAwayProb ?? pred.model_away_prob ?? source.AWAY),
+    };
+    const total = Object.values(raw).reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
+    const actualDirection = directionKey(actual.direction);
+    if (!actualDirection || Object.values(raw).some((value) => !Number.isFinite(value) || value < 0) || total <= 0) return null;
+    const probabilities = Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, value / total]));
+    const brierScore = Object.entries(probabilities).reduce((sum, [key, value]) => sum + (value - (key === actualDirection ? 1 : 0)) ** 2, 0);
+    const logLoss = -Math.log(Math.max(1e-15, probabilities[actualDirection]));
+    return { probabilities, actualDirection, brierScore, logLoss };
+  }
+
+  function evaluatePrediction(pred = {}, actual = {}, options = {}) {
     const formal = formalSelections(pred);
+    const candidates = candidateSelections(pred);
     const availability = marketAvailability(pred);
     const components = componentRecommendations(pred);
     const verified = Boolean(actual.score);
@@ -70,36 +156,34 @@
 
     MARKET_KEYS.forEach((market) => {
       const selection = formal[market];
+      const candidateSelection = candidates[market];
       const available = availability[market] !== false;
-      const qualified = isR15Prediction(pred) && available && usableSelection(selection);
+      const qualified = isRevisionPrediction(pred, options.revision || "R15") && available && usableSelection(selection);
+      const candidateQualified = isRevisionPrediction(pred, options.revision || "R15") && available && usableSelection(candidateSelection);
       let hit = null;
-      if (qualified && verified) {
-        if (market === "winDrawLose") hit = selection === actual.direction;
-        if (market === "handicap") hit = selection === actual.handicap;
-        if (market === "totalGoals") {
-          const actualBucket = actualTotal >= 7 ? "7+" : String(actualTotal);
-          hit = Number.isFinite(actualTotal) && totalGoalOptions(selection).includes(actualBucket);
-        }
-        if (market === "scores") {
-          hit = selection.map(normalizedScore).includes(normalizedScore(actual.score));
-        }
-      }
+      if (qualified && verified) hit = selectionHit(market, selection, actual, actualTotal);
+      const candidateHit = candidateQualified && verified ? selectionHit(market, candidateSelection, actual, actualTotal) : null;
       markets[market] = {
         selection,
+        candidateSelection,
         available,
         qualified,
+        candidateQualified,
         grade: components[market]?.grade || "-",
         hit,
+        candidateHit,
       };
     });
 
     const hasFormal = MARKET_KEYS.some((market) => markets[market].qualified);
     return {
+      sampleKey: predictionSampleKey(pred),
       revision: revisionLabel(pred),
       overallGrade: pred.unifiedRunEvidence?.overallGrade || pred.overallGrade || pred.finalGrade || "-",
       verified,
       hasFormal,
       markets,
+      probabilityAudit: verified ? probabilityAudit(pred, actual) : null,
     };
   }
 
@@ -113,12 +197,26 @@
       }));
       return [market, { hits, total: eligible.length, grades }];
     }));
+    const candidateMetrics = Object.fromEntries(MARKET_KEYS.map((market) => {
+      const eligible = evaluations.filter((item) => item.verified && item.markets[market]?.candidateQualified);
+      return [market, {
+        hits: eligible.filter((item) => item.markets[market].candidateHit === true).length,
+        total: eligible.length,
+      }];
+    }));
+    const probabilityRows = evaluations.map((item) => item.probabilityAudit).filter(Boolean);
     return {
       totalRows: evaluations.length,
       verifiedMatches: evaluations.filter((item) => item.verified && item.hasFormal).length,
       pendingMatches: evaluations.filter((item) => !item.verified && item.hasFormal).length,
       observationOnly: evaluations.filter((item) => !item.hasFormal).length,
       metrics,
+      candidateMetrics,
+      probabilityMetrics: {
+        total: probabilityRows.length,
+        averageBrierScore: probabilityRows.length ? probabilityRows.reduce((sum, item) => sum + item.brierScore, 0) / probabilityRows.length : null,
+        averageLogLoss: probabilityRows.length ? probabilityRows.reduce((sum, item) => sum + item.logLoss, 0) / probabilityRows.length : null,
+      },
     };
   }
 
@@ -181,17 +279,41 @@
       .sort((a, b) => b.date.localeCompare(a.date));
   }
 
+  function forwardProgress(evaluations = [], target = 30) {
+    const settledKeys = new Set();
+    evaluations.forEach((item, index) => {
+      if (item.revision !== "R16" || !item.verified) return;
+      settledKeys.add(item.sampleKey || `anonymous:${index}`);
+    });
+    const settled = settledKeys.size;
+    return {
+      cohort: "R16_FORWARD_30",
+      settled,
+      target,
+      remaining: Math.max(0, target - settled),
+      complete: settled >= target,
+      status: settled >= target ? "READY_FOR_REVIEW" : "COLLECTING",
+    };
+  }
+
   global.WC_R15_BACKTEST = {
     MARKET_KEYS,
     isR15Prediction,
+    isR16Prediction,
+    isRevisionPrediction,
     revisionLabel,
     formalSelections,
+    candidateSelections,
     componentRecommendations,
     marketAvailability,
+    nonScorePredictionAvailable,
+    predictionSampleKey,
     evaluatePrediction,
     evaluationOutcome,
     inferenceDate,
     summarize,
     summarizeDaily,
+    forwardProgress,
+    probabilityAudit,
   };
 })(typeof window === "undefined" ? globalThis : window);

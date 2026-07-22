@@ -24,6 +24,14 @@ const r15Backtest = fs.readFileSync("web/lib/r15Backtest.js", "utf8");
 const firecrawlContext = fs.readFileSync("web/data/firecrawlObjectiveContext.js", "utf8");
 const spCompactionMigration = fs.readFileSync("migrations/0006_compact_existing_sp_snapshots.sql", "utf8");
 const canonicalIdMigration = fs.readFileSync("migrations/0007_restore_20260718_canonical_match_ids.sql", "utf8");
+const r16ReviewMigration = fs.readFileSync("migrations/0008_r16_review_learning_states.sql", "utf8");
+const r16CohortMigration = fs.readFileSync("migrations/0009_r16_validation_cohorts.sql", "utf8");
+const completeInferenceCaseMigration = fs.readFileSync("migrations/0010_complete_inference_case_roles.sql", "utf8");
+const r18ParallelMigration = fs.readFileSync("migrations/0011_r18_parallel_model_runs.sql", "utf8");
+const wdlCalibrationArtifact = JSON.parse(fs.readFileSync("tools/data/wdl-calibration-r17.json", "utf8"));
+const wdlR18Artifact = JSON.parse(fs.readFileSync("tools/data/wdl-residual-r18.json", "utf8"));
+const wdlR18Residual = fs.readFileSync("tools/lib/wdl-residual-challenger.mjs", "utf8");
+const wdlTrainingManifest = JSON.parse(fs.readFileSync("web/data/wdl-calibration-training-r17.json", "utf8"));
 
 const retiredMarkers = [
   'data-tab="path"',
@@ -77,11 +85,14 @@ for (const marker of [
 if (!styles.includes(".market-closed")) {
   throw new Error("Production baseline requires a neutral closed-market status treatment.");
 }
-for (const marker of ["evaluationOutcome", "inferenceDate", "summarizeDaily", 'pred.lockedAt || pred.generatedAt', 'hitCount > 0 ? "PARTIAL" : "MISS"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
+for (const marker of ["evaluationOutcome", "inferenceDate", "summarizeDaily", "candidateSelections", "candidateMetrics", 'pred.lockedAt || pred.generatedAt', 'hitCount > 0 ? "PARTIAL" : "MISS"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
   if (!r15Backtest.includes(marker)) throw new Error(`Production baseline missing R15 daily review aggregation: ${marker}`);
 }
-for (const marker of ["20260718_r15_inference_day_v2", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "推演日 = lockedAt 北京时间", "r15-row-released"]) {
-  if (!index.includes(marker) && !panels.includes(marker) && !main.includes(marker)) throw new Error(`Production baseline missing R15 daily review window: ${marker}`);
+for (const marker of ["20260722_r16_forward_30_v1", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "推演日 = lockedAt 北京时间", "r15-row-released", "同一赛事只计一次", "比分前30场为C级观察", "等待首场R16记录"]) {
+  if (!index.includes(marker) && !panels.includes(marker) && !main.includes(marker)) throw new Error(`Production baseline missing R16 forward review window: ${marker}`);
+}
+for (const marker of ["r16-score-leaf=20260722_r16_non_score_lock_v1", "r16-forward=20260722_r16_forward_30_v1"]) {
+  if (!index.includes(marker)) throw new Error(`Production baseline missing R16 frontend cache namespace: ${marker}`);
 }
 for (const marker of [".r15-daily-review-launch", ".r15-daily-overview", ".r15-daily-match-list", ".r15-backtest-table tbody tr.r15-row-released", ".r15-release-flag"]) {
   if (!styles.includes(marker)) throw new Error(`Production baseline missing R15 daily review styling: ${marker}`);
@@ -326,16 +337,16 @@ const unifiedPredictionMarkers = [
   "model-runs",
   "tenStepResult",
   "backtestContract",
-  "LESSONS_2026-07-17_MARKET_SCOPED_GATES_R15",
+  "LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16",
   "HHAD_ONLY",
   "marketAvailability",
   "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED",
   "componentFoundationEligible",
   "SHARED_FOUNDATION_WITH_MARKET_SCOPED_CRITICAL_GATES",
-  "GRADE_A_B_ONLY_C_OBSERVATION",
+  "GRADE_A_B_ONLY_SCORE_C_OBSERVATION_UNTIL_R16_FORWARD_REVIEW",
   "overallGrade",
   "overallGradeAudit",
-  "SHARED_FOUNDATION_FIRST_THEN_MARKET_SCOPED_BLOCKS_AND_COMPONENT_STRENGTH",
+  "SHARED_FOUNDATION_THEN_WDL_HANDICAP_TOTALS_SCORE_LEAF_EXCLUDED",
   "sharedPackageGapFree",
   "criticalPackageGapFree",
   "SHARED_GAPS_FORCE_PACKAGE_D_MARKET_GAPS_BLOCK_ONLY_AFFECTED_MARKETS",
@@ -343,17 +354,19 @@ const unifiedPredictionMarkers = [
   "qualifyingVenueSamplesComplete",
   "outputConsistencyComplete",
   "oneGoalWinProtected",
-  "OFFICIAL_SCORE_TOTALS_THEN_HIGHEST_REMAINING_BUCKET",
-  "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
+  "FULL_JOINT_TOTAL_MARGINAL_TOP_TWO",
+  "INDEPENDENT_MARKET_MARGINALS_WITH_FULL_GRID_CROSS_AUDIT",
   "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
   "LEAGUE_LEARNING_PROFILES",
-  "scenarioTotalsCovered",
-  "scenarioHandicapCovered",
+  "R16_FORWARD_30",
+  "TERMINAL_EXACT_SCORE_OUTPUT_ONLY",
+  "TERMINAL_SCORE_LEAF_NO_UPSTREAM_GATE_OR_PACKAGE_EFFECT",
+  "predictiveConfidence",
   "confidenceComponents",
   "scoreCoverageOptimized",
   "riskScenarioAvailable",
   "riskPathRisk",
-  "TOP_TWO_LEAGUE_SEASON_CALIBRATED_JOINT_PROBABILITY",
+  "TOP_TWO_APPROVED_LEAGUE_SEASON_JOINT_PROBABILITY",
   "oppositeWinPathChecked",
   "secondScenarioInProbability",
   "twoLegContextComplete",
@@ -387,11 +400,29 @@ if (missingUnifiedPredictionMarkers.length) {
 for (const marker of ["PRE_LOCK", "conditionalHandicapChallenger", "complete unified prediction package", "must publish its", "candidateSelections", "formalSelections", "blocked market leaked into formal markets", "unavailable market leaked into formal markets"]) {
   if (!unifiedPublisher.includes(marker)) throw new Error(`Production baseline missing PRE_LOCK shadow publishing contract: ${marker}`);
 }
-for (const marker of ["replaySamples", "replaySampleCount", "input: { ...modelInput, samples: replaySamples }"]) {
+for (const marker of ["replaySamples", "replaySampleCount", "const pairedInput = { ...modelInput, samples: replaySamples }", "input: pairedInput", "MODEL_GOVERNANCE_ADMIN_TOKEN", "model-governance/approved", "governanceNoteIds", "learningGovernance: governance.learningGovernance", "r16Validation: governance.r16Validation"]) {
   if (!unifiedRunner.includes(marker)) throw new Error(`Production baseline missing replayable model-run input contract: ${marker}`);
 }
-for (const marker of ["betOutcome", "modelAudit", "SHADOW_AUDIT", "SHADOW_OBSERVATION", "SHADOW_PENDING", "challengerPromotion", "四组件全部命中"]) {
+if (unifiedRunner.includes("governanceSnapshotPath") || unifiedRunner.includes('args.get("governance")')) {
+  throw new Error("Production baseline rejects arbitrary local governance snapshots in the Champion runner.");
+}
+for (const marker of ["!run.finalDecision?.totalGoalsPick", "exact-score leaf must be an array", "比分叶子当前不可用"]) {
+  if (!unifiedPublisher.includes(marker)) throw new Error(`Production baseline missing R16 score-leaf publishing isolation: ${marker}`);
+}
+for (const marker of ["betOutcome", "modelAudit", "SHADOW_AUDIT", "SHADOW_OBSERVATION", "REVIEW_LEARNING_STATUSES", "reviewLearningTransitionAudit", "SINGLE_PRIMARY_MODULE_REQUIRED", "MANUAL_REVIEW_APPROVAL_REQUIRED", "challengerPromotion", "四组件全部命中"]) {
   if (!api.includes(marker) && !reviewEngine.includes(marker)) throw new Error(`Production baseline missing self-learning review marker: ${marker}`);
+}
+for (const marker of ["MODEL_GOVERNANCE_ADMIN_TOKEN", "modelGovernanceAuthorization", "model-validation-cohorts", "model-validation-samples", "evaluateStoredValidationCohort", "validationCohortMetrics", "targetProbabilityDistribution", "SERVER_DERIVED_VALIDATION_REQUIRED", "D1_PROMOTED_SERVER_VALIDATED_ONLY", "model-governance/approved"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing R16 server-governance contract: ${marker}`);
+}
+for (const marker of ["model_validation_cohorts", "model_validation_samples", "champion_revision", "challenger_revision", "input_hash"]) {
+  if (!r16CohortMigration.includes(marker)) throw new Error(`Production baseline missing R16 fixed-cohort migration marker: ${marker}`);
+}
+for (const marker of ["SHADOW_PENDING", "PROPOSED", "OBSERVATION"]) {
+  if (!r16ReviewMigration.includes(marker)) throw new Error(`Production baseline missing R16 review-state migration marker: ${marker}`);
+}
+for (const marker of ["nonScorePredictionAvailable", "isR16Prediction", "pred.lockId"] ) {
+  if (!r15Backtest.includes(marker) && !fs.readFileSync("web/app/app-core.js", "utf8").includes(marker)) throw new Error(`Production baseline missing R16 non-score UI isolation: ${marker}`);
 }
 for (const marker of ["shadow_model_audits", "createShadowAuditForLock", "only the latest preferred PRE_LOCK can enter Shadow Audit", "SHADOW_"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing PRE_LOCK shadow settlement marker: ${marker}`);
@@ -402,10 +433,40 @@ if (!api.includes("trigger_type=excluded.trigger_type")) {
 for (const marker of ["learningEligibility", "probabilityMetrics", "failureMode", "seasonLearning", "modelRevision", "formalHandicapSingleHit", "independentHandicapLeaderSingleHit", "conditionalHandicapChallengerSingleHit", "formalWinDrawLoseHandicapJointHit", "handicapTrackAudit", "diagnosisSummary"]) {
   if (!fs.readFileSync("web/functions/api/lib/utils.js", "utf8").includes(marker)) throw new Error(`Production baseline missing Case API self-learning field: ${marker}`);
 }
-for (const marker of ["FINAL_LOCK requires modelRunId", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "independent handicap probabilities", "independent handicap probability leader", "independent score probabilities", "independent total-goals probabilities", "jointly compatible direction and handicap pair", "complete non-market fundamentals"]) {
+for (const marker of ["every inference lock must link to its immutable model run", "linked model run did not pass the complete ten-step FINAL_LOCK contract", "independent handicap probabilities", "independent handicap probability leader", "independent score probabilities", "independent total-goals probabilities", "jointly compatible direction and handicap pair", "complete non-market fundamentals"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing mandatory FINAL_LOCK gate: ${marker}`);
 }
-for (const marker of ["enrichPredictionFromUnifiedRun", "body.sportteryPrediction = enrichPredictionFromUnifiedRun"]) {
+for (const marker of ["model_run_id", "case_role", "CHAMPION_FORMAL", "SHADOW_OBSERVATION", "preferred_at_settlement"]) {
+  if (!completeInferenceCaseMigration.includes(marker) || !api.includes(marker)) throw new Error(`Production baseline missing complete inference persistence marker: ${marker}`);
+}
+for (const marker of ["every model run must preserve the complete UNIFIED_PREDICTION_V4 ten-step pre-match snapshot", "pagination", "beforeId", "every inference lock must link to its immutable model run"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing complete inference history API marker: ${marker}`);
+}
+for (const marker of ['args.get("dry-run")', 'args.get("publish-run") || "true"']) {
+  if (!unifiedRunner.includes(marker)) throw new Error(`Production baseline requires D1 recording by default for unified inference: ${marker}`);
+}
+if (wdlTrainingManifest.auditedRecords !== 188 || wdlTrainingManifest.records?.length !== 188) {
+  throw new Error("Production baseline requires the complete 188-record WDL audit manifest.");
+}
+if (wdlCalibrationArtifact.status !== "CHALLENGER" || wdlCalibrationArtifact.promotionDecision !== "NOT_PROMOTED" || Object.values(wdlCalibrationArtifact.leagueProfiles || {}).some((profile) => profile.enabled === true)) {
+  throw new Error("Production baseline requires R17 to remain a non-promoted Challenger with every Champion application gate disabled.");
+}
+if (wdlR18Artifact.status !== "CHALLENGER" || wdlR18Artifact.automaticPromotion !== false || wdlR18Artifact.championRevision !== "LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16") {
+  throw new Error("Production baseline requires R18 to remain a forward-validation-only Challenger paired against stable R16.");
+}
+for (const marker of ["WDL_R18_MARKET_RESIDUAL_SELECTOR_V1", "minimumPatternSupport", "minimumModelEdge", "rollingWdlResidualBacktest", "EXPANDING_WINDOW_OUT_OF_SAMPLE_THEN_30_TO_50_FORWARD_SAME_INPUT_PAIRS"]) {
+  if (!wdlR18Residual.includes(marker) && !JSON.stringify(wdlR18Artifact).includes(marker)) throw new Error(`Production baseline missing R18 residual-learning guardrail: ${marker}`);
+}
+for (const marker of ["run_role", "comparison_group_id", "idx_model_runs_comparison_group"]) {
+  if (!r18ParallelMigration.includes(marker) || !api.includes(marker)) throw new Error(`Production baseline missing R16/R18 paired-run persistence marker: ${marker}`);
+}
+for (const marker of ["buildR18Challenger", 'publishModelRun(result, "CHAMPION")', 'publishModelRun(r18Challenger, "CHALLENGER")', "r18ChallengerRunId"]) {
+  if (!unifiedRunner.includes(marker)) throw new Error(`Production baseline missing R16/R18 same-input parallel runner marker: ${marker}`);
+}
+for (const marker of ["CHALLENGER model runs are shadow-only and cannot publish inference locks", "paired validation runs must share one comparison group", "shadowEvaluationMarkets", "validationEligible"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing R18 publication isolation marker: ${marker}`);
+}
+for (const marker of ["enrichPredictionFromUnifiedRun", "const hydratedPrediction = enrichPredictionFromUnifiedRun", "body.sportteryPrediction = hydratedPrediction"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires FINAL_LOCK evidence hydration: ${marker}`);
 }
 for (const marker of ["dedupeHistoricalSamples", "canonicalHistoricalTeam", "duplicateSources"]) {
@@ -446,7 +507,8 @@ if (worldCupDetailShell.includes("renderJudgementRiskPanel(") || sportteryDetail
 }
 for (const marker of [
   'PREFERRED_LOCK_ORDER_SQL = "locked_at DESC, lock_id DESC"',
-  "only a latest preferred FINAL_LOCK can enter Case Base",
+  "settledCaseRole",
+  "该赛前推演完整进入影子案例库",
 ]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing latest-model lock lifecycle marker: ${marker}`);
 }
@@ -544,7 +606,7 @@ for (const marker of ["sportteryDetailNavigationPending", "previousScrollY", 'be
   }
 }
 
-for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-live-score-targets.mjs", "tools/test-online-stability.mjs", "tools/test-postponed-review-lifecycle.mjs"]) {
+for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-wdl-calibrator.mjs", "tools/test-live-score-targets.mjs", "tools/test-online-stability.mjs", "tools/test-postponed-review-lifecycle.mjs"]) {
   execFileSync(process.execPath, [testFile], { stdio: "inherit" });
 }
 

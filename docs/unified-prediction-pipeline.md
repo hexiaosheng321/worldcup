@@ -86,7 +86,7 @@ npm run prediction:unified -- --match 1320350 --evidence /tmp/research-1320350.j
 - 两个正式比分必须选择联赛、赛季校准后联合概率最高的两个落点，允许覆盖同一赛果方向；独立风险剧本另列，不占正式比分名额。
 - 当市场第一方向领先平局至少 12 个百分点时，改选平局必须有至少两项独立量化证据。
 - 球队状态/风格最多使用 7 天内信息，伤停/首发最多 24 小时，天气最多 48 小时，市场消息最多 6 小时。
-- `PRE_LOCK` 只作影子测试，不进入正式命中率；同一比赛只有 preferred `FINAL_LOCK` 可以生成正式 Case。
+- `PRE_LOCK` 只作影子测试，不进入正式命中率；所有已结算锁版都生成 Case，但同一比赛只有结算时 preferred `FINAL_LOCK` 标记为 `CHAMPION_FORMAL`，其余为 `SHADOW_OBSERVATION`。
 
 ## 2026-07-12 Base Case 学习规则
 
@@ -107,9 +107,9 @@ npm run prediction:unified -- --match 1320350 --evidence /tmp/research-1320350.j
 - 正式让球按胜平负主方向下的完整联合净胜球分布选择；两个正式比分只作硬验证，不再由单个 `1-0` / `2-1` 决定让球单选。
 - 每个锁版必须携带 `modelRevision`、`scoreSelectionPolicy` 和完整 `backtestContract`，复盘按版本分组，禁止把 R10 与历史版本混合宣称命中率提升。
 - 让球赛后分别记录正式单选、独立边际第一项、主方向下次优条件 Challenger 和胜平负+让球联合命中，不得只留一个 `handicapHit`。
-- 同场最新 `PRE_LOCK` 赛后写入独立 `shadow_model_audits`，不进入正式 Case Base，但必须生成四组件与 Challenger 分轨验票。
+- 所有 `PRE_LOCK` 赛后都以 `SHADOW_OBSERVATION` 进入 Case Base；同场最新 `PRE_LOCK` 同时写入独立 `shadow_model_audits`，生成四组件与 Challenger 分轨验票，但不进入正式命中率。
 - `PRE_LOCK` 的四组件主审计口径固定为 `CANDIDATE_SHADOW`：候选玩法使用 `candidate*Hit` 验票；`formal*Hit` 只允许读取 `formalSelections`，被R15关闭或未开售的正式玩法必须保持 `null`，不得回退到候选结果或标记为“正式失败”。
-- 复盘失败只能生成 `SHADOW_PENDING` Challenger；同联赛、同赛季、同版本累计30至50场，目标命中率提高且联合命中、Brier Score、Log Loss不退化后，才可人工采纳为 Champion。
+- 复盘失败先生成 `PROPOSED`，不得直接成为 Challenger；必须按 `OBSERVATION → PROPOSED → CHALLENGER → VALIDATING → ELIGIBLE → PROMOTED/REJECTED/RETIRED` 流转。每个 Challenger 只允许一个主要模块；同联赛、同赛季、同版本累计30场仅获得人工评审资格，目标命中率提高、正式覆盖率不降、ABCD单调且 Brier Score、Log Loss 不退化后，仍需审批人和审批时间齐全才可 `PROMOTED`。
 
 ## 2026-07-16 R11 胜平负去重复回灌
 
@@ -152,3 +152,37 @@ npm run prediction:unified -- --match 1320350 --evidence /tmp/research-1320350.j
 - `formalMarkets` 和 `candidateSelections` 都必须与逐玩法开售矩阵取交集；未开售玩法不生成对外候选、不进入 `formalMarkets/formalSelections`，前端明确显示“未开售”。模型内部方向只服务其他玩法的联合分布，不得包装成可购买候选；发布前同时复核模型快照和最新线上盘口。
 - 近7日历史回放只能用于验证门禁作用范围，不能作为R15样本外晋级依据；正式效果必须从完整R15赛前快照开始连续记录30至50场，并同时报告命中率和覆盖率。
 - 普通胜平负三项全空、让球胜平负三项完整且至少存在两个同盘口有效快照时，R15 标记 `HHAD_ONLY`：胜平负方向仍由完整联合比分分布和基本面生成，不伪造普通 SP；赔率动态改用让球 SP，并固定扣减4分置信度。普通胜平负只缺一至两项时仍为 `DATA_INCOMPLETE`，不得旁路。
+
+## 2026-07-22 R16 叶子输出解耦与30场前向验证
+
+- 完整联合比分分布继续作为四玩法共同底层；胜平负按赛果边际聚合、让球按完整净胜球边际聚合、总进球按完整总球边际聚合，两个正式比分只在所有玩法完成后选择概率最高的两个叶子落点。
+- 删除正式比分对总进球双选的强制对齐。`totalGoalsPick` 固定使用 `FULL_JOINT_TOTAL_MARGINAL_TOP_TWO`，两个比分对应总球数只保留审计字段，不得改写总进球结论或门禁。
+- R16正式让球固定采用独立完整净胜球边际第一项；胜平负方向条件让球保留为Challenger影子轨，不得依靠正式比分支持把非第一项升级为正式单选。
+- `-1`主让的一球保护改用完整分布：只有两球以上胜差条件概率高于一球胜条件概率时才允许让胜，不再读取第一正式比分是否为`1-0`或`2-1`。
+- `outputConsistencyScore` 只衡量总进球双选完整度、完整总球边际覆盖、与xG距离、比赛类型及高方差尾部；正式比分覆盖不再计分。`predictiveConfidence` 单独记录，R16收集期不得把一致性分当成预测命中概率。
+- 胜平负、让球、总进球沿用R15 ABCD阈值作为冻结基线，以便单独验证结构解耦；比分在首轮30场中统一封顶C级、只进候选观察，不进入`formalSelections`。完成30场且人工评审通过后，才允许解除比分正式准入。
+- 现有韩职、瑞超、挪超等不足30场的联赛复盘规则改为`CHALLENGER_SHADOW`：保留建议和拟议修正，但不把小样本xG、比分权重或置信扣分应用到Champion。
+- R16首轮样本契约为`R16_FORWARD_30`。只统计上线后连续保存的不可修改赛前快照；同一场Champion/Challenger必须使用相同输入时间、赔率和样本版本，禁止用赛果后数据重跑替代前向样本。
+- 每场分别记录正式命中率、候选影子命中率、正式覆盖率、四玩法等级、Brier Score、Log Loss、比分分布熵和双比分累计覆盖。Brier Score和Log Loss必须分玩法读取各自的完整概率分布，让球、总进球和比分不得复用胜平负概率。30场只是第一次评审门槛，不构成长期稳定性证明。
+- 每日复盘建议必须进入`OBSERVATION → PROPOSED → CHALLENGER → VALIDATING → ELIGIBLE → PROMOTED/REJECTED/RETIRED`状态机；每个Challenger只允许一个主要改动模块，`automaticPromotion=false`，未经人工评审不得直接修改Champion。
+- R16结构验收必须满足：替换、缺失或降低两个正式比分覆盖后，胜平负概率、让球概率、总进球概率、三个非比分选择、整体预测置信度、全局门禁、锁版状态、整包ABCD、整包建议和非比分正式玩法全部保持不变。比分只影响比分组件的候选、评级、正式准入和审计。
+- 联赛参数、赛季比分校准和 R16 比分正式准入都使用同一晋级约束：30场只到 `ELIGIBLE`，不得自动应用；只有单模块 Challenger 通过目标命中、正式覆盖率、ABCD单调性、Brier、Log Loss 守门并完成人工 `PROMOTED` 后，Champion 才读取该变更。
+- Champion 推演默认不读取任何实验参数。推演入口只允许读取D1 `PROMOTED`治理记录：该记录必须绑定固定的同场、同输入、赛前 Champion/Challenger 双运行队列，由服务器根据真实赛果计算至少30场的目标命中率、正式覆盖率、ABCD单调性、Brier和Log Loss，再经过管理员Token批准。手工JSON、客户端填写指标或缺少精确联赛/赛季作用域的记录都不能进入Champion。
+
+## 2026-07-22 R17 胜平负历史赛果校准与全量D1闭环
+
+- 统一审计清单固定包含网站现有188条记录：62条世界杯静态锁版、120条D1最新人工统一推演、6条尚未迁入D1的芬超静态锁版。所有记录都进入manifest，缺赛果、赛前时间、模型三项概率或普通胜平负市场时只标记 `AUDIT_ONLY` 与明确缺口，不得静默删除或伪造补值。
+- 当前188条中103条同时满足赛果、赛前时间完整性、模型概率和普通胜平负市场概率，进入R17滚动样本外校准；其余记录继续保留在数据资产和缺口修复队列中。
+- R17采用普通胜平负去水概率的温度校准，并对每个联赛的温度参数向全局参数收缩，不用小样本独立拟合大量权重。校准层不从两个正式比分读取任何信号。
+- 63场扩展窗口样本外验证中，旧模型胜平负32/63（50.8%），市场基线和R17方向均36/63（57.1%）；R17 Brier为0.5418，低于市场0.5479与旧模型0.5965，Log Loss为0.9148，低于市场0.9288与旧模型1.0030。
+- R17研究守门曾识别挪超与瑞超的分联赛参数，但实际混合策略未达到Champion晋级目标。因此R17最终状态固定为`CHALLENGER / NOT_PROMOTED`，所有联赛`enabled=false`；研究指标保留，正式R16不读取R17参数。
+- 每次统一推演默认先写入不可变 `model_runs`，只有显式 `--dry-run` 才可跳过线上记录；所有人工 `PRE_LOCK/FINAL_LOCK` 必须通过 `model_run_id` 关联完整十步赛前输入与输出后才能写入 `locked_predictions`。赛果结算后，每条锁版都生成 Base Case；`CHAMPION_FORMAL` 才可进入正式命中率与Champion相似案例复用，`SHADOW_OBSERVATION` 只进入诊断、缺口修复和Challenger验证。`/api/locks` 与 `/api/model-runs` 必须支持稳定游标分页，训练导出不得因默认条数上限丢失早期记录。
+
+## 2026-07-22 R18 市场残差方向学习与R16并行验证
+
+- R16保持唯一正式Champion，版本仍为`LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16`；正式推演不导入R17或R18参数，锁版发布只允许关联`run_role=CHAMPION`的模型记录。
+- R18只改胜平负方向层，不修改R16的让球、总进球、比分、门禁与评级。它把普通胜平负市场第一方向和R16第一方向的分歧按“方向转换+市场领先幅度”分组，统计双方真实命中差，并将联赛小样本向全局模式收缩。
+- R18以市场方向为残差基线；只有同类历史分歧达到最小支持度且收缩后的R16命中优势达到门槛，才允许R16方向覆盖市场。证据不足、优势不足或两者方向一致时不制造额外改选。每个结论保存模式、支持度、联赛支持度、收缩优势与是否覆盖，保证可解释和可复盘。
+- 188条完整审计记录继续全部保留，其中103条因同时具备赛果、赛前时间、模型概率和普通胜平负市场概率用于训练。63场扩展窗口样本外验证中，R16为32/63（50.8%），市场和当前R18均为36/63（57.1%）；当前样本外阶段R18触发0次模型覆盖，因此这只是“优于历史R16、尚未证明优于市场”的研究结果，不构成晋级证据。
+- 每次统一推演必须从同一个`pairedInput`生成两条不可变记录：R16标记`CHAMPION`，R18标记`CHALLENGER`，共同携带`comparison_group_id`。R18强制`shadowOnly=true`、`publicationEligible=false`、`formalMarkets=[]`；API拒绝任何Challenger关联锁版。影子覆盖率只读取单独保存的`shadowEvaluationMarkets`，不得为了统计而恢复可发布正式玩法；普通胜平负市场不可用时成对记录仍保留，但以`validationEligible=false`排除出R18有效分母。
+- R18状态固定为`CHALLENGER / FORWARD_VALIDATION_REQUIRED`且`automaticPromotion=false`。至少积累30至50场同输入、同时间点的前向配对样本后，再比较胜平负单选命中率、Brier、Log Loss和正式覆盖率；通过服务器守门后仍只获得人工晋级评审资格，不自动替换R16。
