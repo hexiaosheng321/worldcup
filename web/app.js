@@ -20,7 +20,7 @@ const SPORTTERY_RESULTS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
 const SPORTTERY_FIXED_BONUS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
-const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v3";
+const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_scoped_r16_v4";
 const SPORTTERY_RESULT_PENDING_WINDOW_MINUTES = 135;
 const POSTPONED_LOCK_RETENTION_DAYS = 7;
 const STATIC_SNAPSHOT_FALLBACKS = [
@@ -2989,11 +2989,12 @@ function applyCloudBootstrapPayload(payload, { rerender = false, cached = false 
   return changed;
 }
 
-function writeCloudBootstrapCache(payload) {
+function writeCloudBootstrapCache(payload, scope = "initial") {
   try {
     const cachePayload = {
       ok: true,
       cachedAt: new Date().toISOString(),
+      scope: scope === "full" ? "full" : "initial",
       matches: payload.matches || [],
       locks: payload.locks || [],
       results: payload.results || [],
@@ -3009,6 +3010,19 @@ function restoreCloudBootstrapCache() {
     const raw = localStorage.getItem(CLOUD_BOOTSTRAP_CACHE_KEY);
     if (!raw) return false;
     const payload = JSON.parse(raw);
+    const requiredScope = typeof currentRouteNeedsFullCloudBootstrap === "function" && currentRouteNeedsFullCloudBootstrap()
+      ? "full"
+      : "initial";
+    if (requiredScope === "full" && payload.scope !== "full") {
+      localStorage.removeItem(CLOUD_BOOTSTRAP_CACHE_KEY);
+      return false;
+    }
+    const cachedAt = Date.parse(payload.cachedAt || "");
+    const maxAgeMs = 15 * 60 * 1000;
+    if (!Number.isFinite(cachedAt) || Date.now() - cachedAt > maxAgeMs) {
+      localStorage.removeItem(CLOUD_BOOTSTRAP_CACHE_KEY);
+      return false;
+    }
     return applyCloudBootstrapPayload(payload, { cached: true });
   } catch {
     return false;
@@ -3028,7 +3042,7 @@ async function loadCloudBootstrapData({ rerender = false, includeCases = false, 
     cloudBootstrapAttempted = true;
     const payload = await window.WC_CLOUD_STORE.bootstrap({ includeCases, scope: requestedScope });
     if (!payload?.ok) return false;
-    writeCloudBootstrapCache(payload);
+    writeCloudBootstrapCache(payload, requestedScope);
     return applyCloudBootstrapPayload(payload, { rerender, cached: false });
   })();
   cloudBootstrapPending.set(pendingKey, pending);

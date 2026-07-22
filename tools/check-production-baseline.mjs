@@ -197,8 +197,12 @@ for (const marker of ["data-goal-trend-maximize", "openGoalTrendModal", "trend-t
   }
 }
 
-if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_initial_v3"')) {
-  throw new Error("Production baseline requires the corrected score-cache namespace.");
+if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_scoped_r16_v4"')) {
+  throw new Error("Production baseline requires the scoped R16 bootstrap-cache namespace.");
+}
+const appData = fs.readFileSync("web/app/app-data.js", "utf8");
+for (const marker of ['scope: scope === "full" ? "full" : "initial"', 'requiredScope === "full" && payload.scope !== "full"', "writeCloudBootstrapCache(payload, requestedScope)"]) {
+  if (!appData.includes(marker)) throw new Error(`Production baseline requires scope-safe stats bootstrap caching: ${marker}`);
 }
 if (!fs.readFileSync("web/app/app-core.js", "utf8").includes("result.matchId || result.sportteryKey || result.cloudMatchId") || !fs.readFileSync("web/app/app-data.js", "utf8").includes("cloudWorldCupMatches") || !fs.readFileSync("web/app/app-data.js", "utf8").includes("data.matches = matches")) {
   throw new Error("Production baseline requires D1 World Cup results to rehydrate the goal-track match array by match id.");

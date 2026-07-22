@@ -445,11 +445,12 @@ function applyCloudBootstrapPayload(payload, { rerender = false, cached = false 
   return changed;
 }
 
-function writeCloudBootstrapCache(payload) {
+function writeCloudBootstrapCache(payload, scope = "initial") {
   try {
     const cachePayload = {
       ok: true,
       cachedAt: new Date().toISOString(),
+      scope: scope === "full" ? "full" : "initial",
       matches: payload.matches || [],
       locks: payload.locks || [],
       results: payload.results || [],
@@ -466,6 +467,13 @@ function restoreCloudBootstrapCache() {
     const raw = localStorage.getItem(CLOUD_BOOTSTRAP_CACHE_KEY);
     if (!raw) return false;
     const payload = JSON.parse(raw);
+    const requiredScope = typeof currentRouteNeedsFullCloudBootstrap === "function" && currentRouteNeedsFullCloudBootstrap()
+      ? "full"
+      : "initial";
+    if (requiredScope === "full" && payload.scope !== "full") {
+      localStorage.removeItem(CLOUD_BOOTSTRAP_CACHE_KEY);
+      return false;
+    }
     const cachedAt = Date.parse(payload.cachedAt || "");
     const maxAgeMs = 15 * 60 * 1000;
     if (!Number.isFinite(cachedAt) || Date.now() - cachedAt > maxAgeMs) {
@@ -491,7 +499,7 @@ async function loadCloudBootstrapData({ rerender = false, includeCases = false, 
     cloudBootstrapAttempted = true;
     const payload = await window.WC_CLOUD_STORE.bootstrap({ includeCases, scope: requestedScope });
     if (!payload?.ok) return false;
-    writeCloudBootstrapCache(payload);
+    writeCloudBootstrapCache(payload, requestedScope);
     return applyCloudBootstrapPayload(payload, { rerender, cached: false });
   })();
   cloudBootstrapPending.set(pendingKey, pending);
