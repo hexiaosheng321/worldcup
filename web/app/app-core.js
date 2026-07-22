@@ -1015,6 +1015,28 @@ function hasOfficialWorldCupLock(pred = {}, item = null) {
   return Boolean(linkedMatch && latestPredictionFor(linkedMatch.no));
 }
 
+function cloudPredictionFieldIsBlank(value) {
+  if (value === undefined || value === null) return true;
+  if (typeof value === "string") return value.trim() === "";
+  if (Array.isArray(value)) return value.length === 0;
+  if (Object.prototype.toString.call(value) === "[object Object]") return Object.keys(value).length === 0;
+  return false;
+}
+
+function mergeCloudPredictionSnapshot(existing = {}, incoming = {}) {
+  const merged = { ...existing };
+  Object.entries(incoming || {}).forEach(([key, value]) => {
+    if (cloudPredictionFieldIsBlank(value)) return;
+    const currentValue = merged[key];
+    const currentIsObject = Object.prototype.toString.call(currentValue) === "[object Object]";
+    const incomingIsObject = Object.prototype.toString.call(value) === "[object Object]";
+    merged[key] = currentIsObject && incomingIsObject
+      ? mergeCloudPredictionSnapshot(currentValue, value)
+      : value;
+  });
+  return merged;
+}
+
 function mergeCloudAutoPredictions(rows = []) {
   if (!Array.isArray(rows) || !rows.length) return false;
   const current = data.sportteryPredictions || [];
@@ -1038,7 +1060,7 @@ function mergeCloudAutoPredictions(rows = []) {
     const nextTime = Date.parse(item.lockedAt || item.generatedAt || "");
     const nextIsNewer = Number.isFinite(nextTime) && (!Number.isFinite(oldTime) || nextTime >= oldTime);
     if ((nextManual && nextIsNewer) || (oldAuto && nextIsNewer)) {
-      byKey.set(key, { ...old, ...item });
+      byKey.set(key, mergeCloudPredictionSnapshot(old, item));
       changed = true;
     }
   });

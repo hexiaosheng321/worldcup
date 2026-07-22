@@ -582,7 +582,10 @@ async function syncCloudSportteryResultsIfNeeded({ force = false, rerender = tru
 
 async function refreshSportteryCloudData() {
   await loadStaticSnapshotFallback({ force: true, rerender: false });
-  const loadedCloud = await loadCloudBootstrapData({ rerender: true });
+  const refreshScope = typeof currentRouteNeedsFullCloudBootstrap === "function" && currentRouteNeedsFullCloudBootstrap()
+    ? "full"
+    : "initial";
+  const loadedCloud = await loadCloudBootstrapData({ rerender: true, scope: refreshScope });
   await syncCloudSportteryResultsIfNeeded({ rerender: true });
   if (loadedCloud) {
     const loadedSpHistory = await loadCloudSportterySpHistoryData({ rerender: true });

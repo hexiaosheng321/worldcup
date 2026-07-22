@@ -1435,7 +1435,6 @@ function compareStatsAuditKickoff(a, b) {
 function renderGlobalStats() {
   const cards = document.querySelector("#global-stats-cards");
   const table = document.querySelector("#global-stats-table");
-  const leagueFilter = document.querySelector("#global-stats-league-filter");
   if (!cards || !table) return;
 
   const allRows = modelAuditRows();
@@ -1505,6 +1504,12 @@ function renderGlobalStats() {
     </div>
   `;
 
+  const leagueOptions = [
+    `<option value="all"${activeGlobalStatsLeague === "all" ? " selected" : ""}>全部联赛</option>`,
+    ...leagues.map(
+      (league) => `<option value="${league}"${activeGlobalStatsLeague === league ? " selected" : ""}>${league}</option>`
+    ),
+  ].join("");
   const dateOptions = `
     <option value="all"${activeGlobalStatsDate === "all" ? " selected" : ""}>全部日期</option>
     <optgroup label="快捷区间">
@@ -1524,34 +1529,6 @@ function renderGlobalStats() {
       ).join("")}
     </optgroup>`;
   const dateScopeLabel = globalStatsDateLabel(activeGlobalStatsDate);
-  if (leagueFilter) {
-    const leagueOptions = [
-      `<option value="all"${activeGlobalStatsLeague === "all" ? " selected" : ""}>全部联赛</option>`,
-      ...leagues.map(
-        (league) => `<option value="${league}"${activeGlobalStatsLeague === league ? " selected" : ""}>${league}</option>`
-      ),
-    ].join("");
-    leagueFilter.innerHTML = `
-      <div class="review-filterbar global-stats-filterbar league-filterbar combined-stats-filterbar">
-        <section>
-          <div>
-            <span>按联赛回测</span>
-            <strong>${activeGlobalStatsLeague === "all" ? "全部联赛" : activeGlobalStatsLeague}</strong>
-            <em>${visibleRows.length}/${allRows.length} 场</em>
-          </div>
-          <select data-global-stats-league aria-label="选择联赛">${leagueOptions}</select>
-        </section>
-        <section>
-          <div>
-            <span>按日期复盘</span>
-            <strong>${dateScopeLabel}</strong>
-            <em>${visibleRows.length}/${allRows.length} 场</em>
-          </div>
-          <select data-global-stats-date aria-label="选择统计日期">${dateOptions}</select>
-        </section>
-      </div>
-    `;
-  }
   const tableRows = orderedVisibleRows
     .map(({ match, pred, review, competition }) => {
       const attribution = reviewAttribution(pred, match, review);
@@ -1581,14 +1558,24 @@ function renderGlobalStats() {
 
   table.innerHTML = `
     <div class="global-stats-table-toolbar">
-      <div>
+      <div class="global-stats-toolbar-summary">
         <span>回测明细表</span>
         <strong>${tableSummary}</strong>
         <em class="global-stats-sort-note">最早比赛在上 · 最新比赛在下 · 当日按开赛时间排序</em>
       </div>
-      <button type="button" data-global-stats-maximize aria-label="最大化查看回测明细表">
-        <span>最大化查看</span>
-      </button>
+      <div class="global-stats-toolbar-actions">
+        <label class="global-stats-toolbar-filter">
+          <span>联赛</span>
+          <select data-global-stats-league aria-label="选择联赛">${leagueOptions}</select>
+        </label>
+        <label class="global-stats-toolbar-filter">
+          <span>日期</span>
+          <select data-global-stats-date aria-label="选择统计日期">${dateOptions}</select>
+        </label>
+        <button type="button" data-global-stats-maximize aria-label="最大化查看回测明细表">
+          <span>最大化查看</span>
+        </button>
+      </div>
     </div>
     <div class="review-record-wrap compact global-stats-wrap">
       <table class="review-record-table global-stats-record-table">

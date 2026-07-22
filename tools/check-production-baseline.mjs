@@ -7,6 +7,7 @@ const dataApp = fs.readFileSync("web/app/app-data.js", "utf8");
 const homeApp = fs.readFileSync("web/app/app-home.js", "utf8");
 const detailApp = fs.readFileSync("web/app/app-detail.js", "utf8");
 const panels = fs.readFileSync("web/app/app-panels.js", "utf8");
+const statsCore = fs.readFileSync("web/app/app-core.js", "utf8");
 const styles = fs.readFileSync("web/styles.css", "utf8");
 const sync = fs.readFileSync("tools/sync-sporttery-cache.mjs", "utf8");
 const api = fs.readFileSync("web/functions/api/[[path]].js", "utf8");
@@ -125,6 +126,24 @@ for (const marker of [".r15-market-result.released", ".r15-market-result.release
 for (const marker of ["function statsAuditKickoffMeta", "function compareStatsAuditKickoff", "const dateCompare = left.date.localeCompare(right.date)", "const orderedVisibleRows = visibleRows.slice().sort(compareStatsAuditKickoff)", "比赛日期 / 开赛", "最早比赛在上 · 最新比赛在下", "当日按开赛时间排序"]) {
   if (!panels.includes(marker)) throw new Error(`Production baseline missing chronological stats ledger ordering: ${marker}`);
 }
+for (const marker of ["20260722_stats_refresh_toolbar_v1", "stats-refresh=20260722_v1"]) {
+  if (!index.includes(marker)) throw new Error(`Production baseline missing stats refresh cache marker: ${marker}`);
+}
+for (const marker of ["function cloudPredictionFieldIsBlank", "function mergeCloudPredictionSnapshot", "mergeCloudPredictionSnapshot(old, item)"]) {
+  if (!statsCore.includes(marker)) throw new Error(`Production baseline missing non-destructive prediction refresh merge: ${marker}`);
+}
+if (!dataApp.includes('scope: refreshScope') || !dataApp.includes('currentRouteNeedsFullCloudBootstrap()')) {
+  throw new Error("Production baseline requires route-aware full statistics refresh scope.");
+}
+for (const marker of ["global-stats-toolbar-actions", "global-stats-toolbar-filter", "data-global-stats-league", "data-global-stats-date"]) {
+  if (!panels.includes(marker) && !styles.includes(marker)) throw new Error(`Production baseline missing integrated stats toolbar filter: ${marker}`);
+}
+if (index.includes('id="global-stats-league-filter"') || main.includes('querySelector("#global-stats-league-filter")')) {
+  throw new Error("Production baseline rejects the separate global statistics filter banner.");
+}
+for (const marker of ["height: clamp(620px, calc(100dvh - 170px), 980px)", "height: clamp(520px, calc(100dvh - 150px), 780px)"]) {
+  if (!styles.includes(marker)) throw new Error(`Production baseline missing expanded statistics table viewport: ${marker}`);
+}
 for (const marker of [".stats-kickoff-cell", ".global-stats-sort-note"]) {
   if (!styles.includes(marker)) throw new Error(`Production baseline missing stats kickoff hierarchy styling: ${marker}`);
 }
@@ -182,7 +201,6 @@ if (panels.includes("renderCalibrationPanel") || panels.includes("calibration-pa
 for (const marker of ['value="last7"', 'value="last15"', 'label="按月份"', 'label="按单日"', "globalStatsDateMatches"]) {
   if (!panels.includes(marker)) throw new Error(`Production baseline missing date-range filter marker: ${marker}`);
 }
-const statsCore = fs.readFileSync("web/app/app-core.js", "utf8");
 if (!statsCore.includes('let activeGlobalStatsDate = "last7"') || !panels.includes('activeGlobalStatsDate = "last7"')) {
   throw new Error("Production baseline requires model stats to default and fall back to the latest seven days.");
 }
@@ -634,7 +652,7 @@ for (const marker of ["sportteryDetailNavigationPending", "previousScrollY", 'be
   }
 }
 
-for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-case-base-boundaries.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-wdl-calibrator.mjs", "tools/test-live-score-targets.mjs", "tools/test-online-stability.mjs", "tools/test-postponed-review-lifecycle.mjs"]) {
+for (const testFile of ["tools/test-competition-normalization.mjs", "tools/test-case-base-boundaries.mjs", "tools/test-unified-prediction-engine.mjs", "tools/test-wdl-calibrator.mjs", "tools/test-live-score-targets.mjs", "tools/test-online-stability.mjs", "tools/test-postponed-review-lifecycle.mjs", "tools/test-prediction-refresh-merge.mjs"]) {
   execFileSync(process.execPath, [testFile], { stdio: "inherit" });
 }
 

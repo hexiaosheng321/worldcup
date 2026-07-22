@@ -11,6 +11,7 @@
     "league-profiles:generate": "node tools/generate-league-profiles.mjs",
     "prediction:unified": "node tools/run-unified-prediction.mjs",
     "prediction:test": "node tools/test-unified-prediction-engine.mjs",
+    "prediction-refresh:test": "node tools/test-prediction-refresh-merge.mjs",
     "competition:test": "node tools/test-competition-normalization.mjs",
     "case-boundaries:test": "node tools/test-case-base-boundaries.mjs",
     "venue-samples:test": "node tools/test-direct-venue-samples.mjs",

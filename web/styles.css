@@ -7831,9 +7831,11 @@ body::before {
   background: linear-gradient(180deg, #f8fbff, #eef5ff);
 }
 
-.global-stats-table-toolbar div {
+.global-stats-toolbar-summary {
   display: grid;
+  flex: 1 1 auto;
   gap: 3px;
+  min-width: 230px;
 }
 
 .global-stats-table-toolbar span,
@@ -7859,6 +7861,41 @@ body::before {
   font-size: 11px;
   font-style: normal;
   font-weight: 850;
+}
+
+.global-stats-toolbar-actions {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.global-stats-toolbar-filter {
+  display: grid;
+  gap: 4px;
+}
+
+.global-stats-toolbar-filter span {
+  color: #557089;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.global-stats-toolbar-filter select {
+  width: clamp(132px, 11vw, 180px);
+  height: 38px;
+  padding: 0 32px 0 10px;
+  border: 1px solid rgba(174, 198, 226, 0.98);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--blue);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 950;
+  cursor: pointer;
 }
 
 .global-stats-table-toolbar button {
@@ -7894,14 +7931,65 @@ body::before {
   border-top-right-radius: 0;
 }
 
-.global-stats-filterbar {
-  margin-top: 18px;
-}
-
-.global-stats-wrap {
-  max-height: 500px;
+.review-record-wrap.compact.global-stats-wrap {
+  height: 72vh;
+  height: clamp(620px, calc(100dvh - 170px), 980px);
+  max-height: none;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+
+@media (max-width: 860px) {
+  .global-stats-table-toolbar {
+    display: grid;
+    gap: 9px;
+    padding: 12px;
+  }
+
+  .global-stats-toolbar-summary {
+    min-width: 0;
+  }
+
+  .global-stats-toolbar-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) 44px;
+    align-items: end;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .global-stats-toolbar-filter select {
+    width: 100%;
+    min-width: 0;
+    padding-right: 22px;
+    padding-left: 7px;
+    font-size: 12px;
+  }
+
+  .global-stats-table-toolbar button {
+    width: 44px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .global-stats-table-toolbar button span {
+    font-size: 0;
+  }
+
+  .global-stats-table-toolbar button span::after {
+    content: "⤢";
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .global-stats-table-toolbar .global-stats-sort-note {
+    display: none;
+  }
+
+  .review-record-wrap.compact.global-stats-wrap {
+    height: 70vh;
+    height: clamp(520px, calc(100dvh - 150px), 780px);
+  }
 }
 
 .global-stats-record-table {

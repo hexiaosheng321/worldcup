@@ -277,13 +277,6 @@ document.querySelector("#site-locks")?.addEventListener("click", (event) => {
 });
 
 document.querySelector("#global-stats-table")?.addEventListener("change", (event) => {
-  const select = event.target.closest("[data-global-stats-date]");
-  if (!select) return;
-  activeGlobalStatsDate = select.value;
-  renderGlobalStats();
-});
-
-document.querySelector("#global-stats-league-filter")?.addEventListener("change", (event) => {
   const leagueSelect = event.target.closest("[data-global-stats-league]");
   const dateSelect = event.target.closest("[data-global-stats-date]");
   if (leagueSelect) {
