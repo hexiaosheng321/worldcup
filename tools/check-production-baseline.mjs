@@ -51,6 +51,15 @@ if (foundRetired.length) {
 if (detailApp.includes("完整推演总览")) {
   throw new Error("Production baseline rejects the duplicated full-projection summary above the lock action.");
 }
+for (const marker of ["function failureModeText", "independentRiskScenario", "历史锁版未记录这一层风险依据", "无法根据赛后结果反向补写", "failure-risk=20260722_v1"]) {
+  if (!panels.includes(marker) && !index.includes(marker)) throw new Error(`Production baseline missing failure-risk compatibility marker: ${marker}`);
+}
+for (const marker of ["const failureRiskText", "failureMode: failureRiskText", "body.sportteryPrediction = hydratedPrediction"]) {
+  if (!api.includes(marker) && !unifiedPublisher.includes(marker)) throw new Error(`Production baseline missing unified PRE/FINAL failure-risk hydration: ${marker}`);
+}
+if (!index.includes("20260722_failure_risk_compat_v1")) {
+  throw new Error("Production baseline requires the failure-risk compatibility build marker.");
+}
 for (const marker of ["内部正式 Case Base 诊断", "影子观察只作诊断，不计正式命中率", "外部历史样本不进入正式命中率分母", "VOID/未验票及影子观察不计正式分母", "threshold: 65"]) {
   if (!detailApp.includes(marker)) throw new Error(`Production baseline missing Case Base boundary marker: ${marker}`);
 }

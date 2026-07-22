@@ -5333,6 +5333,9 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
   const scoreLeafText = scoreLeafAvailable
     ? `保留联合概率最高的 ${scoreA} / ${scoreB} 两个比分叶子输出，允许同方向；独立风险剧本 ${riskScore} 不占名额；不得反向改写其他玩法。`
     : `比分叶子当前不可用；仅关闭比分组件，不得反向改写或阻断其他玩法。独立风险剧本为 ${riskScore}。`;
+  const failureRiskText = firstText(prediction.keyFailureRisk, prediction.failureMode) || (scoreLeafAvailable
+    ? `最大失败方式是比赛偏离正式高概率覆盖 ${scoreA} / ${scoreB}，转入独立风险剧本 ${riskScore} 或分布尾部。`
+    : `比分叶子不可用不影响非比分玩法；主要风险仍是完整联合分布偏离当前胜平负、让球或总进球边际。`);
   const authoritativeScriptSet = [
     ...scenarios.map((item, index) => ({ label: index ? "正式比分二" : "正式比分一", probability: item.probability, score: item.score, text: "联合概率覆盖路径" })),
     ...(riskScenario.score ? [{ label: "独立风险", probability: riskScenario.probability, score: riskScenario.score, text: "不占正式比分名额" }] : []),
@@ -5382,9 +5385,8 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
       ? `总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}由完整总球边际概率独立生成，不服从两个比分。`
       : `比分分支与总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}交叉校验。`),
     handicapGate: prediction.handicapGate || handicapText,
-    keyFailureRisk: prediction.keyFailureRisk || (scoreLeafAvailable
-      ? `最大失败方式是比赛偏离正式高概率覆盖 ${scoreA} / ${scoreB}，转入独立风险剧本 ${riskScore} 或分布尾部。`
-      : `比分叶子不可用不影响非比分玩法；主要风险仍是完整联合分布偏离当前胜平负、让球或总进球边际。`),
+    keyFailureRisk: failureRiskText,
+    failureMode: failureRiskText,
     eventRisk: prediction.eventRisk || weatherText || "早球、定位球、红牌或临场阵容变化可能改变比赛节奏。",
     valueFilter: prediction.valueFilter || `置信 ${decision.confidence ?? prediction.confidenceScore ?? "-"}%：${decision.advice || prediction.advice || "谨慎"}；不因单一低赔自动放大结论。`,
     noiseFilter: prediction.noiseFilter || "排除名气、单一低赔和单一比分噪声，只保留通过十步证据链的方向。",
@@ -5736,12 +5738,12 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       if (String(modelRun.run_type || "").toUpperCase() !== String(lockType).toUpperCase() || runOutput.lockType !== lockType) {
         return json({ ok: false, error: "model run lock type does not match submitted lock" }, 400);
       }
+      const hydratedPrediction = enrichPredictionFromUnifiedRun(prediction, runOutput);
+      body.sportteryPrediction = hydratedPrediction;
       if (lockType === "FINAL_LOCK") {
         if (modelRun.run_type !== "FINAL_LOCK" || runOutput.contractVersion !== "UNIFIED_PREDICTION_V4" || runOutput.gateResult?.passed !== true || runOutput.tenStepResult?.passed !== true) {
           return json({ ok: false, error: "linked model run did not pass the complete ten-step FINAL_LOCK contract" }, 400);
         }
-        const hydratedPrediction = enrichPredictionFromUnifiedRun(prediction, runOutput);
-        body.sportteryPrediction = hydratedPrediction;
         const handicapPick = handicapPickFromPayload(hydratedPrediction);
         const handicapEvidence = parseObject(runOutput.featureSet?.handicap);
         const scoreEvidence = parseObject(runOutput.featureSet?.score);

@@ -2199,6 +2199,41 @@ function firstModelText(...values) {
   });
 }
 
+function failureModeText(pred = {}) {
+  const direct = firstModelText(
+    pred.keyFailureRisk,
+    pred.failureMode,
+    pred.likelyMissMode,
+    pred.eventRisk,
+    unifiedStepText(pred, 12)
+  );
+  if (direct) return direct;
+  const combinedGate = rawUnifiedStepText(pred, 9);
+  if (/失败方式|独立风险/.test(combinedGate)) return combinedGate;
+  const riskScenario = pred.independentRiskScenario
+    || pred.unifiedRunEvidence?.riskScenario
+    || pred.analysis?.independentRiskScenario
+    || pred.analysis?.unifiedRunEvidence?.riskScenario;
+  if (!riskScenario) return "";
+  if (typeof riskScenario === "string") return riskScenario;
+  const score = String(riskScenario.score || "").trim();
+  const probabilityValue = riskScenario.probability;
+  const probability = Number(probabilityValue);
+  const probabilityText = probabilityValue !== undefined && probabilityValue !== null && Number.isFinite(probability)
+    ? `（概率 ${(probability * 100).toFixed(1)}%）`
+    : "";
+  return score
+    ? `独立风险剧本为 ${score}${probabilityText}；该路径不占正式比分名额，但会使当前方向、让球或总进球组合失效。`
+    : "";
+}
+
+function failureModeMissingText(pred = {}) {
+  const hasUnifiedRun = Boolean(pred.modelRevision || pred.unifiedRunEvidence?.contractVersion || pred.independentRiskScenario);
+  return hasUnifiedRun
+    ? "当前锁版记录缺少失败风险依据，页面未生成推测性说明。"
+    : "历史锁版未记录这一层风险依据，无法根据赛后结果反向补写。";
+}
+
 function marketSpReviewText(pred = {}, item = null) {
   const row = item || findSportteryItemForPrediction(pred) || {};
   const odds = oddsMatch(row) || oddsMatch(pred?.no) || {};
@@ -2456,7 +2491,8 @@ function v4StepRows(pred) {
     {
       no: "12",
       title: "失败方式识别",
-      text: firstModelText(pred.keyFailureRisk, pred.failureMode, pred.likelyMissMode, pred.eventRisk, unifiedStepText(pred, 12)),
+      text: failureModeText(pred),
+      missingText: failureModeMissingText(pred),
     },
     {
       no: "13",
@@ -2521,7 +2557,7 @@ function renderUniversalModelPanel(pred) {
                       <strong>${item.title}</strong>
                       ${badge ? `<em>${badge}</em>` : ""}
                     </div>
-                    <p>${ready ? displayModelText(item.text) : "待补齐：本场锁版 payload 没有写入这一层推演依据。"}</p>
+                    <p>${ready ? displayModelText(item.text) : item.missingText || "待补齐：本场锁版 payload 没有写入这一层推演依据。"}</p>
                   </article>
                 `;
               })

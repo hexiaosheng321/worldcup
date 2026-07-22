@@ -61,6 +61,9 @@ for (const id of ids) {
   };
   const modelRevision = run.modelLessons?.version || run.modelVersion;
   const independentRisk = run.riskScenario || {};
+  const failureRiskText = decision.scores.length
+    ? `最大失败方式是比赛偏离正式高概率覆盖 ${decision.scores.join(" / ")}，转入独立风险剧本 ${independentRisk.score || "-"} 或分布尾部。`
+    : `比分叶子不可用不影响非比分玩法；主要风险仍是完整联合分布偏离当前胜平负、让球或总进球边际。`;
   const probabilities = run.featureSet.probabilities;
   const outputConsistency = run.featureSet?.totals?.outputConsistency || {};
   const gateCompletionScore = Math.round(Object.values(run.gateResult?.gates || {}).filter(Boolean).length / Math.max(1, Object.keys(run.gateResult?.gates || {}).length) * 100);
@@ -91,6 +94,8 @@ for (const id of ids) {
       candidateSelections,
       formalSelections,
       independentRiskScenario: independentRisk,
+      keyFailureRisk: failureRiskText,
+      failureMode: failureRiskText,
       scoreSelectionPolicy: decision.scoreSelectionPolicy,
       officialScoreCoverageProbability: run.featureSet?.score?.officialCoverageProbability ?? null,
       unifiedRunEvidence: {

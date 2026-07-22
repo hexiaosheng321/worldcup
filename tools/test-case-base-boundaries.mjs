@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 import { canonicalDataQuality, caseDataQualityEligible } from "../web/functions/api/lib/utils.js";
-import { onRequest } from "../web/functions/api/[[path]].js";
+import { enrichPredictionFromUnifiedRun, onRequest } from "../web/functions/api/[[path]].js";
 
 assert.equal(canonicalDataQuality("A"), "HIGH");
 assert.equal(canonicalDataQuality("B"), "MEDIUM");
@@ -12,6 +12,25 @@ assert.equal(canonicalDataQuality("LOW"), "LOW");
 assert.equal(caseDataQualityEligible("A"), true);
 assert.equal(caseDataQualityEligible("B"), true);
 assert.equal(caseDataQualityEligible("LOW"), false);
+
+const hydratedFailureRisk = enrichPredictionFromUnifiedRun({}, {
+  contractVersion: "UNIFIED_PREDICTION_V4",
+  modelLessons: { version: "LESSONS_TEST_R16" },
+  finalDecision: { scores: ["1-0", "1-1"], formalMarkets: [] },
+  riskScenario: { score: "0-1", probability: 0.08 },
+  scenarioSet: [],
+  featureSet: {
+    research: { items: [] },
+    oddsMovement: {},
+    handicap: { probabilities: {} },
+    probabilities: {},
+    jointDecision: {},
+    marketAvailability: { markets: {} },
+  },
+});
+assert.match(hydratedFailureRisk.keyFailureRisk, /1-0 \/ 1-1/);
+assert.match(hydratedFailureRisk.keyFailureRisk, /0-1/);
+assert.equal(hydratedFailureRisk.failureMode, hydratedFailureRisk.keyFailureRisk);
 
 const apiSource = fs.readFileSync(new URL("../web/functions/api/[[path]].js", import.meta.url), "utf8");
 const browserSource = fs.readFileSync(new URL("../web/lib/similarCaseEngine.js", import.meta.url), "utf8");
