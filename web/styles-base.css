@@ -204,6 +204,7 @@ body.dashboard-mode .home-topbar {
   .home-countdown-card > span,
   .home-countdown-card small,
   .home-section-head button,
+  .home-section-head .home-section-link,
   .match-card-insight,
   .match-card-tags,
   .match-card-meta {
