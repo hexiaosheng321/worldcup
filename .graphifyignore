@@ -1,0 +1,4 @@
+# Runtime snapshots and translation payloads are data, not source-code AST.
+/web/data/*.json
+/web/i18n/*.json
+/web/_routes.json

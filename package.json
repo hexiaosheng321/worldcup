@@ -1,5 +1,9 @@
 {
   "scripts": {
+    "graphify:setup": "node tools/run-graphify-project.mjs setup",
+    "graphify:health": "node tools/run-graphify-project.mjs health",
+    "graphify:normalize": "node tools/run-graphify-project.mjs normalize",
+    "graphify:test": "node tools/run-graphify-project.mjs self-test",
     "verify:production-baseline": "node tools/check-production-baseline.mjs",
     "dev": "node server.mjs",
     "sporttery:fetch": "node tools/fetch-sporttery-live.mjs && node tools/fetch-sporttery-results.mjs && node tools/fetch-sporttery-sp-history.mjs && node tools/fetch-live-football-scores.mjs",
