@@ -18,6 +18,7 @@ const syncWorkerConfig = fs.readFileSync("wrangler.sync.jsonc", "utf8");
 const unifiedEngine = fs.readFileSync("tools/lib/unified-prediction-engine.mjs", "utf8");
 const unifiedRunner = fs.readFileSync("tools/run-unified-prediction.mjs", "utf8");
 const unifiedPublisher = fs.readFileSync("tools/publish-unified-locks.mjs", "utf8");
+const r18CohortBackfill = fs.readFileSync("tools/backfill-r18-validation-cohorts.mjs", "utf8");
 const i18n = fs.readFileSync("web/app/app-i18n.js", "utf8");
 const baseStyles = fs.readFileSync("web/styles-base.css", "utf8");
 const reviewEngine = fs.readFileSync("web/lib/reviewEngine.js", "utf8");
@@ -430,7 +431,7 @@ const unifiedPredictionMarkers = [
   "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED",
   "componentFoundationEligible",
   "SHARED_FOUNDATION_WITH_MARKET_SCOPED_CRITICAL_GATES",
-  "GRADE_A_B_ONLY_SCORE_C_OBSERVATION_UNTIL_R16_FORWARD_REVIEW",
+  "R16_FORMAL_RISK_GUARD_20260723_V1",
   "overallGrade",
   "overallGradeAudit",
   "SHARED_FOUNDATION_THEN_WDL_HANDICAP_TOTALS_SCORE_LEAF_EXCLUDED",
@@ -550,8 +551,20 @@ for (const marker of ["run_role", "comparison_group_id", "idx_model_runs_compari
 for (const marker of ["buildR18Challenger", 'publishModelRun(result, "CHAMPION")', 'publishModelRun(r18Challenger, "CHALLENGER")', "r18ChallengerRunId"]) {
   if (!unifiedRunner.includes(marker)) throw new Error(`Production baseline missing R16/R18 same-input parallel runner marker: ${marker}`);
 }
+for (const marker of ["registerR18ValidationPair", "model-validation-cohorts", "model-validation-samples", "r18ValidationRegistration", "SKIPPED_NO_GOVERNANCE_TOKEN"]) {
+  if (!unifiedRunner.includes(marker)) throw new Error(`Production baseline missing automatic R18 validation registration marker: ${marker}`);
+}
+for (const marker of ["comparison_group_id", "model-validation-cohorts", "model-validation-samples", "alreadyRegistered"]) {
+  if (!r18CohortBackfill.includes(marker)) throw new Error(`Production baseline missing historical R18 cohort backfill marker: ${marker}`);
+}
+for (const marker of ["validation cohort id already exists with a different contract", "registered: false", "registered: true"]) {
+  if (!api.includes(marker)) throw new Error(`Production baseline missing idempotent R18 validation collection marker: ${marker}`);
+}
 for (const marker of ["CHALLENGER model runs are shadow-only and cannot publish inference locks", "paired validation runs must share one comparison group", "shadowEvaluationMarkets", "validationEligible"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing R18 publication isolation marker: ${marker}`);
+}
+for (const marker of ["R16_FORMAL_RISK_GUARD_20260723_V1", "marketConflictResolvedForFormal", "OBSERVATION_ONLY_UNTIL_COMPONENT_30_REVIEW"]) {
+  if (!unifiedEngine.includes(marker)) throw new Error(`Production baseline missing R16 formal-risk admission marker: ${marker}`);
 }
 for (const marker of ["enrichPredictionFromUnifiedRun", "const hydratedPrediction = enrichPredictionFromUnifiedRun", "body.sportteryPrediction = hydratedPrediction"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires FINAL_LOCK evidence hydration: ${marker}`);

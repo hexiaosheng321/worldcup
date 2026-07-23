@@ -120,16 +120,61 @@ const research = evidencePath
 if (!evidencePath) await fs.writeFile(templatePath, `${JSON.stringify(research, null, 2)}\n`, "utf8");
 const governanceToken = String(process.env.MODEL_GOVERNANCE_ADMIN_TOKEN || "").trim();
 const governanceAdminUser = String(process.env.MODEL_GOVERNANCE_ADMIN_USER || "prediction-runner").trim();
+const governanceHeaders = {
+  "content-type": "application/json",
+  "x-admin-token": governanceToken,
+  "x-admin-user": governanceAdminUser,
+};
 let governance = { learningGovernance: {}, r16Validation: {}, approvedNotes: [], source: "NO_APPROVED_GOVERNANCE" };
 if (governanceToken) {
   const season = String(match.season || match.matchDate || "").slice(0, 4);
   const response = await fetch(`${apiBase}/api/model-governance/approved?league=${encodeURIComponent(match.league)}&season=${encodeURIComponent(season)}`, {
-    headers: { "x-admin-token": governanceToken, "x-admin-user": governanceAdminUser },
+    headers: governanceHeaders,
     signal: AbortSignal.timeout(12000),
   });
   const payload = await response.json();
   if (!response.ok || !payload.ok) throw new Error(`Approved D1 governance fetch failed: ${payload.error || response.status}`);
   governance = payload;
+}
+
+async function registerR18ValidationPair(championRunId, challengerRunId, championOutput, challengerOutput) {
+  if (!governanceToken) return { status: "SKIPPED_NO_GOVERNANCE_TOKEN" };
+  const season = String(match.season || match.matchDate || "").slice(0, 4);
+  const leagueSlug = String(match.league || "unknown").trim().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "unknown";
+  const cohortId = `r16-r18-wdl-${leagueSlug}-${season}`;
+  const championRevision = String(championOutput.modelLessons?.version || championOutput.modelVersion || "").trim();
+  const challengerRevision = String(challengerOutput.modelLessons?.version || challengerOutput.modelVersion || "").trim();
+  const createResponse = await fetch(`${apiBase}/api/model-validation-cohorts`, {
+    method: "POST",
+    headers: governanceHeaders,
+    body: JSON.stringify({
+      cohortId,
+      primaryModule: "WIN_DRAW_LOSE",
+      targetMarket: "winDrawLose",
+      league: match.league,
+      season,
+      championRevision,
+      challengerRevision,
+    }),
+    signal: AbortSignal.timeout(12000),
+  });
+  const cohort = await createResponse.json();
+  if (!createResponse.ok || !cohort.ok) throw new Error(`R18 validation cohort ensure failed: ${cohort.error || createResponse.status}`);
+  const sampleResponse = await fetch(`${apiBase}/api/model-validation-samples`, {
+    method: "POST",
+    headers: governanceHeaders,
+    body: JSON.stringify({ cohortId, championRunId, challengerRunId }),
+    signal: AbortSignal.timeout(12000),
+  });
+  const sample = await sampleResponse.json();
+  if (!sampleResponse.ok || !sample.ok) throw new Error(`R18 validation sample registration failed: ${sample.error || sampleResponse.status}`);
+  return {
+    status: sample.registered === false ? "ALREADY_REGISTERED" : "REGISTERED",
+    cohortId,
+    championRunId: sample.championRunId || championRunId,
+    challengerRunId: sample.challengerRunId || challengerRunId,
+    inputHash: sample.inputHash || "",
+  };
 }
 
 async function loadLiveSpHistory() {
@@ -223,6 +268,20 @@ if (publishRun) {
     championRunId: championPublished.runId,
     comparisonGroupId,
   };
+  try {
+    const registration = await registerR18ValidationPair(
+      championPublished.runId,
+      challengerPublished.runId,
+      result,
+      r18Challenger,
+    );
+    result.sourceContext.r18ValidationRegistration = registration;
+    r18Challenger.sourceContext.r18ValidationRegistration = registration;
+  } catch (error) {
+    const registration = { status: "FAILED", error: error?.message || String(error) };
+    result.sourceContext.r18ValidationRegistration = registration;
+    r18Challenger.sourceContext.r18ValidationRegistration = registration;
+  }
 }
 await fs.writeFile(outputPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
 await fs.writeFile(challengerOutputPath, `${JSON.stringify(r18Challenger, null, 2)}\n`, "utf8");
@@ -238,4 +297,5 @@ console.log(JSON.stringify({
   modelRunId: result.sourceContext.modelRunId || "",
   r18ChallengerRunId: result.sourceContext.r18ChallengerRunId || "",
   comparisonGroupId: result.sourceContext.comparisonGroupId || "",
+  r18ValidationRegistration: result.sourceContext.r18ValidationRegistration || null,
 }, null, 2));

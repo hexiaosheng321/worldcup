@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { RESEARCH_KEYS, criticalPackageGapAudit, handicapDecisionAudit, oneGoalWinAudit, outputConsistencyAudit, overallComponentGradeAudit, packageAdviceForGrade, packageMarketSelection, runUnifiedPrediction, selectConditionalHandicapDecision, selectFormalHandicapDecision, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
+import { RESEARCH_KEYS, criticalPackageGapAudit, evidenceDirectionConflictAudit, handicapDecisionAudit, oneGoalWinAudit, outputConsistencyAudit, overallComponentGradeAudit, packageAdviceForGrade, packageMarketSelection, runUnifiedPrediction, selectConditionalHandicapDecision, selectFormalHandicapDecision, selectOfficialScores } from "./lib/unified-prediction-engine.mjs";
 import { buildTeamState, dedupeSamples } from "./league-v1-context.mjs";
 
 const dedupedSettlementSamples = dedupeSamples([
@@ -178,13 +178,20 @@ assert.ok(final.featureSet.totals.outputConsistency.score >= 75);
 assert.equal(final.featureSet.totals.outputConsistency.grade, "B");
 assert.equal(final.featureSet.totals.outputConsistency.criticalConflict, false);
 assert.equal(final.backtestContract.componentPolicy, "SHARED_FOUNDATION_WITH_MARKET_SCOPED_CRITICAL_GATES");
-assert.equal(final.backtestContract.formalAdmissionPolicy, "GRADE_A_B_ONLY_SCORE_C_OBSERVATION_UNTIL_R16_FORWARD_REVIEW");
+assert.equal(final.backtestContract.formalAdmissionPolicy, "R16_FORMAL_RISK_GUARD_20260723_V1");
 assert.equal(final.backtestContract.cohort, "R16_FORWARD_30");
 assert.equal(final.featureSet.forwardValidation.status, "COLLECTING");
 assert.equal(final.featureSet.score.outputRole, "TERMINAL_EXACT_SCORE_OUTPUT_ONLY");
 assert.equal(final.finalDecision.componentRecommendations.scores.grade, "C");
 assert.equal(final.finalDecision.componentRecommendations.scores.formalEligible, false);
+assert.equal(final.finalDecision.componentRecommendations.handicap.formalEligible, false);
+assert.equal(final.finalDecision.componentRecommendations.totalGoals.formalEligible, false);
+assert.equal(final.finalDecision.componentRecommendations.handicap.formalAdmissionStatus, "OBSERVATION_ONLY_UNTIL_COMPONENT_30_REVIEW");
+assert.equal(final.finalDecision.componentRecommendations.totalGoals.formalAdmissionStatus, "OBSERVATION_ONLY_UNTIL_COMPONENT_30_REVIEW");
+assert.equal(final.finalDecision.formalAdmissionPolicy, "R16_FORMAL_RISK_GUARD_20260723_V1");
 assert.ok(!final.finalDecision.formalMarkets.includes("scores"));
+assert.ok(!final.finalDecision.formalMarkets.includes("handicap"));
+assert.ok(!final.finalDecision.formalMarkets.includes("totalGoals"));
 assert.equal(final.finalDecision.confidenceAdjustments.outputConsistency, 0);
 assert.equal(final.finalDecision.predictiveConfidence.separatedFromOutputConsistency, true);
 assert.ok(final.backtestContract.metrics.includes("componentGradeHitRate"));
@@ -202,6 +209,34 @@ assert.ok(({ A: ["主打", "可选", "谨慎", "跳过"], B: ["可选", "谨慎"
 assert.equal(final.featureSet.componentFoundationEligible, true);
 assert.equal(final.featureSet.criticalPackageGap.blocking, false);
 assert.ok(Array.isArray(final.finalDecision.formalMarkets));
+
+const unresolvedMarketConflict = evidenceDirectionConflictAudit({
+  marketBaseline: { probabilities: [0.62, 0.23, 0.15] },
+  tieAudit: { aggregateLeader: "LEVEL" },
+  research: {},
+  selectedDirection: "AWAY",
+  auditedResearch: { items: [] },
+});
+assert.equal(unresolvedMarketConflict.marketDirection, "HOME");
+assert.equal(unresolvedMarketConflict.marketConflict, true);
+assert.equal(unresolvedMarketConflict.marketConflictResolvedForFormal, false);
+assert.equal(unresolvedMarketConflict.formalWinDrawLoseAction, "OBSERVATION_ONLY");
+
+const supportedMarketConflict = evidenceDirectionConflictAudit({
+  marketBaseline: { probabilities: [0.62, 0.23, 0.15] },
+  tieAudit: { aggregateLeader: "LEVEL" },
+  research: {},
+  selectedDirection: "AWAY",
+  auditedResearch: {
+    items: [
+      { key: "teamState", complete: true, impact: { home: -0.03, away: 0.03 } },
+      { key: "injuries", complete: true, impact: { home: -0.04, away: 0.04 } },
+    ],
+  },
+});
+assert.equal(supportedMarketConflict.marketConflictResolvedForFormal, true);
+assert.equal(supportedMarketConflict.marketOverrideSupportCount, 2);
+assert.equal(supportedMarketConflict.formalWinDrawLoseAction, "ALLOW");
 
 const alternateOfficialScores = runUnifiedPrediction(context, {
   lockType: "FINAL_LOCK",

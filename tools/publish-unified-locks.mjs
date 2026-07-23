@@ -83,7 +83,7 @@ for (const id of ids) {
     riskScore: 100 - decision.confidence, consistencyScore: Number(outputConsistency.score ?? gateCompletionScore),
     sportteryHomeSp: Number(item.normal?.win), sportteryDrawSp: Number(item.normal?.draw), sportteryAwaySp: Number(item.normal?.lose),
     asianHandicap: handicap, dataQuality: run.featureSet?.dataQuality?.grade || "D",
-    reasoningSummary: `R16正式稳定模型：胜平负、让球和总进球按完整联合分布的独立边际生成，两个正式比分只作最终叶子输出。${decision.scores.length ? `比分候选按联合概率覆盖选择${decision.scores.join(" / ")}，` : "比分叶子当前不可用，"}比分正式准入按R16前向观察契约；正式玩法仅以formalSelections为准。`,
+    reasoningSummary: `R16正式风险闸门：四玩法候选继续按完整联合分布生成；胜平负遇到无双重量化证据的市场反向时仅观察，让球、总进球和比分在各自30场评审前仅作影子验票。${decision.scores.length ? `比分候选为${decision.scores.join(" / ")}。` : "比分叶子当前不可用。"}正式玩法仅以formalSelections为准。`,
     sportteryPrediction: {
       type: `${run.match.league} R16 模型${isFinal ? "锁版" : "待锁版"}`, matchId: id, no: item.no || "", issue: item.issue || "",
       matchDate: item.matchDate || item.ticaiDate, kickoffTime: item.kickoffTime, competition: run.match.league,

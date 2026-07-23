@@ -11,6 +11,7 @@ const RESEARCH_KEYS = [
 const resultLabels = ["HOME", "DRAW", "AWAY"];
 const resultText = { HOME: "胜", DRAW: "平", AWAY: "负" };
 const R16_MODEL_REVISION = "LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16";
+const R16_FORMAL_ADMISSION_POLICY = "R16_FORMAL_RISK_GUARD_20260723_V1";
 
 function promotionGuardrailAudit(source = {}) {
   const validation = source.validation || {};
@@ -834,7 +835,7 @@ function directionFromStyleEvidence(research = {}) {
   return home > away ? "HOME" : "AWAY";
 }
 
-function evidenceDirectionConflictAudit({ marketBaseline, tieAudit, research, selectedDirection, auditedResearch }) {
+export function evidenceDirectionConflictAudit({ marketBaseline, tieAudit, research, selectedDirection, auditedResearch }) {
   const marketDirection = marketBaseline
     ? resultLabels[marketBaseline.probabilities.indexOf(Math.max(...marketBaseline.probabilities))]
     : "";
@@ -857,19 +858,31 @@ function evidenceDirectionConflictAudit({ marketBaseline, tieAudit, research, se
   const consensusKey = String(consensusDirection || "").toLowerCase();
   const quantitativeSupport = (auditedResearch?.items || []).filter((item) => item.complete
     && Number(item.impact?.[selectedKey] || 0) - Number(item.impact?.[consensusKey] || 0) >= 0.02);
+  const marketConflict = Boolean(marketDirection && selectedDirection && marketDirection !== selectedDirection);
+  const marketKey = String(marketDirection || "").toLowerCase();
+  const marketOverrideSupport = (auditedResearch?.items || []).filter((item) => item.complete
+    && Number(item.impact?.[selectedKey] || 0) - Number(item.impact?.[marketKey] || 0) >= 0.02);
+  const marketConflictResolvedForFormal = !marketConflict || marketOverrideSupport.length >= 2;
   return {
     votes,
     counts,
+    marketDirection,
+    marketConflict,
+    marketConflictResolvedForFormal,
     consensusDirection: consensusCount >= 2 ? consensusDirection : "",
     consensusCount,
     selectedDirection,
     materialConflict,
     quantitativeSupportForSelected: quantitativeSupport.map((item) => item.key),
     quantitativeSupportCount: quantitativeSupport.length,
+    quantitativeSupportForMarketOverride: marketOverrideSupport.map((item) => item.key),
+    marketOverrideSupportCount: marketOverrideSupport.length,
     resolved: !materialConflict || quantitativeSupport.length >= 2,
     championAction: materialConflict && quantitativeSupport.length < 2 ? "BLOCK_FINAL_LOCK" : "ALLOW",
     challengerRiskWeight: consensusCount >= 2 ? 0.35 : 0.2,
-    policy: "TWO_OF_MARKET_FIRST_GOAL_TIE_EXPOSURE_REQUIRE_TWO_QUANTITATIVE_OVERRIDES",
+    formalWinDrawLoseAction: marketConflictResolvedForFormal ? "ALLOW" : "OBSERVATION_ONLY",
+    formalAdmissionPolicy: R16_FORMAL_ADMISSION_POLICY,
+    policy: "MARKET_DISAGREEMENT_REQUIRES_TWO_QUANTITATIVE_OVERRIDES_FOR_FORMAL_WDL",
   };
 }
 
@@ -1623,14 +1636,16 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     totalGoals: selectedTotalCoverageProbability,
     scores: selectedScenarioProbability,
   };
-  const frozenRecommendation = (kind, probability, eligible) => ({
+  const frozenRecommendation = (kind, probability, eligible, formalEligible = eligible, formalAdmissionStatus = "R16_FORWARD_COLLECTION") => ({
     probability: round(probability),
     rawProbability: round(probability),
     calibratedProbability: null,
     calibrationStatus: "R16_FORWARD_COLLECTION",
     gradeSource: "R15_THRESHOLDS_FROZEN_FOR_R16_STRUCTURE_TEST",
     eligible,
-    formalEligible: eligible,
+    formalEligible,
+    formalAdmissionStatus,
+    formalAdmissionPolicy: R16_FORMAL_ADMISSION_POLICY,
     grade: componentGrade(kind, probability, eligible),
     advice: componentAdvice(kind, probability, eligible),
   });
@@ -1643,14 +1658,34 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         gradeSource: forwardValidation.scoreFormalAdmissionEligible ? "R16_FORWARD_REVIEW_APPROVED" : "R16_SCORE_OBSERVATION_CAP",
         eligible: true,
         formalEligible: forwardValidation.scoreFormalAdmissionEligible,
+        formalAdmissionStatus: forwardValidation.scoreFormalAdmissionEligible ? "PROMOTED" : "OBSERVATION_ONLY",
+        formalAdmissionPolicy: R16_FORMAL_ADMISSION_POLICY,
         grade: forwardValidation.scoreFormalAdmissionEligible ? componentGrade("score", componentProbabilities.scores, true) : "C",
         advice: forwardValidation.scoreFormalAdmissionEligible ? componentAdvice("score", componentProbabilities.scores, true) : "谨慎",
       }
     : frozenRecommendation("score", componentProbabilities.scores, false);
   const componentRecommendations = {
-    winDrawLose: frozenRecommendation("winDrawLose", componentProbabilities.winDrawLose, componentEligibility.winDrawLose),
-    handicap: frozenRecommendation("handicap", componentProbabilities.handicap, componentEligibility.handicap),
-    totalGoals: frozenRecommendation("totalGoals", componentProbabilities.totalGoals, componentEligibility.totalGoals),
+    winDrawLose: frozenRecommendation(
+      "winDrawLose",
+      componentProbabilities.winDrawLose,
+      componentEligibility.winDrawLose,
+      componentEligibility.winDrawLose && evidenceDirectionConflict.marketConflictResolvedForFormal,
+      evidenceDirectionConflict.marketConflictResolvedForFormal ? "FORMAL_ELIGIBLE" : "MARKET_CONFLICT_OBSERVATION_ONLY",
+    ),
+    handicap: frozenRecommendation(
+      "handicap",
+      componentProbabilities.handicap,
+      componentEligibility.handicap,
+      false,
+      "OBSERVATION_ONLY_UNTIL_COMPONENT_30_REVIEW",
+    ),
+    totalGoals: frozenRecommendation(
+      "totalGoals",
+      componentProbabilities.totalGoals,
+      componentEligibility.totalGoals,
+      false,
+      "OBSERVATION_ONLY_UNTIL_COMPONENT_30_REVIEW",
+    ),
     scores: scoreObservationRecommendation,
   };
   const predictiveConfidence = {
@@ -1791,7 +1826,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
     } : null,
     tenStepResult: { passed: tenStepPassed, steps: stepScores, averageScore: round(stepScores.reduce((sum, step) => sum + step.score, 0) / stepScores.length, 1) },
     gateResult: { passed: allGatesPass, gates, blockers, componentAudits: { scores: scoreLeafAudit } },
-    backtestContract: { version: "R16_FORWARD_30_V1", cohort: "R16_FORWARD_30", probabilityFields: ["featureSet.probabilities", "featureSet.handicap.probabilities", "featureSet.totals.probabilities", "featureSet.score.probabilities"], metrics: ["winDrawLoseSingleHit", "formalHandicapSingleHit", "independentHandicapLeaderSingleHit", "conditionalHandicapChallengerSingleHit", "formalWinDrawLoseHandicapJointHit", "totalGoalsDoubleHit", "scoreDoubleHit", "officialScoreCoverageProbability", "scoreEntropy", "scoreTop2CoverageProbability", "outputConsistencyScore", "predictiveConfidenceCalibration", "formalCoverageRate", "criticalPackageGapRate", "sharedPackageGapRate", "marketScopedGapRate", "componentRecommendationEligibility", "componentGradeHitRate", "formalMarketCoverageByComponent", "overallGradePackageHit", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", casePersistence: "ALL_SETTLED_PRE_AND_FINAL_LOCKS", caseReuse: "CHAMPION_FORMAL_PREFERRED_FINAL_LOCK_ONLY", shadowReuse: "SHADOW_OBSERVATION_DIAGNOSTIC_AND_VALIDATION_ONLY", immutablePreMatchSnapshot: true, directionPolicy: "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED", handicapPolicy: "INDEPENDENT_FULL_GRID_MARGIN_LEADER", totalGoalsPolicy: "FULL_JOINT_TOTAL_MARGINAL_TOP_TWO", exactScoreRole: "TERMINAL_OUTPUT_ONLY", componentPolicy: "SHARED_FOUNDATION_WITH_MARKET_SCOPED_CRITICAL_GATES", formalAdmissionPolicy: "GRADE_A_B_ONLY_SCORE_C_OBSERVATION_UNTIL_R16_FORWARD_REVIEW", scorePolicies: ["TOP_TWO_APPROVED_LEAGUE_SEASON", "TERMINAL_OUTPUT_ONLY"] },
+    backtestContract: { version: "R16_FORWARD_30_V1", cohort: "R16_FORWARD_30", probabilityFields: ["featureSet.probabilities", "featureSet.handicap.probabilities", "featureSet.totals.probabilities", "featureSet.score.probabilities"], metrics: ["winDrawLoseSingleHit", "formalHandicapSingleHit", "independentHandicapLeaderSingleHit", "conditionalHandicapChallengerSingleHit", "formalWinDrawLoseHandicapJointHit", "totalGoalsDoubleHit", "scoreDoubleHit", "officialScoreCoverageProbability", "scoreEntropy", "scoreTop2CoverageProbability", "outputConsistencyScore", "predictiveConfidenceCalibration", "formalCoverageRate", "criticalPackageGapRate", "sharedPackageGapRate", "marketScopedGapRate", "componentRecommendationEligibility", "componentGradeHitRate", "formalMarketCoverageByComponent", "overallGradePackageHit", "brierScore", "logLoss", "calibrationBin"], resultScope: "90_MINUTES", sampleVersion: context.sampleVersion || "rolling-current", casePersistence: "ALL_SETTLED_PRE_AND_FINAL_LOCKS", caseReuse: "CHAMPION_FORMAL_PREFERRED_FINAL_LOCK_ONLY", shadowReuse: "SHADOW_OBSERVATION_DIAGNOSTIC_AND_VALIDATION_ONLY", immutablePreMatchSnapshot: true, directionPolicy: "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED", handicapPolicy: "INDEPENDENT_FULL_GRID_MARGIN_LEADER", totalGoalsPolicy: "FULL_JOINT_TOTAL_MARGINAL_TOP_TWO", exactScoreRole: "TERMINAL_OUTPUT_ONLY", componentPolicy: "SHARED_FOUNDATION_WITH_MARKET_SCOPED_CRITICAL_GATES", formalAdmissionPolicy: R16_FORMAL_ADMISSION_POLICY, scorePolicies: ["TOP_TWO_APPROVED_LEAGUE_SEASON", "TERMINAL_OUTPUT_ONLY"] },
     lifecycleContract: { version: "R16_FORWARD_2026_V1", states: ["DATA_PENDING", "DATA_REPAIR", "MODEL_READY", "CONSISTENCY_CHECK", "FINAL_LOCK", "RESULT_SETTLED", "BASE_CASE"], currentState: lockType === "FINAL_LOCK" ? "FINAL_LOCK" : fundamentalDataComplete && research.complete ? "CONSISTENCY_CHECK" : "DATA_REPAIR", champion: "UNIFIED_PREDICTION_R16", challengerPolicy: "复盘建议只生成结构化Challenger；同场不可修改赛前快照累计30场后，命中率、覆盖率、Brier与Log Loss不退化才可人工晋级" },
     reviewLearningContract: {
       automaticPromotion: false,
@@ -1862,7 +1897,8 @@ export function runUnifiedPrediction(context = {}, options = {}) {
         "共享基础、资格赛场地样本、两回合或赛事阶段严重缺失时，整包D级、PRE_LOCK且正式玩法全部清空",
         "让球独立边际存在数据或市场严重冲突时只关闭让球；总进球严重不一致只关闭总进球，不得连带关闭比分或胜平负",
         "正式玩法只准入A/B级组件，C级只进入观察与赛后验票，不调整原有ABCD概率阈值",
-        "R16前30场冻结胜平负、让球和总进球ABCD阈值；比分统一封顶C级观察，完成30场并人工评审前不得正式放行",
+        "R16候选层继续冻结原ABCD阈值；让球、总进球和比分在完成各自30场前向验票及人工评审前只保留观察，不得正式放行",
+        "胜平负与赛前市场第一方向相反时，至少需要两项独立量化赛前证据支持模型方向，否则候选保留但正式放行降为观察",
         "每日复盘建议必须结构化为单一主模块Challenger，禁止自然语言建议直接改写Champion权重",
         "联赛复盘不足30场时只保留Challenger建议，不得把小样本xG、比分权重或置信扣分应用到Champion",
         "任何联赛或赛季校准即使达到30场，也必须完成单模块状态流转、样本外护栏验证和人工PROMOTED批准后才能进入Champion",
@@ -1915,6 +1951,7 @@ export function runUnifiedPrediction(context = {}, options = {}) {
       criticalPackageGap,
       observationalMarkets,
       formalMarkets,
+      formalAdmissionPolicy: R16_FORMAL_ADMISSION_POLICY,
       confidenceAdjustments: { riskPathRisk: -riskPathRisk, counterPathRisk: -counterPathRisk, leagueLearning: -leagueLearning.confidencePenalty, handicapMarginalConflict: -handicapDecision.confidencePenalty, outputConsistency: 0, marketAvailability: -marketAvailability.confidencePenalty },
       advice: packageAdvice,
       conflict,

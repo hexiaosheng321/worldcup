@@ -5923,12 +5923,32 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       }
       if (championRevision === challengerRevision) return json({ ok: false, error: "Champion and Challenger revisions must differ" }, 400);
       const cohortId = body.cohortId || body.cohort_id || `validation-${crypto.randomUUID()}`;
+      const existingCohort = await db.prepare("SELECT * FROM model_validation_cohorts WHERE cohort_id = ?").bind(cohortId).first();
+      if (existingCohort) {
+        const sameContract = existingCohort.primary_module === primaryModule
+          && existingCohort.target_market === targetMarket
+          && existingCohort.league === league
+          && existingCohort.season === season
+          && existingCohort.champion_revision === championRevision
+          && existingCohort.challenger_revision === challengerRevision;
+        if (!sameContract) return json({ ok: false, error: "validation cohort id already exists with a different contract" }, 409);
+        return json({
+          ok: true,
+          cohortId,
+          status: existingCohort.status,
+          primaryModule,
+          targetMarket,
+          league,
+          season,
+          created: false,
+        });
+      }
       await db.prepare(`
         INSERT INTO model_validation_cohorts (
           cohort_id, primary_module, target_market, league, season, champion_revision, challenger_revision, status, created_by, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'COLLECTING', ?, ?)
       `).bind(cohortId, primaryModule, targetMarket, league, season, championRevision, challengerRevision, auth.adminUser, new Date().toISOString()).run();
-      return json({ ok: true, cohortId, status: "COLLECTING", primaryModule, targetMarket, league, season });
+      return json({ ok: true, cohortId, status: "COLLECTING", primaryModule, targetMarket, league, season, created: true });
     }
 
     if (path === "model-validation-samples" && request.method === "POST") {
@@ -5970,11 +5990,27 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         return json({ ok: false, error: "both paired runs must be immutable pre-match snapshots" }, 400);
       }
       const inputHash = stableInputHash(championComparableInput);
+      const existingSample = await db.prepare(`
+        SELECT cohort_id, match_id, champion_run_id, challenger_run_id, input_hash
+        FROM model_validation_samples
+        WHERE cohort_id = ? AND match_id = ?
+      `).bind(cohortId, championRun.match_id).first();
+      if (existingSample) {
+        return json({
+          ok: true,
+          cohortId,
+          matchId: championRun.match_id,
+          inputHash: existingSample.input_hash,
+          championRunId: existingSample.champion_run_id,
+          challengerRunId: existingSample.challenger_run_id,
+          registered: false,
+        });
+      }
       await db.prepare(`
         INSERT INTO model_validation_samples (cohort_id, match_id, champion_run_id, challenger_run_id, input_hash, registered_at)
         VALUES (?, ?, ?, ?, ?, ?)
       `).bind(cohortId, championRun.match_id, championRunId, challengerRunId, inputHash, new Date().toISOString()).run();
-      return json({ ok: true, cohortId, matchId: championRun.match_id, inputHash });
+      return json({ ok: true, cohortId, matchId: championRun.match_id, inputHash, championRunId, challengerRunId, registered: true });
     }
 
     if (path === "model-validation-cohorts/evaluate" && request.method === "POST") {
