@@ -1020,13 +1020,13 @@ function cloudLockRowsToPredictions(rows = []) {
       const analysis = prediction.analysis || payload.analysis || prediction.payload || payload.payload || {};
       const finalPick = prediction.finalPick || prediction.analysis?.finalPick || payload.finalPick || {};
       const hasFormalContract = Object.prototype.hasOwnProperty.call(prediction, "formalSelections");
-      const formalContract = hasFormalContract && prediction.formalSelections && typeof prediction.formalSelections === "object"
-        ? prediction.formalSelections
+      const candidateContract = prediction.candidateSelections && typeof prediction.candidateSelections === "object"
+        ? prediction.candidateSelections
         : {};
       const finalScoresText = Array.isArray(finalPick.scores) ? finalPick.scores.join(" / ") : finalPick.scores || "";
-      const formalScores = Array.isArray(formalContract.scores) ? formalContract.scores.filter(Boolean) : [];
-      const scorePair = hasFormalContract
-        ? [formalScores[0] || "", formalScores[1] || ""]
+      const candidateScores = Array.isArray(candidateContract.scores) ? candidateContract.scores.filter(Boolean) : [];
+      const scorePair = hasFormalContract && candidateScores.length
+        ? [candidateScores[0] || "", candidateScores[1] || ""]
         : Array.isArray(finalPick.scores)
           ? [finalPick.scores[0] || "", finalPick.scores[1] || ""]
           : scorePairFromPick(prediction.scorePick || finalScoresText || "");
@@ -1055,18 +1055,18 @@ function cloudLockRowsToPredictions(rows = []) {
         confidence: prediction.confidence || row.final_grade || "",
         advice: prediction.advice || prediction.finalAction || finalPick.advice || row.final_action || "",
         pick: hasFormalContract
-          ? formalContract.winDrawLose || ""
+          ? candidateContract.winDrawLose || prediction.pick || ""
           : prediction.pick || prediction.recommendationSide || finalPick.winDrawLose || row.recommendation_side || row.recommendation || "",
         handicapPick: hasFormalContract
-          ? formalContract.handicap || ""
+          ? candidateContract.handicap || prediction.handicapPick || ""
           : prediction.handicapPick || prediction.handicapRecommendation || finalPick.handicap || "",
         totalGoalsPick: hasFormalContract
-          ? formalContract.totalGoals || ""
+          ? candidateContract.totalGoals || prediction.totalGoalsPick || ""
           : prediction.totalGoalsPick || finalPick.totalGoals || "",
-        mainScore: hasFormalContract ? scorePair[0] : prediction.mainScore || scorePair[0] || "",
-        counterScore: hasFormalContract ? scorePair[1] : prediction.counterScore || scorePair[1] || "",
+        mainScore: hasFormalContract ? scorePair[0] || prediction.mainScore || "" : prediction.mainScore || scorePair[0] || "",
+        counterScore: hasFormalContract ? scorePair[1] || prediction.counterScore || "" : prediction.counterScore || scorePair[1] || "",
         scorePick: hasFormalContract
-          ? scorePair.filter(Boolean).join(" / ")
+          ? scorePair.filter(Boolean).join(" / ") || prediction.scorePick || ""
           : prediction.scorePick || finalScoresText || scorePair.filter(Boolean).join(" / "),
         lockId: row.lock_id || prediction.lockId || "",
         lockType,
@@ -1265,27 +1265,8 @@ function formalSelectionsForPrediction(pred) {
   };
 }
 
-function formalWinDrawLosePick(pred) {
-  const formal = formalSelectionsForPrediction(pred);
-  return formal ? formal.winDrawLose : pred?.pick || "";
-}
-
 function handicapPick(pred) {
-  const formal = formalSelectionsForPrediction(pred);
-  if (formal) return formal.handicap;
   return pred.handicapPick || handicapDirection(pred.mainScore, reviewHandicapLine(pred));
-}
-
-function formalSelectionSummary(pred) {
-  const formal = formalSelectionsForPrediction(pred);
-  if (!formal) return [pred?.pick, handicapPick(pred)].filter(Boolean).join(" / ") || "无正式玩法";
-  const selections = [
-    formal.winDrawLose ? `胜平负 ${formal.winDrawLose}` : "",
-    formal.handicap ? `让球 ${formal.handicap}` : "",
-    formal.totalGoals ? `总进球 ${formal.totalGoals}` : "",
-    formal.scores.length ? `比分 ${formal.scores.join(" / ")}` : "",
-  ].filter(Boolean);
-  return selections.join(" · ") || "无正式玩法";
 }
 
 function resolvedPredictionDecision(pred, context = {}) {
@@ -2150,11 +2131,8 @@ function matchCard(match, options = {}) {
   const finished = liveStatus.tone === "finished";
   const displayDate = options.dateGetter ? options.dateGetter(match) : ticaiDate(match);
   const statusText = finished ? "已完赛" : liveStatus.tone === "live" ? "进行中" : liveStatus.tone === "pending-result" ? "待回填" : "待赛";
-  const modelText = pred ? `正式 ${formalSelectionSummary(pred)}` : "待锁版";
-  const formalScores = formalSelectionsForPrediction(pred)?.scores || [];
-  const scoreText = pred
-    ? formalScores.length ? `比分 ${formalScores.join(" / ")}` : "比分未正式放行"
-    : "等待推演";
+  const modelText = pred ? `模型 ${pred.pick}` : "待锁版";
+  const scoreText = pred ? `比分 ${pred.mainScore} / ${pred.counterScore}` : "等待推演";
   const liveItems = matchLiveDataSummary(match, pred);
   const liveValue =
     liveStatus.tone === "countdown"
@@ -3419,9 +3397,9 @@ function renderQuickMatchMode(match, pred, filter, finished, hLabel) {
         <p>${gate.action} · ${gate.notes.join(" / ")}</p>
       </article>
       <article>
-        <span>正式放行</span>
-        <strong>${formalSelectionSummary(pred)}</strong>
-        <p>独立候选只保留在观察与赛后验票，不与正式玩法拼接。</p>
+        <span>模型锁版结论</span>
+        <strong>胜平负 ${pred.pick} · 让球 ${handicapPick(pred) || "待定"}</strong>
+        <p>总进球 ${pred.totalGoalsPick || "暂无"} · 比分 ${pred.mainScore} / ${pred.counterScore}</p>
       </article>
       <article>
         <span>风险状态</span>
@@ -3546,10 +3524,10 @@ function renderMatchDetail(no) {
       <div class="match-page-summary">
         <span>${ticaiIssue(match)}</span>
         <div class="summary-grid">
-          <div><small>胜平负</small><b>${pred ? formalWinDrawLosePick(pred) || "未放行" : finished ? "已完赛" : "待锁版"}</b></div>
+          <div><small>胜平负</small><b>${pred ? pred.pick || "暂无" : finished ? "已完赛" : "待锁版"}</b></div>
           <div><small>让球</small><b>${pred ? handicapPick(pred) || "暂无" : hLabel || "暂无"}</b></div>
-          <div><small>总进球</small><b>${formalSelectionsForPrediction(pred)?.totalGoals || pred?.totalGoalsPick || "未放行"}</b></div>
-          <div><small>比分预测</small><b>${pred ? (formalSelectionsForPrediction(pred)?.scores || []).join(" / ") || "未放行" : "待推演"}</b></div>
+          <div><small>总进球</small><b>${pred?.totalGoalsPick || "暂无"}</b></div>
+          <div><small>比分预测</small><b>${pred ? [pred.mainScore, pred.counterScore].filter(Boolean).join(" / ") || "暂无" : "待推演"}</b></div>
         </div>
       </div>
     </section>
@@ -5492,7 +5470,7 @@ function renderSiteLocks() {
                 <span>Case ${caseStatus.generated ? "已生成" : "未生成"}</span>
               </div>
               <div class="site-lock-picks">
-                <strong>${formalSelectionSummary(pred)}</strong>
+                <strong>胜平负 ${dash(pred.pick)}</strong>
                 <span>让球 ${dash(review.hPick)}</span>
                 <span>总进球 ${dash(pred.totalGoalsPick)}</span>
                 <span>比分 ${dash(pred.mainScore)} / ${dash(pred.counterScore)}</span>
@@ -6635,12 +6613,11 @@ function probabilityBaselineText(pred) {
 
 function finalLockSummaryText(pred) {
   const finalAction = finalDecisionActionText(pred);
-  const formal = formalSelectionsForPrediction(pred);
   const picks = [
-    formal ? formalSelectionSummary(pred) : pred.pick ? `胜平负 ${pred.pick}` : "",
-    !formal && pred.handicapPick ? `让球 ${pred.handicapPick}` : "",
-    !formal && pred.totalGoalsPick ? `总进球 ${pred.totalGoalsPick}` : "",
-    !formal && (pred.mainScore || pred.counterScore) ? `比分 ${[pred.mainScore, pred.counterScore].filter(Boolean).join(" / ")}` : "",
+    pred.pick ? `胜平负 ${pred.pick}` : "",
+    pred.handicapPick ? `让球 ${pred.handicapPick}` : "",
+    pred.totalGoalsPick ? `总进球 ${pred.totalGoalsPick}` : "",
+    pred.mainScore || pred.counterScore ? `比分 ${[pred.mainScore, pred.counterScore].filter(Boolean).join(" / ")}` : "",
     pred.matchType ? `类型 ${pred.matchType}` : "",
     pred.confidence || pred.advice ? `建议 ${[pred.confidence, pred.advice].filter(Boolean).join(" / ")}` : "",
   ].filter(Boolean);
