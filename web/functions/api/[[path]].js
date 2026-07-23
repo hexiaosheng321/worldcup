@@ -5312,6 +5312,20 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
   const scoreLeafAvailable = scoreA !== "-" && scoreB !== "-";
   const riskScore = riskScenario.score || decision.riskScenario || "-";
   const odds = Array.isArray(featureSet.market?.odds) ? featureSet.market.odds : [];
+  const availableMarkets = parseObject(featureSet.marketAvailability?.markets);
+  const formalMarketSet = new Set(Array.isArray(decision.formalMarkets) ? decision.formalMarkets : []);
+  const authoritativeCandidates = {
+    winDrawLose: availableMarkets.winDrawLose === true ? decision.winDrawLose || null : null,
+    handicap: availableMarkets.handicap === true ? decision.handicapPick || null : null,
+    totalGoals: availableMarkets.totalGoals === true ? decision.totalGoalsPick || null : null,
+    scores: availableMarkets.scores === true && scoreLeafAvailable ? [scoreA, scoreB] : [],
+  };
+  const authoritativeFormalSelections = {
+    winDrawLose: formalMarketSet.has("winDrawLose") ? authoritativeCandidates.winDrawLose : null,
+    handicap: formalMarketSet.has("handicap") ? authoritativeCandidates.handicap : null,
+    totalGoals: formalMarketSet.has("totalGoals") ? authoritativeCandidates.totalGoals : null,
+    scores: formalMarketSet.has("scores") ? authoritativeCandidates.scores : [],
+  };
   const movementText = movement.complete
     ? `SP历史共${movement.snapshots || 0}个快照；开盘 ${movement.first?.h || "-"} / ${movement.first?.d || "-"} / ${movement.first?.a || "-"}，最新 ${movement.latest?.h || "-"} / ${movement.latest?.d || "-"} / ${movement.latest?.a || "-"}，变化幅度 ${movement.movementMagnitude ?? "-"}。${researchText("marketNews")}`
     : researchText("marketNews");
@@ -5327,9 +5341,15 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
   const jointDecision = parseObject(featureSet.jointDecision);
   const independentHandicapRisk = parseObject(jointDecision.independentHandicapRisk);
   const handicapText = isR16
-    ? `让球独立概率：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；R16正式让球固定采用完整净胜球边际第一项 ${decision.handicapPick || prediction.handicapPick || "-"}，不要求正式比分支持。`
+    ? `让球独立概率：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；完整净胜球边际候选为 ${decision.handicapPick || "-"}，${authoritativeFormalSelections.handicap ? `正式让球已放行 ${authoritativeFormalSelections.handicap}` : "当前仅作观察，未进入正式玩法"}。`
     : `让球独立概率：让胜 ${((Number(handicapProbabilities["让胜"]) || 0) * 100).toFixed(1)}%、让平 ${((Number(handicapProbabilities["让平"]) || 0) * 100).toFixed(1)}%、让负 ${((Number(handicapProbabilities["让负"]) || 0) * 100).toFixed(1)}%；独立边际第一项 ${independentHandicapRisk.pick || "-"} 作风险审计。正式让球 ${decision.handicapPick || prediction.handicapPick || "-"} 必须与胜平负 ${decision.winDrawLose || prediction.pick || "-"} 及至少一个正式比分 ${scoreA} / ${scoreB} 同时成立。`;
   const finalText = `胜平负 ${decision.winDrawLose || prediction.pick || "-"}；让球 ${decision.handicapPick || prediction.handicapPick || "-"}；总进球 ${decision.totalGoalsPick || prediction.totalGoalsPick || "-"}；比分 ${scoreA} / ${scoreB}；类型 ${decision.matchType || prediction.matchType || "-"}；建议 ${decision.confidence ?? prediction.confidenceScore ?? "-"}% / ${decision.advice || prediction.advice || "-"}。`;
+  const formalFinalText = [
+    authoritativeFormalSelections.winDrawLose ? `胜平负 ${authoritativeFormalSelections.winDrawLose}` : "",
+    authoritativeFormalSelections.handicap ? `让球 ${authoritativeFormalSelections.handicap}` : "",
+    authoritativeFormalSelections.totalGoals ? `总进球 ${authoritativeFormalSelections.totalGoals}` : "",
+    authoritativeFormalSelections.scores.length ? `比分 ${authoritativeFormalSelections.scores.join(" / ")}` : "",
+  ].filter(Boolean).join("；") || "无正式玩法，候选仅保留观察";
   const scoreLeafText = scoreLeafAvailable
     ? `保留联合概率最高的 ${scoreA} / ${scoreB} 两个比分叶子输出，允许同方向；独立风险剧本 ${riskScore} 不占名额；不得反向改写其他玩法。`
     : `比分叶子当前不可用；仅关闭比分组件，不得反向改写或阻断其他玩法。独立风险剧本为 ${riskScore}。`;
@@ -5337,29 +5357,18 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
     ? `最大失败方式是比赛偏离正式高概率覆盖 ${scoreA} / ${scoreB}，转入独立风险剧本 ${riskScore} 或分布尾部。`
     : `比分叶子不可用不影响非比分玩法；主要风险仍是完整联合分布偏离当前胜平负、让球或总进球边际。`);
   const authoritativeScriptSet = [
-    ...scenarios.map((item, index) => ({ label: index ? "正式比分二" : "正式比分一", probability: item.probability, score: item.score, text: "联合概率覆盖路径" })),
+    ...scenarios.map((item, index) => ({ label: isR16 ? index ? "比分候选二" : "比分候选一" : index ? "正式比分二" : "正式比分一", probability: item.probability, score: item.score, text: "联合概率覆盖路径" })),
     ...(riskScenario.score ? [{ label: "独立风险", probability: riskScenario.probability, score: riskScenario.score, text: "不占正式比分名额" }] : []),
   ];
-  const availableMarkets = parseObject(featureSet.marketAvailability?.markets);
-  const formalMarketSet = new Set(Array.isArray(decision.formalMarkets) ? decision.formalMarkets : []);
-  const authoritativeCandidates = {
-    winDrawLose: availableMarkets.winDrawLose === true ? decision.winDrawLose || null : null,
-    handicap: availableMarkets.handicap === true ? decision.handicapPick || null : null,
-    totalGoals: availableMarkets.totalGoals === true ? decision.totalGoalsPick || null : null,
-    scores: availableMarkets.scores === true && scoreLeafAvailable ? [scoreA, scoreB] : [],
-  };
-  const authoritativeFormalSelections = {
-    winDrawLose: formalMarketSet.has("winDrawLose") ? authoritativeCandidates.winDrawLose : null,
-    handicap: formalMarketSet.has("handicap") ? authoritativeCandidates.handicap : null,
-    totalGoals: formalMarketSet.has("totalGoals") ? authoritativeCandidates.totalGoals : null,
-    scores: formalMarketSet.has("scores") ? authoritativeCandidates.scores : [],
-  };
   return {
     ...prediction,
     ...(isR16 ? {
-      mainScore: scoreLeafAvailable ? scoreA : "",
-      counterScore: scoreLeafAvailable ? scoreB : "",
-      predictedScores: scoreLeafAvailable ? [scoreA, scoreB] : [],
+      pick: authoritativeFormalSelections.winDrawLose || "",
+      handicapPick: authoritativeFormalSelections.handicap || "",
+      totalGoalsPick: authoritativeFormalSelections.totalGoals || "",
+      mainScore: authoritativeFormalSelections.scores[0] || "",
+      counterScore: authoritativeFormalSelections.scores[1] || "",
+      predictedScores: authoritativeFormalSelections.scores,
       candidateSelections: authoritativeCandidates,
       formalSelections: authoritativeFormalSelections,
     } : {}),
@@ -5390,7 +5399,7 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
     eventRisk: prediction.eventRisk || weatherText || "早球、定位球、红牌或临场阵容变化可能改变比赛节奏。",
     valueFilter: prediction.valueFilter || `置信 ${decision.confidence ?? prediction.confidenceScore ?? "-"}%：${decision.advice || prediction.advice || "谨慎"}；不因单一低赔自动放大结论。`,
     noiseFilter: prediction.noiseFilter || "排除名气、单一低赔和单一比分噪声，只保留通过十步证据链的方向。",
-    finalDecisionAction: isR16 ? finalText : prediction.finalDecisionAction || finalText,
+    finalDecisionAction: isR16 ? formalFinalText : prediction.finalDecisionAction || finalText,
     scriptSet: isR16 ? authoritativeScriptSet : prediction.scriptSet || authoritativeScriptSet,
     dataQuality: prediction.dataQuality || `HIGH：十步平均分 ${runOutput.tenStepResult?.averageScore ?? 100}，全部硬门槛通过。`,
     unifiedRunEvidence: {
@@ -5753,17 +5762,34 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         const handicapDecisionAudit = parseObject(jointEvidence.handicapDecisionAudit);
         const modelRevision = firstText(runOutput.modelLessons?.version, hydratedPrediction.modelRevision, body.modelRevision);
         const isR16 = /(?:^|[^A-Z0-9])R1[67](?:[^A-Z0-9]|$)/i.test(modelRevision);
+        const hasFormalSelectionContract = isR16
+          && Object.prototype.hasOwnProperty.call(hydratedPrediction, "formalSelections");
+        const formalSelections = hasFormalSelectionContract
+          ? parseObject(hydratedPrediction.formalSelections)
+          : {};
+        const formalMarketSet = new Set(Array.isArray(runOutput.finalDecision?.formalMarkets)
+          ? runOutput.finalDecision.formalMarkets
+          : []);
         const handicapProbabilities = parseObject(handicapEvidence.probabilities);
         const rankedHandicap = ["让胜", "让平", "让负"].map((label) => [label, Number(handicapProbabilities[label])]).filter(([, value]) => Number.isFinite(value)).sort((a, b) => b[1] - a[1]);
-        if (!handicapPick || rankedHandicap.length !== 3 || !Array.isArray(handicapEvidence.components) || handicapEvidence.components.length < 2) {
+        const admittedHandicapPick = hasFormalSelectionContract
+          ? handicapPickFromPayload({ handicapPick: formalSelections.handicap })
+          : handicapPick;
+        if (
+          rankedHandicap.length !== 3
+          || !Array.isArray(handicapEvidence.components)
+          || handicapEvidence.components.length < 2
+          || (!hasFormalSelectionContract && !admittedHandicapPick)
+          || (formalMarketSet.has("handicap") && !admittedHandicapPick)
+        ) {
           return json({ ok: false, error: "FINAL_LOCK requires independent handicap probabilities from score grid and handicap market" }, 400);
         }
         const compatibleFormalResolution = !isR16 && jointEvidence.role === "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR"
           && jointEvidence.formalPairOfficialScoreSupported === true
           && handicapDecisionAudit.resolved === true
           && Number(handicapDecisionAudit.probabilityGap || 0) <= 0.1;
-        if (rankedHandicap[0][0] !== handicapPick && !compatibleFormalResolution) {
-          return json({ ok: false, error: `handicapPick ${handicapPick} conflicts with independent handicap probability leader ${rankedHandicap[0][0]} without a score-supported compatible formal resolution` }, 400);
+        if (admittedHandicapPick && rankedHandicap[0][0] !== admittedHandicapPick && !compatibleFormalResolution) {
+          return json({ ok: false, error: `handicapPick ${admittedHandicapPick} conflicts with independent handicap probability leader ${rankedHandicap[0][0]} without a score-supported compatible formal resolution` }, 400);
         }
         if (!isR16 && (!Array.isArray(scoreEvidence.components) || scoreEvidence.components.length < 2 || scoreEvidence.marketComplete !== true)) {
           return json({ ok: false, error: "FINAL_LOCK requires independent score probabilities from score model and score market" }, 400);
@@ -5773,12 +5799,12 @@ if (path === "sync/okooo-live" && request.method === "POST") {
         }
         const r16IndependentMarginalValid = isR16
           && jointEvidence.role === "INDEPENDENT_MARKET_MARGINALS_WITH_FULL_GRID_CROSS_AUDIT"
-          && jointEvidence.independentHandicapLeader === handicapPick
-          && rankedHandicap[0][0] === handicapPick;
+          && jointEvidence.independentHandicapLeader === rankedHandicap[0][0]
+          && (!admittedHandicapPick || rankedHandicap[0][0] === admittedHandicapPick);
         const legacyJointValid = !isR16
           && jointEvidence.selected
           && jointEvidence.selected.direction === runOutput.finalDecision?.recommendationSide
-          && jointEvidence.selected.handicapPick === handicapPick
+          && jointEvidence.selected.handicapPick === admittedHandicapPick
           && Number(jointEvidence.selected.scoreProbability) > 0
           && jointEvidence.formalPairOfficialScoreSupported === true;
         if (!r16IndependentMarginalValid && !legacyJointValid) {

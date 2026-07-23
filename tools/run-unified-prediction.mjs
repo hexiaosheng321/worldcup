@@ -18,6 +18,7 @@ for (let index = 2; index < process.argv.length; index += 1) {
 const matchQuery = String(args.get("match") || "").trim();
 const requestedLockType = String(args.get("lock") || "PRE_LOCK").toUpperCase();
 const evidencePath = args.get("evidence") ? path.resolve(args.get("evidence")) : "";
+const bootstrapFilePath = args.get("bootstrap-file") ? path.resolve(args.get("bootstrap-file")) : "";
 const outputPath = path.resolve(args.get("output") || "/tmp/unified-prediction.json");
 const outputParts = path.parse(outputPath);
 const challengerOutputPath = path.resolve(args.get("challenger-output") || path.join(outputParts.dir, `${outputParts.name}.r18-shadow${outputParts.ext || ".json"}`));
@@ -26,7 +27,7 @@ const publishRun = String(args.get("dry-run") || "false").toLowerCase() !== "tru
   && String(args.get("publish-run") || "true").toLowerCase() !== "false";
 
 if (!matchQuery) {
-  console.error("Usage: node tools/run-unified-prediction.mjs --match <matchId|issue|no|team> [--evidence research.json] [--lock FINAL_LOCK] [--dry-run]");
+  console.error("Usage: node tools/run-unified-prediction.mjs --match <matchId|issue|no|team> [--evidence research.json] [--bootstrap-file bootstrap.json] [--lock FINAL_LOCK] [--dry-run]");
   process.exit(1);
 }
 
@@ -55,23 +56,35 @@ function matchesQuery(item) {
 const apiBase = String(process.env.PUBLIC_API_BASE || "https://ticai-model.com").replace(/\/$/, "");
 let oddsData = { matches: [] };
 let bootstrapPayload = null;
-for (const scope of ["full", "initial"]) {
-  try {
-    const bootstrap = await fetch(`${apiBase}/api/bootstrap?scope=${scope}&includeCases=0`, { signal: AbortSignal.timeout(12000) });
-    if (bootstrap.ok) {
-      const payload = await bootstrap.json();
-      if (!payload.ok || !Array.isArray(payload.matches) || !payload.matches.length) continue;
-      bootstrapPayload = payload;
-      oddsData = {
-        updatedAt: new Date().toISOString(),
-        matches: (payload.matches || []).map((row) => {
-          try { return { ...JSON.parse(row.payload_json || "{}"), cloudMatchId: row.match_id }; }
-          catch { return {}; }
-        }).filter((row) => row.home && row.away),
-      };
-      break;
-    }
-  } catch {}
+function useBootstrapPayload(payload, capturedAt = new Date().toISOString()) {
+  if (!payload?.ok || !Array.isArray(payload.matches) || !payload.matches.length) return false;
+  bootstrapPayload = payload;
+  oddsData = {
+    updatedAt: capturedAt,
+    matches: payload.matches.map((row) => {
+      try { return { ...JSON.parse(row.payload_json || "{}"), cloudMatchId: row.match_id }; }
+      catch { return {}; }
+    }).filter((row) => row.home && row.away),
+  };
+  return oddsData.matches.length > 0;
+}
+if (bootstrapFilePath) {
+  const stat = await fs.stat(bootstrapFilePath);
+  const payload = JSON.parse(await fs.readFile(bootstrapFilePath, "utf8"));
+  if (!useBootstrapPayload(payload, stat.mtime.toISOString())) {
+    throw new Error(`Bootstrap snapshot has no usable Sporttery matches: ${bootstrapFilePath}`);
+  }
+}
+if (!bootstrapPayload) {
+  for (const scope of ["full", "initial"]) {
+    try {
+      const bootstrap = await fetch(`${apiBase}/api/bootstrap?scope=${scope}&includeCases=0`, { signal: AbortSignal.timeout(12000) });
+      if (bootstrap.ok) {
+        const payload = await bootstrap.json();
+        if (useBootstrapPayload(payload)) break;
+      }
+    } catch {}
+  }
 }
 if (!oddsData.matches?.length) {
   try {

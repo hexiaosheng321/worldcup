@@ -1,4 +1,8 @@
 import fs from "node:fs/promises";
+import {
+  formalPairCompatible,
+  formalSelectionSummary,
+} from "./lib/formal-selection-contract.mjs";
 
 const ids = process.argv.slice(2);
 if (!ids.length) throw new Error("Usage: node tools/publish-unified-locks.mjs <matchId...>");
@@ -19,7 +23,6 @@ const completeScoreMarket = (rows = []) => new Set((Array.isArray(rows) ? rows :
 const completeTotalGoalsMarket = (rows = []) => new Set((Array.isArray(rows) ? rows : [])
   .filter((row) => /^(?:[0-6]|7\+)$/.test(String(row?.goals ?? "")) && Number.isFinite(Number(row?.odds)) && Number(row.odds) > 1)
   .map((row) => String(row.goals))).size >= 8;
-
 for (const id of ids) {
   const run = JSON.parse(await fs.readFile(`/tmp/${runLabel}-${id}.json`, "utf8"));
   const isFinal = run.lockType === "FINAL_LOCK";
@@ -59,6 +62,10 @@ for (const id of ids) {
     totalGoals: formalMarketSet.has("totalGoals") ? decision.totalGoalsPick : null,
     scores: formalMarketSet.has("scores") ? decision.scores : [],
   };
+  const handicap = Number(String(item.handicap || "0").replace("+", ""));
+  if (!formalPairCompatible(formalSelections.winDrawLose, formalSelections.handicap, handicap)) {
+    throw new Error(`${id} mutually exclusive formal selections: ${formalSelections.winDrawLose} / ${formalSelections.handicap} at handicap ${handicap}`);
+  }
   const modelRevision = run.modelLessons?.version || run.modelVersion;
   const independentRisk = run.riskScenario || {};
   const failureRiskText = decision.scores.length
@@ -69,17 +76,18 @@ for (const id of ids) {
   const gateCompletionScore = Math.round(Object.values(run.gateResult?.gates || {}).filter(Boolean).length / Math.max(1, Object.keys(run.gateResult?.gates || {}).length) * 100);
   const modelRunId = run.sourceContext?.modelRunId;
   if (!modelRunId) throw new Error(`${id} must publish its ${run.lockType} model run before publishing the lock`);
-  const handicap = Number(String(item.handicap || "0").replace("+", ""));
   const lockType = isFinal ? "FINAL_LOCK" : "PRE_LOCK";
   const lockTypeSlug = isFinal ? "final" : "pre";
+  const hasFormalSelection = formalMarketSet.size > 0;
+  const formalSummary = formalSelectionSummary(formalSelections);
   const lock = {
     lockId: `manual-sporttery-${id}-${String(item.ticaiDate || item.matchDate || "").replaceAll("-", "")}-v4-${lockTypeSlug}-${lockRevision}`, matchId: `sporttery-${id}`, modelRunId,
     matchCode: item.issue || item.no || "", homeTeam: item.home, awayTeam: item.away, league: run.match.league,
     kickoffTime: `${item.matchDate || item.ticaiDate} ${item.kickoffTime}`, lockedAt: new Date().toISOString(), lockType,
     modelVersion: run.modelVersion, modelRevision, ...(isFinal ? { finalApproval: true } : {}),
     modelHomeProb: probabilities.HOME, modelDrawProb: probabilities.DRAW, modelAwayProb: probabilities.AWAY,
-    recommendation: candidateSelections.winDrawLose || "未开售", recommendationSide: candidateSelections.winDrawLose ? decision.recommendationSide : null,
-    finalGrade: decision.overallGrade || grade(decision.confidence), finalAction: decision.advice, confidenceScore: decision.confidence,
+    recommendation: formalSummary, recommendationSide: formalSelections.winDrawLose ? decision.recommendationSide : null,
+    finalGrade: decision.overallGrade || grade(decision.confidence), finalAction: hasFormalSelection ? decision.advice : "跳过", confidenceScore: decision.confidence,
     riskScore: 100 - decision.confidence, consistencyScore: Number(outputConsistency.score ?? gateCompletionScore),
     sportteryHomeSp: Number(item.normal?.win), sportteryDrawSp: Number(item.normal?.draw), sportteryAwaySp: Number(item.normal?.lose),
     asianHandicap: handicap, dataQuality: run.featureSet?.dataQuality?.grade || "D",
@@ -87,9 +95,9 @@ for (const id of ids) {
     sportteryPrediction: {
       type: `${run.match.league} R16 模型${isFinal ? "锁版" : "待锁版"}`, matchId: id, no: item.no || "", issue: item.issue || "",
       matchDate: item.matchDate || item.ticaiDate, kickoffTime: item.kickoffTime, competition: run.match.league,
-      home: item.home, away: item.away, modelVersion: run.modelVersion, modelRevision, pick: candidateSelections.winDrawLose || "",
-      handicap: item.handicap, handicapPick: candidateSelections.handicap || "", totalGoalsPick: candidateSelections.totalGoals || "",
-      mainScore: candidateSelections.scores[0] || "", counterScore: candidateSelections.scores[1] || "", matchType: decision.matchType,
+      home: item.home, away: item.away, modelVersion: run.modelVersion, modelRevision, pick: formalSelections.winDrawLose || "",
+      handicap: item.handicap, handicapPick: formalSelections.handicap || "", totalGoalsPick: formalSelections.totalGoals || "",
+      mainScore: formalSelections.scores[0] || "", counterScore: formalSelections.scores[1] || "", matchType: decision.matchType,
       marketAvailability: modelMarketAvailability,
       candidateSelections,
       formalSelections,
@@ -146,11 +154,12 @@ for (const id of ids) {
     return `近5场${wins}胜${draws}平${losses}负，进${gf}失${ga}`;
   };
   lock.teamState = `主队${lock.homeTeam}${formText(run.featureSet?.recentForm?.home)}；客队${lock.awayTeam}${formText(run.featureSet?.recentForm?.away)}。${research.injuries || ""}${research.expectedLineups || ""}`;
-  lock.scorePick = candidateSelections.scores.join(" / ");
-  lock.totalGoalsPick = candidateSelections.totalGoals;
+  lock.scorePick = formalSelections.scores.join(" / ");
+  lock.totalGoalsPick = formalSelections.totalGoals;
   lock.analysis = {
     teamState: lock.teamState,
-    finalPick: { winDrawLose: candidateSelections.winDrawLose, handicap: candidateSelections.handicap, scores: candidateSelections.scores, totalGoals: candidateSelections.totalGoals },
+    finalPick: { ...formalSelections },
+    candidatePick: { ...candidateSelections },
     unifiedSteps: [
       marketAvailability.mode === "HHAD_ONLY"
         ? `01 当前可售SP复核：官方未开售普通胜平负；让球${lock.asianHandicap} SP ${item.handicapOdds?.win || "-"} / ${item.handicapOdds?.draw || "-"} / ${item.handicapOdds?.lose || "-"}，按R16 HHAD_ONLY门禁处理。`
@@ -161,9 +170,9 @@ for (const id of ids) {
       `05 盘口与样本：同联赛历史背景样本${run.featureSet.sampleCount}场（不等同于内部正式 Case Base），两队近期赛果已读取并去重。`,
       `06 赔率动态：${movement.market || "HAD"} ${first.updateDate || ""} ${first.updateTime || ""} ${first.h}/${first.d}/${first.a} -> ${latest.updateDate || ""} ${latest.updateTime || ""} ${latest.h}/${latest.d}/${latest.a}，状态${movement.marketState}。`,
       `07 总进球/比分分轨：总进球${decision.totalGoalsPick}按完整总球边际概率前二生成；比分${decision.scores.join(" / ")}只作叶子输出，按R16前向契约保持C级观察，不反向改写总进球。`,
-      `08 让球独立闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%；正式单选固定为独立边际第一项${decision.handicapPick}，条件Challenger为${run.featureSet?.conditionalHandicapChallenger?.pick || "-"}。`,
+      `08 让球独立闸门：让球${lock.asianHandicap}，让胜${((handicapProbabilities["让胜"] || 0) * 100).toFixed(1)}%、让平${((handicapProbabilities["让平"] || 0) * 100).toFixed(1)}%、让负${((handicapProbabilities["让负"] || 0) * 100).toFixed(1)}%；独立边际候选为${decision.handicapPick}，只有进入formalSelections才属于正式玩法；条件Challenger为${run.featureSet?.conditionalHandicapChallenger?.pick || "-"}。`,
       `09 冲突与失败方式：一致性仅审计完整分布、xG、比赛类型和尾部，不作为预测置信度；独立风险${independentRisk.score || "-"}只进入风险诊断。`,
-      `10 最终${isFinal ? "锁版" : "待锁版"}：${candidateSelections.winDrawLose || "未开售"}；${candidateSelections.handicap || "未开售"}；${candidateSelections.totalGoals || "未开售"}；${candidateSelections.scores.join(" / ") || "未开售"}；${decision.advice}。`,
+      `10 最终${isFinal ? "锁版" : "待锁版"}：胜平负${formalSelections.winDrawLose || "未放行"}；让球${formalSelections.handicap || "未放行"}；总进球${formalSelections.totalGoals || "未放行"}；比分${formalSelections.scores.join(" / ") || "未放行"}；候选仅留观察区。`,
     ],
   };
   const response = await fetch(`${apiBase}/api/locks`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(lock) });

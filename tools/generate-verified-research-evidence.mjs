@@ -12,8 +12,16 @@ const officialByLeague = {
   "韩职": { title: "K League 2026年第17轮官方赛程", url: "https://www.kleague.com/news_view.do?category=league&orderBy=seq&page=1&seq=95603&viewOption=album" },
   "瑞超": { title: "瑞典足协 Allsvenskan 2026官方赛程", url: "https://www.svenskfotboll.se/nyheter/serier/2025/12/spelordning-allsvenskan-2026/" },
   "挪超": { title: "Eliteserien 2026官方赛程", url: "https://www.eliteserien.no/terminliste" },
+  "巴西甲": { title: "CBF 2026巴西甲官方赛程与积分表", url: "https://www.cbf.com.br/futebol-brasileiro/tabelas/campeonato-brasileiro/serie-a/2026" },
 };
 const officialByMatch = {
+  "1316882": { title: "CBF Corinthians vs Remo 官方赛程", url: "https://www.cbf.com.br/futebol-brasileiro/tabelas/campeonato-brasileiro/serie-a/2026" },
+  "1334803": { title: "CBF Botafogo vs Vitória 官方比赛页", url: "https://www.cbf.com.br/futebol-brasileiro/jogos/campeonato-brasileiro/serie-a/2026/botafogo-x-vitoria/831920" },
+  "1331273": { title: "UEFA Hammarby vs Anderlecht 官方比赛页", url: "https://www.uefa.com/uefaeuropaleague/match/2048741--hammarby-vs-anderlecht/" },
+  "1331286": { title: "UEFA St. Gallen vs Benfica 官方比赛页", url: "https://www.uefa.com/uefaeuropaleague/match/2048748--st-gallen-vs-benfica/" },
+  "1331281": { title: "UEFA Beşiktaş vs Midtjylland 官方比赛页", url: "https://www.uefa.com/uefaeuropaleague/match/2048745--besiktas-vs-midtjylland/" },
+  "1331278": { title: "UEFA Twente vs Ferencváros 官方比赛页", url: "https://www.uefa.com/uefaeuropaleague/match/2048744--twente-vs-ferencvaros/" },
+  "1331282": { title: "UEFA Hajduk Split vs Pafos 官方比赛页", url: "https://www.uefa.com/uefaeuropaleague/match/2048746--hajduk-split-vs-pafos/" },
   "1316884": { title: "Atlético Mineiro官方 Atlético vs Bahia 赛程", url: "https://atletico.com.br/partida/atletico-x-bahia-4/" },
   "1338441": { title: "UEFA Sabah vs KuPS 官方比赛页", url: "https://www.uefa.com/uefachampionsleague/match/2048715--sabah-vs-kups-kuopio/" },
   "1331030": { title: "UEFA Aarhus vs Lech Poznań 官方比赛页", url: "https://www.uefa.com/uefachampionsleague/match/2048717--aarhus-vs-lech-poznan/" },
@@ -30,6 +38,7 @@ const officialByMatch = {
   "1331035": { title: "UEFA Omonia vs Kairat Almaty 官方比赛页", url: "https://www.uefa.com/uefachampionsleague/match/2048720--omonia-vs-kairat-almaty/" },
 };
 const uefaQualifyingSource = { title: "UEFA 2026/27欧冠资格赛官方赛程与赛制", url: "https://www.uefa.com/uefachampionsleague/news/02a6-20e5a8be4e63-ae971c582f8c-1000--champions-league-qualifying-fixtures-dates-how-it-works/" };
+const uefaEuropaQualifyingSource = { title: "UEFA 2026/27欧联资格赛官方赛程与赛制", url: "https://www.uefa.com/uefaeuropaleague/accesslist/" };
 const verifiedRecentByMatch = {
   "1317620": {
     source: { title: "Eliteserien 2026官方赛果", url: "https://www.eliteserien.no/resultater" },
@@ -65,8 +74,9 @@ for (const id of ids) {
   const movement = featureSet.oddsMovement || {};
   const verifiedRecent = verifiedRecentByMatch[id];
   const recentMatches = (verifiedRecent?.rows || []).map(([kickoffTime, homeTeam, awayTeam, actualHomeGoals, actualAwayGoals]) => ({ league: match.league, kickoffTime, homeTeam, awayTeam, actualHomeGoals, actualAwayGoals, source: "verified-team-state-only" }));
-  const isUefaQualifier = match.league === "欧冠";
-  const sources = [official, isUefaQualifier ? uefaQualifyingSource : null, apiSource, verifiedRecent?.source].filter(Boolean);
+  const isUefaQualifier = ["欧冠", "欧联"].includes(match.league);
+  const uefaCompetitionSource = match.league === "欧联" ? uefaEuropaQualifyingSource : uefaQualifyingSource;
+  const sources = [official, isUefaQualifier ? uefaCompetitionSource : null, apiSource, verifiedRecent?.source].filter(Boolean);
   const verified = (summary, evidenceGrade = "B") => ({ status: "VERIFIED", evidenceGrade, summary, capturedAt, observedAt: capturedAt, sources, impact: { ...zeroImpact } });
   const notPublished = (label) => ({ status: "NOT_PUBLISHED", evidenceGrade: "C", summary: `锁版检索时，官方赛程与当前公开渠道未发布${match.home} vs ${match.away}可核验的最终${label}清单；本层不猜测，量化影响强制为0。`, capturedAt, observedAt: capturedAt, sources, impact: { ...zeroImpact } });
   const competitionStage = isUefaQualifier ? "QUALIFYING" : "";
@@ -78,7 +88,7 @@ for (const id of ids) {
     injuries: notPublished("伤停"),
     expectedLineups: notPublished("预计首发"),
     motivation: verified(isUefaQualifier
-      ? "UEFA官方赛程确认本场为2026/27欧冠第二轮资格赛首回合；本次体彩玩法只按本场90分钟结算，未把晋级概率、后续赛程或点球结果混入胜平负。"
+      ? `UEFA官方赛程确认本场为2026/27${match.league}第二轮资格赛首回合；本次体彩玩法只按本场90分钟结算，未把晋级概率、后续赛程或点球结果混入胜平负。`
       : `官方赛程确认本场为2026赛季${match.league}常规联赛，按90分钟结算，无加时和点球分支；未将未核实动机写入概率。`, "A"),
     weatherVenue: verified(`官方赛程已确认${match.home} vs ${match.away}的开赛时间；锁版时未发现官方延期、中立场或极端天气公告，因此该层保持中性0修正。`, "C"),
     styleMatchup: verified(`风格层只使用真实近期进失球和主客场数据：联赛样本场均总进球${Number(leagueProfile.averageGoals || 0).toFixed(2)}，开放度系数${Number(leagueProfile.opennessFactor || 1).toFixed(3)}；模型已用主客场攻防方差进入xG，未添加主观球风标签。`, "A"),
