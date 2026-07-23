@@ -4,12 +4,15 @@ import artifact from "./data/wdl-calibration-r17.json" with { type: "json" };
 import { predictWdlTemperature, wdlLeader } from "./lib/wdl-calibrator.mjs";
 
 const manifest = JSON.parse(fs.readFileSync("web/data/wdl-calibration-training-r17.json", "utf8"));
-assert.equal(manifest.auditedRecords, 188);
+assert.equal(manifest.contractVersion, "WDL_LOCKED_TRAINING_MANIFEST_V3");
+assert.ok(manifest.auditedRecords >= 188);
 assert.equal(manifest.sourceCounts.STATIC_WORLD_CUP_LOCK, 62);
-assert.equal(manifest.sourceCounts.D1_LOCK, 120);
+assert.ok(manifest.sourceCounts.D1_LOCK >= 120);
 assert.equal(manifest.sourceCounts.STATIC_SPORTTTERY_LOCK, 6);
-assert.equal(manifest.records.length, 188);
+assert.equal(manifest.records.length, manifest.auditedRecords);
 assert.equal(manifest.samples.length, manifest.eligibleSamples);
+assert.equal(artifact.trainingSource.auditedRecords, manifest.auditedRecords);
+assert.equal(artifact.trainingSource.eligibleSamples, manifest.eligibleSamples);
 assert.ok(manifest.records.every((record) => Array.isArray(record.dataGaps)));
 assert.ok(manifest.records.filter((record) => record.trainingEligibility === "AUDIT_ONLY").every((record) => record.dataGaps.length > 0));
 

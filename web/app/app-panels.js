@@ -1031,6 +1031,78 @@ function r15DailyReviewRows(rows = r15BacktestRows()) {
   })));
 }
 
+function dailyDoubleNumericProbability(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value > 1 ? value / 100 : value;
+  return parseProbRange(value);
+}
+
+function dailyDoubleProbabilities(pred = {}, match = {}) {
+  const evidence = pred.unifiedRunEvidence || {};
+  const source = evidence.probabilities || evidence.featureSet?.probabilities || {};
+  const model = window.WC_DAILY_DOUBLE?.normalizeProbabilities?.({
+    HOME: dailyDoubleNumericProbability(pred.modelHomeProb ?? pred.homeProb ?? source.HOME ?? source.H),
+    DRAW: dailyDoubleNumericProbability(pred.modelDrawProb ?? pred.drawProb ?? source.DRAW ?? source.D),
+    AWAY: dailyDoubleNumericProbability(pred.modelAwayProb ?? pred.awayProb ?? source.AWAY ?? source.A),
+  });
+  if (model) return { probabilities: model, probabilitySource: "model" };
+  const odds = oddsMatch(match);
+  if (!odds) return { probabilities: null, probabilitySource: "" };
+  const market = impliedMarket(oddsMarketEntries(odds, "had"));
+  const probabilities = window.WC_DAILY_DOUBLE?.normalizeProbabilities?.(
+    Object.fromEntries((market.entries || []).map((item) => [item.code === "H" ? "HOME" : item.code === "D" ? "DRAW" : "AWAY", item.probability]))
+  );
+  return { probabilities, probabilitySource: probabilities ? "market" : "" };
+}
+
+function dailyDoubleCandidateRows(rows = r15BacktestRows()) {
+  const engine = window.WC_R15_BACKTEST;
+  if (!engine || !window.WC_DAILY_DOUBLE) return [];
+  return rows
+    .filter(({ pred, evaluation }) => {
+      if (!engine.isR16Prediction(pred)) return false;
+      const formal = engine.formalSelections(pred);
+      return String(pred.lockType || "FINAL_LOCK").toUpperCase() !== "PRE_LOCK"
+        && pred.publicationEligible !== false
+        && evaluation?.markets?.winDrawLose?.qualified === true
+        && Boolean(formal.winDrawLose || pred.pick);
+    })
+    .map(({ match, pred, score, evaluation, league }) => {
+      const formal = engine.formalSelections(pred);
+      const probabilities = dailyDoubleProbabilities(pred, match);
+      const matchMeta = statsAuditKickoffMeta(match, pred);
+      return {
+        date: engine.inferenceDate(pred, match.date),
+        kickoff: matchMeta.time,
+        matchId: pred.matchId || match.matchId || pred.lockId || match.no,
+        home: match.home || pred.home || "",
+        away: match.away || pred.away || "",
+        league,
+        match,
+        pred,
+        selection: formal.winDrawLose || pred.pick,
+        probabilities: probabilities.probabilities,
+        probabilitySource: probabilities.probabilitySource,
+        actualDirection: score ? direction(score) : "",
+        score,
+        confidence: confidenceGrade(pred),
+        evaluation,
+      };
+    })
+    .filter((row) => row.probabilities);
+}
+
+function dailyDoubleReviewRows(rows = r15BacktestRows()) {
+  const candidates = dailyDoubleCandidateRows(rows);
+  return window.WC_DAILY_DOUBLE?.evaluateTickets?.(
+    window.WC_DAILY_DOUBLE.buildTickets(candidates, {
+      maxTickets: 3,
+      minLegProbability: 0.5,
+      minCombinedProbability: 0.25,
+      maxLegUses: 2,
+    })
+  ) || [];
+}
+
 const r15DailyMarketLabels = {
   winDrawLose: "胜平负",
   handicap: "让球",
@@ -1071,12 +1143,48 @@ function r15DailyMatchItem(row = {}) {
   `;
 }
 
+function r15DailyTicketItem(ticket = {}) {
+  const statusMeta = {
+    HIT: { label: "2串1命中", tone: "hit" },
+    MISS: { label: "2串1未中", tone: "miss" },
+    PENDING: { label: "待验票", tone: "pending" },
+  }[ticket.status] || { label: "观察", tone: "observe" };
+  return `
+    <article class="r15-double-ticket ${statusMeta.tone}">
+      <header>
+        <div><span>2串1 #${ticket.ticketNo}</span><strong>${(ticket.combinedProbability * 100).toFixed(1)}% 联合概率</strong></div>
+        <em>${statusMeta.label}</em>
+      </header>
+      <div class="r15-double-legs">
+        ${ticket.legs.map((leg) => `
+          <div class="r15-double-leg">
+            <span>${dash(leg.league)} · ${dash(leg.match?.no || leg.matchId)}</span>
+            ${reviewMatchButton(leg.match)}
+            <b>${dash(leg.selectionLabel)} · ${(leg.legProbability * 100).toFixed(1)}%</b>
+            <small>${leg.probabilitySource === "model" ? "模型概率" : "市场去水概率"}${leg.score ? ` · ${leg.score}` : ""}</small>
+          </div>
+        `).join("")}
+      </div>
+    </article>
+  `;
+}
+
 function openR15DailyReviewModal() {
   const dailyRows = r15DailyReviewRows();
+  const ticketDays = dailyDoubleReviewRows();
+  const ticketCount = ticketDays.reduce((sum, day) => sum + day.tickets.length, 0);
+  const verifiedTickets = ticketDays.flatMap((day) => day.tickets).filter((ticket) => ticket.status !== "PENDING");
+  const hitTickets = verifiedTickets.filter((ticket) => ticket.status === "HIT").length;
   const totalOpened = dailyRows.reduce((sum, row) => sum + row.opened, 0);
   const totalReleased = dailyRows.reduce((sum, row) => sum + row.released, 0);
   const totalVerified = dailyRows.reduce((sum, row) => sum + row.verified, 0);
   const totalHits = dailyRows.reduce((sum, row) => sum + row.hits, 0);
+  const ticketSections = ticketDays.map((day) => `
+    <article class="r15-double-day">
+      <header><div><span>${formatDate(day.date)}</span><strong>${day.date}</strong></div><em>${day.candidateCount} 场候选 · ${day.tickets.length} 注2串1</em></header>
+      <div class="r15-double-ticket-list">${day.tickets.map(r15DailyTicketItem).join("")}</div>
+    </article>
+  `).join("") || `<div class="r15-double-empty">当前没有满足最低概率条件的两场组合；不强行凑票。</div>`;
   const tableRows = dailyRows.map((day) => `
     <tr>
       <td><strong>${dash(day.date)}</strong><small>${formatDate(day.date)}</small></td>
@@ -1092,12 +1200,12 @@ function openR15DailyReviewModal() {
   const modal = document.createElement("div");
   modal.className = "global-stats-modal r15-daily-review-modal";
   modal.innerHTML = `
-    <div class="global-stats-dialog r15-daily-review-dialog" role="dialog" aria-modal="true" aria-label="R16每日放行复盘">
+    <div class="global-stats-dialog r15-daily-review-dialog" role="dialog" aria-modal="true" aria-label="每日2串1推荐与复盘">
       <header>
         <div>
           <span>DAILY RELEASE REVIEW</span>
-          <strong>每日放行复盘</strong>
-          <em>每天按北京时间锁版日汇总推演记录、正式放行比赛与赛果命中；当场全部正式放行玩法均中，才计为命中一场。</em>
+          <strong>每日2串1推荐 / 复盘</strong>
+          <em>新层只从正式胜平负放行中按概率组成2串1；历史R16逐场放行账本继续保留在下方后台观察。</em>
         </div>
         <button type="button" data-global-stats-close aria-label="关闭每日放行复盘">×</button>
       </header>
@@ -1109,17 +1217,26 @@ function openR15DailyReviewModal() {
           <article><span>完成验票</span><strong>${totalVerified}</strong><em>${Math.max(0, totalReleased - totalVerified)} 场等待赛果</em></article>
           <article class="is-hit"><span>命中场次</span><strong>${totalHits}<small>/${totalVerified}</small></strong><em>${totalVerified ? hitRate(totalHits, totalVerified) : "暂无已验样本"}</em></article>
         </section>
+        <section class="r15-double-overview">
+          <article><span>今日2串1票</span><strong>${ticketCount}</strong><em>候选多时最多3注</em></article>
+          <article class="is-hit"><span>2串1命中</span><strong>${hitTickets}<small>/${verifiedTickets.length}</small></strong><em>${verifiedTickets.length ? hitRate(hitTickets, verifiedTickets.length) : "等待赛果"}</em></article>
+          <article><span>选票规则</span><strong>联合概率</strong><em>两腿概率相乘，不足阈值不凑票</em></article>
+        </section>
+        <section class="r15-double-ticket-shell">
+          <div class="global-stats-table-toolbar r15-daily-toolbar"><div><span>DAILY 2×1 TICKETS</span><strong>${ticketDays.length} 个推演日 · ${ticketCount} 注推荐</strong></div></div>
+          <div class="r15-double-day-list">${ticketSections}</div>
+        </section>
         <section class="r15-daily-rule">
-          <b>每日口径</b>
-          <span>推演日 = lockedAt 北京时间</span>
-          <span>推演 = 当日完成的R16不可变赛前记录</span>
-          <span>挑出 = 至少一个 formalSelection</span>
-          <span>命中 = 当场正式放行玩法全部命中</span>
-          <span>部分命中单列，不计整场命中</span>
+          <b>新推荐口径</b>
+          <span>每腿必须是正式胜平负放行</span>
+          <span>优先模型概率，缺失时使用市场去水概率</span>
+          <span>两腿联合概率 = P1 × P2</span>
+          <span>每天最多3注，候选不足不强行凑票</span>
+          <span>旧R16逐场账本继续后台观察</span>
         </section>
         <section class="r15-daily-table-wrap">
           <div class="global-stats-table-toolbar r15-daily-toolbar">
-            <div><span>每日放行账本</span><strong>${dailyRows.length} 个推演日 · ${totalReleased} 场正式放行 · ${totalHits}/${totalVerified || 0} 场命中</strong></div>
+            <div><span>后台R16逐场账本</span><strong>${dailyRows.length} 个推演日 · ${totalReleased} 场正式放行 · ${totalHits}/${totalVerified || 0} 场命中</strong></div>
           </div>
           <div class="review-record-wrap compact r15-daily-scroll">
             <table class="review-record-table r15-daily-table">
@@ -1138,21 +1255,23 @@ function renderR15BacktestEntry(sourceRows = modelAuditRows()) {
   const target = document.querySelector("#r15-backtest-entry");
   if (!target) return;
   const rows = r15BacktestRows(sourceRows);
+  const ticketDays = dailyDoubleReviewRows(rows);
+  const latestTicketDay = ticketDays[0];
   const summary = r15BacktestSummary(rows);
   const forward = window.WC_R15_BACKTEST?.forwardProgress(rows.map((row) => row.evaluation)) || { settled: 0, target: 30, remaining: 30 };
   const progress = Math.min(100, (forward.settled / forward.target) * 100);
   target.innerHTML = `
     <button type="button" class="r15-backtest-launch" data-r15-backtest-open>
-      <span class="r15-launch-index">R16</span>
+      <span class="r15-launch-index">2×1</span>
       <span class="r15-launch-copy">
-        <b>30场前向验证</b>
-        <strong>${forward.settled}<small>/30 场已完赛样本</small></strong>
-        <em>${rows.length - forward.settled} 场待验票 · ${forward.remaining ? `还差 ${forward.remaining} 场进入人工评审` : "已达到人工评审样本线"}</em>
+        <b>每日2串1推荐</b>
+        <strong>${latestTicketDay?.tickets.length || 0}<small>注今日可用组合</small></strong>
+        <em>${latestTicketDay ? `${latestTicketDay.candidateCount} 场候选 · 按联合概率排序` : "等待至少两场满足正式胜平负和概率条件"}</em>
       </span>
-      <span class="r15-launch-progress" aria-label="R16前向样本进度 ${progress.toFixed(0)}%">
-        <i style="--r15-progress:${progress}%"></i>
+      <span class="r15-launch-progress" aria-label="每日2串1推荐状态">
+        <i style="--r15-progress:${Math.min(100, (latestTicketDay?.tickets.length || 0) / 3 * 100)}%"></i>
       </span>
-      <span class="r15-launch-action">打开专项窗口 <b aria-hidden="true">↗</b></span>
+      <span class="r15-launch-action">打开推荐与复盘 <b aria-hidden="true">↗</b></span>
     </button>
   `;
 }
@@ -1202,6 +1321,7 @@ function openR15BacktestModal() {
   const summary = r15BacktestSummary(rows);
   const forward = window.WC_R15_BACKTEST?.forwardProgress(rows.map((row) => row.evaluation)) || { settled: 0, target: 30, remaining: 30 };
   const dailyRows = r15DailyReviewRows(rows);
+  const ticketDays = dailyDoubleReviewRows(rows);
   const releasedRows = rows.filter(({ evaluation }) => evaluation.hasFormal);
   const latestDaily = dailyRows[0] || { date: "-", opened: 0, released: 0, verified: 0, hits: 0, rate: null };
   const latestDailyLabel = latestDaily.date === "-" ? "等待首场R16记录" : formatDate(latestDaily.date);
@@ -1274,9 +1394,9 @@ function openR15BacktestModal() {
           </dl>
         </section>
         <button type="button" class="r15-daily-review-launch" data-r15-daily-review-open>
-          <span>DAILY / 每日放行复盘</span>
-          <strong>${latestDailyLabel} · ${latestDaily.opened} 场推演，挑出 ${latestDaily.released} 场</strong>
-          <em>${latestDaily.verified ? `已验 ${latestDaily.verified} 场 · 命中 ${latestDaily.hits}/${latestDaily.verified} · ${hitRate(latestDaily.hits, latestDaily.verified)}` : `${latestDaily.released} 场等待官方赛果验票`}</em>
+          <span>DAILY 2×1 / 每日推荐复盘</span>
+          <strong>${ticketDays[0]?.date ? formatDate(ticketDays[0].date) : latestDailyLabel} · ${ticketDays[0]?.tickets.length || 0} 注2串1</strong>
+          <em>${ticketDays[0] ? `${ticketDays[0].candidateCount} 场候选 · 旧R16账本继续保留` : "等待两场满足概率条件"}</em>
           <b>打开每日复盘窗口 <i aria-hidden="true">↗</i></b>
         </button>
         <section class="r15-audit-grid">${metricCards}</section>

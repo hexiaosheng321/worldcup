@@ -1,15 +1,15 @@
 {
   "contractVersion": "WDL_MARKET_TEMPERATURE_LEAGUE_SHRINKAGE_V1",
   "probabilityField": "marketProbabilities",
-  "sampleCount": 103,
-  "globalTemperature": 0.71,
+  "sampleCount": 112,
+  "globalTemperature": 0.68,
   "leagueShrinkage": 50,
   "leagueProfiles": {
     "世界杯": {
       "sampleCount": 17,
       "rawTemperature": 0.65,
       "shrinkageWeight": 0.2537313432835821,
-      "temperature": 0.694776119402985,
+      "temperature": 0.6723880597014926,
       "validation": {
         "enoughSamples": false,
         "directionNotDegraded": false,
@@ -19,23 +19,23 @@
       "enabled": false
     },
     "巴西甲": {
-      "sampleCount": 6,
-      "rawTemperature": 0.5,
-      "shrinkageWeight": 0.10714285714285714,
-      "temperature": 0.6875,
+      "sampleCount": 8,
+      "rawTemperature": 0.6,
+      "shrinkageWeight": 0.13793103448275862,
+      "temperature": 0.6689655172413793,
       "validation": {
-        "enoughSamples": false,
+        "enoughSamples": true,
         "directionNotDegraded": true,
         "probabilityNotDegraded": true,
-        "status": "GLOBAL_FALLBACK"
+        "status": "VALIDATED"
       },
       "enabled": false
     },
     "挪超": {
-      "sampleCount": 15,
-      "rawTemperature": 0.57,
-      "shrinkageWeight": 0.23076923076923078,
-      "temperature": 0.6776923076923076,
+      "sampleCount": 16,
+      "rawTemperature": 0.53,
+      "shrinkageWeight": 0.24242424242424243,
+      "temperature": 0.6436363636363637,
       "validation": {
         "enoughSamples": true,
         "directionNotDegraded": true,
@@ -45,15 +45,15 @@
       "enabled": false
     },
     "欧冠": {
-      "sampleCount": 7,
-      "rawTemperature": 0.53,
-      "shrinkageWeight": 0.12280701754385964,
-      "temperature": 0.6878947368421052,
+      "sampleCount": 8,
+      "rawTemperature": 0.5,
+      "shrinkageWeight": 0.13793103448275862,
+      "temperature": 0.6551724137931035,
       "validation": {
-        "enoughSamples": false,
+        "enoughSamples": true,
         "directionNotDegraded": true,
         "probabilityNotDegraded": true,
-        "status": "GLOBAL_FALLBACK"
+        "status": "VALIDATED"
       },
       "enabled": false
     },
@@ -61,7 +61,7 @@
       "sampleCount": 3,
       "rawTemperature": 0.5,
       "shrinkageWeight": 0.05660377358490566,
-      "temperature": 0.6981132075471698,
+      "temperature": 0.669811320754717,
       "validation": {
         "enoughSamples": false,
         "directionNotDegraded": true,
@@ -74,7 +74,7 @@
       "sampleCount": 18,
       "rawTemperature": 0.74,
       "shrinkageWeight": 0.2647058823529412,
-      "temperature": 0.7179411764705882,
+      "temperature": 0.6958823529411765,
       "validation": {
         "enoughSamples": true,
         "directionNotDegraded": true,
@@ -84,10 +84,10 @@
       "enabled": false
     },
     "美职": {
-      "sampleCount": 5,
-      "rawTemperature": 1.08,
-      "shrinkageWeight": 0.09090909090909091,
-      "temperature": 0.7436363636363637,
+      "sampleCount": 7,
+      "rawTemperature": 0.73,
+      "shrinkageWeight": 0.12280701754385964,
+      "temperature": 0.686140350877193,
       "validation": {
         "enoughSamples": false,
         "directionNotDegraded": true,
@@ -100,7 +100,7 @@
       "sampleCount": 14,
       "rawTemperature": 0.53,
       "shrinkageWeight": 0.21875,
-      "temperature": 0.670625,
+      "temperature": 0.6471875,
       "validation": {
         "enoughSamples": false,
         "directionNotDegraded": true,
@@ -110,10 +110,10 @@
       "enabled": false
     },
     "韩职": {
-      "sampleCount": 18,
+      "sampleCount": 21,
       "rawTemperature": 2,
-      "shrinkageWeight": 0.2647058823529412,
-      "temperature": 1.0514705882352942,
+      "shrinkageWeight": 0.29577464788732394,
+      "temperature": 1.0704225352112675,
       "validation": {
         "enoughSamples": true,
         "directionNotDegraded": false,
@@ -141,10 +141,10 @@
       "status": "GLOBAL_FALLBACK"
     },
     "巴西甲": {
-      "enoughSamples": false,
+      "enoughSamples": true,
       "directionNotDegraded": true,
       "probabilityNotDegraded": true,
-      "status": "GLOBAL_FALLBACK"
+      "status": "VALIDATED"
     },
     "挪超": {
       "enoughSamples": true,
@@ -153,10 +153,10 @@
       "status": "VALIDATED"
     },
     "欧冠": {
-      "enoughSamples": false,
+      "enoughSamples": true,
       "directionNotDegraded": true,
       "probabilityNotDegraded": true,
-      "status": "GLOBAL_FALLBACK"
+      "status": "VALIDATED"
     },
     "欧联": {
       "enoughSamples": false,
@@ -191,32 +191,32 @@
   },
   "validation": {
     "market": {
-      "hits": 36,
-      "total": 63,
-      "hitRate": 0.5714285714285714,
-      "averageBrier": 0.5478828921050852,
-      "averageLogLoss": 0.9287544730553748
+      "hits": 43,
+      "total": 72,
+      "hitRate": 0.5972222222222222,
+      "averageBrier": 0.5381493294295928,
+      "averageLogLoss": 0.915579897863875
     },
     "model": {
-      "hits": 32,
-      "total": 63,
-      "hitRate": 0.5079365079365079,
-      "averageBrier": 0.5965021721603573,
-      "averageLogLoss": 1.0029728572988694
+      "hits": 36,
+      "total": 72,
+      "hitRate": 0.5,
+      "averageBrier": 0.5973297292204737,
+      "averageLogLoss": 1.0012286608785972
     },
     "globalCalibration": {
-      "hits": 36,
-      "total": 63,
-      "hitRate": 0.5714285714285714,
-      "averageBrier": 0.5474585031870588,
-      "averageLogLoss": 0.9212918185018799
+      "hits": 43,
+      "total": 72,
+      "hitRate": 0.5972222222222222,
+      "averageBrier": 0.5323737238918432,
+      "averageLogLoss": 0.9011603851271975
     },
     "calibrated": {
-      "hits": 36,
-      "total": 63,
-      "hitRate": 0.5714285714285714,
-      "averageBrier": 0.5417562880588511,
-      "averageLogLoss": 0.9147827670451619
+      "hits": 43,
+      "total": 72,
+      "hitRate": 0.5972222222222222,
+      "averageBrier": 0.5284516193639361,
+      "averageLogLoss": 0.8973718722724457
     }
   },
   "researchGateStatus": "ELIGIBLE",
@@ -226,27 +226,27 @@
   "modelRevision": "LESSONS_2026-07-22_WDL_CALIBRATION_R17",
   "trainingWindow": {
     "from": "2026-06-30T12:39:18.000Z",
-    "to": "2026-07-21T05:56:17.706Z"
+    "to": "2026-07-22T06:31:30.880Z"
   },
   "trainingSource": {
-    "contractVersion": "WDL_LOCKED_TRAINING_MANIFEST_V2",
-    "auditedRecords": 188,
-    "eligibleSamples": 103,
+    "contractVersion": "WDL_LOCKED_TRAINING_MANIFEST_V3",
+    "auditedRecords": 198,
+    "eligibleSamples": 112,
     "sourceCounts": {
       "STATIC_WORLD_CUP_LOCK": 62,
       "STATIC_SPORTTTERY_LOCK": 6,
-      "D1_LOCK": 120
+      "D1_LOCK": 130
     },
     "leagueCounts": {
       "世界杯": 17,
-      "巴西甲": 6,
-      "挪超": 15,
-      "欧冠": 7,
+      "巴西甲": 8,
+      "挪超": 16,
+      "欧冠": 8,
       "欧联": 3,
       "瑞超": 18,
-      "美职": 5,
+      "美职": 7,
       "芬超": 14,
-      "韩职": 18
+      "韩职": 21
     }
   },
   "validationMethod": {

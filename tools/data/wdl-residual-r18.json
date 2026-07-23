@@ -1,17 +1,17 @@
 {
   "contractVersion": "WDL_R18_MARKET_RESIDUAL_SELECTOR_V1",
-  "sampleCount": 103,
+  "sampleCount": 112,
   "globalPriorStrength": 12,
   "leagueShrinkage": 16,
   "minimumPatternSupport": 8,
   "minimumModelEdge": 0.08,
   "globalDisagreement": {
-    "sampleCount": 22,
-    "marketHits": 10,
+    "sampleCount": 25,
+    "marketHits": 13,
     "modelHits": 8,
     "bothMissed": 4,
-    "delta": -2,
-    "rawModelEdge": -0.09090909090909091
+    "delta": -5,
+    "rawModelEdge": -0.2
   },
   "globalProfiles": {
     "AWAY_TO_DRAW|MEDIUM_0_15": {
@@ -21,7 +21,7 @@
       "bothMissed": 0,
       "delta": 0,
       "rawEdge": 0,
-      "shrunkModelEdge": -0.07792207792207792
+      "shrunkModelEdge": -0.17142857142857146
     },
     "AWAY_TO_DRAW|CLOSE_0_06": {
       "sampleCount": 1,
@@ -30,7 +30,7 @@
       "bothMissed": 0,
       "delta": -1,
       "rawEdge": -1,
-      "shrunkModelEdge": -0.16083916083916083
+      "shrunkModelEdge": -0.26153846153846155
     },
     "HOME_TO_AWAY|CLOSE_0_06": {
       "sampleCount": 3,
@@ -39,25 +39,25 @@
       "bothMissed": 0,
       "delta": 1,
       "rawEdge": 0.3333333333333333,
-      "shrunkModelEdge": -0.006060606060606055
+      "shrunkModelEdge": -0.09333333333333335
     },
     "AWAY_TO_HOME|STRONG_OVER_0_15": {
-      "sampleCount": 2,
-      "marketHits": 1,
+      "sampleCount": 3,
+      "marketHits": 2,
       "modelHits": 1,
       "bothMissed": 0,
-      "delta": 0,
-      "rawEdge": 0,
-      "shrunkModelEdge": -0.07792207792207792
+      "delta": -1,
+      "rawEdge": -0.3333333333333333,
+      "shrunkModelEdge": -0.22666666666666668
     },
     "HOME_TO_AWAY|STRONG_OVER_0_15": {
-      "sampleCount": 7,
-      "marketHits": 3,
+      "sampleCount": 9,
+      "marketHits": 5,
       "modelHits": 3,
       "bothMissed": 1,
-      "delta": 0,
-      "rawEdge": 0,
-      "shrunkModelEdge": -0.057416267942583726
+      "delta": -2,
+      "rawEdge": -0.2222222222222222,
+      "shrunkModelEdge": -0.20952380952380953
     },
     "HOME_TO_DRAW|MEDIUM_0_15": {
       "sampleCount": 1,
@@ -66,7 +66,7 @@
       "bothMissed": 0,
       "delta": 1,
       "rawEdge": 1,
-      "shrunkModelEdge": -0.006993006993006987
+      "shrunkModelEdge": -0.10769230769230773
     },
     "AWAY_TO_HOME|CLOSE_0_06": {
       "sampleCount": 3,
@@ -75,7 +75,7 @@
       "bothMissed": 1,
       "delta": -2,
       "rawEdge": -0.6666666666666666,
-      "shrunkModelEdge": -0.20606060606060606
+      "shrunkModelEdge": -0.29333333333333333
     },
     "HOME_TO_AWAY|MEDIUM_0_15": {
       "sampleCount": 1,
@@ -84,7 +84,7 @@
       "bothMissed": 1,
       "delta": 0,
       "rawEdge": 0,
-      "shrunkModelEdge": -0.0839160839160839
+      "shrunkModelEdge": -0.18461538461538465
     },
     "AWAY_TO_HOME|MEDIUM_0_15": {
       "sampleCount": 2,
@@ -93,7 +93,7 @@
       "bothMissed": 1,
       "delta": -1,
       "rawEdge": -0.5,
-      "shrunkModelEdge": -0.14935064935064934
+      "shrunkModelEdge": -0.24285714285714288
     }
   },
   "leagueProfiles": {
@@ -107,8 +107,8 @@
           "bothMissed": 0,
           "delta": 1,
           "rawEdge": 1,
-          "shrunkModelEdge": -0.014514896867838042,
-          "parentEdge": -0.07792207792207792
+          "shrunkModelEdge": -0.10252100840336137,
+          "parentEdge": -0.17142857142857146
         },
         "HOME_TO_AWAY|CLOSE_0_06": {
           "sampleCount": 1,
@@ -117,8 +117,8 @@
           "bothMissed": 0,
           "delta": 1,
           "rawEdge": 1,
-          "shrunkModelEdge": 0.05311942959001783,
-          "parentEdge": -0.006060606060606055
+          "shrunkModelEdge": -0.02901960784313727,
+          "parentEdge": -0.09333333333333335
         }
       }
     },
@@ -127,17 +127,17 @@
       "patterns": {}
     },
     "挪超": {
-      "disagreementSampleCount": 3,
+      "disagreementSampleCount": 4,
       "patterns": {
         "AWAY_TO_HOME|STRONG_OVER_0_15": {
-          "sampleCount": 1,
-          "marketHits": 1,
+          "sampleCount": 2,
+          "marketHits": 2,
           "modelHits": 0,
           "bothMissed": 0,
-          "delta": -1,
+          "delta": -2,
           "rawEdge": -1,
-          "shrunkModelEdge": -0.13216195569136746,
-          "parentEdge": -0.07792207792207792
+          "shrunkModelEdge": -0.3125925925925926,
+          "parentEdge": -0.22666666666666668
         },
         "AWAY_TO_HOME|MEDIUM_0_15": {
           "sampleCount": 2,
@@ -146,23 +146,23 @@
           "bothMissed": 1,
           "delta": -1,
           "rawEdge": -0.5,
-          "shrunkModelEdge": -0.18831168831168832,
-          "parentEdge": -0.14935064935064934
+          "shrunkModelEdge": -0.27142857142857146,
+          "parentEdge": -0.24285714285714288
         }
       }
     },
     "欧冠": {
-      "disagreementSampleCount": 4,
+      "disagreementSampleCount": 5,
       "patterns": {
         "HOME_TO_AWAY|STRONG_OVER_0_15": {
-          "sampleCount": 3,
-          "marketHits": 1,
+          "sampleCount": 4,
+          "marketHits": 2,
           "modelHits": 1,
           "bothMissed": 1,
-          "delta": 0,
-          "rawEdge": 0,
-          "shrunkModelEdge": -0.04835054142533366,
-          "parentEdge": -0.057416267942583726
+          "delta": -1,
+          "rawEdge": -0.25,
+          "shrunkModelEdge": -0.21761904761904766,
+          "parentEdge": -0.20952380952380953
         },
         "AWAY_TO_HOME|CLOSE_0_06": {
           "sampleCount": 1,
@@ -171,8 +171,8 @@
           "bothMissed": 0,
           "delta": -1,
           "rawEdge": -1,
-          "shrunkModelEdge": -0.25276292335115863,
-          "parentEdge": -0.20606060606060606
+          "shrunkModelEdge": -0.3349019607843137,
+          "parentEdge": -0.29333333333333333
         }
       }
     },
@@ -190,8 +190,8 @@
           "bothMissed": 0,
           "delta": -1,
           "rawEdge": -1,
-          "shrunkModelEdge": -0.13216195569136746,
-          "parentEdge": -0.07792207792207792
+          "shrunkModelEdge": -0.22016806722689078,
+          "parentEdge": -0.17142857142857146
         },
         "HOME_TO_AWAY|STRONG_OVER_0_15": {
           "sampleCount": 1,
@@ -200,8 +200,8 @@
           "bothMissed": 0,
           "delta": -1,
           "rawEdge": -1,
-          "shrunkModelEdge": -0.1128623698283141,
-          "parentEdge": -0.057416267942583726
+          "shrunkModelEdge": -0.25602240896358547,
+          "parentEdge": -0.20952380952380953
         },
         "HOME_TO_AWAY|CLOSE_0_06": {
           "sampleCount": 1,
@@ -210,8 +210,8 @@
           "bothMissed": 0,
           "delta": -1,
           "rawEdge": -1,
-          "shrunkModelEdge": -0.06452762923351159,
-          "parentEdge": -0.006060606060606055
+          "shrunkModelEdge": -0.1466666666666667,
+          "parentEdge": -0.09333333333333335
         },
         "AWAY_TO_HOME|CLOSE_0_06": {
           "sampleCount": 1,
@@ -220,14 +220,25 @@
           "bothMissed": 1,
           "delta": 0,
           "rawEdge": 0,
-          "shrunkModelEdge": -0.19393939393939394,
-          "parentEdge": -0.20606060606060606
+          "shrunkModelEdge": -0.276078431372549,
+          "parentEdge": -0.29333333333333333
         }
       }
     },
     "美职": {
-      "disagreementSampleCount": 0,
-      "patterns": {}
+      "disagreementSampleCount": 1,
+      "patterns": {
+        "HOME_TO_AWAY|STRONG_OVER_0_15": {
+          "sampleCount": 1,
+          "marketHits": 1,
+          "modelHits": 0,
+          "bothMissed": 0,
+          "delta": -1,
+          "rawEdge": -1,
+          "shrunkModelEdge": -0.25602240896358547,
+          "parentEdge": -0.20952380952380953
+        }
+      }
     },
     "芬超": {
       "disagreementSampleCount": 3,
@@ -239,8 +250,8 @@
           "bothMissed": 0,
           "delta": 1,
           "rawEdge": 1,
-          "shrunkModelEdge": -0.014514896867838042,
-          "parentEdge": -0.07792207792207792
+          "shrunkModelEdge": -0.15450980392156866,
+          "parentEdge": -0.22666666666666668
         },
         "HOME_TO_AWAY|STRONG_OVER_0_15": {
           "sampleCount": 1,
@@ -249,8 +260,8 @@
           "bothMissed": 0,
           "delta": -1,
           "rawEdge": -1,
-          "shrunkModelEdge": -0.1128623698283141,
-          "parentEdge": -0.057416267942583726
+          "shrunkModelEdge": -0.25602240896358547,
+          "parentEdge": -0.20952380952380953
         },
         "AWAY_TO_HOME|CLOSE_0_06": {
           "sampleCount": 1,
@@ -259,8 +270,8 @@
           "bothMissed": 0,
           "delta": -1,
           "rawEdge": -1,
-          "shrunkModelEdge": -0.25276292335115863,
-          "parentEdge": -0.20606060606060606
+          "shrunkModelEdge": -0.3349019607843137,
+          "parentEdge": -0.29333333333333333
         }
       }
     },
@@ -274,8 +285,8 @@
           "bothMissed": 0,
           "delta": -1,
           "rawEdge": -1,
-          "shrunkModelEdge": -0.2102015631427396,
-          "parentEdge": -0.16083916083916083
+          "shrunkModelEdge": -0.3049773755656109,
+          "parentEdge": -0.26153846153846155
         },
         "HOME_TO_AWAY|CLOSE_0_06": {
           "sampleCount": 1,
@@ -284,8 +295,8 @@
           "bothMissed": 0,
           "delta": 1,
           "rawEdge": 1,
-          "shrunkModelEdge": 0.05311942959001783,
-          "parentEdge": -0.006060606060606055
+          "shrunkModelEdge": -0.02901960784313727,
+          "parentEdge": -0.09333333333333335
         },
         "HOME_TO_AWAY|STRONG_OVER_0_15": {
           "sampleCount": 2,
@@ -294,8 +305,8 @@
           "bothMissed": 0,
           "delta": 2,
           "rawEdge": 1,
-          "shrunkModelEdge": 0.060074428495481134,
-          "parentEdge": -0.057416267942583726
+          "shrunkModelEdge": -0.07513227513227513,
+          "parentEdge": -0.20952380952380953
         },
         "HOME_TO_DRAW|MEDIUM_0_15": {
           "sampleCount": 1,
@@ -304,8 +315,8 @@
           "bothMissed": 0,
           "delta": 1,
           "rawEdge": 1,
-          "shrunkModelEdge": 0.05224187577128754,
-          "parentEdge": -0.006993006993006987
+          "shrunkModelEdge": -0.04253393665158374,
+          "parentEdge": -0.10769230769230773
         },
         "HOME_TO_AWAY|MEDIUM_0_15": {
           "sampleCount": 1,
@@ -314,8 +325,8 @@
           "bothMissed": 1,
           "delta": 0,
           "rawEdge": 0,
-          "shrunkModelEdge": -0.07897984368572603,
-          "parentEdge": -0.0839160839160839
+          "shrunkModelEdge": -0.17375565610859733,
+          "parentEdge": -0.18461538461538465
         }
       }
     }
@@ -326,25 +337,25 @@
   "validationMethod": "EXPANDING_WINDOW_OUT_OF_SAMPLE_THEN_30_TO_50_FORWARD_SAME_INPUT_PAIRS",
   "validation": {
     "champion": {
-      "hits": 32,
-      "total": 63,
-      "hitRate": 0.5079365079365079,
-      "averageBrier": 0.5965021721603573,
-      "averageLogLoss": 1.0029728572988694
+      "hits": 36,
+      "total": 72,
+      "hitRate": 0.5,
+      "averageBrier": 0.5973297292204737,
+      "averageLogLoss": 1.0012286608785972
     },
     "market": {
-      "hits": 36,
-      "total": 63,
-      "hitRate": 0.5714285714285714,
-      "averageBrier": 0.5478828921050852,
-      "averageLogLoss": 0.9287544730553748
+      "hits": 43,
+      "total": 72,
+      "hitRate": 0.5972222222222222,
+      "averageBrier": 0.5381493294295928,
+      "averageLogLoss": 0.915579897863875
     },
     "challenger": {
-      "hits": 36,
-      "total": 63,
-      "hitRate": 0.5714285714285714,
-      "averageBrier": 0.5478828921050852,
-      "averageLogLoss": 0.9287544730553748
+      "hits": 43,
+      "total": 72,
+      "hitRate": 0.5972222222222222,
+      "averageBrier": 0.5381493294295928,
+      "averageLogLoss": 0.915579897863875
     },
     "overrides": 0
   },
@@ -359,27 +370,27 @@
   "championRevision": "LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16",
   "trainingWindow": {
     "from": "2026-06-30T12:39:18.000Z",
-    "to": "2026-07-21T05:56:17.706Z"
+    "to": "2026-07-22T06:31:30.880Z"
   },
   "trainingSource": {
-    "contractVersion": "WDL_LOCKED_TRAINING_MANIFEST_V2",
-    "auditedRecords": 188,
-    "eligibleSamples": 103,
+    "contractVersion": "WDL_LOCKED_TRAINING_MANIFEST_V3",
+    "auditedRecords": 198,
+    "eligibleSamples": 112,
     "sourceCounts": {
       "STATIC_WORLD_CUP_LOCK": 62,
       "STATIC_SPORTTTERY_LOCK": 6,
-      "D1_LOCK": 120
+      "D1_LOCK": 130
     },
     "leagueCounts": {
       "世界杯": 17,
-      "巴西甲": 6,
-      "挪超": 15,
-      "欧冠": 7,
+      "巴西甲": 8,
+      "挪超": 16,
+      "欧冠": 8,
       "欧联": 3,
       "瑞超": 18,
-      "美职": 5,
+      "美职": 7,
       "芬超": 14,
-      "韩职": 18
+      "韩职": 21
     }
   }
 }
