@@ -31,6 +31,7 @@ const prediction = {
 
 assert.equal(engine.isR15Prediction(prediction), true);
 assert.equal(engine.isR16Prediction(prediction), false);
+assert.equal(engine.isR16Prediction(null), false, "未锁版赛事没有预测对象时不应抛错");
 assert.equal(engine.revisionLabel(prediction), "R15a");
 assert.equal(engine.inferenceDate({ lockedAt: "2026-07-17T15:59:59Z" }, "2026-07-19"), "2026-07-17");
 assert.equal(engine.inferenceDate({ lockedAt: "2026-07-17T16:00:01Z" }, "2026-07-19"), "2026-07-18");

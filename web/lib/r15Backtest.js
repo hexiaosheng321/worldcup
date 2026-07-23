@@ -3,6 +3,7 @@
   const EMPTY_SELECTIONS = new Set(["", "-", "无", "跳过", "未开售", "待定"]);
 
   function revisionText(pred = {}) {
+    pred = pred || {};
     return [
       pred.modelRevision,
       pred.unifiedRunEvidence?.modelRevision,
