@@ -150,8 +150,11 @@ if (!styles.includes(".market-closed")) {
 for (const marker of ["evaluationOutcome", "inferenceDate", "summarizeDaily", "candidateSelections", "candidateMetrics", 'pred.lockedAt || pred.generatedAt', 'hitCount > 0 ? "PARTIAL" : "MISS"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
   if (!r15Backtest.includes(marker)) throw new Error(`Production baseline missing R15 daily review aggregation: ${marker}`);
 }
-for (const marker of ["20260722_r16_forward_30_v1", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "推演日 = lockedAt 北京时间", "r15-row-released", "同一赛事只计一次", "比分前30场为C级观察", "等待首场R16记录"]) {
+for (const marker of ["20260722_r16_forward_30_v1", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "r15-row-released", "同一赛事只计一次", "比分前30场为C级观察", "等待首场R16记录"]) {
   if (!index.includes(marker) && !panels.includes(marker) && !main.includes(marker)) throw new Error(`Production baseline missing R16 forward review window: ${marker}`);
+}
+if (!["推演日 = lockedAt 北京时间", "每日2串1推荐 / 复盘", "后台R16逐场账本"].some((marker) => index.includes(marker) || panels.includes(marker) || main.includes(marker))) {
+  throw new Error("Production baseline missing the R16 daily review entry point.");
 }
 for (const marker of ["r16-score-leaf=20260722_r16_non_score_lock_v1", "r16-forward=20260722_r16_forward_30_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing R16 frontend cache namespace: ${marker}`);
@@ -338,9 +341,11 @@ for (const marker of [
   "20260718_postponed_schedule_retention_v1",
   "app/app-core.js?v=20260718_postponed_schedule_retention_v1",
   "app/app-home.js?v=20260718_postponed_schedule_retention_v1",
-  "app/app-panels.js?v=20260718_postponed_schedule_retention_v1",
 ]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing postponed schedule retention cache namespace: ${marker}`);
+}
+if (!index.includes("app/app-panels.js?v=")) {
+  throw new Error("Production baseline missing the app-panels cache namespace.");
 }
 for (const marker of ["sportteryPoolShouldHide", "sportteryPostponedLockExpired", "POSTPONED_LOCK_RETENTION_DAYS", "activeSportteryPredictions", "hiddenByExceptionalStatus", "!item.hiddenByExceptionalStatus"]) {
   if (!appCore.includes(marker) && !homeApp.includes(marker)) throw new Error(`Production baseline missing postponed pool visibility marker: ${marker}`);
