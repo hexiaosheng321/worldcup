@@ -90,6 +90,11 @@ if (missingRequired.length) {
 if (!index.includes('href="#sporttery" data-sporttery-pool>进入完整赛程 →</a>') || /data-home-enter[^>]*>进入完整赛程 →/.test(index)) {
   throw new Error("Production baseline requires the homepage full-schedule link to open the sporttery pool before and after scripts initialize.");
 }
+for (const marker of ["function orderedSportteryPoolGroups", 'view !== "finished"', "String(rightDate || \"\").localeCompare(String(leftDate || \"\"))", "sporttery-order=20260723_finished_desc_v1"]) {
+  if (!homeApp.includes(marker) && !index.includes(marker)) {
+    throw new Error(`Production baseline missing newest-first finished-pool ordering: ${marker}`);
+  }
+}
 const topNavStart = index.indexOf('<nav aria-label="总站模块">');
 const topNavEnd = index.indexOf("</nav>", topNavStart);
 const topNav = topNavStart >= 0 && topNavEnd > topNavStart ? index.slice(topNavStart, topNavEnd) : "";

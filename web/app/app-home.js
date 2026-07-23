@@ -1134,6 +1134,14 @@ function sportteryPoolCard(item) {
   `;
 }
 
+function orderedSportteryPoolGroups(grouped, view) {
+  const entries = [...grouped.entries()];
+  if (view !== "finished") return entries;
+  return entries.sort(([leftDate], [rightDate]) =>
+    String(rightDate || "").localeCompare(String(leftDate || ""))
+  );
+}
+
 function renderSportteryPool() {
   const target = document.querySelector("#sporttery-pool-grid");
   if (!target) return;
@@ -1183,7 +1191,7 @@ function renderSportteryPool() {
           : `数据源：${source} · ${stamp}`;
   }
   target.innerHTML = grouped.size
-    ? [...grouped.entries()]
+    ? orderedSportteryPoolGroups(grouped, activeSportteryPoolView)
         .map(
           ([date, groupItems]) => `
             <section class="day-lane">
