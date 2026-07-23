@@ -533,8 +533,14 @@ for (const marker of ["every model run must preserve the complete UNIFIED_PREDIC
 for (const marker of ['args.get("dry-run")', 'args.get("publish-run") || "true"']) {
   if (!unifiedRunner.includes(marker)) throw new Error(`Production baseline requires D1 recording by default for unified inference: ${marker}`);
 }
-if (wdlTrainingManifest.auditedRecords !== 188 || wdlTrainingManifest.records?.length !== 188) {
-  throw new Error("Production baseline requires the complete 188-record WDL audit manifest.");
+if (
+  wdlTrainingManifest.contractVersion !== "WDL_LOCKED_TRAINING_MANIFEST_V3"
+  || wdlTrainingManifest.auditedRecords < 188
+  || wdlTrainingManifest.records?.length !== wdlTrainingManifest.auditedRecords
+  || wdlCalibrationArtifact.trainingSource?.auditedRecords !== wdlTrainingManifest.auditedRecords
+  || wdlCalibrationArtifact.trainingSource?.eligibleSamples !== wdlTrainingManifest.eligibleSamples
+) {
+  throw new Error("Production baseline requires a complete, versioned WDL audit manifest aligned with the calibration artifact.");
 }
 if (wdlCalibrationArtifact.status !== "CHALLENGER" || wdlCalibrationArtifact.promotionDecision !== "NOT_PROMOTED" || Object.values(wdlCalibrationArtifact.leagueProfiles || {}).some((profile) => profile.enabled === true)) {
   throw new Error("Production baseline requires R17 to remain a non-promoted Challenger with every Champion application gate disabled.");

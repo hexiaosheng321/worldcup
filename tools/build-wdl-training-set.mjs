@@ -6,6 +6,7 @@ const args = new Map(process.argv.slice(2).map((item, index, source) => item.sta
 const locksFile = path.resolve(args.get("locks") || "/tmp/wdl-r17-locks.json");
 const resultsFile = path.resolve(args.get("results") || "/tmp/wdl-r17-results.js");
 const staticDataFile = path.resolve(args.get("static-data") || "web/data.js");
+const runsFile = args.get("runs") ? path.resolve(args.get("runs")) : "";
 const outputFile = path.resolve(args.get("output") || "web/data/wdl-calibration-training-r17.json");
 
 function windowValue(file, variable) {
@@ -19,6 +20,12 @@ function probabilityMap(values = []) {
   const total = numeric.reduce((sum, value) => sum + (Number.isFinite(value) && value >= 0 ? value : 0), 0);
   if (numeric.some((value) => !Number.isFinite(value) || value < 0) || total <= 0) return null;
   return { HOME: numeric[0] / total, DRAW: numeric[1] / total, AWAY: numeric[2] / total };
+}
+
+function probabilityObject(value) {
+  if (Array.isArray(value)) return probabilityMap(value);
+  if (!value || typeof value !== "object") return null;
+  return probabilityMap(["HOME", "DRAW", "AWAY"].map((label) => value[label]));
 }
 
 function probabilitiesFromOdds(values = []) {
@@ -63,9 +70,37 @@ function kickoffAt(row = {}, payload = {}, pred = {}) {
 }
 
 const locksPayload = JSON.parse(fs.readFileSync(locksFile, "utf8"));
+const runsPayload = runsFile && fs.existsSync(runsFile)
+  ? JSON.parse(fs.readFileSync(runsFile, "utf8"))
+  : { runs: [] };
 const liveResults = windowValue(resultsFile, "LIVE_SPORTTERY_RESULTS")?.results || [];
 const staticData = windowValue(staticDataFile, "WC_DATA") || {};
 const resultById = new Map(liveResults.filter((row) => row.score).map((row) => [compactMatchId(row.matchId), row]));
+const runById = new Map((runsPayload.runs || []).map((row) => [String(row.run_id || row.runId || ""), row]));
+
+function modelRunAudit(item) {
+  const modelRunId = String(item.row.model_run_id || item.payload.modelRunId || item.pred.modelRunId || "");
+  const run = runById.get(modelRunId);
+  if (!run) return { modelRunId, modelRunLinked: false, probabilityComponents: null, runRevision: "" };
+  try {
+    const output = typeof run.output_json === "string" ? JSON.parse(run.output_json) : run.output_json || {};
+    const baselineParts = output.featureSet?.baselineParts || [];
+    const part = (label) => probabilityObject(baselineParts.find((entry) => entry.label === label)?.probabilities);
+    return {
+      modelRunId,
+      modelRunLinked: true,
+      runRevision: output.modelLessons?.version || output.modelRevision || run.model_version || "",
+      probabilityComponents: {
+        jointScoreModel: part("joint-score-model"),
+        marketCalibration: part("sporttery-wdl-calibration"),
+        blendedBaseline: probabilityObject(output.featureSet?.baselineProbabilities),
+        postEvidenceModel: probabilityObject(output.featureSet?.probabilities),
+      },
+    };
+  } catch {
+    return { modelRunId, modelRunLinked: true, probabilityComponents: null, runRevision: "" };
+  }
+}
 
 const parsedLocks = (locksPayload.locks || []).flatMap((row) => {
   try {
@@ -103,6 +138,7 @@ for (const item of latestManualByMatch.values()) {
     item.row.sporttery_draw_sp ?? item.payload.sportteryDrawSp,
     item.row.sporttery_away_sp ?? item.payload.sportteryAwaySp,
   ]);
+  const runAudit = modelRunAudit(item);
   const gaps = [];
   if (!outcome) gaps.push("RESULT_NOT_SETTLED");
   if (!lockedAt || !kickoff || Date.parse(lockedAt) >= Date.parse(kickoff)) gaps.push("TEMPORAL_INTEGRITY_FAILED");
@@ -114,12 +150,18 @@ for (const item of latestManualByMatch.values()) {
     matchId: item.matchId,
     lockId: item.row.lock_id,
     lockType: item.row.lock_type,
+    modelRunId: runAudit.modelRunId,
+    modelRunLinked: runAudit.modelRunLinked,
     league: normalizeLeague(item.row.league || item.payload.league || item.pred.competition),
     lockedAt,
     kickoffAt: kickoff,
-    modelRevision: item.payload.modelRevision || item.pred.modelRevision || "LEGACY_UNSPECIFIED",
+    modelRevision: runAudit.runRevision || item.payload.modelRevision || item.pred.modelRevision || "LEGACY_UNSPECIFIED",
+    finalGrade: item.row.final_grade || item.payload.finalGrade || item.pred.finalGrade || "",
+    finalAction: item.row.final_action || item.payload.finalAction || item.pred.finalAction || "",
+    recommendationSide: item.row.recommendation_side || item.payload.recommendationSide || item.pred.recommendationSide || "",
     modelProbabilities,
     marketProbabilities,
+    probabilityComponents: runAudit.probabilityComponents,
     actual: outcome?.actual || null,
     score: outcome?.score || "",
     resultSource: result?.resultSource || result?.source || "",
@@ -142,12 +184,18 @@ for (const pred of staticData.predictions || []) {
     matchId: `world-cup-${pred.no}`,
     lockId: `static-wc-${pred.no}`,
     lockType: "FINAL_LOCK",
+    modelRunId: "",
+    modelRunLinked: false,
     league: "世界杯",
     lockedAt: "",
     kickoffAt: match?.date ? `${match.date}T00:00:00+08:00` : "",
     modelRevision: pred.type || pred.modelVersion || "LEGACY_WORLD_CUP",
+    finalGrade: pred.finalGrade || pred.rating || "",
+    finalAction: pred.finalAction || "",
+    recommendationSide: pred.recommendationSide || "",
     modelProbabilities,
     marketProbabilities: null,
+    probabilityComponents: null,
     actual: outcome?.actual || null,
     score: outcome?.score || "",
     resultSource: "STATIC_VERIFIED_SCORE",
@@ -171,12 +219,18 @@ for (const pred of staticData.sportteryPredictions || []) {
     matchId,
     lockId: pred.lockId || `static-sporttery-${matchId}`,
     lockType: pred.lockType || "FINAL_LOCK",
+    modelRunId: pred.modelRunId || "",
+    modelRunLinked: false,
     league: normalizeLeague(pred.competition),
     lockedAt: pred.lockedAt || "",
     kickoffAt: pred.matchDate ? `${pred.matchDate}T${pred.kickoffTime || "00:00"}:00+08:00` : "",
     modelRevision: pred.modelRevision || pred.modelVersion || "LEGACY_SPORTTERRY",
+    finalGrade: pred.finalGrade || pred.rating || "",
+    finalAction: pred.finalAction || "",
+    recommendationSide: pred.recommendationSide || "",
     modelProbabilities,
     marketProbabilities: null,
+    probabilityComponents: null,
     actual: outcome?.actual || null,
     score: outcome?.score || "",
     resultSource: result?.resultSource || result?.source || "",
@@ -191,9 +245,9 @@ const exclusions = records.flatMap((record) => record.dataGaps).reduce((counts, 
 const leagueCounts = Object.fromEntries([...new Set(samples.map((sample) => sample.league))].sort().map((league) => [league, samples.filter((sample) => sample.league === league).length]));
 const sourceCounts = records.reduce((counts, record) => ({ ...counts, [record.sourceType]: (counts[record.sourceType] || 0) + 1 }), {});
 const output = {
-  contractVersion: "WDL_LOCKED_TRAINING_MANIFEST_V2",
+  contractVersion: "WDL_LOCKED_TRAINING_MANIFEST_V3",
   generatedAt: new Date().toISOString(),
-  source: { locksFile, resultsFile, staticDataFile, lockRows: parsedLocks.length, latestManualD1Matches: latestManualByMatch.size },
+  source: { locksFile, resultsFile, staticDataFile, runsFile, lockRows: parsedLocks.length, modelRunRows: runById.size, latestManualD1Matches: latestManualByMatch.size },
   auditedRecords: records.length,
   eligibleSamples: samples.length,
   sourceCounts,
