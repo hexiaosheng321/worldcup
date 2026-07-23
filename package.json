@@ -13,6 +13,7 @@
     "backtest:kleague-probability": "node tools/backtest-kleague-probability.mjs",
     "kleague:independent-model": "node tools/kleague-independent-model.mjs",
     "kleague:independent-test": "node tools/test-kleague-independent-model.mjs",
+    "daily-double:test": "node tools/test-daily-double.mjs",
     "prediction:unified": "node tools/run-unified-prediction.mjs",
     "prediction:test": "node tools/test-unified-prediction-engine.mjs",
     "prediction-refresh:test": "node tools/test-prediction-refresh-merge.mjs",
