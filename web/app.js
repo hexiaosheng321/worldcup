@@ -1333,6 +1333,12 @@ function modelVersionFromText(...values) {
   return match ? `V${match[1]}` : "";
 }
 
+function modelRevisionFromText(...values) {
+  const text = values.filter(Boolean).join(" ");
+  const match = text.match(/(?:^|[^A-Z0-9])R(\d+)(?:[^A-Z0-9]|$)/i);
+  return match ? `R${match[1]}` : "";
+}
+
 function baseCompetitionLabel(value = "") {
   const text = String(value || "")
     .replace(/（.*?）|\(.*?\)/g, "")
@@ -1347,11 +1353,13 @@ function modelDisplayName(pred = {}, match = {}, fallback = "") {
     pred.modelVersion ||
     modelVersionFromText(pred.type, pred.competitionModel, pred.eventModel, pred.competitionType, fallback);
   const rawVersion = modelVersionFromText(rawModelVersion) || rawModelVersion;
+  const revision = modelRevisionFromText(pred.modelRevision, pred.type);
+  const versionLabel = [rawVersion || "V1", revision].filter(Boolean).join(" · ");
   const explicitCompetition =
     baseCompetitionLabel(pred.competition) ||
     baseCompetitionLabel(match.league) ||
     baseCompetitionLabel(match.competition);
-  const version = rawVersion || "V1";
+  const version = versionLabel;
   if (explicitCompetition && !/世界杯|World Cup/i.test(explicitCompetition)) {
     const competition = explicitCompetition.replace(/联赛$/, "").trim();
     if (/体彩|竞彩/.test(competition)) return `${competition} ${version} 模型`;
@@ -1423,7 +1431,9 @@ function predictionModelVersion(pred) {
 
 function predictionVersionLabel(pred) {
   if (!pred) return "";
-  return `${predictionModelVersion(pred)} ${pred.lockType === "PRE_LOCK" ? "待锁版" : "锁版"}`;
+  const revision = modelRevisionFromText(pred.modelRevision, pred.type);
+  const version = [predictionModelVersion(pred), revision].filter(Boolean).join(" · ");
+  return `${version} ${pred.lockType === "PRE_LOCK" ? "待锁版" : "锁版"}`;
 }
 
 function groupedPredictions() {
