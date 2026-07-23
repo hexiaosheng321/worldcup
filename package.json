@@ -27,6 +27,8 @@
     "wdl:r18:backfill-cohorts": "node tools/backfill-r18-validation-cohorts.mjs",
     "wdl:audit-history": "node tools/audit-wdl-locked-history.mjs",
     "wdl:audit-history:test": "node tools/test-wdl-history-audit.mjs",
+    "wdl:audit-conflicts": "node tools/audit-wdl-conflicts.mjs",
+    "wdl:audit-conflicts:test": "node tools/test-wdl-conflict-audit.mjs",
     "sync:test": "node tools/test-sync-health.mjs && node tools/test-okooo-sync-persistence.mjs && node tools/test-sync-worker-odds-priority.mjs",
     "history:import-api": "node tools/import-free-history-api.mjs",
     "history:import-api-football": "node tools/import-api-football-history.mjs",
