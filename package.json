@@ -9,6 +9,8 @@
     "sporttery:fetch": "node tools/fetch-sporttery-live.mjs && node tools/fetch-sporttery-results.mjs && node tools/fetch-sporttery-sp-history.mjs && node tools/fetch-live-football-scores.mjs",
     "case-base:generate": "node tools/generate-case-base.mjs",
     "league-profiles:generate": "node tools/generate-league-profiles.mjs",
+    "history:backfill:500-kleague-full": "node tools/backfill-500-kleague-full.mjs",
+    "backtest:kleague-probability": "node tools/backtest-kleague-probability.mjs",
     "prediction:unified": "node tools/run-unified-prediction.mjs",
     "prediction:test": "node tools/test-unified-prediction-engine.mjs",
     "prediction-refresh:test": "node tools/test-prediction-refresh-merge.mjs",
