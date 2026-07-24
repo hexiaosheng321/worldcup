@@ -262,36 +262,6 @@
     return /^\d{4}-\d{2}-\d{2}/.test(fallbackText) ? fallbackText.slice(0, 10) : "未标日期";
   }
 
-  function summarizeDaily(records = []) {
-    const groups = new Map();
-    records.forEach((record) => {
-      const date = inferenceDate(record?.pred || record, record?.date);
-      if (!groups.has(date)) groups.set(date, []);
-      groups.get(date).push(record);
-    });
-    return [...groups.entries()]
-      .map(([date, rows]) => {
-        const matches = rows
-          .filter((row) => row.evaluation?.hasFormal)
-          .map((row) => ({ ...row, outcome: evaluationOutcome(row.evaluation) }));
-        const verifiedMatches = matches.filter((row) => row.evaluation?.verified);
-        const hits = verifiedMatches.filter((row) => row.outcome.allHit).length;
-        return {
-          date,
-          opened: rows.length,
-          released: matches.length,
-          verified: verifiedMatches.length,
-          hits,
-          partial: verifiedMatches.filter((row) => row.outcome.status === "PARTIAL").length,
-          misses: verifiedMatches.filter((row) => row.outcome.status === "MISS").length,
-          pending: matches.filter((row) => !row.evaluation?.verified).length,
-          rate: verifiedMatches.length ? hits / verifiedMatches.length : null,
-          matches,
-        };
-      })
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }
-
   function forwardProgress(evaluations = [], target = 30) {
     const settledKeys = new Set();
     evaluations.forEach((item, index) => {
@@ -327,7 +297,6 @@
     evaluationOutcome,
     inferenceDate,
     summarize,
-    summarizeDaily,
     forwardProgress,
     probabilityAudit,
   };

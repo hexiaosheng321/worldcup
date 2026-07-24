@@ -69,30 +69,6 @@ assert.deepEqual(JSON.parse(JSON.stringify(summary.metrics.winDrawLose)), {
 });
 assert.equal(summary.metrics.handicap.total, 0);
 
-const partialHit = engine.evaluatePrediction(prediction, {
-  score: "1-0",
-  direction: "胜",
-  handicap: "让平",
-  total: 1,
-});
-const daily = engine.summarizeDaily([
-  { date: "2026-07-19", pred: { lockedAt: "2026-07-18T07:00:00Z" }, matchName: "主队A vs 客队A", evaluation: hit },
-  { date: "2026-07-18", pred: { lockedAt: "2026-07-18T07:01:00Z" }, matchName: "主队B vs 客队B", evaluation: partialHit },
-  { date: "2026-07-19", pred: { lockedAt: "2026-07-18T07:02:00Z" }, matchName: "主队C vs 客队C", evaluation: pending },
-  { date: "2026-07-18", pred: { lockedAt: "2026-07-18T07:03:00Z" }, matchName: "主队D vs 客队D", evaluation: candidateOnly },
-]);
-assert.equal(daily.length, 1);
-assert.equal(daily[0].date, "2026-07-18", "每日复盘必须按推演锁版日归组，不能按比赛日拆分");
-assert.equal(daily[0].opened, 4);
-assert.equal(daily[0].released, 3);
-assert.equal(daily[0].verified, 2);
-assert.equal(daily[0].hits, 1);
-assert.equal(daily[0].partial, 1);
-assert.equal(daily[0].pending, 1);
-assert.equal(daily[0].rate, 0.5);
-assert.equal(daily[0].matches[0].outcome.status, "HIT");
-assert.equal(daily[0].matches[1].outcome.status, "PARTIAL");
-
 const legacy = engine.evaluatePrediction({
   modelRevision: "LESSONS_2026-07-16_AGGREGATE_HANDICAP_LEARNING_R10",
   formalSelections: prediction.formalSelections,

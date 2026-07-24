@@ -147,8 +147,8 @@ for (const marker of [
 if (!styles.includes(".market-closed")) {
   throw new Error("Production baseline requires a neutral closed-market status treatment.");
 }
-for (const marker of ["evaluationOutcome", "inferenceDate", "summarizeDaily", "candidateSelections", "candidateMetrics", 'pred.lockedAt || pred.generatedAt', 'hitCount > 0 ? "PARTIAL" : "MISS"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
-  if (!r15Backtest.includes(marker)) throw new Error(`Production baseline missing R15 daily review aggregation: ${marker}`);
+for (const marker of ["inferenceDate", "candidateSelections", "candidateMetrics", 'pred.lockedAt || pred.generatedAt', "probabilityMetrics", "formalSelections"]) {
+  if (!r15Backtest.includes(marker)) throw new Error(`Production baseline missing R11 backtest audit capability: ${marker}`);
 }
 if (!index.includes("active-r11=20260724_r11_baseline_v1") || !panels.includes("R11 · 活动基线复盘")) {
   throw new Error("Production baseline missing the active R11 backtest entry point.");
@@ -161,8 +161,8 @@ for (const marker of ["data-r15-daily-review-open", "每日2串1推荐 / 复盘"
 for (const marker of ["r16-score-leaf=20260722_r16_non_score_lock_v1", "r16-forward=20260722_r16_forward_30_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing R16 frontend cache namespace: ${marker}`);
 }
-for (const marker of [".r15-daily-review-launch", ".r15-daily-overview", ".r15-daily-match-list", ".r15-backtest-table tbody tr.r15-row-released", ".r15-release-flag"]) {
-  if (!styles.includes(marker)) throw new Error(`Production baseline missing R15 daily review styling: ${marker}`);
+for (const marker of [".r15-backtest-launch", ".r15-audit-grid", ".r15-backtest-table tbody tr.r15-row-released", ".r15-release-flag"]) {
+  if (!styles.includes(marker)) throw new Error(`Production baseline missing R11 backtest styling: ${marker}`);
 }
 for (const marker of ["const releasedRows = rows.filter(({ evaluation }) => evaluation.hasFormal)", "正式放行审计账本", "尚未读取到正式放行记录", "正式放行 · ${status}"]) {
   if (!panels.includes(marker)) throw new Error(`Production baseline missing formal-release-only R15 ledger marker: ${marker}`);
