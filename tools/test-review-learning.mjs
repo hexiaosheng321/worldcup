@@ -353,6 +353,46 @@ assert.deepEqual(scoreLeafUnavailable.formalSelections.scores, []);
 assert.equal(scoreLeafUnavailable.formalSelections.winDrawLose, "胜");
 assert.equal(scoreLeafUnavailable.formalSelections.handicap, "让平");
 assert.equal(scoreLeafUnavailable.formalSelections.totalGoals, "2球/3球");
+assert.equal(scoreLeafUnavailable.pick, "胜");
+assert.equal(scoreLeafUnavailable.handicapPick, "让平");
+assert.equal(scoreLeafUnavailable.totalGoalsPick, "2球/3球");
+
+const observationOnlySelections = enrichPredictionFromUnifiedRun({
+  pick: "胜",
+  handicapPick: "让负",
+  totalGoalsPick: "3球/2球",
+  mainScore: "1-1",
+  counterScore: "2-1",
+}, {
+  contractVersion: "UNIFIED_PREDICTION_V4",
+  modelLessons: { version: "LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16" },
+  finalDecision: {
+    winDrawLose: "胜",
+    handicapPick: "让负",
+    totalGoalsPick: "3球/2球",
+    scores: ["1-1", "2-1"],
+    formalMarkets: [],
+  },
+  featureSet: {
+    probabilities: { HOME: 0.54, DRAW: 0.24, AWAY: 0.22 },
+    marketAvailability: { markets: { winDrawLose: true, handicap: true, totalGoals: true, scores: true } },
+    handicap: { probabilities: { "让胜": 0.32, "让平": 0.22, "让负": 0.46 } },
+  },
+  scenarioSet: [{ score: "1-1", probability: 0.11 }, { score: "2-1", probability: 0.09 }],
+});
+assert.equal(observationOnlySelections.pick, "");
+assert.equal(observationOnlySelections.handicapPick, "");
+assert.equal(observationOnlySelections.totalGoalsPick, "");
+assert.equal(observationOnlySelections.mainScore, "");
+assert.equal(observationOnlySelections.counterScore, "");
+assert.deepEqual(observationOnlySelections.formalSelections, {
+  winDrawLose: null,
+  handicap: null,
+  totalGoals: null,
+  scores: [],
+});
+assert.deepEqual(observationOnlySelections.candidateSelections.scores, ["1-1", "2-1"]);
+assert.equal(observationOnlySelections.finalDecisionAction, "无正式玩法，候选仅保留观察");
 
 const requestWithHeaders = (token = "", user = "") => ({
   headers: new Headers({ "x-admin-token": token, "x-admin-user": user }),

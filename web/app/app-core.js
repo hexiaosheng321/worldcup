@@ -1116,10 +1116,17 @@ function cloudLockRowsToPredictions(rows = []) {
       const prediction = payload.sportteryPrediction || payload.prediction || payload;
       const analysis = prediction.analysis || payload.analysis || prediction.payload || payload.payload || {};
       const finalPick = prediction.finalPick || prediction.analysis?.finalPick || payload.finalPick || {};
+      const hasFormalContract = Object.prototype.hasOwnProperty.call(prediction, "formalSelections");
+      const candidateContract = prediction.candidateSelections && typeof prediction.candidateSelections === "object"
+        ? prediction.candidateSelections
+        : {};
       const finalScoresText = Array.isArray(finalPick.scores) ? finalPick.scores.join(" / ") : finalPick.scores || "";
-      const scorePair = Array.isArray(finalPick.scores)
-        ? [finalPick.scores[0] || "", finalPick.scores[1] || ""]
-        : scorePairFromPick(prediction.scorePick || finalScoresText || "");
+      const candidateScores = Array.isArray(candidateContract.scores) ? candidateContract.scores.filter(Boolean) : [];
+      const scorePair = hasFormalContract && candidateScores.length
+        ? [candidateScores[0] || "", candidateScores[1] || ""]
+        : Array.isArray(finalPick.scores)
+          ? [finalPick.scores[0] || "", finalPick.scores[1] || ""]
+          : scorePairFromPick(prediction.scorePick || finalScoresText || "");
       const rawMatchId = prediction.matchId || row.match_id || "";
       const compactMatchId = String(rawMatchId || "").replace(/^sporttery-/, "");
       const lockType = row.lock_type || row.lockType || prediction.lockType || "FINAL_LOCK";
@@ -1144,12 +1151,20 @@ function cloudLockRowsToPredictions(rows = []) {
         modelVersion: prediction.modelVersion || row.model_version || "V4",
         confidence: prediction.confidence || row.final_grade || "",
         advice: prediction.advice || prediction.finalAction || finalPick.advice || row.final_action || "",
-        pick: prediction.pick || prediction.recommendationSide || finalPick.winDrawLose || row.recommendation_side || row.recommendation || "",
-        handicapPick: prediction.handicapPick || prediction.handicapRecommendation || finalPick.handicap || "",
-        totalGoalsPick: prediction.totalGoalsPick || finalPick.totalGoals || "",
-        mainScore: prediction.mainScore || scorePair[0] || "",
-        counterScore: prediction.counterScore || scorePair[1] || "",
-        scorePick: prediction.scorePick || finalScoresText || scorePair.filter(Boolean).join(" / "),
+        pick: hasFormalContract
+          ? candidateContract.winDrawLose || prediction.pick || ""
+          : prediction.pick || prediction.recommendationSide || finalPick.winDrawLose || row.recommendation_side || row.recommendation || "",
+        handicapPick: hasFormalContract
+          ? candidateContract.handicap || prediction.handicapPick || ""
+          : prediction.handicapPick || prediction.handicapRecommendation || finalPick.handicap || "",
+        totalGoalsPick: hasFormalContract
+          ? candidateContract.totalGoals || prediction.totalGoalsPick || ""
+          : prediction.totalGoalsPick || finalPick.totalGoals || "",
+        mainScore: hasFormalContract ? scorePair[0] || prediction.mainScore || "" : prediction.mainScore || scorePair[0] || "",
+        counterScore: hasFormalContract ? scorePair[1] || prediction.counterScore || "" : prediction.counterScore || scorePair[1] || "",
+        scorePick: hasFormalContract
+          ? scorePair.filter(Boolean).join(" / ") || prediction.scorePick || ""
+          : prediction.scorePick || finalScoresText || scorePair.filter(Boolean).join(" / "),
         lockId: row.lock_id || prediction.lockId || "",
         lockType,
         lockedAt: row.locked_at || prediction.lockedAt || "",

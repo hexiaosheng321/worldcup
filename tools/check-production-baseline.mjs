@@ -150,11 +150,13 @@ if (!styles.includes(".market-closed")) {
 for (const marker of ["evaluationOutcome", "inferenceDate", "summarizeDaily", "candidateSelections", "candidateMetrics", 'pred.lockedAt || pred.generatedAt', 'hitCount > 0 ? "PARTIAL" : "MISS"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
   if (!r15Backtest.includes(marker)) throw new Error(`Production baseline missing R15 daily review aggregation: ${marker}`);
 }
-for (const marker of ["20260722_r16_forward_30_v1", "active-r11=20260724_r11_baseline_v1", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "r15-row-released", "同一赛事只计一次", "等待首场R11记录"]) {
-  if (!index.includes(marker) && !panels.includes(marker) && !main.includes(marker)) throw new Error(`Production baseline missing R16 forward review window: ${marker}`);
+if (!index.includes("active-r11=20260724_r11_baseline_v1") || !panels.includes("R11 · 活动基线复盘")) {
+  throw new Error("Production baseline missing the active R11 backtest entry point.");
 }
-if (!["推演日 = lockedAt 北京时间", "每日2串1推荐 / 复盘", "后台R11逐场账本"].some((marker) => index.includes(marker) || panels.includes(marker) || main.includes(marker))) {
-  throw new Error("Production baseline missing the active R11 daily review entry point.");
+for (const marker of ["data-r15-daily-review-open", "每日2串1推荐 / 复盘", "DAILY 2×1 TICKETS", "daily-double=20260723_r1", "daily-tickets.js"]) {
+  if (index.includes(marker) || main.includes(marker)) {
+    throw new Error(`Production baseline rejects retired daily-release surface: ${marker}`);
+  }
 }
 for (const marker of ["r16-score-leaf=20260722_r16_non_score_lock_v1", "r16-forward=20260722_r16_forward_30_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing R16 frontend cache namespace: ${marker}`);

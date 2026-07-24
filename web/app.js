@@ -1019,10 +1019,17 @@ function cloudLockRowsToPredictions(rows = []) {
       const prediction = payload.sportteryPrediction || payload.prediction || payload;
       const analysis = prediction.analysis || payload.analysis || prediction.payload || payload.payload || {};
       const finalPick = prediction.finalPick || prediction.analysis?.finalPick || payload.finalPick || {};
+      const hasFormalContract = Object.prototype.hasOwnProperty.call(prediction, "formalSelections");
+      const candidateContract = prediction.candidateSelections && typeof prediction.candidateSelections === "object"
+        ? prediction.candidateSelections
+        : {};
       const finalScoresText = Array.isArray(finalPick.scores) ? finalPick.scores.join(" / ") : finalPick.scores || "";
-      const scorePair = Array.isArray(finalPick.scores)
-        ? [finalPick.scores[0] || "", finalPick.scores[1] || ""]
-        : scorePairFromPick(prediction.scorePick || finalScoresText || "");
+      const candidateScores = Array.isArray(candidateContract.scores) ? candidateContract.scores.filter(Boolean) : [];
+      const scorePair = hasFormalContract && candidateScores.length
+        ? [candidateScores[0] || "", candidateScores[1] || ""]
+        : Array.isArray(finalPick.scores)
+          ? [finalPick.scores[0] || "", finalPick.scores[1] || ""]
+          : scorePairFromPick(prediction.scorePick || finalScoresText || "");
       const rawMatchId = prediction.matchId || row.match_id || "";
       const compactMatchId = String(rawMatchId || "").replace(/^sporttery-/, "");
       const lockType = row.lock_type || row.lockType || prediction.lockType || "FINAL_LOCK";
@@ -1047,12 +1054,20 @@ function cloudLockRowsToPredictions(rows = []) {
         modelVersion: prediction.modelVersion || row.model_version || "V4",
         confidence: prediction.confidence || row.final_grade || "",
         advice: prediction.advice || prediction.finalAction || finalPick.advice || row.final_action || "",
-        pick: prediction.pick || prediction.recommendationSide || finalPick.winDrawLose || row.recommendation_side || row.recommendation || "",
-        handicapPick: prediction.handicapPick || prediction.handicapRecommendation || finalPick.handicap || "",
-        totalGoalsPick: prediction.totalGoalsPick || finalPick.totalGoals || "",
-        mainScore: prediction.mainScore || scorePair[0] || "",
-        counterScore: prediction.counterScore || scorePair[1] || "",
-        scorePick: prediction.scorePick || finalScoresText || scorePair.filter(Boolean).join(" / "),
+        pick: hasFormalContract
+          ? candidateContract.winDrawLose || prediction.pick || ""
+          : prediction.pick || prediction.recommendationSide || finalPick.winDrawLose || row.recommendation_side || row.recommendation || "",
+        handicapPick: hasFormalContract
+          ? candidateContract.handicap || prediction.handicapPick || ""
+          : prediction.handicapPick || prediction.handicapRecommendation || finalPick.handicap || "",
+        totalGoalsPick: hasFormalContract
+          ? candidateContract.totalGoals || prediction.totalGoalsPick || ""
+          : prediction.totalGoalsPick || finalPick.totalGoals || "",
+        mainScore: hasFormalContract ? scorePair[0] || prediction.mainScore || "" : prediction.mainScore || scorePair[0] || "",
+        counterScore: hasFormalContract ? scorePair[1] || prediction.counterScore || "" : prediction.counterScore || scorePair[1] || "",
+        scorePick: hasFormalContract
+          ? scorePair.filter(Boolean).join(" / ") || prediction.scorePick || ""
+          : prediction.scorePick || finalScoresText || scorePair.filter(Boolean).join(" / "),
         lockId: row.lock_id || prediction.lockId || "",
         lockType,
         lockedAt: row.locked_at || prediction.lockedAt || "",
@@ -1119,9 +1134,15 @@ function hasCompleteSportteryLockFields(pred = {}) {
   const scores = [pred.mainScore, pred.counterScore].filter(Boolean);
   return Boolean(
     pred.lockId &&
-    (pred.pick || pred.recommendationSide) &&
-    (pred.handicapPick || pred.handicapRecommendation) &&
-    (scores.length || pred.scorePick)
+    (
+      formalSelectionsForPrediction(pred) ||
+      pred.candidateSelections ||
+      (
+        (pred.pick || pred.recommendationSide) &&
+        (pred.handicapPick || pred.handicapRecommendation) &&
+        (scores.length || pred.scorePick)
+      )
+    )
   );
 }
 
@@ -1231,6 +1252,17 @@ function handicapDirection(score, handicap) {
   if (adjustedHome > parsed.away) return "让胜";
   if (adjustedHome < parsed.away) return "让负";
   return "让平";
+}
+
+function formalSelectionsForPrediction(pred) {
+  if (!pred || !Object.prototype.hasOwnProperty.call(pred, "formalSelections")) return null;
+  const formal = pred.formalSelections && typeof pred.formalSelections === "object" ? pred.formalSelections : {};
+  return {
+    winDrawLose: formal.winDrawLose || "",
+    handicap: formal.handicap || "",
+    totalGoals: formal.totalGoals || "",
+    scores: Array.isArray(formal.scores) ? formal.scores.filter(Boolean) : [],
+  };
 }
 
 function handicapPick(pred) {
@@ -3365,8 +3397,8 @@ function renderQuickMatchMode(match, pred, filter, finished, hLabel) {
         <p>${gate.action} · ${gate.notes.join(" / ")}</p>
       </article>
       <article>
-        <span>最终锁版</span>
-        <strong>${pred.pick} / ${handicapPick(pred) || "让球待定"}</strong>
+        <span>模型锁版结论</span>
+        <strong>胜平负 ${pred.pick} · 让球 ${handicapPick(pred) || "待定"}</strong>
         <p>总进球 ${pred.totalGoalsPick || "暂无"} · 比分 ${pred.mainScore} / ${pred.counterScore}</p>
       </article>
       <article>
@@ -3492,10 +3524,10 @@ function renderMatchDetail(no) {
       <div class="match-page-summary">
         <span>${ticaiIssue(match)}</span>
         <div class="summary-grid">
-          <div><small>单选</small><b>${pred ? pred.pick : finished ? "已完赛" : "待锁版"}</b></div>
+          <div><small>胜平负</small><b>${pred ? pred.pick || "暂无" : finished ? "已完赛" : "待锁版"}</b></div>
           <div><small>让球</small><b>${pred ? handicapPick(pred) || "暂无" : hLabel || "暂无"}</b></div>
           <div><small>总进球</small><b>${pred?.totalGoalsPick || "暂无"}</b></div>
-          <div><small>比分预测</small><b>${pred ? `${pred.mainScore} / ${pred.counterScore}` : "待推演"}</b></div>
+          <div><small>比分预测</small><b>${pred ? [pred.mainScore, pred.counterScore].filter(Boolean).join(" / ") || "暂无" : "待推演"}</b></div>
         </div>
       </div>
     </section>

@@ -189,13 +189,11 @@ npm run prediction:unified -- --match 1320350 --evidence /tmp/research-1320350.j
 - 每次统一推演必须从同一个`pairedInput`生成两条不可变记录：R16标记`CHAMPION`，R18标记`CHALLENGER`，共同携带`comparison_group_id`。R18强制`shadowOnly=true`、`publicationEligible=false`、`formalMarkets=[]`；API拒绝任何Challenger关联锁版。影子覆盖率只读取单独保存的`shadowEvaluationMarkets`，不得为了统计而恢复可发布正式玩法；普通胜平负市场不可用时成对记录仍保留，但以`validationEligible=false`排除出R18有效分母。
 - R18状态固定为`CHALLENGER / FORWARD_VALIDATION_REQUIRED`且`automaticPromotion=false`。至少积累30至50场同输入、同时间点的前向配对样本后，再比较胜平负单选命中率、Brier、Log Loss和正式覆盖率；通过服务器守门后仍只获得人工晋级评审资格，不自动替换R16。
 
-## 2026-07-23 R16 每日2串1推荐层
+## 2026-07-24 每日放行层退役
 
-- 新增前端票据层：每日从R16正式胜平负放行中按腿概率排序，生成最多3注2串1；两腿联合概率为`P1 × P2`，候选不足或联合概率未达最低阈值时不强行凑票。
-- 票据层优先读取赛前模型胜平负概率；模型概率缺失时才使用当前开盘去水概率，并在页面明确标记来源。
-- 每日2串1只改变新的公开推荐与复盘展示，不重写R16原始锁版、概率、FINAL_LOCK、Case Base或正式历史分母。
-- 旧R16逐场放行账本继续保留为后台观察；2串1票据命中单独统计，不能与旧的逐场整包命中率混用。
-- 票据选择器只读取正式胜平负资格，拒绝`PRE_LOCK`、未发布和未开售方向；同一场最多被组合复用两次，以避免三注完全重复。
+- 每日2串1、每日放行组合和对应公开复盘入口已退役，不再从正式胜平负结果生成新的票据。
+- R11 仍保留逐场推演、formalSelections、赛果回填和正式玩法回测；删除的是组合推荐层，不是 R11 的模型门禁。
+- 历史数据库记录不删除，但不再参与线上每日放行展示或新的票据统计。
 
 ## 2026-07-24 当前活动基线回到 R11
 

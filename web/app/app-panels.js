@@ -1254,24 +1254,18 @@ function openR15DailyReviewModal() {
 function renderR15BacktestEntry(sourceRows = modelAuditRows()) {
   const target = document.querySelector("#r15-backtest-entry");
   if (!target) return;
-  const rows = r15BacktestRows(sourceRows);
-  const ticketDays = dailyDoubleReviewRows(rows);
-  const latestTicketDay = ticketDays[0];
-  const summary = r15BacktestSummary(rows);
-  const forward = window.WC_R15_BACKTEST?.forwardProgress(rows.map((row) => row.evaluation)) || { settled: 0, target: 30, remaining: 30 };
-  const progress = Math.min(100, (forward.settled / forward.target) * 100);
   target.innerHTML = `
     <button type="button" class="r15-backtest-launch" data-r15-backtest-open>
-      <span class="r15-launch-index">2×1</span>
+      <span class="r15-launch-index">R11</span>
       <span class="r15-launch-copy">
-        <b>每日2串1推荐</b>
-        <strong>${latestTicketDay?.tickets.length || 0}<small>注今日可用组合</small></strong>
-        <em>${latestTicketDay ? `${latestTicketDay.candidateCount} 场候选 · 按联合概率排序` : "等待至少两场满足正式胜平负和概率条件"}</em>
+        <b>R11 基线复盘</b>
+        <strong>查看完整账本</strong>
+        <em>只保留逐场推演与正式玩法回测，不再生成每日放行组合</em>
       </span>
-      <span class="r15-launch-progress" aria-label="每日2串1推荐状态">
-        <i style="--r15-progress:${Math.min(100, (latestTicketDay?.tickets.length || 0) / 3 * 100)}%"></i>
+      <span class="r15-launch-progress" aria-label="R11复盘状态">
+        <i style="--r15-progress:100%"></i>
       </span>
-      <span class="r15-launch-action">打开推荐与复盘 <b aria-hidden="true">↗</b></span>
+      <span class="r15-launch-action">打开R11复盘 <b aria-hidden="true">↗</b></span>
     </button>
   `;
 }
@@ -1320,11 +1314,7 @@ function openR15BacktestModal() {
   const rows = r15BacktestRows();
   const summary = r15BacktestSummary(rows);
   const forward = window.WC_R15_BACKTEST?.forwardProgress(rows.map((row) => row.evaluation)) || { settled: 0, target: 30, remaining: 30 };
-  const dailyRows = r15DailyReviewRows(rows);
-  const ticketDays = dailyDoubleReviewRows(rows);
   const releasedRows = rows.filter(({ evaluation }) => evaluation.hasFormal);
-  const latestDaily = dailyRows[0] || { date: "-", opened: 0, released: 0, verified: 0, hits: 0, rate: null };
-  const latestDailyLabel = latestDaily.date === "-" ? "等待首场R11记录" : formatDate(latestDaily.date);
   const progress = Math.min(100, (forward.settled / forward.target) * 100);
   const marketMeta = [
     ["winDrawLose", "胜平负单选", "01"],
@@ -1393,12 +1383,6 @@ function openR15BacktestModal() {
             <div><dt>Log Loss</dt><dd>${summary.probabilityMetrics?.averageLogLoss == null ? "-" : summary.probabilityMetrics.averageLogLoss.toFixed(3)}</dd></div>
           </dl>
         </section>
-        <button type="button" class="r15-daily-review-launch" data-r15-daily-review-open>
-          <span>DAILY 2×1 / 每日推荐复盘</span>
-          <strong>${ticketDays[0]?.date ? formatDate(ticketDays[0].date) : latestDailyLabel} · ${ticketDays[0]?.tickets.length || 0} 注2串1</strong>
-          <em>${ticketDays[0] ? `${ticketDays[0].candidateCount} 场候选 · 旧R16账本继续保留` : "等待两场满足概率条件"}</em>
-          <b>打开每日复盘窗口 <i aria-hidden="true">↗</i></b>
-        </button>
         <section class="r15-audit-grid">${metricCards}</section>
         <section class="r15-scope-note">
           <b>统计口径</b>
