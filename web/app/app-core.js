@@ -21,7 +21,7 @@ const SPORTTERY_RESULTS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
 const SPORTTERY_FIXED_BONUS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
-const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_scoped_r16_v4";
+const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_scoped_r11_v4";
 const SPORTTERY_RESULT_PENDING_WINDOW_MINUTES = 135;
 const POSTPONED_LOCK_RETENTION_DAYS = 7;
 const STATIC_SNAPSHOT_FALLBACKS = [
@@ -1079,7 +1079,12 @@ function scorePairFromPick(value = "") {
 }
 
 function unifiedStepsForPrediction(pred = {}) {
-  return pred.unifiedSteps || pred.analysis?.unifiedSteps || pred.payload?.unifiedSteps || [];
+  return pred.unifiedSteps
+    || pred.unifiedRunEvidence?.unifiedSteps
+    || pred.analysis?.unifiedSteps
+    || pred.analysis?.unifiedRunEvidence?.unifiedSteps
+    || pred.payload?.unifiedSteps
+    || [];
 }
 
 function rawUnifiedStepText(pred = {}, stepNo = 0) {
@@ -1208,8 +1213,8 @@ async function ensureSportteryLockForItem(item = {}, key = "") {
 
 function hasCompleteSportteryLockFields(pred = {}) {
   if (!pred) return false;
-  const isR16 = window.WC_R15_BACKTEST?.isR16Prediction?.(pred) === true;
-  if (isR16) {
+  const isActive = window.WC_R15_BACKTEST?.isActivePrediction?.(pred) === true;
+  if (isActive) {
     return Boolean(pred.lockId && window.WC_R15_BACKTEST?.nonScorePredictionAvailable?.(pred));
   }
   const scores = [pred.mainScore, pred.counterScore].filter(Boolean);

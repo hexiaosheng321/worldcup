@@ -2930,6 +2930,12 @@ function normalizeSportteryMatch(match, businessDate) {
     ticaiDate: businessDate || match.businessDate || match.matchDate || "",
     matchDate: match.matchDate || "",
     kickoffTime: String(match.matchTime || "").slice(0, 5),
+    season: match.season || match.seasonLabel || "",
+    round: match.round || match.matchday || "",
+    matchday: match.matchday || match.round || "",
+    competitionType: match.competitionType || match.competition || "",
+    competitionStage: match.competitionStage || match.stage || "",
+    competitionContext: match.competitionContext || null,
     league: match.leagueAbbName || match.leagueAllName || "竞彩",
     matchId: String(match.matchId || ""),
     home: match.homeTeamAbbName || match.homeTeamAllName || "",
@@ -5318,6 +5324,22 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
   const teamText = [researchText("teamState"), researchText("injuries"), researchText("expectedLineups")].filter(Boolean).join(" ");
   const styleText = researchText("styleMatchup");
   const motivationText = researchText("motivation");
+  const competitionContext = parseObject(featureSet.competitionContext);
+  const competitionContextSummary = String(competitionContext.summary || "").trim();
+  const competitionMotivationSummary = competitionContextSummary || motivationText;
+  const teamFormContext = parseObject(featureSet.teamFormContext);
+  const styleMatchupContext = parseObject(featureSet.styleMatchupContext);
+  const openingMarketContext = parseObject(featureSet.openingMarketContext);
+  const matchDevelopmentContext = parseObject(featureSet.matchDevelopmentContext);
+  const teamFormSummary = String(teamFormContext.summary || "").trim();
+  const styleMatchupSummary = String(styleMatchupContext.summary || "").trim();
+  const openingMarketSummary = String(openingMarketContext.summary || "").trim();
+  const matchDevelopmentSummary = String(matchDevelopmentContext.summary || "").trim();
+  const unifiedSteps = Array.isArray(runOutput.unifiedSteps)
+    ? runOutput.unifiedSteps
+    : Array.isArray(featureSet.unifiedSteps)
+      ? featureSet.unifiedSteps
+      : [];
   const weatherText = researchText("weatherVenue");
   const marketText = odds.length === 3
     ? `当前胜平负SP ${odds.join(" / ")}；去水模型概率主胜 ${((Number(probabilities.HOME) || 0) * 100).toFixed(1)}%、平 ${((Number(probabilities.DRAW) || 0) * 100).toFixed(1)}%、客胜 ${((Number(probabilities.AWAY) || 0) * 100).toFixed(1)}%。`
@@ -5364,18 +5386,23 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
       formalSelections: authoritativeFormalSelections,
     } : {}),
     modelRevision: firstText(modelLessons.version, prediction.modelRevision, runOutput.modelVersion),
-    decisionProcess: "统一赛前机制：SP复核、赛事规则与动机、球队状态、风格对位、体彩开盘偏差、赔率动态、比赛发展、半场/60分钟触发、冲突闸门、比分总进球、让球闸门、失败方式、价值过滤、最终锁版。",
-    competitionRules: prediction.competitionRules || motivationText,
-    teamState: prediction.teamState || teamText,
-    recentAnalysis: prediction.recentAnalysis || teamText,
-    styleMatchup: prediction.styleMatchup || styleText,
-    institutionLine: prediction.institutionLine || marketText,
-    marketGap: prediction.marketGap || marketText,
+    unifiedSteps,
+    decisionProcess: "统一赛前机制（14步证据链）：SP复核、赛事规则与动机、球队状态、风格对位、体彩开盘偏差、赔率动态、比赛发展、半场/60分钟触发、冲突闸门、比分总进球、让球闸门、失败方式、价值过滤、最终锁版。",
+    competitionRules: competitionMotivationSummary || prediction.competitionRules || "赛事规则与动机待核验，暂不对双方战意下结论。",
+    groupSituation: competitionMotivationSummary || prediction.groupSituation || motivationText,
+    competitionContext: competitionContext || null,
+    teamState: teamFormSummary || prediction.teamState || teamText,
+    recentAnalysis: teamFormSummary || prediction.recentAnalysis || teamText,
+    styleMatchup: styleMatchupSummary || prediction.styleMatchup || styleText,
+    institutionLine: openingMarketSummary || prediction.institutionLine || marketText,
+    marketGap: openingMarketSummary || prediction.marketGap || marketText,
     lineMovement: prediction.lineMovement || movementText,
     oddsMovement: prediction.oddsMovement || movementText,
-    script: isR16 ? scenarioText : prediction.script || scenarioText,
-    halftimeDecision: prediction.halftimeDecision || `半场或60分钟仍未出现预期第一球时，重新检查独立风险剧本${riskScore}；正式比分${scoreA} / ${scoreB}不承担固定主反方向。`,
-    stateTransfer: isR16 ? scenarioText : prediction.stateTransfer || scenarioText,
+    script: matchDevelopmentSummary || (isR16 ? scenarioText : prediction.script || scenarioText),
+    halftimeDecision: matchDevelopmentContext.halfTime
+      ? `${matchDevelopmentContext.halfTime} ${Array.isArray(matchDevelopmentContext.triggers) ? matchDevelopmentContext.triggers.join(" ") : ""}`
+      : prediction.halftimeDecision || `半场或60分钟仍未出现预期第一球时，重新检查独立风险剧本${riskScore}；正式比分${scoreA} / ${scoreB}不承担固定主反方向。`,
+    stateTransfer: matchDevelopmentSummary || (isR16 ? scenarioText : prediction.stateTransfer || scenarioText),
     decisionConflict: prediction.decisionConflict || (isR16
       ? `R16玩法独立聚合：胜平负${decision.winDrawLose || prediction.pick || "-"}，让球边际第一项${decision.handicapPick || prediction.handicapPick || "-"}；方向条件分支只作影子审计。`
       : `正式组合已执行逻辑兼容门禁：主方向${decision.winDrawLose || prediction.pick || "-"}，让球${decision.handicapPick || prediction.handicapPick || "-"}；独立边际第一项${independentHandicapRisk.pick || "-"}只作冲突审计。`),
@@ -5398,6 +5425,7 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
       contractVersion: runOutput.contractVersion,
       modelRevision: firstText(modelLessons.version, prediction.modelRevision, runOutput.modelVersion),
       modelLessons: Object.keys(modelLessons).length ? modelLessons : null,
+      unifiedSteps,
       tenStepResult: runOutput.tenStepResult,
       gateResult: runOutput.gateResult,
       researchItems: items,
@@ -5413,6 +5441,11 @@ export function enrichPredictionFromUnifiedRun(prediction = {}, runOutput = {}) 
       backtestContract: runOutput.backtestContract || null,
       reviewLearningContract: runOutput.reviewLearningContract || null,
       competitionStage: featureSet.competitionStage || null,
+      competitionContext: competitionContext || null,
+      teamFormContext: teamFormContext || null,
+      styleMatchupContext: styleMatchupContext || null,
+      openingMarketContext: openingMarketContext || null,
+      matchDevelopmentContext: matchDevelopmentContext || null,
       twoLegLeadControl: featureSet.tieContext?.leadControl || null,
       riskScenario: riskScenario.score ? riskScenario : null,
     },
@@ -5743,6 +5776,9 @@ if (path === "sync/okooo-live" && request.method === "POST") {
       if (lockType === "FINAL_LOCK") {
         if (modelRun.run_type !== "FINAL_LOCK" || runOutput.contractVersion !== "UNIFIED_PREDICTION_V4" || runOutput.gateResult?.passed !== true || runOutput.tenStepResult?.passed !== true) {
           return json({ ok: false, error: "linked model run did not pass the complete ten-step FINAL_LOCK contract" }, 400);
+        }
+        if (!Array.isArray(runOutput.unifiedSteps) || runOutput.unifiedSteps.length !== 14 || runOutput.unifiedSteps.some((step) => !String(step || "").trim())) {
+          return json({ ok: false, error: "FINAL_LOCK requires the complete 14-step evidence narrative" }, 400);
         }
         const handicapPick = handicapPickFromPayload(hydratedPrediction);
         const handicapEvidence = parseObject(runOutput.featureSet?.handicap);

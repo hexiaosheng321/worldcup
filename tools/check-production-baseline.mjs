@@ -150,11 +150,11 @@ if (!styles.includes(".market-closed")) {
 for (const marker of ["evaluationOutcome", "inferenceDate", "summarizeDaily", "candidateSelections", "candidateMetrics", 'pred.lockedAt || pred.generatedAt', 'hitCount > 0 ? "PARTIAL" : "MISS"', "rate: verifiedMatches.length ? hits / verifiedMatches.length : null"]) {
   if (!r15Backtest.includes(marker)) throw new Error(`Production baseline missing R15 daily review aggregation: ${marker}`);
 }
-for (const marker of ["20260722_r16_forward_30_v1", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "r15-row-released", "同一赛事只计一次", "比分前30场为C级观察", "等待首场R16记录"]) {
+for (const marker of ["20260722_r16_forward_30_v1", "active-r11=20260724_r11_baseline_v1", "data-r15-daily-review-open", "openR15DailyReviewModal", "r15-daily-review-modal", "r15-row-released", "同一赛事只计一次", "等待首场R11记录"]) {
   if (!index.includes(marker) && !panels.includes(marker) && !main.includes(marker)) throw new Error(`Production baseline missing R16 forward review window: ${marker}`);
 }
-if (!["推演日 = lockedAt 北京时间", "每日2串1推荐 / 复盘", "后台R16逐场账本"].some((marker) => index.includes(marker) || panels.includes(marker) || main.includes(marker))) {
-  throw new Error("Production baseline missing the R16 daily review entry point.");
+if (!["推演日 = lockedAt 北京时间", "每日2串1推荐 / 复盘", "后台R11逐场账本"].some((marker) => index.includes(marker) || panels.includes(marker) || main.includes(marker))) {
+  throw new Error("Production baseline missing the active R11 daily review entry point.");
 }
 for (const marker of ["r16-score-leaf=20260722_r16_non_score_lock_v1", "r16-forward=20260722_r16_forward_30_v1"]) {
   if (!index.includes(marker)) throw new Error(`Production baseline missing R16 frontend cache namespace: ${marker}`);
@@ -268,8 +268,8 @@ for (const marker of ["data-goal-trend-maximize", "openGoalTrendModal", "trend-t
   }
 }
 
-if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_scoped_r16_v4"')) {
-  throw new Error("Production baseline requires the scoped R16 bootstrap-cache namespace.");
+if (!fs.readFileSync("web/app/app-core.js", "utf8").includes('CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_scoped_r11_v4"')) {
+  throw new Error("Production baseline requires the scoped R11 bootstrap-cache namespace.");
 }
 const appData = fs.readFileSync("web/app/app-data.js", "utf8");
 for (const marker of ['scope: scope === "full" ? "full" : "initial"', 'requiredScope === "full" && payload.scope !== "full"', "writeCloudBootstrapCache(payload, requestedScope)"]) {
@@ -430,13 +430,13 @@ const unifiedPredictionMarkers = [
   "model-runs",
   "tenStepResult",
   "backtestContract",
-  "LESSONS_2026-07-22_LEAF_OUTPUT_FORWARD_R16",
+  "LESSONS_2026-07-16_FULL_JOINT_GRID_R11",
   "HHAD_ONLY",
   "marketAvailability",
   "FULL_JOINT_GRID_ONLY_NO_OFFICIAL_SCORE_REFEED",
   "componentFoundationEligible",
   "SHARED_FOUNDATION_WITH_MARKET_SCOPED_CRITICAL_GATES",
-  "R16_FORMAL_RISK_GUARD_20260723_V1",
+  "R11_BASELINE_FORMAL_ADMISSION",
   "overallGrade",
   "overallGradeAudit",
   "SHARED_FOUNDATION_THEN_WDL_HANDICAP_TOTALS_SCORE_LEAF_EXCLUDED",
@@ -448,10 +448,10 @@ const unifiedPredictionMarkers = [
   "outputConsistencyComplete",
   "oneGoalWinProtected",
   "FULL_JOINT_TOTAL_MARGINAL_TOP_TWO",
-  "INDEPENDENT_MARKET_MARGINALS_WITH_FULL_GRID_CROSS_AUDIT",
+  "FORMAL_DIRECTION_SCORE_COMPATIBLE_PAIR",
   "DIRECTION_CONDITIONAL_CHALLENGER_SHADOW",
   "LEAGUE_LEARNING_PROFILES",
-  "R16_FORWARD_30",
+  "R11_BASELINE",
   "TERMINAL_EXACT_SCORE_OUTPUT_ONLY",
   "TERMINAL_SCORE_LEAF_NO_UPSTREAM_GATE_OR_PACKAGE_EFFECT",
   "predictiveConfidence",
@@ -574,8 +574,8 @@ for (const marker of ["validation cohort id already exists with a different cont
 for (const marker of ["CHALLENGER model runs are shadow-only and cannot publish inference locks", "paired validation runs must share one comparison group", "shadowEvaluationMarkets", "validationEligible"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline missing R18 publication isolation marker: ${marker}`);
 }
-for (const marker of ["R16_FORMAL_RISK_GUARD_20260723_V1", "marketConflictResolvedForFormal", "OBSERVATION_ONLY_UNTIL_COMPONENT_30_REVIEW"]) {
-  if (!unifiedEngine.includes(marker)) throw new Error(`Production baseline missing R16 formal-risk admission marker: ${marker}`);
+for (const marker of ["R11_BASELINE_FORMAL_ADMISSION", "marketConflictResolvedForFormal", "R11_BASELINE_ACTIVE"]) {
+  if (!unifiedEngine.includes(marker)) throw new Error(`Production baseline missing active R11 baseline marker: ${marker}`);
 }
 for (const marker of ["enrichPredictionFromUnifiedRun", "const hydratedPrediction = enrichPredictionFromUnifiedRun", "body.sportteryPrediction = hydratedPrediction"]) {
   if (!api.includes(marker)) throw new Error(`Production baseline requires FINAL_LOCK evidence hydration: ${marker}`);

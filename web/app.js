@@ -20,7 +20,7 @@ const SPORTTERY_RESULTS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&pageSize=80&pageNo=1";
 const SPORTTERY_FIXED_BONUS_API_URL =
   "https://webapi.sporttery.cn/gateway/uniform/football/getFixedBonusV1.qry";
-const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_scoped_r16_v4";
+const CLOUD_BOOTSTRAP_CACHE_KEY = "wc_cloud_bootstrap_scoped_r11_v4";
 const SPORTTERY_RESULT_PENDING_WINDOW_MINUTES = 135;
 const POSTPONED_LOCK_RETENTION_DAYS = 7;
 const STATIC_SNAPSHOT_FALLBACKS = [

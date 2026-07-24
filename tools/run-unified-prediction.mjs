@@ -24,6 +24,9 @@ const challengerOutputPath = path.resolve(args.get("challenger-output") || path.
 const templatePath = path.resolve(args.get("research-template") || "/tmp/unified-research-template.json");
 const publishRun = String(args.get("dry-run") || "false").toLowerCase() !== "true"
   && String(args.get("publish-run") || "true").toLowerCase() !== "false";
+// R11 is the active Champion.  R18 remains available only for explicit
+// historical/shadow research and is never generated or published by default.
+const enableR18Shadow = String(args.get("r18-shadow") || "false").toLowerCase() === "true";
 
 if (!matchQuery) {
   console.error("Usage: node tools/run-unified-prediction.mjs --match <matchId|issue|no|team> [--evidence research.json] [--lock FINAL_LOCK] [--dry-run]");
@@ -110,6 +113,12 @@ const match = {
   away: fixtureTeamIdentity.away || item.away || "",
   matchDate: item.matchDate || item.ticaiDate || oddsData.lotterNo || "",
   kickoffTime: item.kickoffTime || "",
+  season: item.season || item.seasonLabel || "",
+  round: item.round || item.matchday || "",
+  matchday: item.matchday || item.round || "",
+  competitionType: item.competitionType || item.competition || "",
+  competitionContext: item.competitionContext || null,
+  footballDataContext: item.footballDataContext || null,
   handicap: item.handicap || "0",
   competitionStage: item.competitionStage || item.stage || item.round || "",
 };
@@ -206,7 +215,14 @@ const modelInput = {
   oddsHistory: historyRow.history || {},
   samples,
   research,
+  // When a verified research packet supplies explicit recent team states,
+  // pass them through so the narrative/model does not get shadowed by an
+  // empty auto-derived state object from the generic sample library.
+  teamState: research.teamState?.homeState && research.teamState?.awayState
+    ? research.teamState
+    : null,
   tieContext: research.tieContext || null,
+  footballDataContext: match.footballDataContext || null,
   learningGovernance: governance.learningGovernance || {},
   r16Validation: governance.r16Validation || {},
   asOf: new Date().toISOString(),
@@ -214,7 +230,7 @@ const modelInput = {
 };
 const result = runUnifiedPrediction(modelInput, { lockType: requestedLockType });
 
-const r18Challenger = buildR18Challenger(result, r18Artifact);
+const r18Challenger = enableR18Shadow ? buildR18Challenger(result, r18Artifact) : null;
 
 const compactTeam = (value = "") => String(value).toLowerCase().replace(/football club|futbol club|soccer club|\bfc\b|\bsc\b|足球俱乐部|俱乐部|[^\p{L}\p{N}]/gu, "");
 const matchTeamKeys = [compactTeam(match.home), compactTeam(match.away)].filter(Boolean);
@@ -234,7 +250,7 @@ result.sourceContext = {
   governanceNoteIds: (governance.approvedNotes || []).map((item) => item.noteId),
   researchTemplatePath: evidencePath ? "" : templatePath,
 };
-r18Challenger.sourceContext = { ...result.sourceContext };
+if (r18Challenger) r18Challenger.sourceContext = { ...result.sourceContext };
 if (publishRun) {
   const comparisonGroupId = `r16-r18-${match.matchId}-${crypto.randomUUID()}`;
   const pairedInput = { ...modelInput, samples: replaySamples };
@@ -260,36 +276,38 @@ if (publishRun) {
   const championPublished = await publishModelRun(result, "CHAMPION");
   result.sourceContext.modelRunId = championPublished.runId;
   result.sourceContext.comparisonGroupId = comparisonGroupId;
-  const challengerPublished = await publishModelRun(r18Challenger, "CHALLENGER");
-  result.sourceContext.r18ChallengerRunId = challengerPublished.runId;
-  r18Challenger.sourceContext = {
-    ...r18Challenger.sourceContext,
-    modelRunId: challengerPublished.runId,
-    championRunId: championPublished.runId,
-    comparisonGroupId,
-  };
-  try {
-    const registration = await registerR18ValidationPair(
-      championPublished.runId,
-      challengerPublished.runId,
-      result,
-      r18Challenger,
-    );
-    result.sourceContext.r18ValidationRegistration = registration;
-    r18Challenger.sourceContext.r18ValidationRegistration = registration;
-  } catch (error) {
-    const registration = { status: "FAILED", error: error?.message || String(error) };
-    result.sourceContext.r18ValidationRegistration = registration;
-    r18Challenger.sourceContext.r18ValidationRegistration = registration;
+  if (r18Challenger) {
+    const challengerPublished = await publishModelRun(r18Challenger, "CHALLENGER");
+    result.sourceContext.r18ChallengerRunId = challengerPublished.runId;
+    r18Challenger.sourceContext = {
+      ...r18Challenger.sourceContext,
+      modelRunId: challengerPublished.runId,
+      championRunId: championPublished.runId,
+      comparisonGroupId,
+    };
+    try {
+      const registration = await registerR18ValidationPair(
+        championPublished.runId,
+        challengerPublished.runId,
+        result,
+        r18Challenger,
+      );
+      result.sourceContext.r18ValidationRegistration = registration;
+      r18Challenger.sourceContext.r18ValidationRegistration = registration;
+    } catch (error) {
+      const registration = { status: "FAILED", error: error?.message || String(error) };
+      result.sourceContext.r18ValidationRegistration = registration;
+      r18Challenger.sourceContext.r18ValidationRegistration = registration;
+    }
   }
 }
 await fs.writeFile(outputPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
-await fs.writeFile(challengerOutputPath, `${JSON.stringify(r18Challenger, null, 2)}\n`, "utf8");
+if (r18Challenger) await fs.writeFile(challengerOutputPath, `${JSON.stringify(r18Challenger, null, 2)}\n`, "utf8");
 console.log(JSON.stringify({
   ok: true,
   match,
   output: outputPath,
-  challengerOutput: challengerOutputPath,
+  challengerOutput: r18Challenger ? challengerOutputPath : "",
   lockType: result.lockType,
   blockers: result.gateResult.blockers,
   decision: result.finalDecision,

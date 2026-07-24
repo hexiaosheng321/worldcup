@@ -21,13 +21,25 @@
     return /(?:^|[^A-Z0-9])R1[67](?:[^A-Z0-9]|$)/i.test(revisionText(pred));
   }
 
+  function isR11Prediction(pred = {}) {
+    return /(?:^|[^A-Z0-9])R11(?:[^A-Z0-9]|$)/i.test(revisionText(pred));
+  }
+
+  function isActivePrediction(pred = {}) {
+    return isR11Prediction(pred);
+  }
+
   function isRevisionPrediction(pred = {}, revision = "R15") {
-    return String(revision || "R15").toUpperCase() === "R16" ? isR16Prediction(pred) : isR15Prediction(pred);
+    const value = String(revision || "R15").toUpperCase();
+    if (value === "R16") return isR16Prediction(pred);
+    if (value === "R11") return isR11Prediction(pred);
+    return isR15Prediction(pred);
   }
 
   function revisionLabel(pred = {}) {
     const text = revisionText(pred);
     if (/(?:^|[^A-Z0-9])R1[67](?:[^A-Z0-9]|$)/i.test(text)) return "R16";
+    if (/(?:^|[^A-Z0-9])R11(?:[^A-Z0-9]|$)/i.test(text)) return "R11";
     if (/(?:^|[^A-Z0-9])R15A(?:[^A-Z0-9]|$)/i.test(text)) return "R15a";
     return isR15Prediction(pred) ? "R15" : "-";
   }
@@ -301,6 +313,8 @@
     MARKET_KEYS,
     isR15Prediction,
     isR16Prediction,
+    isR11Prediction,
+    isActivePrediction,
     isRevisionPrediction,
     revisionLabel,
     formalSelections,
