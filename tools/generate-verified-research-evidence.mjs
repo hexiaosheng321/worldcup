@@ -24,6 +24,7 @@ const officialByMatch = {
   "1331278": { title: "UEFA Twente vs Ferencváros 官方比赛页", url: "https://www.uefa.com/uefaeuropaleague/match/2048744--twente-vs-ferencvaros/" },
   "1331282": { title: "UEFA Hajduk Split vs Pafos 官方比赛页", url: "https://www.uefa.com/uefaeuropaleague/match/2048746--hajduk-split-vs-pafos/" },
   "1316884": { title: "Atlético Mineiro官方 Atlético vs Bahia 赛程", url: "https://atletico.com.br/partida/atletico-x-bahia-4/" },
+  "1317884": { title: "Veikkausliiga官方 FF Jaro vs SJK 比赛页", url: "https://www.veikkausliiga.com/tilastot/2026/veikkausliiga/ottelut/4036948/seuranta/" },
   "1338441": { title: "UEFA Sabah vs KuPS 官方比赛页", url: "https://www.uefa.com/uefachampionsleague/match/2048715--sabah-vs-kups-kuopio/" },
   "1331030": { title: "UEFA Aarhus vs Lech Poznań 官方比赛页", url: "https://www.uefa.com/uefachampionsleague/match/2048717--aarhus-vs-lech-poznan/" },
   "1331048": { title: "UEFA Sturm Graz 2026/27官方赛程", url: "https://www.uefa.com/uefachampionsleague/clubs/50111--sturm-graz/matches/" },
